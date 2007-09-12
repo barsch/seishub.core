@@ -160,7 +160,7 @@ class ConfigurationTestCase(unittest.TestCase):
         self._write(['[a]', 'option = x', '[b]', 'option = y'])
         config = self._read()
         self.assertEquals(['a', 'b'], config.sections())
-        config.site_parser.add_section('c')
+        config.parser.add_section('c')
         self.assertEquals(['a', 'b', 'c'], config.sections())
 
     def test_options(self):

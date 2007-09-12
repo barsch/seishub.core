@@ -37,13 +37,11 @@ class Configuration(object):
     the last modification time of the configuration file, and reparses it
     when the file has changed.
     """
-    def __init__(self, filename):
+    def __init__(self, filename='seishub.ini'):
         self._sections = {}
-        self.filename = filename
+        self.filename = os.path.join('conf', filename)
         self.parser = ConfigParser()
         self._lastmtime = 0
-        self.site_filename = os.path.join(default_dir('conf'), 'seishub.ini')
-        self.site_parser = ConfigParser()
         self._lastsitemtime = 0
         self.parse_if_needed()
 
@@ -119,7 +117,7 @@ class Configuration(object):
 
     def sections(self):
         """Return a list of section names."""
-        return sorted(set(self.site_parser.sections() + self.parser.sections()))
+        return sorted(set(self.parser.sections() + self.parser.sections()))
 
     def save(self):
         """Write the configuration options to the primary file."""
@@ -131,11 +129,9 @@ class Configuration(object):
         for section in self.sections():
             options = []
             for option in self[section]:
-                default = self.site_parser.has_option(section, option) and \
-                          self.site_parser.get(section, option)
                 current = self.parser.has_option(section, option) and \
                           self.parser.get(section, option)
-                if current is not False and current != default:
+                if current is not False:
                     options.append((option, current))
             if options:
                 sections.append((section, sorted(options)))
@@ -159,13 +155,6 @@ class Configuration(object):
             fileobj.close()
 
     def parse_if_needed(self):
-        # Load global configuration
-        if os.path.isfile(self.site_filename):
-            modtime = os.path.getmtime(self.site_filename)
-            if modtime > self._lastsitemtime:
-                self.site_parser.read(self.site_filename)
-                self._lastsitemtime = modtime
-
         if not self.filename or not os.path.isfile(self.filename):
             return
         modtime = os.path.getmtime(self.filename)
@@ -174,7 +163,7 @@ class Configuration(object):
             self._lastmtime = modtime
 
     def has_site_option(self, section, name):
-        return self.site_parser.has_option(section, name)
+        return self.parser.has_option(section, name)
 
 
 class Section(object):
@@ -190,8 +179,7 @@ class Section(object):
         self.overridden = {}
 
     def __contains__(self, name):
-        return self.config.parser.has_option(self.name, name) or \
-               self.config.site_parser.has_option(self.name, name) 
+        return self.config.parser.has_option(self.name, name) 
 
     def __iter__(self):
         options = []
@@ -199,10 +187,6 @@ class Section(object):
             for option in self.config.parser.options(self.name):
                 options.append(option.lower())
                 yield option
-        if self.config.site_parser.has_section(self.name):
-            for option in self.config.site_parser.options(self.name):
-                if option.lower() not in options:
-                    yield option
 
     def __repr__(self):
         return '<Section [%s]>' % (self.name)
@@ -211,8 +195,6 @@ class Section(object):
         """Return the value of the specified option."""
         if self.config.parser.has_option(self.name, name):
             value = self.config.parser.get(self.name, name)
-        elif self.config.site_parser.has_option(self.name, name):
-            value = self.config.site_parser.get(self.name, name)
         else:
             option = Option.registry.get((self.name, name))
             if option:
@@ -346,26 +328,3 @@ class ListOption(Option):
 
     def accessor(self, section, name, default):
         return section.getlist(name, default, self.sep, self.keep_empty)
-
-
-def default_dir(name):
-    """XXX: to trac specific yet"""
-    try:
-        from seishub import siteconfig
-        return getattr(siteconfig, '__default_%s_dir__' % name)
-    except ImportError:
-        # This is not a regular install with a generated siteconfig.py file,
-        # so try to figure out the directory based on common setups
-        special_dirs = {'conf': 'conf', 'plugins': 'plugins'}
-        dirname = special_dirs.get(name, name)
-
-        # First assume we're being executing directly form the source directory
-        import seishub
-        path = os.path.join(os.path.split(os.path.dirname(seishub.__file__))[0],
-                            dirname)
-        if not os.path.isdir(path):
-            # Not being executed from the source directory, so assume the
-            # default installation prefix
-            path = os.path.join(sys.prefix, 'share', 'seishub', dirname)
-
-        return path
