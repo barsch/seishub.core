@@ -1,6 +1,6 @@
 from StringIO import StringIO
 
-from libxmlwrapper import XmlTreeDoc, XmlSchema
+from seishub.libxmlwrapper import XmlTreeDoc, XmlSchema
 
 class Validator(object):
     def __init__(self,value):

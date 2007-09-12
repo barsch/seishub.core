@@ -19,9 +19,6 @@
 #         Christian Boos <cboos@neuf.fr>
 
 import locale
-import os
-import sys
-from urllib import quote, unquote, urlencode
 
 
 CRLF = '\r\n'
