@@ -2,8 +2,8 @@ from twisted.enterprise import adbapi
 from twisted.internet import reactor
 from twisted.internet.defer import DeferredList
 
-from config import DEFAULT_PREFIX,RESOURCE_TABLE,INDEX_TABLE,METADATA_TABLE, \
-                   METADATA_INDEX_TABLE,URI_TABLE
+from dbconfig import DEFAULT_PREFIX,RESOURCE_TABLE,INDEX_TABLE, \
+                     METADATA_TABLE, METADATA_INDEX_TABLE,URI_TABLE
 from dbspecific import DB_DRIVER,DB_ARGS,CREATES
 
 def _log_errors(results):

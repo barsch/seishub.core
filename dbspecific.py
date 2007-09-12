@@ -1,4 +1,4 @@
-from seishub.config import DEFAULT_PREFIX,RESOURCE_TABLE,URI_TABLE
+from seishub.dbconfig import DEFAULT_PREFIX,RESOURCE_TABLE,URI_TABLE
 
 DB_DRIVER = "pyPgSQL.PgSQL"
 #DB_DRIVER="pgdb"

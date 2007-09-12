@@ -7,7 +7,7 @@ from seishub.xmldb.xmldbms import XmlDbManager
 from seishub.xmldb.xmlresource import XmlResource
 
 from seishub.dbspecific import DB_DRIVER,DB_ARGS
-from seishub.config import DEFAULT_PREFIX,RESOURCE_TABLE,URI_TABLE
+from seishub.dbconfig import DEFAULT_PREFIX,RESOURCE_TABLE,URI_TABLE
 
 TEST_XML="""<?xml version="1.0"?>
 <testml>
