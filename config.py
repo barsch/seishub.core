@@ -16,8 +16,13 @@
 
 from ConfigParser import ConfigParser
 import os
+try:
+    set
+except NameError:
+    from sets import Set as set
 
 from seishub.core import SeishubError
+from seishub.util import sorted
 from seishub.util.text import to_unicode, CRLF
 
 __all__ = ['Configuration', 'Option', 'BoolOption', 'IntOption', 'ListOption',
