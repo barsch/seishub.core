@@ -1,4 +1,4 @@
-from zope.interface import implements
+from seishub.core import implements
 
 from seishub.xmldb.interfaces import IXmlResource
 from seishub.libxmlwrapper import XmlTreeDoc,InvalidXmlDataError

@@ -1,4 +1,4 @@
-from zope.interface import Interface
+from seishub.core import Interface
 
 class IResource(Interface):
     """A basic resource consits at least of an unique uri and optionally

@@ -1,4 +1,4 @@
-from zope.interface import implements
+from seishub.core import implements
 from twisted.enterprise import util as dbutil
 
 from seishub.dbconfig import DEFAULT_PREFIX,RESOURCE_TABLE, \

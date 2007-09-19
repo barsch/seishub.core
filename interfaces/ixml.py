@@ -1,4 +1,5 @@
-from zope.interface import Interface,Attribute
+from seishub.core import Interface 
+# XXX: Attribute
 
 class IXmlSchema(Interface):
     """General xml schema representation"""
@@ -14,11 +15,11 @@ class IXmlDoc(Interface):
         
 class IXmlTreeDoc(IXmlDoc):
     """parses a document into a tree representation"""
-    options=Attribute("""dictionary specifying some options:
-                      'blocking' : True|False : raises an Exception on parser 
-                                                error and stops parser if set 
-                                                to True
-                      """)
+#XXX:    options=Attribute("""dictionary specifying some options:
+#                     'blocking' : True|False : raises an Exception on parser 
+#                                                error and stops parser if set 
+#                                                to True
+#                      """)
     
     def getErrors(self):
         """return error messages, that occured during parsing"""

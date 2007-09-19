@@ -1,4 +1,4 @@
-from zope.interface import Interface
+from seishub.core import Interface
 
 class IXmlResource(Interface):
     """XmlResource is a subclass of Resource providing some special xml 

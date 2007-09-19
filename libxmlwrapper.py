@@ -1,5 +1,5 @@
 import libxml2
-from zope.interface import implements
+from seishub.core import implements
 
 from interfaces.ixml import IXmlSchema,IXmlDoc,IXmlTreeDoc,IXmlSaxDoc
 
