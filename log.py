@@ -1,31 +1,37 @@
+# -*- coding: utf-8 -*-
+
 from twisted.application import service
 from twisted.python import log, logfile
-#
+
+__all__ = ['LogService', 'ErrorLog', 'AccessLog']
+
+
 class LogService(service.Service):
-    def __init__(self, logName, logDir, logType, logRotate=False):
-        self.logName = logName
-        self.logDir = logDir
-        self.maxLogSize = 1000000
-        self.logType = logType
-        self.logRotate = logRotate
+    def __init__(self, log_name, log_dir, log_type, log_rotate=False):
+        self.log_name = log_name
+        self.log_dir = log_dir
+        # TODO: via config
+        self.max_logsize = 1000000
+        self.log_type = log_type
+        self.log_rotate = log_rotate
     
     def startService(self):
         # logfile is a file-like object that supports rotation
-        self.logFile = logfile.LogFile(
-            self.logName, self.logDir, rotateLength=self.maxLogSize)
+        self.log_file = logfile.LogFile(
+            self.log_name, self.log_dir, rotate_length=self.max_logsize)
         # force rotation each time restarted (if enabled)
-        if self.logRotate:
-            self.logFile.rotate()
-        if self.logType == "error":
-            self.log = ErrorLog(self.logFile)
+        if self.log_rotate:
+            self.log_file.rotate()
+        if self.log_type == "error":
+            self.log = ErrorLog(self.log_file)
         else:
-            self.log = AccessLog(self.logFile)
+            self.log = AccessLog(self.log_file)
         self.log.start()
 
     def stopService(self):
         self.log.stop()
-        self.logFile.close()
-        del(self.logFile)
+        self.log_file.close()
+        del(self.log_file)
 
 
 class ErrorLog(log.FileLogObserver):
