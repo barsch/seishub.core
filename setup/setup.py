@@ -4,11 +4,11 @@ from twisted.enterprise import adbapi
 from twisted.internet import reactor
 from twisted.internet.defer import DeferredList
 
+from seishub.dbconfig import DEFAULT_PREFIX,RESOURCE_TABLE,INDEX_TABLE, \
+                            METADATA_TABLE, METADATA_INDEX_TABLE,URI_TABLE
 from seishub.dbspecific import DB_DRIVER,DB_ARGS,CREATES
 
-
 def _log_errors(results):
-    #TODO: Do a real error logging here
     for res in results: 
         if res[0]==False:
             print res[1]
@@ -28,9 +28,7 @@ def _db_transaction(txn,query_list):
         result_list.append(res)
     return result_list
     
-if __name__ == "__main__":
-    #TODO: This setup script is very crappy... just to have something to start with
-        
+if __name__ == "__main__":     
     conn=adbapi.ConnectionPool(DB_DRIVER,**DB_ARGS)
     stop_reactor=lambda _: reactor.stop()
     query_list=CREATES

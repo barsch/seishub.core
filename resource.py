@@ -11,24 +11,24 @@ class Resource(object):
         if uri is not None:
             self.setUri(uri)
         else: 
-            self.uri=None
+            self.__uri=None
         if data is not None:
             self.setData(data)
         else:
-            self.data=None
+            self.__data=None
             
     def getData(self):
-        return self.data
+        return self.__data
     
     def setData(self,newdata):
-        self.data=newdata
+        self.__data=newdata
     
     def getUri(self):
-        return self.uri
+        return self.__uri
     
     def setUri(self,newuri):
         if self._validateUri(newuri):
-            self.uri=newuri
+            self.__uri=newuri
         else:
             raise InvalidUriError
         
@@ -37,7 +37,7 @@ class Resource(object):
         raise NotImplementedError
     
     def _validateUri(self,value):
-        #TODO: do better uri validation here
+        #TODO: uri validation
         if Validator(value).isString() and len(value) > 0:
             return True
         else: 
