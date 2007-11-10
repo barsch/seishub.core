@@ -11,9 +11,10 @@ DB_ARGS = {
     }
 
 CREATES=["CREATE TABLE %s_%s (id serial8 primary key, xml_data text)" % \
-         (DEFAULT_PREFIX,RESOURCE_TABLE),
-         "CREATE TABLE %s_%s (uri text primary key, res_id int8 " + \
-         "references %s_%s(id))" % (DEFAULT_PREFIX,URI_TABLE,DEFAULT_PREFIX,RESOURCE_TABLE),
+         (DEFAULT_PREFIX, RESOURCE_TABLE),
+         ("CREATE TABLE %s_%s (uri text primary key, res_id int8 " + \
+         "references %s_%s(id))") % (DEFAULT_PREFIX,URI_TABLE,DEFAULT_PREFIX,
+                                     RESOURCE_TABLE),
          ]
 
 QUERY_STR_MAP={'res_tab':DEFAULT_PREFIX+'_'+RESOURCE_TABLE,
