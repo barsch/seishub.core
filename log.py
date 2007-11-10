@@ -5,7 +5,6 @@ from twisted.python import log, logfile
 
 __all__ = ['LogService', 'ErrorLog', 'AccessLog']
 
-
 class LogService(service.Service):
     def __init__(self, log_name, log_dir, log_type, log_rotate=False):
         self.log_name = log_name
@@ -18,7 +17,7 @@ class LogService(service.Service):
     def startService(self):
         # logfile is a file-like object that supports rotation
         self.log_file = logfile.LogFile(
-            self.log_name, self.log_dir, rotate_length=self.max_logsize)
+            self.log_name, self.log_dir, rotateLength=self.max_logsize)
         # force rotation each time restarted (if enabled)
         if self.log_rotate:
             self.log_file.rotate()
