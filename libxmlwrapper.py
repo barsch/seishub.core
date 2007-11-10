@@ -1,5 +1,7 @@
+# -*- coding: utf-8 -*-
+
 import libxml2
-from seishub.core import implements
+from zope.interface import implements
 
 from interfaces.ixml import IXmlSchema,IXmlDoc,IXmlTreeDoc,IXmlSaxDoc
 
@@ -29,9 +31,9 @@ class XmlSchema(object):
                                                 xml_doc)
         err_val=xml_doc.getXml_doc().schemaValidateDoc(self.valid_ctxt)
         if (err_val == 0):
-             ret=True
+            ret=True
         else:
-             ret=False
+            ret=False
              
         return ret
     

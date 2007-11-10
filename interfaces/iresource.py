@@ -1,7 +1,10 @@
-from seishub.core import Interface
+# -*- coding: utf-8 -*-
+
+from zope.interface import Interface
+
 
 class IResource(Interface):
-    """A basic resource consits at least of an unique uri and optionally
+    """A basic resource consist at least of an unique uri and optionally of
     any kinds of data
     """
     def getUri(self):

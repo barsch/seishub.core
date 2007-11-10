@@ -1,6 +1,9 @@
+# -*- coding: utf-8 -*-
+
 from twisted.trial.unittest import TestCase
 
 from seishub.validator import XmlSchemaValidator
+
 
 class XmlValidatorTest(TestCase):
     

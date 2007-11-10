@@ -1,4 +1,4 @@
-from StringIO import StringIO
+# -*- coding: utf-8 -*-
 
 from seishub.libxmlwrapper import XmlTreeDoc, XmlSchema
 

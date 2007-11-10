@@ -1,4 +1,6 @@
-from seishub.core import Interface
+# -*- coding: utf-8 -*-
+
+from zope.interface import Interface
 
 class IXmlResource(Interface):
     """XmlResource is a subclass of Resource providing some special xml 

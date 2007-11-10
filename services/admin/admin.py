@@ -1,8 +1,8 @@
-from twisted.application import service, internet
-from twisted.internet import protocol, reactor, defer
-from twisted.protocols import basic
-from twisted.web import resource, server as webserver
+# -*- coding: utf-8 -*-
 
+from twisted.application import service
+from twisted.internet import reactor, defer
+from twisted.web import resource, server as webserver
 from Cheetah.Template import Template
 
 
@@ -20,7 +20,7 @@ class AdminService(resource.Resource):
         args = request.args
         actions = []
         if args.has_key('shutdown'):
-          reactor.stop()
+            reactor.stop()
         
         serviceList = request.args.get('service', [])
         for srv in service.IServiceCollection(self.app):

@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 DEFAULT_PREFIX='default'
 RESOURCE_TABLE='data'
 INDEX_TABLE='idx'

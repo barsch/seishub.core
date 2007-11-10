@@ -1,11 +1,11 @@
+# -*- coding: utf-8 -*-
+
 from twisted.trial.unittest import TestCase
 from twisted.enterprise import adbapi
 
 from seishub.libxmlwrapper import InvalidXmlDataError
-
 from seishub.xmldb.xmldbms import XmlDbManager
 from seishub.xmldb.xmlresource import XmlResource
-
 from seishub.dbspecific import DB_DRIVER,DB_ARGS
 from seishub.dbconfig import DEFAULT_PREFIX,RESOURCE_TABLE,URI_TABLE
 
@@ -20,6 +20,7 @@ TEST_BAD_XML="""<?xml version="1.0"?>
 </testml>
 """
 TEST_URI='localhost/testml/blah3'
+
 
 class XmlResourceTest(TestCase):
     def testXml_data(self):
@@ -58,8 +59,8 @@ class XmlDbManagerTest(TestCase):
                         'uri_tab':DEFAULT_PREFIX+'_'+URI_TABLE,
                         'uri':test_uri}
             query="""SELECT xml_data FROM %(res_tab)s,%(uri_tab)s
-                  WHERE(%(res_tab)s.id=%(uri_tab)s.res_id
-                  AND %(uri_tab)s.uri='%(uri)s')""" % (db_strings)
+                WHERE(%(res_tab)s.id=%(uri_tab)s.res_id
+                AND %(uri_tab)s.uri='%(uri)s')""" % (db_strings)
             d=dbConnection.runQuery(query) \
               .addCallback(_assertResults,assertEquals,test_data)
             return d

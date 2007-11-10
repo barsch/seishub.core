@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from seishub.validator import Validator
 
 class InvalidUriError(Exception):

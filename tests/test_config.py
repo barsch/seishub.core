@@ -14,10 +14,10 @@
 #
 # Author: Christopher Lenz <cmlenz@gmx.de>
 
-from seishub.config import *
+from seishub.config import Configuration, Option, ConfigurationError, \
+                           ConfigParser
 
 import os
-from StringIO import StringIO
 import tempfile
 import time
 import unittest
@@ -27,7 +27,6 @@ class TestConfiguration(Configuration):
     def __init__(self, filename):
         Configuration.__init__(self, filename)
         # insulate us from "real" global seishub.ini
-        from ConfigParser import ConfigParser
         self.site_parser = ConfigParser()
 
 
