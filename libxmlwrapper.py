@@ -2,12 +2,45 @@
 
 import libxml2
 from zope.interface import implements
+from seishub.core import SeishubError
 
 from interfaces.ixml import IXmlSchema,IXmlDoc,IXmlTreeDoc,IXmlSaxDoc
 
-class InvalidXmlDataError(Exception):
+class LibxmlError(SeishubError):
+    """general libxml error"""
+    pass
+
+class InvalidXmlDataError(SeishubError):
     """raised on xml parser errors in blocking mode"""
     pass
+
+class InvalidXPathExpression(SeishubError):
+    pass
+
+class XmlNode(object):
+    """simple wrapper for libxml2.xmlNode"""
+    def __init__(self,node_obj=None):
+        self.setNode_obj(node_obj)
+        
+    def __str__(self):
+        return self.getStrContent()
+            
+    def setNode_obj(self,node_obj):
+        if isinstance(node_obj,libxml2.xmlNode):
+            self._node_obj=node_obj
+        else:
+            self._node_obj=None
+            raise TypeError('setNode_obj: libxml2.xmlNode expected')
+        
+    def getNode_obj(self):
+        return self._node_obj
+        
+    def getStrContent(self):
+        if self._node_obj:
+            return self._node_obj.getContent()
+        else:
+            return None
+        
 
 class XmlSchema(object):
     """IXmlSchema implementation which makes use of libxml2"""
@@ -31,9 +64,9 @@ class XmlSchema(object):
                                                 xml_doc)
         err_val=xml_doc.getXml_doc().schemaValidateDoc(self.valid_ctxt)
         if (err_val == 0):
-            ret=True
+             ret=True
         else:
-            ret=False
+             ret=False
              
         return ret
     
@@ -42,49 +75,77 @@ class XmlSchema(object):
         
 class XmlDoc(object):
     """IXmlDoc implementation which makes use of libxml2"""
-    
     implements(IXmlDoc)
     
-    def __init__(self,xml_doc):
-        self.xml_doc=xml_doc
+    def __init__(self,xml_doc=None):
+        if xml_doc:
+            self._xml_doc=xml_doc
+            
+    def __del__(self):
+        if hasattr(self,'_xml_doc'):
+            if isinstance(self._xml_doc,libxml2.xmlDoc):
+                self._xml_doc.freeDoc()
+            else:
+                del self._xml_doc
     
     def getXml_doc(self):
-        return self.xml_doc
-
+        if hasattr(self,'_xml_doc'):
+            return self._xml_doc
+        else:
+            return None
 
 class XmlTreeDoc(XmlDoc):
     """This class parses a document using the libxml2 push parser""" 
     implements(IXmlTreeDoc)
     
-    def __init__(self,xml_data,resource_name="",blocking=False):
+    def __init__(self,xml_data="",resource_name="",blocking=False):
+        XmlDoc.__init__(self)
         self.errors=list()
         self.options={'blocking':blocking,}
         if xml_data is not None:
-            self.xml_data=xml_data
+            self._xml_data=xml_data
         else:
-            raise InvalidXmlDataError("no xml data was given: %s" % xml_data)
-        self.resource_name=resource_name
+            raise InvalidXmlDataError("No xml data was given: %s" % xml_data)
+        self._resource_name=resource_name
         self._parse()
         
-    def __del__(self):
-        if hasattr(self,'xml_doc'):
-            if isinstance(self.xml_doc,libxml2.xmlDoc):
-                self.xml_doc.freeDoc()
-        
     def _parse(self):
-        parser_ctxt = libxml2.createPushParser(None, "", 0, self.resource_name)
+        parser_ctxt = libxml2.createPushParser(None, "", 0, 
+                                               self._resource_name)
         parser_ctxt.setErrorHandler(self._handleParserError,None)
-        parser_ctxt.parseChunk(self.xml_data,len(self.xml_data),1)
+        parser_ctxt.parseChunk(self._xml_data,len(self._xml_data),1)
         if self.options['blocking'] and len(self.errors)>0:
             raise InvalidXmlDataError(self.errors)
-        self.xml_doc=parser_ctxt.doc()
+        self._xml_doc=parser_ctxt.doc()
     
     def getErrors(self):
         return self.errors
         
     def _handleParserError(self,arg,msg,severity,reserved):
         self.errors.append({'msg':msg,'severity':severity})
+
+    def evalXPath(self,expr):
+        if not isinstance(self._xml_doc,libxml2.xmlDoc):
+            raise LibxmlError('_xml_doc: libxml2.xmlDoc instance expected')
+            return None
         
+        if not isinstance(expr,basestring):
+            raise TypeError('String expected: expr')
+            return None
+        
+        #TODO: find a way to register an error handler for xpathContext, to
+        #avoid output to stderr
+        xpath_ctxt=self._xml_doc.xpathNewContext()
+        
+        try:
+            res=xpath_ctxt.xpathEval(expr)
+        except libxml2.xpathError:
+            raise InvalidXPathExpression(expr)
+        if res:
+            nodes=[XmlNode(node) for node in res]
+        
+        xpath_ctxt.xpathFreeContext()
+        return nodes
         
 class XmlSaxDoc(XmlDoc):
     """This class makes use of the libxml2 sax parser"""
