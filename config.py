@@ -26,7 +26,7 @@ from seishub.util import sorted
 from seishub.util.text import to_unicode, CRLF
 
 __all__ = ['Configuration', 'Option', 'BoolOption', 'IntOption', 'ListOption',
-           'ConfigurationError',]
+           'ConfigurationError', 'default_dir']
 
 _TRUE_VALUES = ('yes', 'true', 'on', '1', 1, True)
 
@@ -44,7 +44,7 @@ class Configuration(object):
     """
     def __init__(self, filename='seishub.ini'):
         self._sections = {}
-        self.filename = os.path.join('conf', filename)
+        self.filename = os.path.join(default_dir('conf'), filename)
         self.parser = ConfigParser()
         self._lastmtime = 0
         self._lastsitemtime = 0
@@ -333,3 +333,24 @@ class ListOption(Option):
 
     def accessor(self, section, name, default):
         return section.getlist(name, default, self.sep, self.keep_empty)
+
+
+def default_dir(name):
+    try:
+        from seishub import siteconfig
+        return getattr(siteconfig, '__default_%s_dir__' % name)
+    except ImportError:
+        # This is not a regular install with a generated siteconfig.py file,
+        # so try to figure out the directory based on common setups
+        
+        # First assume we're being executing directly form the source directory
+        import seishub
+        path = os.path.join(os.path.split(os.path.dirname(seishub.__file__))[0],
+                            name)
+        if not os.path.isdir(path):
+            # Not being executed from the source directory, so assume the
+            # default installation prefix
+            import sys
+            path = os.path.join(sys.prefix, 'share', 'seishub', name)
+
+        return path
