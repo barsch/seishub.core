@@ -1,6 +1,11 @@
 # -*- coding: utf-8 -*-
 
-from seishub.dbconfig import DEFAULT_PREFIX,RESOURCE_TABLE,URI_TABLE
+DEFAULT_PREFIX='default'
+RESOURCE_TABLE='data'
+INDEX_TABLE='idx'
+METADATA_TABLE='meta'
+METADATA_INDEX_TABLE='meta_idx'
+URI_TABLE='uri_map'
 
 DB_DRIVER = "pyPgSQL.PgSQL"
 #DB_DRIVER="pgdb"
@@ -31,3 +36,10 @@ GET_RESOURCE_BY_URI_QUERY="""SELECT xml_data FROM %(res_tab)s,%(uri_tab)s
     WHERE(%(res_tab)s.id=%(uri_tab)s.res_id
     AND %(uri_tab)s.uri='%(uri)s')"""
 
+
+
+
+# default components
+DEFAULT_COMPONENTS = ('seishub.about', 
+                      'seishub.web.admin', 
+                      'seishub.web.rest',)

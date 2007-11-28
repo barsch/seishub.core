@@ -1,0 +1,150 @@
+img { border:0; }
+
+body {
+  color: black;
+  background-color: white;
+  font-family: verdana, helvetica, arial, sans-serif;
+  font-size: 71%;  /* Enables font size scaling in MSIE */
+  margin: 0;
+  padding: 0;
+}
+
+html > body {
+  font-size: 8.5pt;
+}
+
+.doNotDisplay {
+  display: none;
+}
+
+.headerTitle {
+  color: rgb(175,175,175);
+  background-color: transparent;
+  font-family: garamond, "times new roman", times, roman, serif;
+  font-size: 350%;
+  margin: 0 0 0 5mm;
+  padding: 15px 0 0 0;
+}
+
+.subHeader {
+  margin: 0;
+  padding: 0.75em 1ex 0.5ex 1ex;
+  border-bottom: 10px solid rgb(70,130,180);  /* 'steelblue' not recognised here by Opera */
+}
+
+.subHeader .navigation {
+  list-style-type: none;
+  list-style-position: outside;
+  margin: 0;
+  padding: 0;
+}
+
+.subHeader .navigation li {
+  line-height: 1.75em;
+  margin: 0;
+  padding: 0;
+  display: inline;
+}
+
+.subHeader a {
+  color: rgb(175,175,175);
+  background-color: transparent;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.subHeader a:hover {
+  color: steelblue;
+  background-color: transparent;
+  text-decoration: none;
+}
+
+.subHeader .navigation .tab {
+  color: rgb(175,175,175);
+  background-color: rgb(248,248,248);
+  text-decoration: none;
+  font-weight: bold;
+  margin: 0;
+  padding: 0.5ex 1.25em 1ex 1.25em;
+  border-top: 1px solid rgb(231,231,231);
+  border-right: 1px solid rgb(97,97,97);
+  border-left: 1px solid rgb(231,231,231);
+}
+
+.subHeader .navigation a.tab:hover {
+  color: steelblue;
+  background-color: rgb(248,248,248);
+  text-decoration: none;
+  padding-bottom: 0.8ex;
+  border-top: 1px solid rgb(97,97,97);
+  border-right: 1px solid rgb(231,231,231);
+  border-left: 1px solid rgb(97,97,97);
+  position: relative;
+  left: 1px;
+  top: 1px;
+}
+
+.subHeader .navigation .highlighted {
+  color: white;
+  background-color: steelblue;
+  border-top-color: steelblue;
+  border-right-color: steelblue;
+  border-left-color: steelblue;
+}
+
+#copyright {
+    position:absolute;
+    right:5px;
+    top:5px;
+}
+
+#main {
+  text-align: justify;
+  line-height: 1.5em;
+  margin: 0 auto;
+  padding: 20px 0 0 0 ;
+  width:760px;
+}
+
+#main p {
+  text-indent: 1em;
+  margin: 0 0 1.5em 0;
+  padding: 0;
+}
+
+#main a, #copyright a {
+  color: gray;
+  background-color: transparent;
+  text-decoration: underline;
+}
+
+#main a:hover, #copyright a:hover {
+  color: steelblue;
+  background-color: transparent;
+  text-decoration: none;
+}
+
+#main h1 {
+  font-family: "trebuchet ms", verdana, helvetica, arial, sans-serif;
+  font-size: 145.5%;
+  font-weight: bold;
+  margin: 0 0 1.05em 0;
+  padding: 0;
+}
+
+#main h2 {
+  font-family: "trebuchet ms", verdana, helvetica, arial, sans-serif;
+  font-size: 135.5%;
+  font-weight: bold;
+  margin: 0 0 1.05em 0;
+  padding: 0;
+}
+
+#main h6 {
+  font-family: "trebuchet ms", verdana, helvetica, arial, sans-serif;
+  font-size: 135.5%;
+  font-weight: bold;
+  margin:3px 0px;
+  padding: 0;
+}
+

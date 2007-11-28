@@ -2,13 +2,20 @@
 
 from twisted.application import service
 from twisted.internet import reactor, defer
-from twisted.web import resource, server as webserver
+from twisted.web import static, resource, server as webserver
 from Cheetah.Template import Template
 
 
+
 class AdminService(resource.Resource):
-    def __init__(self, app):
-        self.app = app
+    def __init__(self, service):
+        resource.Resource.__init__(self)
+        self.app = service
+        # need to do this for resources at the root of the site
+        self.putChild("", self)
+        # add static files
+        self.putChild('css', static.File("htdocs/css/"))
+        self.putChild('favicon.ico', static.File("htdocs/favicon.ico"))
 
     def render_GET(self, request):
         output = Template(file="seishub/services/admin/tmpl/index.tmpl")

@@ -4,9 +4,7 @@ from twisted.enterprise import adbapi
 from twisted.internet import reactor
 from twisted.internet.defer import DeferredList
 
-from seishub.dbconfig import DEFAULT_PREFIX,RESOURCE_TABLE,INDEX_TABLE, \
-                            METADATA_TABLE, METADATA_INDEX_TABLE,URI_TABLE
-from seishub.dbspecific import DB_DRIVER,DB_ARGS,CREATES
+from seishub.defaults import DB_DRIVER,DB_ARGS,CREATES
 
 def _log_errors(results):
     for res in results: 

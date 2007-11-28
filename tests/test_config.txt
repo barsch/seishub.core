@@ -1,5 +1,6 @@
+================================
 Accessing the configuration file
---------------------------------
+================================
 
 Get handler for recent configuration file:
 

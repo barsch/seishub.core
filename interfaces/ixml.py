@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from zope.interface import Interface
+from zope.interface import Interface, Attribute
 
 class IXmlNode(Interface):
     """Basic xml node object"""
@@ -20,11 +20,11 @@ class IXmlDoc(Interface):
         
 class IXmlTreeDoc(IXmlDoc):
     """parses a document into a tree representation"""
-#XXX:    options=Attribute("""dictionary specifying some options:
-#                     'blocking' : True|False : raises an Exception on parser 
-#                                                error and stops parser if set 
-#                                                to True
-#                      """)
+    options=Attribute("""dictionary specifying some options:
+                     'blocking' : True|False : raises an Exception on parser 
+                                               error and stops parser if set 
+                                               to True
+                      """)
     
     def getErrors():
         """return error messages, that occured during parsing"""
