@@ -7,9 +7,9 @@ from seishub.core import SeishubError
 
 from seishub.xmldb.interfaces import IXmlCatalog
 
-from seishub.dbspecific import DEFAULT_PREFIX, INDEX_DEF_TABLE
+from seishub.defaults import DEFAULT_PREFIX, INDEX_DEF_TABLE
 
-from seishub.dbspecific import ADD_INDEX_QUERY, DELETE_INDEX_QUERY, \
+from seishub.defaults import ADD_INDEX_QUERY, DELETE_INDEX_QUERY, \
                                GET_NEXT_ID_QUERY
 #                       REGISTER_URI_QUERY, REMOVE_URI_QUERY, \
 #                       QUERY_STR_MAP, GET_RESOURCE_BY_URI_QUERY
