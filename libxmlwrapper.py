@@ -143,6 +143,8 @@ class XmlTreeDoc(XmlDoc):
             raise InvalidXPathExpression(expr)
         if res:
             nodes=[XmlNode(node) for node in res]
+        else:
+            nodes=list()
         
         xpath_ctxt.xpathFreeContext()
         return nodes

@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from zope.interface.exceptions import DoesNotImplement
 
 from twisted.trial.unittest import TestCase
@@ -17,7 +19,10 @@ RAW_XML1="""<station rel_uri="bern">
 
 class XmlIndexTest(TestCase):
     def testEval(self):
-        test_index=XmlIndex()
+        test_index=XmlIndex(#xpath_expr="/station[./chan_code]"
+                            key_path="/station",
+                            value_path="lon"
+                            )
         empty_resource=XmlResource()
         test_resource=XmlResource(uri='/stations/bern',
                                   xml_data=RAW_XML1)
@@ -25,7 +30,7 @@ class XmlIndexTest(TestCase):
         class Foo(object):
             pass
         
-        # pass Foo() object:
+        # pass a Foo():
         self.assertRaises(DoesNotImplement,
                           test_index.eval,
                           Foo())
@@ -34,7 +39,5 @@ class XmlIndexTest(TestCase):
                           test_index.eval,
                           empty_resource)
         
-        print test_index.eval(test_resource)
-        
-        
+        self.assertEquals('12.51200',test_index.eval(test_resource).getValue())
         
