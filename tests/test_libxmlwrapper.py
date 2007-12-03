@@ -30,7 +30,7 @@ class XmlSchemaTest(TestCase):
         schema=XmlSchema(self.test_schema)
         self.assertEquals(schema.validate(validDoc),True)
         self.assertEquals(schema.validate(invalidDoc),False)
-        print invalidDoc.getErrors()
+        #print invalidDoc.getErrors()
         
 class XmlTreeTest(TestCase):
     def testEvalXPath(self):

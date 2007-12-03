@@ -35,7 +35,7 @@ class IResourceStorage(Interface):
     #    """Query the storage"""
         
 class IXmlIndex(Interface):
-    """Xml index base class, without specified data type
+    """Xml index base class
     
     __init__ expects a pair of key_path / value_path
     or a full xpath expression instead"""
@@ -52,13 +52,13 @@ class IXmlIndex(Interface):
     def getValue_path():
         """@return: my value path"""
         
-    def getValue():
-        """@return: result after applying index to a given resource"""
+    def getType():
+        """@return: data type of the index key"""
     
     def eval(xml_resource):
         """Evaluate this index on a given XmlResource
         @param xml_resource: xmldb.xmlresource.XmlResource object
-        @return: self on success, None else"""
+        @return: list with key, value pairs on success, None else"""
         
 class IXmlCatalog(Interface):
     """Catalog providing methods for indexing, managing and searching resources
@@ -70,8 +70,11 @@ class IXmlCatalog(Interface):
         """@param xml_index: register given XmlIndex
         @return: unique index id"""
         
-    def removeIndex(id):
-        """@param id: id of xml index to be removed"""
+    def removeIndex(id,key_path,value_path):
+        """Remove index with given id or key path, value path pair
+        @param id: id
+        @param key_path key path:
+        @param value_path: value path"""
         
     def updateIndex(xml_index,id):
         """@param xml_index: new XmlIndex instance

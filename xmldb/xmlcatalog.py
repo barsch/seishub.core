@@ -1,19 +1,19 @@
 # -*- coding: utf-8 -*-
-#from seishub.core import implements
 from zope.interface import implements
 from zope.interface.exceptions import DoesNotImplement
 
+from twisted.enterprise import util as dbutil
+
 from seishub.core import SeishubError
+from seishub.xmldb.interfaces import IXmlCatalog, IXmlIndex
 
-from seishub.xmldb.interfaces import IXmlCatalog
-
+from seishub.defaults import OperationalError
 from seishub.defaults import DEFAULT_PREFIX, INDEX_DEF_TABLE
+from seishub.defaults import ADD_INDEX_QUERY, DELETE_INDEX_BY_ID_QUERY, \
+                             GET_NEXT_ID_QUERY, DELETE_INDEX_BY_KEY_QUERY
 
-from seishub.defaults import ADD_INDEX_QUERY, DELETE_INDEX_QUERY, \
-                               GET_NEXT_ID_QUERY
-#                       REGISTER_URI_QUERY, REMOVE_URI_QUERY, \
-#                       QUERY_STR_MAP, GET_RESOURCE_BY_URI_QUERY
-
+class XmlCatalogError(SeishubError):
+    pass
 
 class XmlCatalog(object):
     implements(IXmlCatalog)
@@ -24,6 +24,12 @@ class XmlCatalog(object):
             self._db=None
         else:
             self._db=adbapi_connection
+            
+    def __handleErrors(self,error):
+        if error.check(OperationalError):
+            raise XmlCatalogError(error.getErrorMessage())
+        else:
+            error.raiseException()
         
     def registerIndex(self,xml_index):
         def _addIndexTxn(txn):
@@ -33,16 +39,53 @@ class XmlCatalog(object):
             txn.execute(get_next_id_query)
             next_id=txn.fetchall()[0][0]
             # insert into INDEX_DEF_TABLE:
-            add_res_query=ADD_INDEX_QUERY % (DEFAULT_PREFIX,INDEX_TABLE,
-                                             next_id,
-                                             dbutil.quote(xml_resource.getData(),
-                                                          "text"))
-            txn.execute(add_res_query)
+            add_query=ADD_INDEX_QUERY % \
+                      {'prefix' : DEFAULT_PREFIX,
+                       'table' : INDEX_DEF_TABLE,
+                       'id' : next_id,
+                       'key_path' : dbutil.quote(xml_index.getKey_path(),
+                                                 "text"),
+                       'value_path' : dbutil.quote(xml_index.getValue_path(),
+                                                   "text"),
+                       'data_type': dbutil.quote(xml_index.getType(), "text"),
+                       }
+            txn.execute(add_query)
             return next_id
+                
+        if not IXmlIndex.providedBy(xml_index):
+            raise DoesNotImplement(IXmlIndex)
+        else:
+            d=self._db.runInteraction(_addIndexTxn)
+            d.addErrback(self.__handleErrors)
         
-        d=self.db.runInteraction(_addIndexTxn)
         return d
     
-    
+    def removeIndex(self,id=None,key_path=None,value_path=None):
+        if not isinstance(key_path,basestring) \
+           and not isinstance(value_path,basestring):
+            try:
+                id=int(id)
+            except ValueError:
+                raise XmlCatalogError("No id or key_path, value_path given.")
+                query=None
+            else:
+                query=DELETE_INDEX_BY_ID_QUERY
+        else:
+            query=DELETE_INDEX_BY_KEY_QUERY
+
+        if query:
+            str_map={'prefix' : DEFAULT_PREFIX,
+                     'table' : INDEX_DEF_TABLE,
+                     'id' : id,
+                     'key_path' : dbutil.quote(key_path, "text"),
+                     'value_path' : dbutil.quote(value_path,"text"),
+                     }
+            query%=str_map
+            d=self._db.runOperation(query)
+            d.addErrback(self.__handleErrors)
+        else:
+            d=None
+            
+        return d
         
         

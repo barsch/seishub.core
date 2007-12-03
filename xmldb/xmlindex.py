@@ -8,13 +8,17 @@ from seishub.xmldb.interfaces import IXmlIndex, IXmlResource
 
 __all__=['XmlIndex']
 
+TEXT_INDEX="text"
+
 class XmlIndexError(SeishubError):
     pass
 
 class XmlIndex(object):
     implements(IXmlIndex)
     
-    def __init__(self,value_path="",key_path="",xpath_expr=""):
+    def __init__(self,value_path="",key_path="",xpath_expr="", type=TEXT_INDEX):
+        # do not use 'xpath_expr' argument, not fully implemented till now!
+        # use value_path and key_path instead
         if not ((value_path and key_path) or xpath_expr):
             raise XmlIndexError("No key given")
         if xpath_expr:
@@ -22,6 +26,13 @@ class XmlIndex(object):
         else:
             self.setValue_path(value_path)
             self.setKey_path(key_path)
+        
+        if isinstance(type,basestring):
+            self._type=type
+        else:
+            raise TypeError("type: basestring expected")
+            self._type=""
+            
         self._value=None
         
     def setValue_path(self,path):
@@ -50,12 +61,15 @@ class XmlIndex(object):
             return self._xpath_expr
         else:
             return None
+        
+    def getType(self):
+        return self._type
     
     def getValue(self):
         return self._value
     
     def _createXPath(self):
-        return self.getKey_path() + '/' + self.getValue_path()
+        return self.getValue_path() + '/' + self.getKey_path()
     
     def eval(self,xml_resource):
         if not IXmlResource.providedBy(xml_resource):
@@ -72,8 +86,15 @@ class XmlIndex(object):
         if not xpr:
             xpr=self._createXPath()
         nodes = xml_doc.evalXPath(xpr)
-        if len(nodes) == 1:
-            self._value=nodes[0].getStrContent()
-        return self
+        
+        node_size=len(nodes)
+        if node_size == 0:
+            res=None
+        else:
+            idx_value=xml_resource.getUri()
+            res=[{'key':node.getStrContent(),
+                  'value':idx_value} for node in nodes]
+        
+        return res
     
     
