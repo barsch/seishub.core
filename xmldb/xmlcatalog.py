@@ -88,4 +88,3 @@ class XmlCatalog(object):
             
         return d
         
-        

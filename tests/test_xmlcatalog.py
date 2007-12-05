@@ -5,7 +5,6 @@ from zope.interface.exceptions import DoesNotImplement
 from twisted.trial.unittest import TestCase
 from twisted.enterprise import adbapi
 from twisted.enterprise import util as dbutil
-from twisted.python.failure import Failure
 
 from seishub.xmldb.xmlcatalog import XmlCatalog
 from seishub.xmldb.xmlcatalog import XmlCatalogError

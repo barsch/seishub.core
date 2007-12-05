@@ -61,14 +61,36 @@ class IXmlIndex(Interface):
         @return: list with key, value pairs on success, None else"""
         
 class IXmlCatalog(Interface):
-    """Catalog providing methods for indexing, managing and searching resources
+    """Catalog providing methods for xml resource indexing and searching
+    
+    Register an index:
+    >>> from twisted.enterprise import adbapi
+    >>> from seishub.xmldb.xmlcatalog import XmlCatalog
+    >>> from seishub.xmldb.xmlindex import XmlIndex
+    >>> from seishub.defaults import DB_DRIVER,DB_ARGS
+    >>> dbConnection=adbapi.ConnectionPool(DB_DRIVER,**DB_ARGS)
+    >>> index=XmlIndex(key_path="blah/blah",value_path="/station")
+    >>> catalog=XmlCatalog(adbapi_connection=dbConnection)
+    >>> d=catalog.registerIndex(index)
+    
+    Remove index created above:
+    ...
+    
+    Run reactor:
+    >>> from twisted.internet import reactor 
+    >>> d=d.addCallback(lambda o: reactor.stop())
+    >>> reactor.run()
     """
+    
     def init(adbapi_connection):
         """@param adbapi_connection: an adbapi conform db connector"""
     
     def registerIndex(xml_index):
         """@param xml_index: register given XmlIndex
-        @return: unique index id"""
+        @return: unique index id
+        
+        
+        """
         
     def removeIndex(id,key_path,value_path):
         """Remove index with given id or key path, value path pair
@@ -80,9 +102,33 @@ class IXmlCatalog(Interface):
         """@param xml_index: new XmlIndex instance
         @param id: id of index to be updated"""
         
-    def getIndex(id):
-        """@return: XmlIndex with given id"""
+    def getIndex(id,key_path,value_path):
+        """@return: XmlIndex with given id or key_path,value_path"""
+        
+    def indexResource(resource,index_id):
+        """Index a resource at the first time.
+        
+        @param resource: IXmlResource to be indexed
+        @param index_id: id of index to be applied
+        """
+        
+    def reindexResources(index_id,resource_storage):
+        """Reindex the given index. 
+        Which means all resources the index applies to (determined by 
+        value_path) are read from the given storage and reevaluated.
+        Formerly indexed data is beeing deleted thereby.
+        
+        @param index_id: id of index beeing reindexed
+        @param resource_storage: IResourceStorage providing access to resources
+        """
         
     def query(query,index=None):
         """Drop a query on the catalog"""
+        
+def _test():
+    import doctest
+    doctest.testmod()
+
+if __name__ == "__main__":
+    _test()
         
