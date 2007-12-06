@@ -5,12 +5,14 @@ from zope.interface.exceptions import DoesNotImplement
 from twisted.enterprise import util as dbutil
 
 from seishub.core import SeishubError
-from seishub.xmldb.interfaces import IXmlCatalog, IXmlIndex
+from seishub.xmldb.interfaces import IXmlCatalog, IXmlIndex, IXmlResource
+from seishub.xmldb.xmlindex import XmlIndex
 
 from seishub.defaults import OperationalError
 from seishub.defaults import DEFAULT_PREFIX, INDEX_DEF_TABLE
 from seishub.defaults import ADD_INDEX_QUERY, DELETE_INDEX_BY_ID_QUERY, \
-                             GET_NEXT_ID_QUERY, DELETE_INDEX_BY_KEY_QUERY
+                             GET_NEXT_ID_QUERY, DELETE_INDEX_BY_KEY_QUERY, \
+                             GET_INDEX_BY_ID_QUERY, GET_INDEX_BY_KEY_QUERY
 
 class XmlCatalogError(SeishubError):
     pass
@@ -87,4 +89,58 @@ class XmlCatalog(object):
             d=None
             
         return d
+    
+    def getIndex(self,id=None,key_path=None,value_path=None):
+        # select the proper query string:
+        if not isinstance(key_path,basestring) \
+           and not isinstance(value_path,basestring):
+            try:
+                id=int(id)
+            except ValueError:
+                raise XmlCatalogError("No id or key_path, value_path given.")
+                query=None
+            else:
+                query=GET_INDEX_BY_ID_QUERY
+        else:
+            query=GET_INDEX_BY_KEY_QUERY
+        
+        # callback returning an XmlIndex on success:
+        def return_index(res):
+            #TODO: Find a way to clearly identify the entries in the result 
+            #list with the table columns
+            if len(res) == 1 and len(res[0]) == 4:
+                index=XmlIndex(key_path = res[0][1],
+                               value_path = res[0][2],
+                               type = res[0][3])
+            else:
+                raise XmlCatalogError("Unexpected result set length.")
+                index=None
+            
+            return index
+        
+        # perform query:
+        if query:
+            str_map={'prefix' : DEFAULT_PREFIX,
+                     'table' : INDEX_DEF_TABLE,
+                     'id' : id,
+                     'key_path' : dbutil.quote(key_path, "text"),
+                     'value_path' : dbutil.quote(value_path,"text"),
+                     }
+            query%=str_map
+            d=self._db.runQuery(query)
+            d.addErrback(self.__handleErrors)
+            d.addCallback(return_index)
+        else:
+            d=None
+            
+        return d
+    
+    def indexResource(self,resource,index_id):
+        if not IXmlResource.providedBy(resource):
+            raise DoesNotImplement(IXmlResource)
+            return None
+        
+        
+        
+        
         

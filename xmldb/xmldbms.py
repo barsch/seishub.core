@@ -10,40 +10,54 @@ from seishub.defaults import ADD_RESOURCE_QUERY, DELETE_RESOURCE_QUERY, \
                              REGISTER_URI_QUERY, REMOVE_URI_QUERY, \
                              GET_NEXT_ID_QUERY, GET_ID_BY_URI_QUERY, \
                              QUERY_STR_MAP, GET_RESOURCE_BY_URI_QUERY
+from seishub.core import SeishubError
                        
-from seishub.xmldb.interfaces import IXmlStorageManager
+from seishub.xmldb.interfaces import IResourceStorage, IXmlIndex
 from seishub.xmldb.xmlresource import XmlResource
 
 __all__=['XMLDBManager']
 
-class DbError(Exception):
+class DbError(SeishubError):
     pass
 
-class UnknownUriError(Exception):
+class UnknownUriError(SeishubError):
+    pass
+
+class XmlDbManagerError(SeishubError):
     pass
 
 class XmlDbManager(object):
     """XmlResource layer, connects XmlResources to relational db storage"""
-    implements(IXmlStorageManager)
+    implements(IResourceStorage)
     
     def __init__(self,adbapi_connection):
-        self.db=adbapi_connection
+        if not hasattr(adbapi_connection,'runInteraction'):
+            raise TypeError("adbapi connector expected!")
+            self.db=None
+        else:
+            self.db=adbapi_connection
         
     def addResource(self,xml_resource):
         """Add a new resource to the storage
         
         return: A Deferred which will fire a Failure on error"""
-        
         def _addResourceTxn(txn):
             # get next unique id:
-            get_next_id_query=GET_NEXT_ID_QUERY % (DEFAULT_PREFIX,RESOURCE_TABLE)
+            get_next_id_query=GET_NEXT_ID_QUERY % (DEFAULT_PREFIX,
+                                                   RESOURCE_TABLE)
             txn.execute(get_next_id_query)
             next_id=txn.fetchall()[0][0]
             # insert into RESOURCE_TABLE:
-            add_res_query=ADD_RESOURCE_QUERY % (DEFAULT_PREFIX,RESOURCE_TABLE,next_id,dbutil.quote(xml_resource.getData(),"text"))
+            add_res_query=ADD_RESOURCE_QUERY % (DEFAULT_PREFIX,RESOURCE_TABLE,
+                                                next_id,
+                                                dbutil.quote(xml_resource.getData(),
+                                                             "text"))
             txn.execute(add_res_query)
             # register uri
-            txn.execute(REGISTER_URI_QUERY % (DEFAULT_PREFIX,URI_TABLE,next_id,dbutil.quote(xml_resource.getUri(),"text")))
+            txn.execute(REGISTER_URI_QUERY % (DEFAULT_PREFIX,URI_TABLE,
+                                              next_id,
+                                              dbutil.quote(xml_resource.getUri(),
+                                                           "text")))
             return next_id
         
         # perform this as a transaction to avoid a race condition between two 
@@ -94,4 +108,6 @@ class XmlDbManager(object):
         d=self.db.runInteraction(_delResourceTxn)
         return d
         
-
+        
+        
+        

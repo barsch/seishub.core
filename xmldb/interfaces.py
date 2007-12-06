@@ -87,7 +87,7 @@ class IXmlCatalog(Interface):
     
     def registerIndex(xml_index):
         """@param xml_index: register given XmlIndex
-        @return: unique index id
+        @return: deferred which will fire the unique index id on success
         
         
         """
@@ -96,14 +96,15 @@ class IXmlCatalog(Interface):
         """Remove index with given id or key path, value path pair
         @param id: id
         @param key_path key path:
-        @param value_path: value path"""
+        @param value_path: value path
+        @return: Deferred"""
         
     def updateIndex(xml_index,id):
         """@param xml_index: new XmlIndex instance
         @param id: id of index to be updated"""
         
     def getIndex(id,key_path,value_path):
-        """@return: XmlIndex with given id or key_path,value_path"""
+        """@return: Deferred which will return a XmlIndex on success"""
         
     def indexResource(resource,index_id):
         """Index a resource at the first time.

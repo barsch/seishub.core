@@ -21,7 +21,4 @@ class IResource(Interface):
     def getData(self):
         """retrieve the resource's data"""
         
-    def store(self,storage):
-        """write resource to a given storage (which implements IStorage)"""
-        
     

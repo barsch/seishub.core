@@ -50,8 +50,9 @@ ADD_INDEX_QUERY="INSERT INTO %(prefix)s_%(table)s (id,key_path,value_path,data_t
 DELETE_INDEX_BY_KEY_QUERY="DELETE FROM %(prefix)s_%(table)s WHERE " + \
                 "(value_path=%(value_path)s AND key_path=%(key_path)s)"
 DELETE_INDEX_BY_ID_QUERY="DELETE FROM %(prefix)s_%(table)s WHERE (id=%(id)s)"
-GET_INDEX_BY_ID_QUERY=""
-GET_INDEX_BY_KEY_QUERY="SELECT id, data_type FROM %(prefix)s_%(table)s " + \
+GET_INDEX_BY_ID_QUERY="SELECT id,key_path, value_path,data_type FROM %(prefix)s_%(table)s " + \
+                      "WHERE (id=%(id)s)"
+GET_INDEX_BY_KEY_QUERY="SELECT id,key_path,value_path, data_type FROM %(prefix)s_%(table)s " + \
                 "WHERE (key_path=%(key_path)s AND value_path=%(value_path)s)"
 GET_NEXT_ID_QUERY="""SELECT nextval('%s_%s_id_seq')"""
 GET_ID_BY_URI_QUERY="""SELECT res_id FROM %(uri_tab)s WHERE (uri='%(uri)s')"""

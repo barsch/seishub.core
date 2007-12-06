@@ -2,7 +2,7 @@
 
 from zope.interface.exceptions import DoesNotImplement
 
-from twisted.trial.unittest import TestCase
+from twisted.trial.unittest import TestCase, FailTest
 from twisted.enterprise import adbapi
 from twisted.enterprise import util as dbutil
 
@@ -16,10 +16,27 @@ from seishub.defaults import DB_DRIVER,DB_ARGS, INDEX_DEF_TABLE, DEFAULT_PREFIX
 class XmlCatalogTest(TestCase):
     def setUp(self):
         self._dbConnection=adbapi.ConnectionPool(DB_DRIVER,**DB_ARGS)
+        self._last_id=0
+        self._test_kp="blah/halb"
+        self._test_vp="/blahres"
+        
+        
+    def tearDown(self):
+        # make sure created indexes are removed in the end, 
+        # even if not all tests pass:
+        catalog=XmlCatalog(adbapi_connection=self._dbConnection)
+        d=catalog.removeIndex(key_path=self._test_kp,
+                            value_path=self._test_vp)
+        return d
+    
+    def _assertClassEquals(self,first,second,msg=None):
+        if not (first.__class__==second.__class__):
+            raise FailTest(msg or '%r != %r' % (first, second))
+        return first
     
     def testRegisterIndex(self):
-        test_kp="lon"
-        test_vp="/station"
+        test_kp=self._test_kp
+        test_vp=self._test_vp
         
         def _checkResults(obj):
             str_map={'prefix':DEFAULT_PREFIX,
@@ -64,17 +81,48 @@ class XmlCatalogTest(TestCase):
         return d
     
     def testRemoveIndex(self):
-        # first register an index to be removed
+        # first register an index to be removed:
         catalog=XmlCatalog(adbapi_connection=self._dbConnection)
-        test_index=XmlIndex(key_path="lat",
-                            value_path="/station"
+        test_index=XmlIndex(key_path=self._test_kp,
+                            value_path=self._test_vp
                             )
         d=catalog.registerIndex(test_index)
         
         # remove after registration has finished:
-        d.addCallback(lambda m: catalog.removeIndex(key_path="lat",
-                                                    value_path="/station"))
+        d.addCallback(lambda m: catalog.removeIndex(key_path=self._test_kp,
+                                                    value_path=self._test_vp))
+        return d
+    
+    def testGetIndex(self):
+        # first register an index to grab, and retrieve it's id:
+        catalog=XmlCatalog(adbapi_connection=self._dbConnection)
+        test_index=XmlIndex(key_path=self._test_kp,
+                            value_path=self._test_vp
+                            )
+        d=catalog.registerIndex(test_index)
+        def get_id(id):
+            self._last_id=int(id)
+        d.addCallback(get_id)
+        
+        # get by key:
+        d.addCallback(catalog.getIndex,
+                      key_path = self._test_kp,value_path = self._test_vp)
+        d.addCallback(self._assertClassEquals,test_index)
+        # get by id:
+        #d=d.addCallback(lambda m: catalog.getIndex(id=self._last_id))
+        
+        # remove :
+        d.addCallback(lambda m: catalog.removeIndex(key_path=self._test_kp,
+                                                    value_path=self._test_vp))
        
         return d
     
+    def testIndexResource(self):
+        catalog=XmlCatalog(adbapi_connection=self._dbConnection)
+        
+        class Foo:
+            pass      
+        self.assertRaises(DoesNotImplement,catalog.indexResource, Foo(), 1)
+        
+        
     
