@@ -2,6 +2,26 @@
 
 from zope.interface import Interface, Attribute
 
+
+class IResource(Interface):
+    """A basic resource consist at least of an unique uri and optionally of
+    any kinds of data
+    """
+    def getUri(self):
+        """retrieve the resource's uri """
+        
+    def setUri(self,newuri):
+        """change resource's uri attribute
+        a resource cannot be serialized without specifying an uri
+        """
+        
+    def setData(self,newdata):
+        """set data attribute"""
+        
+    def getData(self):
+        """retrieve the resource's data"""
+        
+
 class IXmlNode(Interface):
     """Basic xml node object"""
     def getStrContent():
@@ -36,3 +56,10 @@ class IXmlTreeDoc(IXmlDoc):
     
 class IXmlSaxDoc(IXmlDoc):
     """parses a document using an event based sax parser"""
+
+
+class IComponent(Interface):
+    pass
+
+class IAdminPanel(Interface):
+    pass

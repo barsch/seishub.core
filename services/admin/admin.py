@@ -3,11 +3,10 @@
 from twisted.application import service
 from twisted.internet import reactor, defer
 from twisted.web import static, resource, server as webserver
+from zope.interface import implements
 from Cheetah.Template import Template
 
-
-
-class AdminService(resource.Resource):
+class AdminService(Component):
     def __init__(self, service):
         resource.Resource.__init__(self)
         self.app = service
