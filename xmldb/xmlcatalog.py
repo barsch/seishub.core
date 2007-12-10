@@ -141,6 +141,12 @@ class XmlCatalog(object):
             return None
         
         
+                
+        idx=self.getIndex(id=index_id)
+        res=idx.eval(xml_resource=resource)
+        raise Exception(res)
+        
+        
         
         
         

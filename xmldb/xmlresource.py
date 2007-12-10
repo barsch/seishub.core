@@ -3,7 +3,7 @@
 from zope.interface import implements
 from zope.interface.exceptions import DoesNotImplement
 
-from seishub.interfaces.ixml import IXmlDoc
+from seishub.interfaces import IXmlDoc
 from seishub.xmldb.interfaces import IXmlResource
 from seishub.libxmlwrapper import XmlTreeDoc,InvalidXmlDataError
 from seishub.resource import Resource
