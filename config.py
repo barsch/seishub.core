@@ -30,7 +30,6 @@ __all__ = ['Configuration', 'Option', 'BoolOption', 'IntOption', 'ListOption',
 
 _TRUE_VALUES = ('yes', 'true', 'on', '1', 1, True)
 
-
 class ConfigurationError(SeishubError):
     """Exception raised when a value in the configuration file is not valid."""
 
