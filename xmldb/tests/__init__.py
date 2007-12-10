@@ -10,3 +10,5 @@ if __name__ == '__main__':
     doctest.testmod(sys.modules[__name__])
     seishub.test.main(defaultTest='doctestsuite')
     trialsuite()
+    
+    

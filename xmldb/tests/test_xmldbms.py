@@ -3,7 +3,7 @@
 from twisted.trial.unittest import TestCase
 from twisted.enterprise import adbapi
 
-from seishub.libxmlwrapper import InvalidXmlDataError
+from seishub.util.libxmlwrapper import InvalidXmlDataError
 from seishub.xmldb.xmldbms import XmlDbManager
 from seishub.xmldb.xmlresource import XmlResource
 from seishub.defaults import DB_DRIVER,DB_ARGS
@@ -33,13 +33,6 @@ class XmlResourceTest(TestCase):
                           test_res.setData,
                           TEST_BAD_XML)
 
-            
-    def testStore(self):
-        test_res=XmlResource()
-        try:
-            test_res.store()
-        except NotImplementedError:
-            pass
 
 class XmlDbManagerTest(TestCase):
     def setUp(self):

@@ -4,7 +4,7 @@ import libxml2
 from zope.interface import implements
 from seishub.core import SeishubError
 
-from interfaces import IXmlSchema,IXmlDoc,IXmlTreeDoc,IXmlSaxDoc
+from seishub.interfaces import IXmlSchema,IXmlDoc,IXmlTreeDoc,IXmlSaxDoc
 
 class LibxmlError(SeishubError):
     """general libxml error"""

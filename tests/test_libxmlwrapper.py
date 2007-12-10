@@ -2,7 +2,7 @@
 
 from twisted.trial.unittest import TestCase
 
-from seishub.libxmlwrapper import XmlSchema, XmlTreeDoc, InvalidXPathExpression
+from seishub.util.libxmlwrapper import XmlSchema, XmlTreeDoc, InvalidXPathExpression
 
 TEST_SCHEMA="""<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
 <xsd:element name="a" type="AType"/>

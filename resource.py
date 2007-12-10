@@ -31,10 +31,6 @@ class Resource(object):
             self.__uri=newuri
         else:
             raise InvalidUriError
-        
-    def store(self):
-        """should be implemented by subclasses"""
-        raise NotImplementedError
     
     def _validateUri(self,value):
         #TODO: uri validation
