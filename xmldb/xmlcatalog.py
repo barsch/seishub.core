@@ -108,11 +108,14 @@ class XmlCatalog(object):
         def return_index(res):
             #TODO: Find a way to clearly identify the entries in the result 
             #list with the table columns
-            if len(res) == 1 and len(res[0]) == 4:
+            if len(res) == 1 and len(res[0]) == 4: #one proper index found
                 index=XmlIndex(key_path = res[0][1],
                                value_path = res[0][2],
                                type = res[0][3])
-            else:
+            elif len(res) == 0: # no index found
+                raise XmlCatalogError("No index found with given id "+\
+                                      "or key,value.")
+            else: # other error
                 raise XmlCatalogError("Unexpected result set length.")
                 index=None
             
@@ -139,12 +142,34 @@ class XmlCatalog(object):
         if not IXmlResource.providedBy(resource):
             raise DoesNotImplement(IXmlResource)
             return None
-        
-        
-                
-        idx=self.getIndex(id=index_id)
-        res=idx.eval(xml_resource=resource)
-        raise Exception(res)
+               
+        # get index obj from id:
+        d=self.getIndex(id=index_id)
+        # eval index on given resource:
+        d.addCallback(lambda idx_obj: idx_obj.eval(xml_resource=resource))
+        d.addErrback(self.__handleErrors)
+        def _addIndexTxn(txn):
+            # get next unique id:
+            get_next_id_query=GET_NEXT_ID_QUERY % (DEFAULT_PREFIX,
+                                                   INDEX_DEF_TABLE)
+            txn.execute(get_next_id_query)
+            next_id=txn.fetchall()[0][0]
+            # insert into INDEX_DEF_TABLE:
+            add_query=ADD_INDEX_QUERY % \
+                      {'prefix' : DEFAULT_PREFIX,
+                       'table' : INDEX_DEF_TABLE,
+                       'id' : next_id,
+                       'key_path' : dbutil.quote(xml_index.getKey_path(),
+                                                 "text"),
+                       'value_path' : dbutil.quote(xml_index.getValue_path(),
+                                                   "text"),
+                       'data_type': dbutil.quote(xml_index.getType(), "text"),
+                       }
+            txn.execute(add_query)
+            return next_id
+        #res=idx.eval(xml_resource=resource)
+        #raise Exception(index_id)
+        return d
         
         
         

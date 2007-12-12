@@ -39,9 +39,10 @@ class XmlCatalogTest(TestCase):
     def tearDown(self):
         # make sure created indexes are removed in the end, 
         # even if not all tests pass:
+        
         catalog=XmlCatalog(adbapi_connection=self._dbConnection)
-        #d=self.__cleanUp()
-        #return d
+        d=self.__cleanUp()
+        return d
     
     def _assertClassAttributesEqual(self,first,second):
         return self.assertEquals(first.__dict__,second.__dict__)
@@ -146,13 +147,15 @@ class XmlCatalogTest(TestCase):
                             value_path = self._test_vp
                             )
         d=catalog.registerIndex(test_index)
-        
+        def printRes(res):
+            print res
+        #d.addErrback(printRes)
         # index resource:
-        #d.addCallback(lambda foo: catalog.indexResource(test_res,test_index))
-        #def printErr(err):
-        #    print err
-        #d.addErrback(printErr)
+        d.addCallback(lambda idx_id: catalog.indexResource(test_res,idx_id))
+        
+        d.addCallback(printRes)
         
         # clean up:
-        d.addCallback(self.__cleanUp)
+        #d.addCallback(self.__cleanUp)
+        return d
         
