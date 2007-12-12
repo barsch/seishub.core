@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 from seishub.interfaces import IComponent
 
-__all__ = ['Component','ComponentManager','SeishubError']
+__all__ = ['Component','ComponentManager','SeisHubError']
 
 
-class SeishubError(Exception):
+class SeisHubError(Exception):
     """Exception base class for errors in SeisHub."""
 
     def __init__(self, message, title=None, show_traceback=False):

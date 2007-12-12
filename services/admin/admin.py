@@ -6,15 +6,18 @@ from twisted.web import static, resource, server as webserver
 from zope.interface import implements
 from Cheetah.Template import Template
 
+from seishub.services.admin.basics import BasicsPanel 
+
 class AdminService(resource.Resource):
-    def __init__(self, service):
+    def __init__(self, env):
         resource.Resource.__init__(self)
-        self.app = service
+        self.app = env.service
         # need to do this for resources at the root of the site
         self.putChild("", self)
         # add static files
         self.putChild('css', static.File("htdocs/css/"))
         self.putChild('favicon.ico', static.File("htdocs/favicon.ico"))
+        self.putChild("basics", env.cm[BasicsPanel])
 
     def render_GET(self, request):
         output = Template(file="seishub/services/admin/tmpl/index.tmpl")

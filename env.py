@@ -15,7 +15,7 @@
 # Author: Jonas Borgström <jonas@edgewall.com>
 
 import os
-from sqlalchemy import create_engine
+#from sqlalchemy import create_engine
 
 from seishub.config import Option
 
@@ -46,23 +46,6 @@ class Environment():
 
     log_file = Option('logging', 'log_file', 'trac.log',
         """If `log_type` is `file`, this should be a path to the log-file.""")
-
-
-    def __init__(self, path, create=False, options=[]):
-        """Initialize the Trac environment.
-        
-        @param path:    the absolute path to the Trac environment
-        @param create:  if `True`, the environment is created and populated 
-                        with default data; otherwise, the environment is 
-                        expected to already exist.
-        @param options: A list of `(section, name, value)` tuples that define
-                        configuration options
-        """
-
-        self.path = path
-
-#        from seishub.loader import load_components
-#        load_components(self)
 
 #    def get_db_cnx(self):
 #       """Return a database connection from the connection pool."""

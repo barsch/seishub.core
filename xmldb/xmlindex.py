@@ -3,14 +3,14 @@
 from zope.interface import implements
 from zope.interface.exceptions import DoesNotImplement
 
-from seishub.core import SeishubError
+from seishub.core import SeisHubError
 from seishub.xmldb.interfaces import IXmlIndex, IXmlResource
 
 __all__=['XmlIndex']
 
 TEXT_INDEX="text"
 
-class XmlIndexError(SeishubError):
+class XmlIndexError(SeisHubError):
     pass
 
 class XmlIndex(object):
@@ -78,7 +78,7 @@ class XmlIndex(object):
         
         xml_doc=xml_resource.getXml_doc()
         if not xml_doc:
-            raise SeishubError('Xml resource does not contain data')
+            raise SeisHubError('Xml resource does not contain data')
             return None
         
         #eval xpath expression:

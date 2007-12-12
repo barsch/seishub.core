@@ -4,7 +4,7 @@ from zope.interface.exceptions import DoesNotImplement
 
 from twisted.trial.unittest import TestCase
 
-from seishub.core import SeishubError
+from seishub.core import SeisHubError
 from seishub.xmldb.xmlresource import XmlResource
 from seishub.xmldb.xmlindex import XmlIndex, TEXT_INDEX
 
@@ -60,7 +60,7 @@ class XmlIndexTest(TestCase):
                           test_index.eval,
                           Foo())
         # pass an empty XmlDoc:
-        self.assertRaises(SeishubError,
+        self.assertRaises(SeisHubError,
                           test_index.eval,
                           empty_resource)
         

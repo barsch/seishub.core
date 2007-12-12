@@ -57,9 +57,5 @@ class IXmlTreeDoc(IXmlDoc):
 class IXmlSaxDoc(IXmlDoc):
     """parses a document using an event based sax parser"""
 
-
 class IComponent(Interface):
-    pass
-
-class IAdminPanel(Interface):
     pass

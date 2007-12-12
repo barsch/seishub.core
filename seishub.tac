@@ -13,6 +13,8 @@ from seishub.services.admin import admin
 from seishub.services.rest import rest
 from seishub.config import Configuration
 from seishub.log import LogService
+from seishub.core import ComponentManager
+from seishub.env import Environment
 
 # import config file
 confs = Configuration()
@@ -40,22 +42,20 @@ log.startLogging(open(os.path.join(LOG_DIR, DEBUG_LOG_FILE), 'w'))
 
 ### DB
 #db = adbapi.ConnectionPool(DB_DRIVER, **DB_ARGS)
-
-
+env=Environment()
+env.cm=ComponentManager()
 
 ### Twisted
 application = service.Application("seishub")
-
+env.service=application
 # rest
-webRoot = resource.Resource(  )
-webRoot.putChild('', rest.RESTService())
+webRoot = rest.RESTService()
 webService = internet.TCPServer(SERVICE_REST_PORT, server.Site(webRoot))
 webService.setName("REST Service")
 webService.setServiceParent(application)
 
 # admin
-adminRoot = resource.Resource()
-adminRoot.putChild('', admin.AdminService(application))
+adminRoot = admin.AdminService(env)
 adminService = internet.TCPServer(SERVICE_ADMIN_PORT, server.Site(adminRoot))
 adminService.setName("Admin Service")
 adminService.setServiceParent(application)

@@ -21,7 +21,7 @@ try:
 except NameError:
     from sets import Set as set
 
-from seishub.core import SeishubError
+from seishub.core import SeisHubError
 from seishub.util import sorted
 from seishub.util.text import to_unicode, CRLF
 
@@ -30,7 +30,7 @@ __all__ = ['Configuration', 'Option', 'BoolOption', 'IntOption', 'ListOption',
 
 _TRUE_VALUES = ('yes', 'true', 'on', '1', 1, True)
 
-class ConfigurationError(SeishubError):
+class ConfigurationError(SeisHubError):
     """Exception raised when a value in the configuration file is not valid."""
 
 

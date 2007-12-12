@@ -2,19 +2,19 @@
 
 import libxml2
 from zope.interface import implements
-from seishub.core import SeishubError
+from seishub.core import SeisHubError
 
 from seishub.interfaces import IXmlSchema,IXmlDoc,IXmlTreeDoc,IXmlSaxDoc
 
-class LibxmlError(SeishubError):
+class LibxmlError(SeisHubError):
     """general libxml error"""
     pass
 
-class InvalidXmlDataError(SeishubError):
+class InvalidXmlDataError(SeisHubError):
     """raised on xml parser errors in blocking mode"""
     pass
 
-class InvalidXPathExpression(SeishubError):
+class InvalidXPathExpression(SeisHubError):
     pass
 
 class XmlNode(object):

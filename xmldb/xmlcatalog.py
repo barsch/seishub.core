@@ -4,7 +4,7 @@ from zope.interface.exceptions import DoesNotImplement
 
 from twisted.enterprise import util as dbutil
 
-from seishub.core import SeishubError
+from seishub.core import SeisHubError
 from seishub.xmldb.interfaces import IXmlCatalog, IXmlIndex, IXmlResource
 from seishub.xmldb.xmlindex import XmlIndex
 
@@ -14,7 +14,7 @@ from seishub.defaults import ADD_INDEX_QUERY, DELETE_INDEX_BY_ID_QUERY, \
                              GET_NEXT_ID_QUERY, DELETE_INDEX_BY_KEY_QUERY, \
                              GET_INDEX_BY_ID_QUERY, GET_INDEX_BY_KEY_QUERY
 
-class XmlCatalogError(SeishubError):
+class XmlCatalogError(SeisHubError):
     pass
 
 class XmlCatalog(object):

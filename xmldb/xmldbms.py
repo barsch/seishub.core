@@ -10,20 +10,20 @@ from seishub.defaults import ADD_RESOURCE_QUERY, DELETE_RESOURCE_QUERY, \
                              REGISTER_URI_QUERY, REMOVE_URI_QUERY, \
                              GET_NEXT_ID_QUERY, GET_ID_BY_URI_QUERY, \
                              QUERY_STR_MAP, GET_RESOURCE_BY_URI_QUERY
-from seishub.core import SeishubError
+from seishub.core import SeisHubError
                        
 from seishub.xmldb.interfaces import IResourceStorage, IXmlIndex
 from seishub.xmldb.xmlresource import XmlResource
 
 __all__=['XMLDBManager']
 
-class DbError(SeishubError):
+class DbError(SeisHubError):
     pass
 
-class UnknownUriError(SeishubError):
+class UnknownUriError(SeisHubError):
     pass
 
-class XmlDbManagerError(SeishubError):
+class XmlDbManagerError(SeisHubError):
     pass
 
 class XmlDbManager(object):
