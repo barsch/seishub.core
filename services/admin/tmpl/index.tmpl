@@ -32,9 +32,12 @@ Navigation:</span>
 <h1>Services</h1>
 <form method="post" name="testform">
 #for $s in $services
-<input type="checkbox" #if $s.running checked="checked" #end if
-  name="service" value="$s.name">$s.name
-<br />
+  <input type="checkbox" 
+         #if $s.running
+            checked="checked" 
+         #end if 
+         name="service" value="$s.name" /> $s.name
+  <br />
 #end for
 <br />
 <input type="submit" name="reload" value="Set Services" />
