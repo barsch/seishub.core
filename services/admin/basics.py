@@ -1,16 +1,16 @@
-from zope.interface import implements
-from twisted.web import resource
+# -*- coding: utf-8 -*-
 
-from seishub.services.admin.interfaces import IAdminPanel
+from Cheetah.Template import Template
+
 from seishub.core import Component
+from seishub.services.admin.admin import AdminResource
 
-class BasicsPanel(Component, resource.Resource):
-    #implements(IAdminPanel)
-    
-    def __init__(self):
-        #resource.Resource.__init__(self)
-        pass
+
+class BasicsPanel(Component, AdminResource):
         
     def render_GET(self, request):
-        request.write("blah")
+        output = Template(file="seishub/services/admin/tmpl/index.tmpl")
+        output.navigation = Template(file="seishub/services/admin/tmpl/navigation.tmpl")
+        output.main = Template(file="seishub/services/admin/tmpl/basics.tmpl")
+        request.write(str(output))
         return ''

@@ -1,49 +1,36 @@
 # -*- coding: utf-8 -*-
 
-from twisted.application import service
-from twisted.internet import reactor, defer
-from twisted.web import static, resource, server as webserver
-from zope.interface import implements
+from twisted.web import static, resource
 from Cheetah.Template import Template
 
-from seishub.services.admin.basics import BasicsPanel 
-
-class AdminService(resource.Resource):
+class AdminResource(resource.Resource):
     def __init__(self, env):
         resource.Resource.__init__(self)
-        self.app = env.service
+        self.env = env
         # need to do this for resources at the root of the site
         self.putChild("", self)
         # add static files
-        self.putChild('css', static.File("htdocs/css/"))
-        self.putChild('favicon.ico', static.File("htdocs/favicon.ico"))
-        self.putChild("basics", env.cm[BasicsPanel])
+        self.putChild('css', static.File("seishub/services/admin/htdocs/css/"))
+        self.putChild('favicon.ico', static.File("seishub/services/admin/htdocs/favicon.ico"))
+
+
+class AdminService(AdminResource):
+    def __init__(self, env):
+        AdminResource.__init__(self, env)
+        # dynamic pages
+        from seishub.services.admin.basics import BasicsPanel 
+        from seishub.services.admin.plugins import PluginsPanel 
+        from seishub.services.admin.logs import LogsPanel        
+        self.putChild("basics", env[BasicsPanel])
+        self.putChild("plugins", env[PluginsPanel])
+        self.putChild("logs", env[LogsPanel])
+        
 
     def render_GET(self, request):
         output = Template(file="seishub/services/admin/tmpl/index.tmpl")
-        output.services = service.IServiceCollection(self.app)
+        output.navigation = Template(file="seishub/services/admin/tmpl/navigation.tmpl")
+        output.main = "" 
         request.write(str(output))
         return ''
 
-    def render_POST(self, request):
-        args = request.args
-        actions = []
-        if args.has_key('shutdown'):
-            reactor.stop()
-        
-        serviceList = request.args.get('service', [])
-        for srv in service.IServiceCollection(self.app):
-            if srv.running and not srv.name in serviceList:
-                stopping = defer.maybeDeferred(srv.stopService)
-                actions.append(stopping)
-            elif not srv.running and srv.name in serviceList:
-                # wouldn't work if this program were using reserved ports
-                # and running under an unprivileged user id
-                starting = defer.maybeDeferred(srv.startService)
-                actions.append(starting)
-        defer.DeferredList(actions).addCallback(self._finishedActions, request)
-        return webserver.NOT_DONE_YET
 
-    def _finishedActions(self, results, request):
-        request.redirect('/')
-        request.finish(  )

@@ -14,15 +14,17 @@
 #
 # Author: Jonas Borgström <jonas@edgewall.com>
 
-import os
-#from sqlalchemy import create_engine
 
-from seishub.config import Option
+import sys
+import setuptools
+
+from seishub.core import Component, ComponentManager
+from seishub.config import Configuration, Option
 
 __all__ = ['Environment']
 
 
-class Environment():
+class Environment(Component, ComponentManager):
     """SeisHub stores project information in a Seishub environment.
 
     A SeisHub environment consists of a directory structure containing among 
@@ -47,11 +49,16 @@ class Environment():
     log_file = Option('logging', 'log_file', 'trac.log',
         """If `log_type` is `file`, this should be a path to the log-file.""")
 
-#    def get_db_cnx(self):
-#       """Return a database connection from the connection pool."""
-#        return DatabaseManager(self).get_connection()
+    def __init__(self):
+        """Initialize the SeisHub environment."""
+        ComponentManager.__init__(self)
 
-#   def shutdown(self, tid=None):
-#        """Close the environment."""
-#        DatabaseManager(self).shutdown(tid)
+        # set config handler
+        self.config = Configuration()
 
+        from seishub import __version__ as VERSION
+        self.systeminfo = [
+            ('SeisHub', VERSION),
+            ('Python', sys.version),
+            ('setuptools', setuptools.__version__),
+        ]

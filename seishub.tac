@@ -16,17 +16,18 @@ from seishub.log import LogService
 from seishub.core import ComponentManager
 from seishub.env import Environment
 
+
+env=Environment()
 # import config file
-confs = Configuration()
 
-LOG_DIR = confs.get('logging','log_dir')
-LOG_ROTATE = confs.getbool('logging','log_rotate')
-ACCESS_LOG_FILE = confs.get('logging','access_log_file')
-ERROR_LOG_FILE = confs.get('logging','error_log_file')
-DEBUG_LOG_FILE = confs.get('logging','debug_log_file')
+LOG_DIR = env.config.get('logging','log_dir')
+LOG_ROTATE = env.config.getbool('logging','log_rotate')
+ACCESS_LOG_FILE = env.config.get('logging','access_log_file')
+ERROR_LOG_FILE = env.config.get('logging','error_log_file')
+DEBUG_LOG_FILE = env.config.get('logging','debug_log_file')
 
-SERVICE_ADMIN_PORT = confs.getint('admin','port')
-SERVICE_REST_PORT = confs.getint('rest','port')
+SERVICE_ADMIN_PORT = env.config.getint('admin','port')
+SERVICE_REST_PORT = env.config.getint('rest','port')
 
 log.startLogging(open(os.path.join(LOG_DIR, DEBUG_LOG_FILE), 'w'))
 
@@ -42,12 +43,10 @@ log.startLogging(open(os.path.join(LOG_DIR, DEBUG_LOG_FILE), 'w'))
 
 ### DB
 #db = adbapi.ConnectionPool(DB_DRIVER, **DB_ARGS)
-env=Environment()
-env.cm=ComponentManager()
 
 ### Twisted
 application = service.Application("seishub")
-env.service=application
+env.app=application
 # rest
 webRoot = rest.RESTService()
 webService = internet.TCPServer(SERVICE_REST_PORT, server.Site(webRoot))
