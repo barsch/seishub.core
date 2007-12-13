@@ -104,24 +104,23 @@ html>body {
 #main {
     text-align: justify;
     line-height: 1.5em;
-    margin: 0 auto;
-    padding: 20px 0 0 0;
-    width: 760px;
+    padding: 30px;
 }
 
 #main p {
-    text-indent: 1em;
     margin: 0 0 1.5em 0;
     padding: 0;
 }
 
-#main a,#copyright a {
+#main a,
+#copyright a {
     color: gray;
     background-color: transparent;
     text-decoration: underline;
 }
 
-#main a:hover,#copyright a:hover {
+#main a:hover,
+#copyright a:hover {
     color: steelblue;
     background-color: transparent;
     text-decoration: none;

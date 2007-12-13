@@ -9,10 +9,14 @@ class AdminResource(resource.Resource):
         self.env = env
         # need to do this for resources at the root of the site
         self.putChild("", self)
-        # add static files
-        self.putChild('css', static.File("seishub/services/admin/htdocs/css/"))
-        self.putChild('favicon.ico', static.File("seishub/services/admin/htdocs/favicon.ico"))
-
+        # static files
+        self.putChild('css', static.File("seishub/services/admin/htdocs/css"))
+        self.putChild('js',  static.File('seishub/services/admin/htdocs/js'))
+        self.putChild('images', 
+                      static.File('seishub/services/admin/htdocs/images'))
+        self.putChild('favicon.ico', 
+                      static.File("seishub/services/admin/htdocs/favicon.ico",
+                                  defaultType="image/x-icon"))
 
 class AdminService(AdminResource):
     def __init__(self, env):

@@ -1,12 +1,17 @@
 # -*- coding: utf-8 -*-
 
-from twisted.web import resource
+from Cheetah.Template import Template
 
 from seishub.core import Component
+from seishub.services.admin.admin import AdminResource
 
 
-class LogsPanel(Component, resource.Resource):
-    
+class LogsPanel(Component, AdminResource):
+        
     def render_GET(self, request):
-        request.write("blah")
+        output = Template(file="seishub/services/admin/tmpl/index.tmpl")
+        output.navigation = Template(file="seishub/services/admin/tmpl/navigation.tmpl")
+        output.main = Template(file="seishub/services/admin/tmpl/logs.tmpl")
+        output.logs = self.env.config
+        request.write(str(output))
         return ''
