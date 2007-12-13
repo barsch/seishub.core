@@ -48,7 +48,7 @@ log.startLogging(open(os.path.join(LOG_DIR, DEBUG_LOG_FILE), 'w'))
 application = service.Application("seishub")
 env.app=application
 # rest
-webRoot = rest.RESTService()
+webRoot = rest.RESTService(env)
 webService = internet.TCPServer(SERVICE_REST_PORT, server.Site(webRoot))
 webService.setName("REST Service")
 webService.setServiceParent(application)
@@ -58,7 +58,6 @@ adminRoot = admin.AdminService(env)
 adminService = internet.TCPServer(SERVICE_ADMIN_PORT, server.Site(adminRoot))
 adminService.setName("Admin Service")
 adminService.setServiceParent(application)
-
 
 # Log Services
 accesslogService = LogService(ACCESS_LOG_FILE, LOG_DIR, "access", LOG_ROTATE)
