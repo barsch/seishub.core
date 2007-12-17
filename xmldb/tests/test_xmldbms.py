@@ -82,5 +82,19 @@ class XmlDbManagerTest(TestCase):
                          self.xmldbm.deleteResource,self.test_uri)
         return d
     
+    def testResolveUri(self):
+        # add a test res first:
+        testres=XmlResource(xml_data=self.test_data,uri=self.test_uri)
+        d=self.xmldbm.addResource(testres)
+        def Foo(res):
+            print res
+        d.addCallback(lambda foo: self.xmldbm._resolveUri(self.test_uri))
+        d.addCallback(self.assertTrue)
+        
+        # delete test resource:
+        d.addCallback(lambda foo: self.xmldbm.deleteResource(self.test_uri))
+        
+        return d
+    
 
         

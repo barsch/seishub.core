@@ -30,7 +30,7 @@ class IResourceStorage(Interface):
         
     def getResource(URI):
         """Retreive an existing resource from the storage"""
-        
+            
     #def query(query_str):
     #    """Query the storage"""
         
@@ -92,36 +92,62 @@ class IXmlCatalog(Interface):
         
         """
         
-    def removeIndex(id,key_path,value_path):
-        """Remove index with given id or key path, value path pair
+    def removeIndex(xml_index=None,
+                    key_path=None,value_path=None):
+        """Remove an index and its data.
+        All indexed data belonging to the index will be removed.
+        To update an existing index without data loss use updateIndex.
+        Pass an id or a key_path and value_path or a XmlIndex instance
         @param id: id
-        @param key_path key path:
+        @param key_path: key path
         @param value_path: value path
+        @param xml_index: XmlIndex instance 
         @return: Deferred"""
         
-    def updateIndex(xml_index,id):
-        """@param xml_index: new XmlIndex instance
+    def updateIndex(old_index=None,new_index=None):
+        """@param id: internal index id
+        @param xml_index: new XmlIndex instance
         @param id: id of index to be updated"""
         
-    def getIndex(id,key_path,value_path):
+    def getIndex(key_path,value_path):
         """@return: Deferred which will return a XmlIndex on success"""
         
-    def indexResource(resource,index_id):
+    def indexResource(resource,
+                      xml_index=None,
+                      key_path=None,value_path=None):
         """Index a resource at the first time.
+        Pass either a XmlIndex instance or a key_path, value_path pair
         
         @param resource: IXmlResource to be indexed
-        @param index_id: id of index to be applied
+        @param xml_index: IXmlIndex
+        @param key_path: key path
+        @param value_path: value path
+        @return: Deferred returning True on success
         """
         
-    def reindexResources(index_id,resource_storage):
+    def reindexResources(resource_storage,
+                         xml_index=None,
+                         key_path=None,value_path=None):
         """Reindex the given index. 
         Which means all resources the index applies to (determined by 
         value_path) are read from the given storage and reevaluated.
         Formerly indexed data is beeing deleted thereby.
         
-        @param index_id: id of index beeing reindexed
+        @param xml_index: IXmlIndex
+        @param key_path: key path
+        @param value_path: value path
         @param resource_storage: IResourceStorage providing access to resources
         """
+        
+    def flushIndex(xml_index=None,
+                   key_path=None,value_path=None):
+        """Remove all indexed data for given index.
+        To completely remove an index use removeIndex.
+        
+        @param xml_index: IXmlIndex
+        @param key_path: key path
+        @param value_path: value path
+        @return: Deferred"""
         
     def query(query,index=None):
         """Drop a query on the catalog"""

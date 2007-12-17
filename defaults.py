@@ -32,9 +32,9 @@ CREATES=["CREATE TABLE %s_%s (id serial8 primary key, xml_data text)" % \
          (DEFAULT_PREFIX,INDEX_DEF_TABLE),
          ("CREATE TABLE %s_%s (id serial8 primary key, " + \
          "index_id int8 references %s_%s(id), key text, " + \
-         "value int8 references %s_%s(id))") % \
+         "value text references %s_%s(uri))") % \
          (DEFAULT_PREFIX, INDEX_TABLE,DEFAULT_PREFIX, INDEX_DEF_TABLE,
-          DEFAULT_PREFIX, RESOURCE_TABLE)
+          DEFAULT_PREFIX, URI_TABLE)
          ]
 
 QUERY_STR_MAP={'res_tab':DEFAULT_PREFIX+'_'+RESOURCE_TABLE,
@@ -54,6 +54,13 @@ GET_INDEX_BY_ID_QUERY="SELECT id,key_path, value_path,data_type FROM %(prefix)s_
                       "WHERE (id=%(id)s)"
 GET_INDEX_BY_KEY_QUERY="SELECT id,key_path,value_path, data_type FROM %(prefix)s_%(table)s " + \
                 "WHERE (key_path=%(key_path)s AND value_path=%(value_path)s)"
+ADD_INDEX_DATA_QUERY="INSERT INTO %(prefix)s_%(table)s (id,index_id,key,value) " + \
+                "values (%(id)s,%(index_id)s,%(key)s,%(value)s)"
+REMOVE_INDEX_DATA_BY_ID_QUERY="DELETE FROM %(prefix)s_%(table)s " + \
+                              "WHERE (index_id=%(index_id)s)"
+REMOVE_INDEX_DATA_BY_KEY_QUERY="DELETE FROM %(prefix)s_%(table)s " + \
+                "WHERE index_id IN (SELECT id FROM default_index_def " + \
+                "WHERE (key_path=%(key_path)s AND value_path=%(value_path)s))"
 GET_NEXT_ID_QUERY="""SELECT nextval('%s_%s_id_seq')"""
 GET_ID_BY_URI_QUERY="""SELECT res_id FROM %(uri_tab)s WHERE (uri='%(uri)s')"""
 GET_RESOURCE_BY_URI_QUERY="""SELECT xml_data FROM %(res_tab)s,%(uri_tab)s

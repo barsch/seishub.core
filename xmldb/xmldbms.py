@@ -107,6 +107,27 @@ class XmlDbManager(object):
         
         d=self.db.runInteraction(_delResourceTxn)
         return d
+    
+    def _resolveUri(self,uri):
+        if not isinstance(uri,basestring):
+            raise ValueError("invalid uri: string expected")
+            return None
+        
+        str_map=QUERY_STR_MAP
+        str_map['uri']=uri
+        query=GET_ID_BY_URI_QUERY % str_map
+        
+        def _procResults(res):
+            if len(res) == 1 and len(res[0]) == 1:
+                id=res[0][0]
+            else:
+                raise UnknownUriError("%s is not present in storage." % uri)
+                id=None
+            return id
+        
+        d=self.db.runQuery(query)
+        d.addCallback(_procResults)
+        return d
         
         
         

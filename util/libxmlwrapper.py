@@ -133,8 +133,7 @@ class XmlTreeDoc(XmlDoc):
             raise TypeError('String expected: expr')
             return None
         
-        #TODO: find a way to register an error handler for xpathContext, to
-        #avoid output to stderr
+        #TODO: errors are still reported on stderr
         xpath_ctxt=self._xml_doc.xpathNewContext()
         
         try:
