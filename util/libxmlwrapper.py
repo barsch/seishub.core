@@ -82,6 +82,7 @@ class XmlDoc(object):
             self._xml_doc=xml_doc
             
     def __del__(self):
+        #import pdb; pdb.set_trace()
         if hasattr(self,'_xml_doc'):
             if isinstance(self._xml_doc,libxml2.xmlDoc):
                 self._xml_doc.freeDoc()

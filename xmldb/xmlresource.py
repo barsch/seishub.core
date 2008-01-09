@@ -3,10 +3,14 @@
 from zope.interface import implements
 from zope.interface.exceptions import DoesNotImplement
 
+from seishub.core import SeisHubError
 from seishub.interfaces import IXmlDoc
 from seishub.xmldb.interfaces import IXmlResource
 from seishub.util.libxmlwrapper import XmlTreeDoc,InvalidXmlDataError
 from seishub.resource import Resource
+
+class XmlResourceError(SeisHubError):
+    pass
 
 class XmlResource(Resource):
     """auto-parsing xml resource, 
@@ -21,10 +25,13 @@ class XmlResource(Resource):
     # this gets invoked by baseclass's constructor
     def setData(self,xml_data):
         """validate and set xml_data"""
-        if self._validateXml_data(xml_data):
-            Resource.setData(self,xml_data) # call original setData method
-        else:
-            raise InvalidXmlDataError
+        try:
+            self._validateXml_data(xml_data)
+        except:
+            raise XmlResourceError("Invalid xml data.")
+            return False
+        
+        return Resource.setData(self,xml_data)
 
     def getXml_doc(self):
         return self.__xml_doc

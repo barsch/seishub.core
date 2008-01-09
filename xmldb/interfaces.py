@@ -25,10 +25,10 @@ class IResourceStorage(Interface):
     def updateResource(xmlResource):
         """Update an existing resource"""
         
-    def deleteResource(URI):
+    def deleteResource(uri):
         """Delete an existing resource"""
         
-    def getResource(URI):
+    def getResource(uri):
         """Retreive an existing resource from the storage"""
             
     #def query(query_str):

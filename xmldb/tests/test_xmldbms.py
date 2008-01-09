@@ -3,9 +3,8 @@
 from twisted.trial.unittest import TestCase
 from twisted.enterprise import adbapi
 
-from seishub.util.libxmlwrapper import InvalidXmlDataError
 from seishub.xmldb.xmldbms import XmlDbManager
-from seishub.xmldb.xmlresource import XmlResource
+from seishub.xmldb.xmlresource import XmlResource, XmlResourceError
 from seishub.defaults import DB_DRIVER,DB_ARGS
 from seishub.defaults import DEFAULT_PREFIX,RESOURCE_TABLE,URI_TABLE
 
@@ -29,7 +28,7 @@ class XmlResourceTest(TestCase):
         xml_data=test_res.getData()
         self.assertEquals(xml_data,TEST_XML)
         
-        self.assertRaises(InvalidXmlDataError,
+        self.assertRaises(XmlResourceError,
                           test_res.setData,
                           TEST_BAD_XML)
 

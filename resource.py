@@ -22,6 +22,7 @@ class Resource(object):
     
     def setData(self,newdata):
         self.__data=newdata
+        return True
     
     def getUri(self):
         return self.__uri

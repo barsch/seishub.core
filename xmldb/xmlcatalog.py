@@ -137,6 +137,7 @@ class XmlCatalog(object):
     
     def indexResource(self,resource,
                       key_path=None,value_path=None,xml_index=None):
+        #TODO: uri instead of resource obj
         if not IXmlResource.providedBy(resource):
             raise DoesNotImplement(IXmlResource)
             return None

@@ -1,2 +1,68 @@
->>> print 3
-3
+This doctest aims at providing an example of XmlCatalog usage.
+For extensive functionality tests see the unittests in the same directory.
+
+connect to a test database first:
+    >>> from twisted.enterprise import adbapi
+    >>> from seishub.defaults import DB_DRIVER,DB_ARGS
+    >>> db=adbapi.ConnectionPool(DB_DRIVER,**DB_ARGS)
+
+================
+Adding resources
+================
+
+Init a XmlDbManager:
+    >>> from seishub.xmldb.xmldbms import XmlDbManager
+    >>> dbmgr=XmlDbManager(db)
+    
+A test xml document:
+    >>> XML_DOC="""<station rel_uri="bfo/0">
+    ...     <station_code>BFO</station_code>
+    ...     <chan_code>0</chan_code>
+    ...     <datalogger>QUANTERRA</datalogger>
+    ...     <seismometer>STS-2</seismometer>
+    ...     <lon>08.3296</lon>
+    ...     <lat>48.3301</lat>
+    ...     <stat_elav>589</stat_elav>
+    ...     <deployment_start>1992.01.01 00:01</deployment_start>
+    ...     <deployment_end>2010.12.31 23:59</deployment_end>
+    ...     <network>Zuern</network>
+    ...   </station>"""
+    
+Build a resource:
+    >>> from seishub.xmldb.xmlresource import XmlResource
+    >>> xml_res=XmlResource(uri = "/stations/bfo/0", xml_data = XML_DOC)
+    
+Add a resource to the storage:
+    >>> d=dbmgr.addResource(xml_res)
+    
+Get an XmlCatalog:
+    >>> from seishub.xmldb.xmlcatalog import XmlCatalog
+    >>> catalog=XmlCatalog(db)
+    
+Register a new index:
+    >>> from seishub.xmldb.xmlindex import XmlIndex
+    >>> index=XmlIndex(key_path = 'lon',value_path = '/station')
+    >>> d=d.addCallback(lambda foo: catalog.registerIndex(index))
+
+Index resource from above:
+    >>> d=d.addCallback(lambda foo: catalog.indexResource(xml_res, 
+    ...                                                   xml_index=index))
+    
+#Debug:
+#    >>> def debug(err):
+#    ...     import pdb; pdb.set_trace()
+#    >>> d.addBoth(debug)
+
+Remove index:
+    >>> d=d.addCallback(lambda foo: catalog.removeIndex(xml_index=index))
+    
+Remove resource:
+    >>> d=d.addCallback(lambda foo: dbmgr.deleteResource("/stations/bfo/0"))
+    
+=============
+twisted stuff
+=============
+    >>> from twisted.internet import reactor
+    >>> d=d.addBoth(lambda o: reactor.stop())
+    >>> reactor.run()
+
