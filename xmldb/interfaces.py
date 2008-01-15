@@ -62,24 +62,6 @@ class IXmlIndex(Interface):
         
 class IXmlCatalog(Interface):
     """Catalog providing methods for xml resource indexing and searching
-    
-    Register an index:
-    >>> from twisted.enterprise import adbapi
-    >>> from seishub.xmldb.xmlcatalog import XmlCatalog
-    >>> from seishub.xmldb.xmlindex import XmlIndex
-    >>> from seishub.defaults import DB_DRIVER,DB_ARGS
-    >>> dbConnection=adbapi.ConnectionPool(DB_DRIVER,**DB_ARGS)
-    >>> index=XmlIndex(key_path="blah/blah",value_path="/station")
-    >>> catalog=XmlCatalog(adbapi_connection=dbConnection)
-    >>> d=catalog.registerIndex(index)
-    
-    Remove index created above:
-    ...
-    
-    Run reactor:
-    >>> from twisted.internet import reactor 
-    >>> d=d.addCallback(lambda o: reactor.stop())
-    >>> reactor.run()
     """
     
     def init(adbapi_connection):
@@ -88,8 +70,6 @@ class IXmlCatalog(Interface):
     def registerIndex(xml_index):
         """@param xml_index: register given XmlIndex
         @return: deferred which will fire the unique index id on success
-        
-        
         """
         
     def removeIndex(xml_index=None,

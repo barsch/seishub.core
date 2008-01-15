@@ -61,7 +61,7 @@ class XmlCatalogTest(TestCase):
         return self.assertEquals(f,s)
     
     def __cleanUp(self,res=None):
-        # manually remove db entries created
+        # manually remove some db entries created
                
         query=("DELETE FROM %(prefix)s_%(table)s WHERE " + \
                "(value_path=%(value_path)s AND key_path=%(key_path)s)") % \
@@ -128,7 +128,7 @@ class XmlCatalogTest(TestCase):
                             )
         d=catalog.registerIndex(test_index)
         
-        #TODO: try to get an invalid index
+        #TODO: invalid index should raise exception
                 
         # get by key:
         d.addCallback(lambda foo: 
@@ -168,7 +168,7 @@ class XmlCatalogTest(TestCase):
                       catalog.indexResource(test_res, xml_index=test_index))
         
         #TODO: check db entries made
-        
+                
         # pass invalid index args:
         d.addCallback(lambda f: catalog.indexResource(test_res, 
                                                       key_path="blah",
@@ -181,22 +181,26 @@ class XmlCatalogTest(TestCase):
          .addBoth(lambda f: dbmgr.deleteResource(self._test_uri))
         return d
     
-#    def testFlushIndex(self):
-#        catalog=XmlCatalog(adbapi_connection=self._dbConnection)
-#        # first register an index and add some data:
-#        test_index=XmlIndex(key_path = self._test_kp,
-#                            value_path = self._test_vp
-#                            )
-#        d=catalog.registerIndex(test_index)
-#        dbmgr=XmlDbManager(self._dbConnection)
-#        test_res=XmlResource(uri = self._test_uri, xml_data = RAW_XML1)
-#        dbmgr.addResource(test_res)
-#        
-#        d.addCallback(lambda idx_id: catalog.indexResource(test_res,idx_id))
-#        def printRes(res):
-#            print res
-#            return res
-#        
-#        d.addCallback(printRes)
-#        # flush index:
+    def testFlushIndex(self):
+        catalog=XmlCatalog(adbapi_connection=self._dbConnection)
+        #first register an index and add some data:
+        test_index=XmlIndex(key_path = self._test_kp,
+                            value_path = self._test_vp
+                            )
+        d=catalog.registerIndex(test_index)
+        dbmgr=XmlDbManager(self._dbConnection)
+        test_res=XmlResource(uri = self._test_uri, xml_data = RAW_XML1)
+        dbmgr.addResource(test_res)
+        
+        d.addCallback(lambda idx_id: catalog.indexResource(test_res,
+                                                           test_index))
+        #flush index:
+        d.addCallback(lambda foo: catalog.flushIndex(test_index))
+        #TODO: check if index is properly flushed
+        
+        # clean up:
+        d.addBoth(lambda f: catalog.removeIndex(test_index)) \
+         .addBoth(lambda f: dbmgr.deleteResource(self._test_uri))
+        
+        return d
         

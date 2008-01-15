@@ -66,7 +66,7 @@ class XmlCatalog(object):
         
         return d
     
-    def removeIndex(self,key_path=None,value_path=None,xml_index=None):
+    def removeIndex(self,xml_index=None,key_path=None,value_path=None):
         try:
             key_path=xml_index.getKey_path()
             value_path=xml_index.getValue_path()
@@ -135,8 +135,11 @@ class XmlCatalog(object):
             
         return d
     
-    def indexResource(self,resource,
-                      key_path=None,value_path=None,xml_index=None):
+    def indexResource(self,
+                      resource, 
+                      xml_index=None,
+                      key_path=None,
+                      value_path=None):
         #TODO: uri instead of resource obj
         if not IXmlResource.providedBy(resource):
             raise DoesNotImplement(IXmlResource)
@@ -193,7 +196,7 @@ class XmlCatalog(object):
         
         return d
     
-    def flushIndex(self,key_path=None,value_path=None,xml_index=None):
+    def flushIndex(self,xml_index=None,key_path=None,value_path=None):
         #decide which arguments to use:
         
         try:
