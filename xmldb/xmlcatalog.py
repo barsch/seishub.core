@@ -141,6 +141,7 @@ class XmlCatalog(object):
                       key_path=None,
                       value_path=None):
         #TODO: uri instead of resource obj
+        #TODO: no specific index
         if not IXmlResource.providedBy(resource):
             raise DoesNotImplement(IXmlResource)
             return None

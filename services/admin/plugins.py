@@ -2,6 +2,7 @@
 
 from twisted.web import server
 from twisted.internet import reactor, defer
+from twisted.application import service
 from Cheetah.Template import Template
 
 from seishub.core import Component
@@ -14,7 +15,7 @@ class PluginsPanel(Component, AdminResource):
         output = Template(file="seishub/services/admin/tmpl/index.tmpl")
         output.navigation = Template(file="seishub/services/admin/tmpl/navigation.tmpl")
         output.main = Template(file="seishub/services/admin/tmpl/services.tmpl")
-        output.services = self.env.app.IServiceCollection(self.env.app)
+        output.main.services = service.IServiceCollection(self.env.app)
         request.write(str(output))
         return ''
 

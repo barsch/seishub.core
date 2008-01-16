@@ -53,16 +53,19 @@ Index resource from above:
 #    ...     import pdb; pdb.set_trace()
 #    >>> d.addBoth(debug)
 
-Remove index:
-    >>> d=d.addCallback(lambda foo: catalog.removeIndex(xml_index=index))
+#Remove index:
+#    >>> d=d.addCallback(lambda foo: catalog.removeIndex(xml_index=index))
     
-Remove resource:
-    >>> d=d.addCallback(lambda foo: dbmgr.deleteResource("/stations/bfo/0"))
+#Remove resource:
+#    >>> d=d.addCallback(lambda foo: dbmgr.deleteResource("/stations/bfo/0"))
     
 =============
 twisted stuff
 =============
     >>> from twisted.internet import reactor
+    >>> def printErr(err):
+    ...     print err
+    >>> d=d.addErrback(printErr)
     >>> d=d.addBoth(lambda o: reactor.stop())
     >>> reactor.run()
 

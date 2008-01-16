@@ -95,10 +95,21 @@ class ComponentMeta(type):
 class Component(object):
     __metaclass__= ComponentMeta
     
-    def setAuthor(self,author):
-        self._author=author
-        
-    def setVersion(self,version):
-        self._version=version
-        
-    #def getAuthor(self,):
+    def __new__(cls, *args, **kwargs):
+        """Return an existing instance of the component if it has already been
+        activated, otherwise create a new instance.
+        """
+        # If this component is also the component manager, just invoke that
+        if issubclass(cls, ComponentManager):
+            self = super(Component, cls).__new__(cls)
+            self.compmgr = self
+            return self
+
+        # The normal case where the component is not also the component manager
+        compmgr = args[0]
+        self = compmgr.components.get(cls)
+        if self is None:
+            self = super(Component, cls).__new__(cls)
+            self.compmgr = compmgr
+            compmgr.component_activated(self)
+        return self

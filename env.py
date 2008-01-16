@@ -62,3 +62,13 @@ class Environment(Component, ComponentManager):
             ('Python', sys.version),
             ('setuptools', setuptools.__version__),
         ]
+        
+    def component_activated(self, component):
+        """Initialize additional member variables for components.
+        
+        Every component activated through the `Environment` object gets three
+        member variables: `env` (the environment object), `config` (the
+        environment configuration) and `log` (a logger object)."""
+        component.env = self
+        component.config = self.config
+        # component.log = self.log 
