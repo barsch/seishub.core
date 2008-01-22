@@ -14,115 +14,94 @@
 #
 # Author: Christopher Lenz <cmlenz@gmx.de>
 
-
 from glob import glob
 import imp
+import pkg_resources
+from pkg_resources import working_set, DistributionNotFound, VersionConflict, \
+                          UnknownExtra
 import os
 import sys
-
-from seishub.config import default_dir
-
-try:
-    set
-except NameError:
-    from sets import Set as set
-
-try:
-    import pkg_resources
-except ImportError:
-    pkg_resources = None
 
 __all__ = ['load_components']
 
 
-def load_components(env):
-    loaded_components = []
-    plugins_dirs = [os.path.normcase(os.path.realpath(os.path.join(env.path,
-                                                                  'plugins'))),
-                    default_dir('plugins')]
+def _enable_plugin(env, module):
+    """Enable the given plugin module by adding an entry to the configuration.
+    """
+    if module + '.*' not in env.config['components']:
+        env.config['components'].set(module + '.*', 'enabled')
 
-    # First look for Python source files in the plugins directories, which
-    # simply get imported, thereby registering them with the component manager
-    # if they define any components.
-    for plugins_dir in plugins_dirs:
-        auto_enable = plugins_dir != default_dir('plugins')
-        plugin_files = glob(os.path.join(plugins_dir, '*.py'))
-        for plugin_file in plugin_files:
+def load_eggs(entry_point_name):
+    """Loader that loads any eggs on the search path and `sys.path`."""
+    def _load_eggs(env, search_path, auto_enable=None):
+        distributions, errors = working_set.find_plugins(
+            pkg_resources.Environment(search_path)
+        )
+        for dist in distributions:
+            env.log.debug('Adding plugin %s from %s', dist, dist.location)
+            working_set.add(dist)
+
+        def _log_error(item, e):
+            if isinstance(e, DistributionNotFound):
+                env.log.warning('Skipping "%s": ("%s" not found)', item, e)
+            elif isinstance(e, VersionConflict):
+                env.log.error('Skipping "%s": (version conflict "%s")',
+                              item, e)
+            elif isinstance(e, UnknownExtra):
+                env.log.error('Skipping "%s": (unknown extra "%s")', item, e)
+            elif isinstance(e, ImportError):
+                env.log.error('Skipping "%s": (can\'t import "%s")', item, e)
+            else:
+                env.log.error('Skipping "%s": (error "%s")', item, e)
+
+        for dist, e in errors.iteritems():
+            _log_error(dist, e)
+
+        for entry in working_set.iter_entry_points(entry_point_name):
+            env.log.debug('Loading %s from %s', entry.name,
+                          entry.dist.location)
             try:
-                plugin_name = os.path.basename(plugin_file[:-3])
-                if plugin_name not in loaded_components:
+                entry.load(require=True)
+            except (ImportError, DistributionNotFound, VersionConflict,
+                    UnknownExtra), e:
+                _log_error(entry, e)
+            else:
+                if os.path.dirname(entry.dist.location) == auto_enable:
+                    _enable_plugin(env, entry.module_name)
+    return _load_eggs
+
+def load_py_files():
+    """Loader that look for Python source files in the plugins directories,
+    which simply get imported, thereby registering them with the component
+    manager if they define any components.
+    """
+    def _load_py_files(env, search_path, auto_enable=None):
+        for path in search_path:
+            plugin_files = glob(os.path.join(path, '*.py'))
+            for plugin_file in plugin_files:
+                try:
+                    plugin_name = os.path.basename(plugin_file[:-3])
                     env.log.debug('Loading file plugin %s from %s' % \
                                   (plugin_name, plugin_file))
-                    module = imp.load_source(plugin_name, plugin_file)
-                    loaded_components.append(plugin_name)
-                    if auto_enable and plugin_name + '.*' \
-                            not in env.config['components']:
-                        env.config['components'].set(plugin_name + '.*',
-                                                     'enabled')
-            except Exception, e:
-                env.log.error('Failed to load plugin from %s', plugin_file,
-                              exc_info=True)
+                    if plugin_name not in sys.modules:
+                        module = imp.load_source(plugin_name, plugin_file)
+                    if path == auto_enable:
+                        _enable_plugin(env, plugin_name)
+                except Exception, e:
+                    env.log.error('Failed to load plugin from %s', plugin_file,
+                                  exc_info=True)
 
-    # If setuptools is installed try to load any eggs from the plugins
-    # directory, and also plugins available on sys.path
-    if pkg_resources is not None:
-        ws = pkg_resources.working_set
-        for plugins_dir in plugins_dirs:
-            ws.add_entry(plugins_dir)
-        pkg_env = pkg_resources.Environment(plugins_dirs + sys.path)
+    return _load_py_files
 
-        memo = set()
-        def flatten(dists):
-            for dist in dists:
-                if dist in memo:
-                    continue
-                memo.add(dist)
-                try:
-                    predecessors = ws.resolve([dist.as_requirement()])
-                    for predecessor in flatten(predecessors):
-                        yield predecessor
-                    yield dist
-                except pkg_resources.DistributionNotFound, e:
-                    env.log.error('Skipping "%s" ("%s" not found)', dist, e)
-                except pkg_resources.VersionConflict, e:
-                    env.log.error('Skipping "%s" (version conflict: "%s")',
-                                  dist, e)
+def load_components(env, extra_path=None, loaders=(load_eggs('seishub.plugins'),
+                                                   load_py_files())):
+    """Load all plugin components found on the given search path."""
+    plugins_dir = os.path.normcase(os.path.realpath(
+        os.path.join(env.path, 'plugins')
+    ))
+    search_path = [plugins_dir]
+    if extra_path:
+        search_path += list(extra_path)
 
-        for egg in flatten([pkg_env[name][0] for name in pkg_env]):
-            modules = []
-
-            for name in egg.get_entry_map('seishub.plugins'):
-                # Load plugins declared via the `seishub.plugins` entry point.
-                # This is the only supported option going forward, the
-                # others will be dropped at some point in the future.
-                env.log.debug('Loading egg plugin %s from %s', name,
-                              egg.location)
-                egg.activate()
-                try:
-                    entry_point = egg.get_entry_info('seishub.plugins', name)
-                    if entry_point.module_name not in loaded_components:
-                        try:
-                            entry_point.load()
-                        except pkg_resources.DistributionNotFound, e:
-                            env.log.warning('Cannot load plugin %s because it '
-                                            'requires "%s"', name, e)
-                        modules.append(entry_point.module_name)
-                        loaded_components.append(entry_point.module_name)
-                except ImportError, e:
-                    env.log.error('Failed to load plugin %s from %s', name,
-                                  egg.location, exc_info=True)
-
-            if modules:
-                # Automatically enable any components provided by plugins
-                # loaded from the environment plugins directory.
-                if os.path.dirname(egg.location) == plugins_dirs[0]:
-                    for module in modules:
-                        if module + '.*' not in env.config['components']:
-                            env.config['components'].set(module + '.*',
-                                                         'enabled')
-
-    # Load default components
-    from seishub.defaults import DEFAULT_COMPONENTS
-    for module in DEFAULT_COMPONENTS:
-        if not module in loaded_components:
-            __import__(module)
+    for loadfunc in loaders:
+        loadfunc(env, search_path, auto_enable=plugins_dir)

@@ -1,0 +1,16 @@
+<div class="subHeader">
+  <ul class="navigation">
+    #for $i in $menu
+    <li>
+      <a #if $i.id==$selected
+         class="highlighted tab" 
+         #else
+         class="tab" 
+         #end if 
+         href="$i.id">$i.name</a>
+    </li>
+    #end for
+    <li><a href="http://localhost:8080" class="tab">REST</a></li>
+  </ul>
+</div>
+

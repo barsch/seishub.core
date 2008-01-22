@@ -1,0 +1,25 @@
+<h1>Plugins</h1>
+
+<form method="post" name="plugins">
+  <dl>
+    #for $p in $plugins
+    <dt>
+      <input type="hidden" name="plugin" value="$p.full" />
+      <input type="checkbox"
+        #if $p.required
+             disabled="disabled" 
+        #end if 
+        #if $p.enabled
+             checked="checked" 
+        #end if 
+             name="enabled" value="$p.full" /> 
+      <b>$p.full</b>
+    </dt>
+    <dd> 
+      <i>$p.description</i>
+    </dd>
+    #end for
+  </dl>
+  <input type="submit" name="update" value="Set Plugins" />
+</form>
+

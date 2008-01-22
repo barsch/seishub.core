@@ -1,47 +1,66 @@
 # -*- coding: utf-8 -*-
+#
+# Copyright (C) 2003-2006 Edgewall Software
+# Copyright (C) 2003-2005 Daniel Lundin <daniel@edgewall.com>
+# Copyright (C) 2006 Christian Boos <cboos@neuf.fr>
+# All rights reserved.
+#
+# This software is licensed as described in the file COPYING, which
+# you should have received as part of this distribution. The terms
+# are also available at http://trac.edgewall.org/wiki/TracLicense.
+#
+# This software consists of voluntary contributions made by many
+# individuals. For the exact contribution history, see the revision
+# history and logs, available at http://trac.edgewall.org/log/.
+#
+# Author: Daniel Lundin <daniel@edgewall.com>
 
-from twisted.application import service
-from twisted.python import log, logfile
+import logging
+import logging.handlers
+import sys
 
-__all__ = ['LogService', 'ErrorLog', 'AccessLog']
+def logger_factory(logtype='syslog', logfile=None, level='WARNING',
+                   logid='SeisHub', format=None):
+    logger = logging.getLogger(logid)
+    logtype = logtype.lower()
+    if logtype == 'file':
+        hdlr = logging.FileHandler(logfile)
+    elif logtype in ('winlog', 'eventlog', 'nteventlog'):
+        # Requires win32 extensions
+        hdlr = logging.handlers.NTEventLogHandler(logid,
+                                                  logtype='Application')
+    elif logtype in ('syslog', 'unix'):
+        hdlr = logging.handlers.SysLogHandler('/dev/log')
+    elif logtype in ('stderr'):
+        hdlr = logging.StreamHandler(sys.stderr)
+    else:
+        hdlr = logging.handlers.BufferingHandler(0)
+        # Note: this _really_ throws away log events, as a `MemoryHandler`
+        # would keep _all_ records in case there's no target handler (a bug?)
 
-class LogService(service.Service):
-    def __init__(self, log_name, log_dir, log_type, log_rotate=False):
-        self.log_name = log_name
-        self.log_dir = log_dir
-        # TODO: via config
-        self.max_logsize = 1000000
-        self.log_type = log_type
-        self.log_rotate = log_rotate
-    
-    def startService(self):
-        # logfile is a file-like object that supports rotation
-        self.log_file = logfile.LogFile(
-            self.log_name, self.log_dir, rotateLength=self.max_logsize)
-        # force rotation each time restarted (if enabled)
-        if self.log_rotate:
-            self.log_file.rotate()
-        if self.log_type == "error":
-            self.log = ErrorLog(self.log_file)
-        else:
-            self.log = AccessLog(self.log_file)
-        self.log.start()
+    if not format:
+        format = 'SeisHub[%(module)s] %(levelname)s: %(message)s'
+        if logtype in ('file', 'stderr'):
+            format = '%(asctime)s ' + format
+    datefmt = ''
+    if logtype == 'stderr':
+        datefmt = '%X'
+    level = level.upper()
+    if level in ('DEBUG', 'ALL'):
+        logger.setLevel(logging.DEBUG)
+    elif level == 'INFO':
+        logger.setLevel(logging.INFO)
+    elif level == 'ERROR':
+        logger.setLevel(logging.ERROR)
+    elif level == 'CRITICAL':
+        logger.setLevel(logging.CRITICAL)
+    else:
+        logger.setLevel(logging.WARNING)
+    formatter = logging.Formatter(format, datefmt)
+    hdlr.setFormatter(formatter)
+    logger.addHandler(hdlr)
 
-    def stopService(self):
-        self.log.stop()
-        self.log_file.close()
-        del(self.log_file)
+    # Remember our handler so that we can remove it later
+    logger._seishub_handler = hdlr 
 
-
-class ErrorLog(log.FileLogObserver):
-    def emit(self, logEntryDict):
-        if not logEntryDict.get('isError'):
-            return
-        log.FileLogObserver.emit(self, logEntryDict)
-
-class AccessLog(log.FileLogObserver):
-    def emit(self, logEntryDict):
-        if logEntryDict.get('isError'):
-            return
-        log.FileLogObserver.emit(self, logEntryDict)
-        
+    return logger
