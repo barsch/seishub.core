@@ -22,7 +22,7 @@ html>body {
 .headerTitle {
     color: rgb(175, 175, 175);
     background-color: transparent;
-    font-family: garamond, "times new roman", times, roman, serif;
+    font-family: "trebuchet ms", verdana, helvetica, arial, sans-serif;
     font-size: 350%;
     margin: 0 0 0 5mm;
     padding: 15px 0 0 0;
@@ -50,7 +50,7 @@ html>body {
 }
 
 .subHeader a {
-    color: rgb(175, 175, 175);
+    color: steelblue;
     background-color: transparent;
     text-decoration: none;
     font-weight: bold;
@@ -63,7 +63,7 @@ html>body {
 }
 
 .subHeader .navigation .tab {
-    color: rgb(175, 175, 175);
+    color: steelblue;
     background-color: rgb(248, 248, 248);
     text-decoration: none;
     font-weight: bold;
