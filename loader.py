@@ -77,10 +77,13 @@ def load_py_files():
     """
     def _load_py_files(env, search_path, auto_enable=None):
         for path in search_path:
-            plugin_files = glob(os.path.join(path, '*.py'))
+            plugin_files = glob(os.path.join(path, '*'))
             for plugin_file in plugin_files:
+                if not os.path.isdir(plugin_file):
+                    continue
                 try:
-                    plugin_name = os.path.basename(plugin_file[:-3])
+                    plugin_name = os.path.basename(plugin_file)
+                    plugin_file += os.sep+'__init__.py'
                     env.log.debug('Loading file plugin %s from %s' % \
                                   (plugin_name, plugin_file))
                     if plugin_name not in sys.modules:
