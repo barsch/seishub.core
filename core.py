@@ -23,7 +23,7 @@ __all__ = ['Component', 'ExtensionPoint', 'implements', 'Interface',
 class SeisHubError(Exception):
     """Exception base class for errors in SeisHub."""
 
-    title = 'Trac Error'
+    title = 'SeisHub Error'
     
     def __init__(self, message, title=None, show_traceback=False):
         """If message is a genshi.builder.tag object, everything up to the
