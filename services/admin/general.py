@@ -11,17 +11,6 @@ from seishub.core import Component, implements
 from seishub.services.admin.interfaces import IAdminPanel
 
 
-class BasicsPanel(Component):
-    """Basic settings."""
-    implements(IAdminPanel)
-    
-    def getPanelId(self):
-        return ('admin', 'General', 'basics', 'Basic Settings')
-    
-    def renderPanel(self, request, cat_id, page_id):
-        return {'template': 'general_basics.tmpl', }
-
-
 class ConfigPanel(Component):
     """General configuration."""
     implements(IAdminPanel)
@@ -96,18 +85,19 @@ class PluginsPanel(Component):
             fullname = module.__name__+'.'+component.__name__
             
             if fullname in enabled or fullname in required:
-                self.config.set('components', fullname, 'enabled')
-                self.log.info('Enabling component %s', fullname)
                 # enable components activated during runtime manually:
                 if not component in self.env:
                     self.env.enabled[component]=True
                     self.env[component]
+                    self.config.set('components', fullname, 'enabled')
+                    self.log.info('Enabling component %s', fullname)
             else:
+                # disable components
                 if component in self.env:
                     self.env.enabled[component]=False
                     del self.env[component]
-                self.config.set('components', fullname, 'disabled')
-                self.log.info('Disabling component %s', fullname)
+                    self.config.set('components', fullname, 'disabled')
+                    self.log.info('Disabling component %s', fullname)
         
         self.config.save()
     

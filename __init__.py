@@ -11,7 +11,7 @@ U{http://www.seishub.org/}
 """
 __docformat__ = 'epytext en'
 
-__version__ = '0.0.1'
+__version__ = '0.0.2'
 __url__ = 'http://www.seishub.org/'
 __copyright__ = '(C) 2006-2007 Robert Barsch & Paul Käufl'
 __license__ = 'BSD'

@@ -6,6 +6,7 @@ from twisted.web import http, static
 from Cheetah.Template import Template
 from pkg_resources import resource_filename
 
+from seishub import __version__ as SEISHUB_VERSION
 from seishub.services.admin.interfaces import IAdminPanel
 from seishub.core import ExtensionPoint
 
@@ -15,8 +16,8 @@ class AdminRequestHandler(http.Request):
     
     def __init__(self, channel, queued):
         http.Request.__init__(self, channel, queued)
-        self._initStaticContent()
         self._initAdminPanels()
+        self._initStaticContent()
     
     def process(self):
         # handle web root
@@ -48,6 +49,7 @@ class AdminRequestHandler(http.Request):
                                                "templates/index.tmpl"))
         temp.navigation = self._getNavigation()
         temp.submenu = self._getSubMenu()
+        temp.version = SEISHUB_VERSION
         content = self._getContent()
         temp.content = content.get('template','')
         self.write(str(temp))
@@ -124,16 +126,19 @@ class AdminRequestHandler(http.Request):
         default_ico = static.File(resource_filename("seishub.services.admin",
                                                     "htdocs/favicon.ico"),
                                   defaultType="image/x-icon")
+        quake_gif = static.File(resource_filename("seishub.services.admin",
+                                                  "htdocs/images/quake.gif"))
         # default static files
         self.static_content = {'/css/default.css': default_css,
-                               '/favicon.ico': default_ico}
+                               '/favicon.ico': default_ico,
+                               '/images/quake.gif': quake_gif,}
         
         # panel specific static files
-#        for panel in self.admin_panels:
-#            if hasattr(panel, 'getHtdocsDirs'):
-#                items = panel.getHtdocsDirs()
-#                for path, child in items:
-#                    self.putChild(path, static.File(child))
+        for panel in self.admin_panels:
+            if hasattr(panel, 'getHtdocsDirs'):
+                items = panel.getHtdocsDirs()
+                for path, child in items:
+                    self.static_content[path] = static.File(child)
 
 
 class AdminHTTP(http.HTTPChannel):

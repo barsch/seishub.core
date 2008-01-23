@@ -27,7 +27,8 @@ application = service.Application("seishub")
 env.app=application
 
 # Admin
-adminService = internet.TCPServer(SERVICE_ADMIN_PORT, admin.AdminHTTPFactory(env))
+adminService = internet.TCPServer(SERVICE_ADMIN_PORT, 
+                                  admin.AdminHTTPFactory(env))
 adminService.setName("Admin Service")
 adminService.setServiceParent(application)
 
