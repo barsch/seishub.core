@@ -21,3 +21,20 @@ class IAdminPanel(Interface):
         This function should return a dict with the following keys:
         template, data and status.
         """
+    
+    def getHtdocsDirs():
+        """Return a list of directories with static resources (such as style
+        sheets, images, etc.)
+        
+        Each item in the list must be a `(prefix, abspath)` tuple. The
+        `prefix` part defines the path in the URL that requests to these
+        resources are prefixed with.
+        
+        The `abspath` is the absolute path to the directory containing the
+        resources on the local file system.
+        """
+    
+    def getTemplatesDirs():
+        """Return a list of directories containing the provided template
+        files.
+        """

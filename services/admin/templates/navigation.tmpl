@@ -1,13 +1,13 @@
 <div class="subHeader">
   <ul class="navigation">
-    #for $i in $menu
+    #for $i in $navigation
     <li>
-      <a #if $i.id==$selected
+      <a #if $i.page_id==$selected
          class="highlighted tab" 
          #else
          class="tab" 
          #end if 
-         href="$i.id">$i.name</a>
+         href="$i.page_id">$i.page_name</a>
     </li>
     #end for
     <li><a href="http://localhost:8080" class="tab">REST</a></li>

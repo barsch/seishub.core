@@ -2,7 +2,6 @@
 
 import inspect
 import sys
-import pkg_resources
 
 from twisted.web import server
 from twisted.internet import reactor, defer
@@ -58,22 +57,21 @@ class PluginsPanel(Component):
 
     def _updatePlugins(self, request):
         """Update component enablement."""
-        components = request.args.get('plugin',[])
         enabled = request.args.get('enabled',[])
-        changes = False
+        required = self.required_components
 
-        for component in components:
-            is_enabled = self.env.is_component_enabled(component)
-            if is_enabled != (component in enabled):
-                self.config.set('components', component,
-                                is_enabled and 'disabled' or 'enabled')
-                self.log.info('%sabling component %s',
-                              is_enabled and 'Dis' or 'En', component)
-
-        # enable all required components
-        for component in self.required_components:
-            self.config.set('components', component, 'enabled')
-
+        from seishub.core import ComponentMeta
+        for component in ComponentMeta._components:
+            module = sys.modules[component.__module__]
+            fullname = module.__name__+'.'+component.__name__
+            
+            if fullname in enabled or fullname in required:
+                self.config.set('components', fullname, 'enabled')
+                self.log.info('Enabling component %s', fullname)
+                self.env[component]
+            else:
+                self.config.set('components', fullname, 'disabled')
+                self.log.info('Disabling component %s', fullname)
         self.config.save()
     
     def _viewPlugins(self, request):
