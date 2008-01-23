@@ -190,6 +190,7 @@ class ComponentManager(object):
         """Activate the component instance for the given class, or return the
         existing the instance if the component has already been activated.
         """
+        #import pdb; pdb.set_trace()
         if cls not in self.enabled:
             self.enabled[cls] = self.is_component_enabled(cls)
         if not self.enabled[cls]:
@@ -204,6 +205,9 @@ class ComponentManager(object):
                 raise SeisHubError('Unable to instantiate component %r (%s)' %
                                 (cls, e))
         return component
+    
+    def __delitem__(self,cls):
+        del self.components[cls]
 
     def component_activated(self, component):
         """Can be overridden by sub-classes so that special initialization for

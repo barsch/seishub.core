@@ -68,10 +68,22 @@ class PluginsPanel(Component):
             if fullname in enabled or fullname in required:
                 self.config.set('components', fullname, 'enabled')
                 self.log.info('Enabling component %s', fullname)
-                self.env[component]
+                # enable components activated during runtime manually:
+                if not component in self.env:
+                    self.env.enabled[component]=True
+                    self.env[component]
+                    #XXX: weg damit:
+                    self.env[component].page_id='blah'
+                    self.env[component].page_name='blub'
+                    
             else:
+                if component in self.env:
+                    self.env.enabled[component]=False
+                    print "huhu"
+                    del self.env[component]
                 self.config.set('components', fullname, 'disabled')
                 self.log.info('Disabling component %s', fullname)
+        
         self.config.save()
     
     def _viewPlugins(self, request):
