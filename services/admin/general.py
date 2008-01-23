@@ -16,10 +16,40 @@ class BasicsPanel(Component):
     implements(IAdminPanel)
     
     def getPanelId(self):
-        return ('general', 'General', 'basics', 'Basic Settings')
+        return ('admin', 'General', 'basics', 'Basic Settings')
     
-    def renderPanel(self, request):
-        return {'template': 'basics.tmpl', }
+    def renderPanel(self, request, cat_id, page_id):
+        return {'template': 'general_basics.tmpl', }
+
+
+class ConfigPanel(Component):
+    """General configuration."""
+    implements(IAdminPanel)
+    
+    def getPanelId(self):
+        return ('admin', 'General', 'config', 'Config')
+    
+    def renderPanel(self, request, cat_id, page_id):
+        data = {}
+        sections = self.config.sections()
+        data['sections'] = sections
+        data['options'] = {}
+        for s in sections:
+            options = self.config.options(s)
+            data['options'][s] = options
+        return {'template': 'general_config.tmpl', 'data': data}
+
+
+class RESTRedirect(Component):
+    """REST redirect."""
+    implements(IAdminPanel)
+    
+    def getPanelId(self):
+        return ('rest', 'REST', 'rest', 'REST')
+    
+    def renderPanel(self, request, cat_id, page_id):
+        request.redirect('http://localhost:8080/')
+        return {}
 
 
 class LogsPanel(Component):
@@ -27,13 +57,13 @@ class LogsPanel(Component):
     implements(IAdminPanel)
     
     def getPanelId(self):
-        return ('general', 'General', 'logs', 'Logs')
+        return ('admin', 'General', 'logs', 'Logs')
     
-    def renderPanel(self, request):
+    def renderPanel(self, request, cat_id, page_id):
         data = {
           'logs': 'testdaten', 
         }
-        return {'template': 'logs.tmpl', 
+        return {'template': 'general_logs.tmpl', 
                 'data': data, }
 
 
@@ -46,13 +76,13 @@ class PluginsPanel(Component):
                            'seishub.services.admin.admin.AdminService')
     
     def getPanelId(self):
-        return ('general', 'General', 'plugins', 'Plugins')
+        return ('admin', 'General', 'plugins', 'Plugins')
     
-    def renderPanel(self, request):
+    def renderPanel(self, request, cat_id, page_id):
         if request.method == 'POST':
             if 'update' in request.args:
                 self._updatePlugins(request)
-            request.redirect('plugins')
+            request.redirect('/'+cat_id+'/'+page_id)
         return self._viewPlugins(request)
 
     def _updatePlugins(self, request):
@@ -72,14 +102,9 @@ class PluginsPanel(Component):
                 if not component in self.env:
                     self.env.enabled[component]=True
                     self.env[component]
-                    #XXX: weg damit:
-                    self.env[component].page_id='blah'
-                    self.env[component].page_name='blub'
-                    
             else:
                 if component in self.env:
                     self.env.enabled[component]=False
-                    print "huhu"
                     del self.env[component]
                 self.config.set('components', fullname, 'disabled')
                 self.log.info('Disabling component %s', fullname)
@@ -108,7 +133,7 @@ class PluginsPanel(Component):
         data = {
           'plugins': plugins,
         }
-        return {'template': 'plugins.tmpl', 
+        return {'template': 'general_plugins.tmpl', 
                 'data': data, }
 
 
@@ -117,9 +142,9 @@ class ServicesPanel(Component):
     implements(IAdminPanel)
     
     def getPanelId(self):
-        return ('general', 'General', 'services', 'Services')
+        return ('admin', 'General', 'services', 'Services')
     
-    def renderPanel(self, request):
+    def renderPanel(self, request, cat_id, page_id):
         data = {
           'services': service.IServiceCollection(self.env.app),
         }
@@ -131,7 +156,7 @@ class ServicesPanel(Component):
                 status = self.__changeServices(request)
             elif request.args.has_key('restart'):
                 self.__restartSeisHub()
-        return {'template': 'services.tmpl', 
+        return {'template': 'general_services.tmpl', 
                 'data': data, 
                 'status': status, }
     

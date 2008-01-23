@@ -128,7 +128,7 @@ html>body {
 
 #main h1 {
     font-family: "trebuchet ms", verdana, helvetica, arial, sans-serif;
-    font-size: 145.5%;
+    font-size: 150%;
     font-weight: bold;
     margin: 0 0 1.05em 0;
     padding: 0;
@@ -136,15 +136,15 @@ html>body {
 
 #main h2 {
     font-family: "trebuchet ms", verdana, helvetica, arial, sans-serif;
-    font-size: 135.5%;
+    font-size: 120%;
     font-weight: bold;
     margin: 0 0 1.05em 0;
     padding: 0;
 }
 
-#main h6 {
+#main h3 {
     font-family: "trebuchet ms", verdana, helvetica, arial, sans-serif;
-    font-size: 135.5%;
+    font-size: 100%;
     font-weight: bold;
     margin: 3px 0px;
     padding: 0;

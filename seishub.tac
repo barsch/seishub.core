@@ -14,7 +14,6 @@ from seishub.env import Environment
 
 
 env=Environment()
-# import config file
 
 # twisted logging
 LOG_DIR = env.config.get('logging','log_dir')
@@ -28,8 +27,7 @@ application = service.Application("seishub")
 env.app=application
 
 # Admin
-adminRoot = admin.AdminService(env)
-adminService = internet.TCPServer(SERVICE_ADMIN_PORT, server.Site(adminRoot))
+adminService = internet.TCPServer(SERVICE_ADMIN_PORT, admin.AdminHTTPFactory(env))
 adminService.setName("Admin Service")
 adminService.setServiceParent(application)
 

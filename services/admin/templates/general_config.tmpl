@@ -1,0 +1,14 @@
+<h1>Config</h1>
+
+<dl>
+  #for $s in $sections
+  <dt>[$s]</dt>
+  <dd>
+    <ul>
+    #for $id, $value in $options[$s]
+    <li>$id = $value</li>
+    #end for
+    </ul>
+  </dd>
+  #end for
+</dl>

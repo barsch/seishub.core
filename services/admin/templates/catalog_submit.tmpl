@@ -1,0 +1,16 @@
+<h1>Submit XML File </h1>
+
+<h2>Copy & Paste</h2>
+<form method="POST">
+  <textarea rows="20" cols="80" name="text">$text</textarea><br />
+  <input type="submit" value="Start" />
+</form>
+
+<br />
+<br />
+
+<h2>Choose File ...</h2>
+<form method="post" enctype="multipart/form-data">
+  <input name="file" type="file" size="50" maxlength="100000" accept="text/xml" />
+  <input type="submit" value="Load file" />
+</form>

@@ -2,46 +2,72 @@
 
 import os
 
-from twisted.web import static, resource
+from twisted.web import http, static
 from Cheetah.Template import Template
 from pkg_resources import resource_filename
 
 from seishub.services.admin.interfaces import IAdminPanel
-from seishub.core import Component, ExtensionPoint
+from seishub.core import ExtensionPoint
 
 
-class AdminPanel(resource.Resource):
-    def __init__(self, admin_panels, path):
-        self.admin_panels = admin_panels
-        self.path = path
-        self.panel = None
+class AdminRequestHandler(http.Request):
+    """A HTTP request."""
+    
+    def __init__(self, channel, queued):
+        http.Request.__init__(self, channel, queued)
+        self._initStaticContent()
+        self._initAdminPanels()
+    
+    def process(self):
+        # handle web root
+        if self.path=='/':
+            # in category admin should be always something enabled
+            self.redirect('/admin')
+            self.finish()
+            return
         
-        for panel in admin_panels:
-            if panel.page_id == path:
+        # process static content first
+        if self.path in self.static_content.keys():
+            self.static_content.get(self.path).render(self)
+            self.finish()
+            return
+        
+        # now its maybe an AdminPanel
+        self.panel = None
+        for panel in self.admin_panels:
+            # get the specific AdminPanel
+            if '/'+panel.cat_id+'/'+panel.page_id == self.path:
                 self.panel = panel
                 break
+            # but keep a default panel
+            if '/'+panel.cat_id == self.path and not self.panel:
+                self.panel = panel
         
-        resource.Resource.__init__(self)
-    
-    def render(self, request):
+        # render panel
         temp = Template(file=resource_filename("seishub.services.admin",
                                                "templates/index.tmpl"))
-        temp.navigation = self.getNavigation(request)
-        content = self.getContent(request)
+        temp.navigation = self._getNavigation()
+        temp.submenu = self._getSubMenu()
+        content = self._getContent()
         temp.content = content.get('template','')
-        request.write(str(temp))
-        return content.get('status','')
+        self.write(str(temp))
+        
+        # XXX: we didn't handle status codes yet!!!!
+        #if content.has_key('status'):
+        self.finish()
     
-    def getContent(self, request):
+    def _getContent(self):
         if not self.panel: 
             return {}
         if not hasattr(self.panel, 'renderPanel'):
             return {}
-        content = self.panel.renderPanel(request)
+        content = self.panel.renderPanel(self, 
+                                         self.panel.cat_id, 
+                                         self.panel.page_id)
         if not content.has_key('template'):
             return content
         temp = ''
-        for path in self.getTemplateDirs():
+        for path in self._getTemplateDirs():
             filename = path + os.sep + content.get('template')
             if not os.path.isfile(filename):
                 continue
@@ -50,50 +76,80 @@ class AdminPanel(resource.Resource):
         content['template'] = temp
         return content 
     
-    def getNavigation(self, request):
+    def _getNavigation(self):
+        """Generate the main navigation bar."""
         temp = Template(file=resource_filename("seishub.services.admin",
                                                "templates/navigation.tmpl"))
-        temp.navigation = self.admin_panels
-        temp.selected = self.panel and self.panel.page_id
+        menuitems = self.navigation.items()
+        menuitems.sort()
+        temp.navigation = menuitems
+        temp.cat_id = self.panel and self.panel.cat_id
         return temp
-
-    def getTemplateDirs(self):
+    
+    def _getSubMenu(self):
+        """Generate the sub menu box."""
+        temp = Template(file=resource_filename("seishub.services.admin",
+                                               "templates/submenu.tmpl"))
+        temp.page_id = self.panel and self.panel.page_id
+        temp.cat_id = self.panel and self.panel.cat_id
+        menuitems = self.submenu.get(temp.cat_id,{}).items()
+        menuitems.sort()
+        temp.submenu = menuitems 
+        return temp
+    
+    def _getTemplateDirs(self):
+        """Returns a list of searchable template directories."""
         dirs = [resource_filename("seishub.services.admin","templates")]
         if hasattr(self.panel, 'getTemplateDirs'):
             dirs+=self.panel.getTemplateDirs()
         return dirs[::-1]
-
-
-class AdminService(Component, resource.Resource):
-    """Web administration interface."""
-    admin_panels = ExtensionPoint(IAdminPanel)
     
-    def __init__(self):
-        resource.Resource.__init__(self)
-        self.setStaticContent()
-        
-        for panel in self.admin_panels: 
+    def _initAdminPanels(self):
+        """Returns a list of AdminPanel plug-ins."""
+        self.admin_panels = ExtensionPoint(IAdminPanel).extensions(self.env)
+        self.navigation = {}
+        self.submenu = {}
+        for panel in self.admin_panels:
             (panel.cat_id, panel.cat_name, panel.page_id, panel.page_name) = panel.getPanelId()
-            panel.id = panel.cat_id + '/' + panel.page_id
+            self.navigation[panel.cat_id] = panel.cat_name
+            if not self.submenu.has_key(panel.cat_id):
+                self.submenu[panel.cat_id]={}
+            self.submenu[panel.cat_id][panel.page_id] = panel.page_name
     
-    def getChild(self, path, request):
-        return AdminPanel(self.admin_panels, path)
     
-    def setStaticContent(self):
+    def _initStaticContent(self):
+        """Returns a dictionary of static web resources."""
+        default_css = static.File(resource_filename("seishub.services.admin",
+                                                    "htdocs/css/default.css"))
+        default_ico = static.File(resource_filename("seishub.services.admin",
+                                                    "htdocs/favicon.ico"),
+                                  defaultType="image/x-icon")
         # default static files
-        items = [
-          ('css', static.File("seishub/services/admin/htdocs/css")),
-          ('js', static.File('seishub/services/admin/htdocs/js')),
-          ('images', static.File('seishub/services/admin/htdocs/images')),
-          ('favicon.ico', static.File("seishub/services/admin/htdocs/favicon.ico",
-                                      defaultType="image/x-icon")),
-        ]
-        for path, child in items:
-            self.putChild(path, child)
+        self.static_content = {'/css/default.css': default_css,
+                               '/favicon.ico': default_ico}
         
         # panel specific static files
-        for panel in self.admin_panels:
-            if hasattr(panel, 'getHtdocsDirs'):
-                items = panel.getHtdocsDirs()
-                for path, child in items:
-                    self.putChild(path, static.File(child))
+#        for panel in self.admin_panels:
+#            if hasattr(panel, 'getHtdocsDirs'):
+#                items = panel.getHtdocsDirs()
+#                for path, child in items:
+#                    self.putChild(path, static.File(child))
+
+
+class AdminHTTP(http.HTTPChannel):
+    """A receiver for HTTP requests."""
+    requestFactory = AdminRequestHandler
+    
+    def __init__(self):
+        http.HTTPChannel.__init__(self)
+        self.requestFactory.env = self.env
+
+
+class AdminHTTPFactory(http.HTTPFactory):
+    """Factory for HTTP Server."""
+    protocol = AdminHTTP
+    
+    def __init__(self, env, logPath=None, timeout=None):
+        http.HTTPFactory.__init__(self, logPath, timeout)
+        self.env = env
+        self.protocol.env = env
