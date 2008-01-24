@@ -1,11 +1,9 @@
-<div class="subHeader">
-  <ul class="navigation">
+<div id="navigation">
+  <ul id="menu">
     #for $id, $name in $navigation
     <li>
       <a #if $id==$cat_id
-         class="highlighted tab" 
-         #else
-         class="tab" 
+         class="selected" 
          #end if 
          href="/$id">$name</a>
     </li>

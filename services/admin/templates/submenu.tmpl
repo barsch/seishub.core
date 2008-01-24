@@ -1,15 +1,12 @@
-<div class="submenu">
-  <ul class="submenu">
-    #for $id, $name in $submenu
-    <li>
-      <a #if $id==$page_id
-         class="highlighted tab" 
-         #else
-         class="tab" 
-         #end if 
-         href="/$cat_id/$id">$name</a>
-    </li>
-    #end for
-  </ul>
-</div>
+<ul id="submenu">
+  #for $id, $name in $submenu
+  <li>
+    <a #if $id==$page_id
+       class="selected" 
+       #end if 
+       href="/$cat_id/$id">$name</a>
+  </li>
+  #end for
+</ul>
+
 
