@@ -35,6 +35,4 @@ class IAdminPanel(Interface):
         """
     
     def getTemplatesDirs():
-        """Return a list of directories containing the provided template
-        files.
-        """
+        """Return a list of directories containing template files."""

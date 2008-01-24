@@ -11,6 +11,26 @@ from seishub.core import Component, implements
 from seishub.services.admin.interfaces import IAdminPanel
 
 
+class BasicPanel(Component):
+    """Basic configuration."""
+    implements(IAdminPanel)
+    
+    def getPanelId(self):
+        return ('admin', 'General', 'basic', 'Basic settings')
+    
+    def renderPanel(self, request, cat_id, page_id):
+        if request.method == 'POST':
+            for option in ('url', 'default_charset', 'description'):
+                self.config.set('seishub', option, request.args.get(option,[])[0])
+            self.config.save()
+            request.redirect('/'+cat_id+'/'+page_id)
+        data = {
+          'url': self.config.get('seishub', 'url'),
+          'default_charset': self.config.get('seishub', 'default_charset'),
+          'description': self.config.get('seishub', 'description'),
+        }
+        return {'template': 'general_basic.tmpl', 'data': data}
+
 class ConfigPanel(Component):
     """General configuration."""
     implements(IAdminPanel)
@@ -61,8 +81,7 @@ class PluginsPanel(Component):
     implements(IAdminPanel)
     
     required_components = ('seishub.services.admin.general.PluginsPanel', 
-                           'seishub.env.Environment', 
-                           'seishub.services.admin.admin.AdminService')
+                           'seishub.env.Environment',)
     
     def getPanelId(self):
         return ('admin', 'General', 'plugins', 'Plugins')
@@ -172,5 +191,5 @@ class ServicesPanel(Component):
         return server.NOT_DONE_YET
     
     def __finishedActions(self, results, request):
-        request.redirect('services')
+        request.redirect('/'+cat_id+'/'+page_id)
         request.finish()

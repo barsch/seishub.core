@@ -101,6 +101,7 @@ class AdminRequestHandler(http.Request):
     
     def _getTemplateDirs(self):
         """Returns a list of searchable template directories."""
+        print __name__
         dirs = [resource_filename("seishub.services.admin","templates")]
         if hasattr(self.panel, 'getTemplateDirs'):
             dirs+=self.panel.getTemplateDirs()

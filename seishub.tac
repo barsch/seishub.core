@@ -23,7 +23,8 @@ log.startLogging(open(os.path.join(LOG_DIR, DEBUG_LOG_FILE), 'w'))
 ### Twisted
 SERVICE_ADMIN_PORT = env.config.getint('admin','port')
 SERVICE_REST_PORT = env.config.getint('rest','port')
-application = service.Application("seishub")
+
+application = service.Application("SeisHub", uid=1, gid=1)
 env.app=application
 
 # Admin

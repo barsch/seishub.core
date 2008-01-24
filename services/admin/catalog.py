@@ -16,11 +16,9 @@ class SubmitXMLPanel(Component):
         if request.method=='POST':
             if 'text' in request.args.keys():
                 # we have a textual submission - do something with it
-                data['text'] = request.args['text'][0][::-1]
+                data['text'] = request.args['text'][0].upper()
             elif 'file' in request.args.keys():
                 # we got a file upload
                 data['text'] = request.args['file'][0]
-        print request.method
-        print request.args
         
         return {'template': 'catalog_submit.tmpl', 'data': data}
