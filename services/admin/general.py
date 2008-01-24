@@ -18,12 +18,12 @@ class BasicPanel(Component):
     def getPanelId(self):
         return ('admin', 'General', 'basic', 'Basic settings')
     
-    def renderPanel(self, request, cat_id, page_id):
+    def renderPanel(self, request):
         if request.method == 'POST':
             for option in ('url', 'default_charset', 'description'):
                 self.config.set('seishub', option, request.args.get(option,[])[0])
             self.config.save()
-            request.redirect('/'+cat_id+'/'+page_id)
+            request.redirect(request.path)
         data = {
           'url': self.config.get('seishub', 'url'),
           'default_charset': self.config.get('seishub', 'default_charset'),
@@ -38,7 +38,7 @@ class ConfigPanel(Component):
     def getPanelId(self):
         return ('admin', 'General', 'config', 'Config')
     
-    def renderPanel(self, request, cat_id, page_id):
+    def renderPanel(self, request):
         data = {}
         sections = self.config.sections()
         data['sections'] = sections
@@ -56,7 +56,7 @@ class RESTRedirect(Component):
     def getPanelId(self):
         return ('rest', 'REST', 'rest', 'REST')
     
-    def renderPanel(self, request, cat_id, page_id):
+    def renderPanel(self, request):
         request.redirect('http://localhost:8080/')
         return {}
 
@@ -68,7 +68,7 @@ class LogsPanel(Component):
     def getPanelId(self):
         return ('admin', 'General', 'logs', 'Logs')
     
-    def renderPanel(self, request, cat_id, page_id):
+    def renderPanel(self, request):
         data = {
           'logs': 'testdaten', 
         }
@@ -86,11 +86,11 @@ class PluginsPanel(Component):
     def getPanelId(self):
         return ('admin', 'General', 'plugins', 'Plugins')
     
-    def renderPanel(self, request, cat_id, page_id):
+    def renderPanel(self, request):
         if request.method == 'POST':
             if 'update' in request.args:
                 self._updatePlugins(request)
-            request.redirect('/'+cat_id+'/'+page_id)
+            request.redirect(request.path)
         return self._viewPlugins(request)
 
     def _updatePlugins(self, request):
@@ -153,7 +153,7 @@ class ServicesPanel(Component):
     def getPanelId(self):
         return ('admin', 'General', 'services', 'Services')
     
-    def renderPanel(self, request, cat_id, page_id):
+    def renderPanel(self, request):
         data = {
           'services': service.IServiceCollection(self.env.app),
         }
@@ -191,5 +191,5 @@ class ServicesPanel(Component):
         return server.NOT_DONE_YET
     
     def __finishedActions(self, results, request):
-        request.redirect('/'+cat_id+'/'+page_id)
+        request.redirect(request.path)
         request.finish()

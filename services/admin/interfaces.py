@@ -15,7 +15,7 @@ class IAdminPanel(Interface):
         `(page, page_label)`.
         """
 
-    def renderPanel(self, request, cat_id, page_id):
+    def renderPanel(self, request):
         """Process a request for an admin panel.
         
         This function should return a dict with the following keys:

@@ -63,9 +63,7 @@ class AdminRequestHandler(http.Request):
             return {}
         if not hasattr(self.panel, 'renderPanel'):
             return {}
-        content = self.panel.renderPanel(self, 
-                                         self.panel.cat_id, 
-                                         self.panel.page_id)
+        content = self.panel.renderPanel(self)
         if not content.has_key('template'):
             return content
         temp = ''

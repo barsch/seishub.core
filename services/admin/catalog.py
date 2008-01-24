@@ -11,7 +11,7 @@ class SubmitXMLPanel(Component):
     def getPanelId(self):
         return ('catalog', 'XML Catalog', 'submit', 'Submit XML File')
     
-    def renderPanel(self, request, cat_id, page_id):
+    def renderPanel(self, request):
         data = {'text': ''}
         if request.method=='POST':
             if 'text' in request.args.keys():
