@@ -2,7 +2,7 @@
 
 import inspect
 import sys
-
+import pkg_resources
 from twisted.web import server
 from twisted.internet import reactor, defer
 from twisted.application import service
@@ -125,6 +125,12 @@ class PluginsPanel(Component):
         from seishub.core import ComponentMeta
         for component in ComponentMeta._components:
             module = sys.modules[component.__module__]
+            print module.__class__
+            print module.__file__
+            print module.__name__
+            print component.__name__
+            print component.__class__
+            
             fullname = module.__name__+'.'+component.__name__
             
             # create a one line description
