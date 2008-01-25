@@ -122,11 +122,15 @@ class AdminRequestHandler(http.Request):
                                                     "htdocs"+os.sep+\
                                                     "favicon.ico"),
                                   defaultType="image/x-icon")
+        default_js = static.File(resource_filename("seishub.services.admin",
+                                                   "htdocs"+os.sep+"js"+ \
+                                                   os.sep+"default.js"))
         quake_gif = static.File(resource_filename("seishub.services.admin",
                                                   "htdocs"+os.sep+"images"+ \
                                                   os.sep+"quake.gif"))
         # default static files
         self.static_content = {'/css/default.css': default_css,
+                               '/js/default.js': default_js,
                                '/favicon.ico': default_ico,
                                '/images/quake.gif': quake_gif,}
         

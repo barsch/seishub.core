@@ -22,7 +22,9 @@ DEBUG_LOG_FILE = env.config.get('logging','debug_log_file')
 log.startLogging(open(os.path.join(LOG_DIR, DEBUG_LOG_FILE), 'w'))
 
 # Twisted
-application = service.Application("SeisHub", uid=1, gid=1)
+# XXX: use gid and uid for posix environments
+#application = service.Application("SeisHub", uid=XXX, gid=XXX)
+application = service.Application("SeisHub")
 env.app=application
 
 # Admin

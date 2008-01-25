@@ -145,7 +145,6 @@ class PluginsPanel(Component):
           'sorted_packages': sorted_packages, 
           'packages': packages,
         }
-        print data
         return ('general_plugins.tmpl', data)
 
 

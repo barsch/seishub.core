@@ -2,8 +2,12 @@
 
 <form method="post" name="plugins">
   #for $package in $sorted_packages
-  <h2>$package</h2>
-  <dl>
+  <h2>
+    $package 
+    [<a href="" 
+        onclick="javascript: toggleDisplay('$package'); return false">+</a>]
+  </h2>
+  <dl id="$package" style="display: none;">
     #for $p in $packages.get($package)
     <dt>
       <input type="hidden" name="plugin" value="$p.classname" />
@@ -18,12 +22,11 @@
       <b>$p.classname</b>
     </dt>
     <dd> 
-      <i>$p.description</i>
+      <i>$p.description</i><br />
+      <tt>$p.file</tt>
     </dd>
     #end for
   </dl>
-  
-  <br />
   #end for
   <input type="submit" name="update" value="Set Plugins" />
 </form>
