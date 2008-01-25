@@ -1,4 +1,4 @@
-# module seishub.services.admin
+# -*- coding: utf-8 -*-
 
 from seishub.services.admin.interfaces import *
 

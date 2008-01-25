@@ -21,4 +21,4 @@ class SubmitXMLPanel(Component):
                 # we got a file upload
                 data['text'] = request.args['file'][0]
         
-        return {'template': 'catalog_submit.tmpl', 'data': data}
+        return ('catalog_submit.tmpl', data)

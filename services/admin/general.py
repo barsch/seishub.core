@@ -9,6 +9,7 @@ from twisted.application import service
 
 from seishub.core import Component, implements
 from seishub.services.admin.interfaces import IAdminPanel
+from seishub.util.text import getTextUntilDot
 
 
 class BasicPanel(Component):
@@ -29,7 +30,7 @@ class BasicPanel(Component):
           'default_charset': self.config.get('seishub', 'default_charset'),
           'description': self.config.get('seishub', 'description'),
         }
-        return {'template': 'general_basic.tmpl', 'data': data}
+        return ('general_basic.tmpl', data)
 
 class ConfigPanel(Component):
     """General configuration."""
@@ -46,7 +47,7 @@ class ConfigPanel(Component):
         for s in sections:
             options = self.config.options(s)
             data['options'][s] = options
-        return {'template': 'general_config.tmpl', 'data': data}
+        return ('general_config.tmpl', data)
 
 
 class RESTRedirect(Component):
@@ -58,7 +59,7 @@ class RESTRedirect(Component):
     
     def renderPanel(self, request):
         request.redirect('http://localhost:8080/')
-        return {}
+        return ('',{})
 
 
 class LogsPanel(Component):
@@ -72,8 +73,7 @@ class LogsPanel(Component):
         data = {
           'logs': 'testdaten', 
         }
-        return {'template': 'general_logs.tmpl', 
-                'data': data, }
+        return ('general_logs.tmpl', data)
 
 
 class PluginsPanel(Component):
@@ -128,9 +128,7 @@ class PluginsPanel(Component):
             fullname = module.__name__+'.'+component.__name__
             
             # create a one line description
-            description = inspect.getdoc(component) 
-            if description:
-                description = description.split('.', 1)[0] + '.'
+            description = getTextUntilDot(inspect.getdoc(component)) 
             plugins.append({
               'name': component.__name__, 
               'module': module.__name__,
@@ -142,8 +140,7 @@ class PluginsPanel(Component):
         data = {
           'plugins': plugins,
         }
-        return {'template': 'general_plugins.tmpl', 
-                'data': data, }
+        return ('general_plugins.tmpl', data)
 
 
 class ServicesPanel(Component):
@@ -157,25 +154,22 @@ class ServicesPanel(Component):
         data = {
           'services': service.IServiceCollection(self.env.app),
         }
-        status = ''
         if request.method == 'POST':
             if request.args.has_key('shutdown'):
-                self.__shutdownSeisHub()
+                self._shutdownSeisHub()
             elif request.args.has_key('reload'):
-                status = self.__changeServices(request)
+                self._changeServices(request)
             elif request.args.has_key('restart'):
-                self.__restartSeisHub()
-        return {'template': 'general_services.tmpl', 
-                'data': data, 
-                'status': status, }
+                self._restartSeisHub()
+        return ('general_services.tmpl', data)
     
-    def __shutdownSeisHub(self):
+    def _shutdownSeisHub(self):
         reactor.stop()
     
-    def __restartSeisHub(self):
+    def _restartSeisHub(self):
         pass
     
-    def __changeServices(self, request):
+    def _changeServices(self, request):
         actions = []
         serviceList = request.args.get('service', [])
         for srv in service.IServiceCollection(self.env.app):
@@ -187,9 +181,9 @@ class ServicesPanel(Component):
                 starting = defer.maybeDeferred(srv.startService)
                 actions.append(starting)
                 self.log.info('Starting service %s', srv.name)
-        defer.DeferredList(actions).addCallback(self.__finishedActions, request)
+        defer.DeferredList(actions).addCallback(self._finishedActions, request)
         return server.NOT_DONE_YET
     
-    def __finishedActions(self, results, request):
+    def _finishedActions(self, results, request):
         request.redirect(request.path)
         request.finish()

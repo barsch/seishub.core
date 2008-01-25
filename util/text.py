@@ -1,22 +1,4 @@
 # -*- coding: utf-8 -*-
-#
-# Copyright (C) 2003-2006 Edgewall Software
-# Copyright (C) 2003-2004 Jonas Borgström <jonas@edgewall.com>
-# Copyright (C) 2006 Matthew Good <trac@matt-good.net>
-# Copyright (C) 2005-2006 Christian Boos <cboos@neuf.fr>
-# All rights reserved.
-#
-# This software is licensed as described in the file COPYING, which
-# you should have received as part of this distribution. The terms
-# are also available at http://trac.edgewall.org/wiki/TracLicense.
-#
-# This software consists of voluntary contributions made by many
-# individuals. For the exact contribution history, see the revision
-# history and logs, available at http://trac.edgewall.org/log/.
-#
-# Author: Jonas Borgström <jonas@edgewall.com>
-#         Matthew Good <trac@matt-good.net>
-#         Christian Boos <cboos@neuf.fr>
 
 import locale
 
@@ -59,3 +41,10 @@ def to_unicode(text, charset=None):
             return unicode(text, 'utf-8')
         except UnicodeError:
             return unicode(text, locale.getpreferredencoding(), 'replace')
+
+
+def getTextUntilDot(text=None):
+    """Returns the string until the first dot."""
+    if not text:
+        return ''
+    return text.split('.', 1)[0] + '.'

@@ -97,7 +97,7 @@ body {
     padding: 30px;
     margin: 1em;
     margin-left: 13em;
-    background-color: rgb(248, 248, 248);
+    background-color: rgb(240, 240, 240);
 }
 
 #content p {
@@ -156,6 +156,10 @@ body {
     list-style: none;
     margin: 0;
     padding: 0;
+}
+
+#submenu li a {
+    color: rgb(40,40,40);
 }
 
 #submenu li a.selected {
