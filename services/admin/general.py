@@ -121,31 +121,31 @@ class PluginsPanel(Component):
         self.config.save()
     
     def _viewPlugins(self, request):
-        plugins = []
+        packages = {}
         from seishub.core import ComponentMeta
         for component in ComponentMeta._components:
             module = sys.modules[component.__module__]
-            print module.__class__
-            print module.__file__
-            print module.__name__
-            print component.__name__
-            print component.__class__
-            
-            fullname = module.__name__+'.'+component.__name__
-            
             # create a one line description
             description = getTextUntilDot(inspect.getdoc(component)) 
-            plugins.append({
+            
+            classname = module.__name__+'.'+component.__name__
+            plugin = {
               'name': component.__name__, 
               'module': module.__name__,
-              'full': fullname,
+              'file': module.__file__,
+              'classname': classname,
               'description': description,
               'enabled': self.env.is_component_enabled(component),
-              'required': fullname in self.required_components,
-            })        
+              'required': classname in self.required_components,
+            }
+            packages.setdefault(module.__name__,[]).append(plugin)
+        sorted_packages = packages.keys()
+        sorted_packages.sort()
         data = {
-          'plugins': plugins,
+          'sorted_packages': sorted_packages, 
+          'packages': packages,
         }
+        print data
         return ('general_plugins.tmpl', data)
 
 

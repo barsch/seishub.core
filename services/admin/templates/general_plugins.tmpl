@@ -1,10 +1,12 @@
 <h1>Plugins</h1>
 
 <form method="post" name="plugins">
+  #for $package in $sorted_packages
+  <h2>$package</h2>
   <dl>
-    #for $p in $plugins
+    #for $p in $packages.get($package)
     <dt>
-      <input type="hidden" name="plugin" value="$p.full" />
+      <input type="hidden" name="plugin" value="$p.classname" />
       <input type="checkbox"
         #if $p.required
              disabled="disabled" 
@@ -12,14 +14,17 @@
         #if $p.enabled
              checked="checked" 
         #end if 
-             name="enabled" value="$p.full" /> 
-      <b>$p.full</b>
+             name="enabled" value="$p.classname" /> 
+      <b>$p.classname</b>
     </dt>
     <dd> 
       <i>$p.description</i>
     </dd>
     #end for
   </dl>
+  
+  <br />
+  #end for
   <input type="submit" name="update" value="Set Plugins" />
 </form>
 
