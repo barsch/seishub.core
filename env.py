@@ -18,6 +18,7 @@ import os
 
 from seishub.core import Component, ComponentManager
 from seishub.config import Configuration, Option
+from seishub.xmldb.xmlcatalog import XmlCatalog
 
 __all__ = ['Environment']
 
@@ -80,6 +81,9 @@ class Environment(Component, ComponentManager):
         # set log handler
         self.setup_log()
         
+        # set xml catalog
+        self.catalog=XmlCatalog(self)
+        
         from seishub.loader import load_components
         plugins_dir = self.config.get('inherit', 'plugins_dir')
         load_components(self, plugins_dir and (plugins_dir,))
@@ -93,6 +97,7 @@ class Environment(Component, ComponentManager):
         component.env = self
         component.config = self.config
         component.log = self.log
+        component.catalog = self.catalog
     
     def is_component_enabled(self, cls):
         """Implemented to only allow activation of components that are not

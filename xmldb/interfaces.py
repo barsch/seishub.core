@@ -2,6 +2,20 @@
 
 from zope.interface import Interface
 
+class IXmlCatalog(Interface):
+    """This is the main interface to access the whole xmldb thing"""
+    
+    def newXmlResource(raw_data,uri):
+        """Resource factory; supposed to be used with addResource from 
+        IResourceStorage
+        @param raw_data: string containing xml data
+        @uri: uri of the new resource
+        @return: XmlResource instance"""
+    
+    def query(xpath_query):
+        """@param xpath_query: restricted xpath expression (see xpath.py for 
+        further information)"""
+
 class IXmlResource(Interface):
     """XmlResource is a subclass of Resource providing some special xml 
     functionality such as xml validation and parsing
@@ -17,7 +31,7 @@ class IXmlResource(Interface):
         """@param data: raw xml data as a string"""
         
 class IResourceStorage(Interface):
-    """Basic XML Storage Manager Description"""
+    """Basic XML storage manager description"""
     
     def addResource(xmlResource):
         """Add a new resource to the storage"""
