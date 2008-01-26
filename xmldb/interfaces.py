@@ -30,10 +30,7 @@ class IResourceStorage(Interface):
         
     def getResource(uri):
         """Retreive an existing resource from the storage"""
-            
-    #def query(query_str):
-    #    """Query the storage"""
-        
+             
 class IXmlIndex(Interface):
     """Xml index base class
     
@@ -54,24 +51,23 @@ class IXmlIndex(Interface):
         
     def getType():
         """@return: data type of the index key"""
+        
+    def getValues():
+        """@return: values of this index"""
     
     def eval(xml_resource):
         """Evaluate this index on a given XmlResource
         @param xml_resource: xmldb.xmlresource.XmlResource object
         @return: list with key, value pairs on success, None else"""
         
-class IXmlCatalog(Interface):
-    """Catalog providing methods for xml resource indexing and searching
-    """
-    
-    def init(adbapi_connection):
-        """@param adbapi_connection: an adbapi conform db connector"""
+class IIndexRegistry(Interface):
+    """Manages index creation, retrieval, update and removal"""
     
     def registerIndex(xml_index):
         """@param xml_index: register given XmlIndex
         @return: deferred which will fire the unique index id on success
         """
-        
+    
     def removeIndex(xml_index=None,
                     key_path=None,value_path=None):
         """Remove an index and its data.
@@ -92,6 +88,8 @@ class IXmlCatalog(Interface):
     def getIndex(key_path,value_path):
         """@return: Deferred which will return a XmlIndex on success"""
         
+class IResourceIndexing(Interface):
+    """Index resources"""
     def indexResource(resource,
                       xml_index=None,
                       key_path=None,value_path=None):
@@ -129,13 +127,14 @@ class IXmlCatalog(Interface):
         @param value_path: value path
         @return: Deferred"""
         
-    def query(query,index=None):
-        """Drop a query on the catalog"""
-        
-def _test():
-    import doctest
-    doctest.testmod()
+class IXmlIndexCatalog(Interface):
+    """Catalog providing methods for xml resource indexing and searching
+    """
+    
+    def init(adbapi_connection):
+        """@param adbapi_connection: an adbapi conform db connector"""
 
-if __name__ == "__main__":
-    _test()
+    def query(query):
+        """Drop a query on the catalog"""
+
         

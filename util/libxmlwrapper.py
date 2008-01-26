@@ -99,14 +99,14 @@ class XmlTreeDoc(XmlDoc):
     """This class parses a document using the libxml2 push parser""" 
     implements(IXmlTreeDoc)
     
-    def __init__(self,xml_data="",resource_name="",blocking=False):
+    def __init__(self,xml_data=None,resource_name="",blocking=False):
         XmlDoc.__init__(self)
         self.errors=list()
         self.options={'blocking':blocking,}
-        if xml_data is not None:
+        if isinstance(xml_data,basestring):
             self._xml_data=xml_data
         else:
-            raise InvalidXmlDataError("No xml data was given: %s" % xml_data)
+            raise InvalidXmlDataError("No xml data str was given: %s" % xml_data)
         self._resource_name=resource_name
         self._parse()
         
@@ -117,7 +117,10 @@ class XmlTreeDoc(XmlDoc):
         parser_ctxt.parseChunk(self._xml_data,len(self._xml_data),1)
         if self.options['blocking'] and len(self.errors)>0:
             raise InvalidXmlDataError(self.errors)
-        self._xml_doc=parser_ctxt.doc()
+        try:
+            self._xml_doc=parser_ctxt.doc()
+        except:
+            raise InvalidXmlDataError("Xml doc creation failed")
     
     def getErrors(self):
         return self.errors

@@ -6,8 +6,8 @@ from twisted.trial.unittest import TestCase
 from twisted.enterprise import adbapi
 from twisted.enterprise import util as dbutil
 
-from seishub.xmldb.xmlcatalog import XmlCatalog
-from seishub.xmldb.xmlcatalog import XmlCatalogError
+from seishub.xmldb.xmlindexcatalog import XmlIndexCatalog
+from seishub.xmldb.xmlindexcatalog import XmlIndexCatalogError
 from seishub.xmldb.xmldbms import XmlDbManager
 from seishub.xmldb.xmlindex import XmlIndex
 from seishub.xmldb.xmlresource import XmlResource
@@ -28,7 +28,7 @@ RAW_XML1="""<station rel_uri="bern">
     </XY>
 </station>"""
 
-class XmlCatalogTest(TestCase):
+class XmlIndexCatalogTest(TestCase):
     def setUp(self):
         self._dbConnection=adbapi.ConnectionPool(DB_DRIVER,**DB_ARGS)
         self._last_id=0
@@ -41,7 +41,7 @@ class XmlCatalogTest(TestCase):
         # make sure created indexes are removed in the end, 
         # even if not all tests pass:
         
-        catalog=XmlCatalog(adbapi_connection=self._dbConnection)
+        catalog=XmlIndexCatalog(adbapi_connection=self._dbConnection)
         d=self.__cleanUp()
         return d
     
@@ -90,7 +90,7 @@ class XmlCatalogTest(TestCase):
             return d
         
         # register an index:
-        catalog=XmlCatalog(adbapi_connection=self._dbConnection)        
+        catalog=XmlIndexCatalog(adbapi_connection=self._dbConnection)        
         test_index=XmlIndex(key_path=test_kp,
                             value_path=test_vp
                             )
@@ -100,7 +100,7 @@ class XmlCatalogTest(TestCase):
         
         # try to add a duplicate index:
         d.addCallback(lambda m: catalog.registerIndex(test_index))
-        self.assertFailure(d,XmlCatalogError)
+        self.assertFailure(d,XmlIndexCatalogError)
         
         # clean up:
         d.addCallback(self.__cleanUp)
@@ -109,7 +109,7 @@ class XmlCatalogTest(TestCase):
     
     def testRemoveIndex(self):
         # first register an index to be removed:
-        catalog=XmlCatalog(adbapi_connection=self._dbConnection)
+        catalog=XmlIndexCatalog(adbapi_connection=self._dbConnection)
         test_index=XmlIndex(key_path=self._test_kp,
                             value_path=self._test_vp
                             )
@@ -122,7 +122,7 @@ class XmlCatalogTest(TestCase):
     
     def testGetIndex(self):
         # first register an index to grab, and retrieve it's id:
-        catalog=XmlCatalog(adbapi_connection=self._dbConnection)
+        catalog=XmlIndexCatalog(adbapi_connection=self._dbConnection)
         test_index=XmlIndex(key_path=self._test_kp,
                             value_path=self._test_vp
                             )
@@ -143,7 +143,7 @@ class XmlCatalogTest(TestCase):
         return d
     
     def testIndexResource(self):
-        catalog=XmlCatalog(adbapi_connection=self._dbConnection)
+        catalog=XmlIndexCatalog(adbapi_connection=self._dbConnection)
         
         class Foo:
             pass
@@ -173,7 +173,7 @@ class XmlCatalogTest(TestCase):
         d.addCallback(lambda f: catalog.indexResource(test_res, 
                                                       key_path="blah",
                                                       value_path="blub"))
-        self.assertFailure(d,XmlCatalogError)
+        self.assertFailure(d,XmlIndexCatalogError)
         
         # clean up:
         d.addBoth(lambda f: catalog.removeIndex(key_path=self._test_kp, 
@@ -182,7 +182,7 @@ class XmlCatalogTest(TestCase):
         return d
     
     def testFlushIndex(self):
-        catalog=XmlCatalog(adbapi_connection=self._dbConnection)
+        catalog=XmlIndexCatalog(adbapi_connection=self._dbConnection)
         #first register an index and add some data:
         test_index=XmlIndex(key_path = self._test_kp,
                             value_path = self._test_vp
@@ -203,4 +203,9 @@ class XmlCatalogTest(TestCase):
          .addBoth(lambda f: dbmgr.deleteResource(self._test_uri))
         
         return d
+    
+    def test_parse_xpath_query(self):
+        test_query="/station[./lat=50.23200]"
+        print XmlIndexCatalog._parse_xpath_query(test_query)
+        
         

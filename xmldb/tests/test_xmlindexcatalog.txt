@@ -1,4 +1,4 @@
-This doctest aims at providing an example of XmlCatalog usage.
+This doctest aims at providing an example of XmlIndexCatalog usage.
 For extensive functionality tests see the unittests in the same directory.
 
 connect to a test database first:
@@ -35,9 +35,9 @@ Build a resource:
 Add a resource to the storage:
     >>> d=dbmgr.addResource(xml_res)
     
-Get an XmlCatalog:
-    >>> from seishub.xmldb.xmlcatalog import XmlCatalog
-    >>> catalog=XmlCatalog(db)
+Get an XmlIndexCatalog:
+    >>> from seishub.xmldb.xmlindexcatalog import XmlIndexCatalog
+    >>> catalog=XmlIndexCatalog(db)
     
 Register a new index:
     >>> from seishub.xmldb.xmlindex import XmlIndex
@@ -48,16 +48,16 @@ Index resource from above:
     >>> d=d.addCallback(lambda foo: catalog.indexResource(xml_res, 
     ...                                                   xml_index=index))
     
-#Debug:
+# Debug:
 #    >>> def debug(err):
 #    ...     import pdb; pdb.set_trace()
 #    >>> d.addBoth(debug)
 
-#Remove index:
-#    >>> d=d.addCallback(lambda foo: catalog.removeIndex(xml_index=index))
+Remove index:
+    >>> d=d.addCallback(lambda foo: catalog.removeIndex(xml_index=index))
     
-#Remove resource:
-#    >>> d=d.addCallback(lambda foo: dbmgr.deleteResource("/stations/bfo/0"))
+Remove resource:
+    >>> d=d.addCallback(lambda foo: dbmgr.deleteResource("/stations/bfo/0"))
     
 =============
 twisted stuff

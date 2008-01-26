@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-#from seishub.core import implements
 from zope.interface import implements
 from zope.interface.exceptions import DoesNotImplement
 
@@ -33,7 +32,9 @@ class XmlIndex(object):
             raise TypeError("type: basestring expected")
             self._type=""
             
-        self._value=None
+        self._values=list()
+        
+    # methods from IXmlIndex:
         
     def setValue_path(self,path):
         self._value_path=path
@@ -65,8 +66,8 @@ class XmlIndex(object):
     def getType(self):
         return self._type
     
-    def getValue(self):
-        return self._value
+    def getValues(self):
+        return self._values
     
     def _createXPath(self):
         return self.getValue_path() + '/' + self.getKey_path()
@@ -94,7 +95,6 @@ class XmlIndex(object):
             idx_value=xml_resource.getUri()
             res=[{'key':node.getStrContent(),
                   'value':idx_value} for node in nodes]
+            self._values.append(idx_value)
         
         return res
-    
-    

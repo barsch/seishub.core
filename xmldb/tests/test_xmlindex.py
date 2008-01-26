@@ -71,4 +71,5 @@ class XmlIndexTest(TestCase):
                            {'value': '/stations/bern', 'key': 'blah'}],
                           xy_index.eval(test_resource)
                           )
+        self.assertEquals(['/stations/bern'],xy_index.getValues())
         

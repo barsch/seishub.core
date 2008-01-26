@@ -5,7 +5,8 @@ from zope.interface.exceptions import DoesNotImplement
 from twisted.enterprise import util as dbutil
 
 from seishub.core import SeisHubError
-from seishub.xmldb.interfaces import IXmlCatalog, IXmlIndex, IXmlResource
+from seishub.xmldb.interfaces import IXmlIndexCatalog, IIndexRegistry, \
+                                     IResourceIndexing, IXmlIndex, IXmlResource
 from seishub.xmldb.xmlindex import XmlIndex
 
 from seishub.defaults import OperationalError
@@ -16,11 +17,13 @@ from seishub.defaults import ADD_INDEX_QUERY, DELETE_INDEX_BY_ID_QUERY, \
                              ADD_INDEX_DATA_QUERY, REMOVE_INDEX_DATA_BY_ID_QUERY, \
                              REMOVE_INDEX_DATA_BY_KEY_QUERY
 
-class XmlCatalogError(SeisHubError):
+class XmlIndexCatalogError(SeisHubError):
     pass
 
-class XmlCatalog(object):
-    implements(IXmlCatalog)
+class XmlIndexCatalog(object):
+    implements(IIndexRegistry,
+               IResourceIndexing,
+               IXmlIndexCatalog)
     
     def __init__(self,adbapi_connection):
         if not hasattr(adbapi_connection,'runInteraction'):
@@ -33,9 +36,15 @@ class XmlCatalog(object):
         # this method does no real error handling, but simply wraps an
         # exception thrown by the db driver in one of our own
         if error.check(OperationalError):
-            raise XmlCatalogError(error.getErrorMessage())
+            raise XmlIndexCatalogError(error.getErrorMessage())
         else:
             error.raiseException()
+            
+    def _parse_xpath_query(expr):
+        pass
+    _parse_xpath_query=staticmethod(_parse_xpath_query)
+            
+    # methods from IIndexRegistry:
         
     def registerIndex(self,xml_index):
         def _addIndexTxn(txn):
@@ -72,7 +81,7 @@ class XmlCatalog(object):
             value_path=xml_index.getValue_path()
         except AttributeError:
             if not (isinstance(key_path,basestring) and isinstance(value_path,basestring)):
-                raise XmlCatalogError("No xml_index or key_path, value_path given.")
+                raise XmlIndexCatalogError("No xml_index or key_path, value_path given.")
                 return None
 
         query=DELETE_INDEX_BY_KEY_QUERY
@@ -95,7 +104,7 @@ class XmlCatalog(object):
     def getIndex(self,key_path=None,value_path=None):
         if not (isinstance(key_path,basestring) and 
                 isinstance(value_path,basestring)):
-            raise XmlCatalogError("No key_path, value_path given.")
+            raise XmlIndexCatalogError("No key_path, value_path given.")
             query=None
         else:
             query=GET_INDEX_BY_KEY_QUERY
@@ -111,10 +120,10 @@ class XmlCatalog(object):
                 # inject the database's internal id into obj:
                 index.__id=res[0][0]
             elif len(res) == 0: # no index found
-                raise XmlCatalogError("No index found with given id "+\
+                raise XmlIndexCatalogError("No index found with given id "+\
                                       "or key and value.")
             else: # other error
-                raise XmlCatalogError("Unexpected result set length.")
+                raise XmlIndexCatalogError("Unexpected result set length.")
                 index=None
             
             return index
@@ -135,6 +144,13 @@ class XmlCatalog(object):
             
         return d
     
+    def updateIndex(self,old_index=None,new_index=None):
+        #TODO: updateIndex implementation
+        pass
+    
+    
+    # methods from IResourceIndexing:
+    
     def indexResource(self,
                       resource, 
                       xml_index=None,
@@ -152,7 +168,7 @@ class XmlCatalog(object):
         except AttributeError:
             if not (isinstance(key_path,basestring) 
                     and isinstance(value_path,basestring)):
-                raise XmlCatalogError("No xml_index or key_path, value_path given.")
+                raise XmlIndexCatalogError("No xml_index or key_path, value_path given.")
                 return None
         
         # db transaction
@@ -205,7 +221,7 @@ class XmlCatalog(object):
             value_path=xml_index.getValue_path()
         except AttributeError:
             if not (isinstance(key_path,basestring) and isinstance(value_path,basestring)):
-                raise XmlCatalogError("No xml_index or key_path, value_path given.")
+                raise XmlIndexCatalogError("No xml_index or key_path, value_path given.")
                 return None
             
         query=REMOVE_INDEX_DATA_BY_KEY_QUERY
@@ -220,9 +236,17 @@ class XmlCatalog(object):
             
         return d
     
-    def updateIndex(self,old_index=None,new_index=None):
-        #TODO: updateIndex implementation
-        pass
+    # methods from IXmlIndexCatalog:
+    
+    def query(self, query):
+        if not query:
+            return None
+        
+        
+        
+        
+        
+        
         
         
         
