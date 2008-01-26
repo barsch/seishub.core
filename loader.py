@@ -20,9 +20,9 @@ import sys
 
 from glob import glob
 import imp
-import pkg_resources
-from pkg_resources import working_set, DistributionNotFound, VersionConflict, \
-                          UnknownExtra
+import pkg_resources #@UnresolvedImport 
+from pkg_resources import working_set, DistributionNotFound #@UnresolvedImport 
+from pkg_resources import VersionConflict, UnknownExtra #@UnresolvedImport
 
 __all__ = ['loadComponents']
 

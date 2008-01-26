@@ -16,7 +16,7 @@ DB_ARGS = {
     'password':'seishub'
     }
 # import a db specific exception, raised on some db errors
-from pyPgSQL.PgSQL import OperationalError as OperationalError
+#from pyPgSQL.PgSQL import OperationalError as OperationalError
 
 # the index tables refer to the resource tables (FOREIGN KEY), this is not
 # forced by seishub.xmldb, so different databases for indexes and resources
@@ -71,6 +71,7 @@ GET_RESOURCE_BY_URI_QUERY="""SELECT xml_data FROM %(res_tab)s,%(uri_tab)s
 
 
 # default components
-DEFAULT_COMPONENTS = ('seishub.about', 
-                      'seishub.web.admin', 
-                      'seishub.web.rest',)
+DEFAULT_COMPONENTS = ('seishub.services.admin.general.PluginsPanel',)
+DEFAULT_ADMIN_PORT = 40443
+DEFAULT_REST_PORT = 8080
+DEFAULT_TELNET_PORT = 5001

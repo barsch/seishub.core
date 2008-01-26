@@ -2,7 +2,6 @@
 
 import inspect
 import sys
-import pkg_resources
 from twisted.web import server
 from twisted.internet import reactor, defer
 from twisted.application import service
@@ -10,6 +9,7 @@ from twisted.application import service
 from seishub.core import Component, implements
 from seishub.services.admin.interfaces import IAdminPanel
 from seishub.util.text import getTextUntilDot
+from seishub.defaults import DEFAULT_COMPONENTS
 
 
 class BasicPanel(Component):
@@ -80,9 +80,6 @@ class PluginsPanel(Component):
     """Administration of plugins."""
     implements(IAdminPanel)
     
-    required_components = ('seishub.services.admin.general.PluginsPanel', 
-                           'seishub.env.Environment',)
-    
     def getPanelId(self):
         return ('admin', 'General', 'plugins', 'Plugins')
     
@@ -96,14 +93,13 @@ class PluginsPanel(Component):
     def _updatePlugins(self, request):
         """Update component enablement."""
         enabled = request.args.get('enabled',[])
-        required = self.required_components
-
+        
         from seishub.core import ComponentMeta
         for component in ComponentMeta._components:
             module = sys.modules[component.__module__]
             fullname = module.__name__+'.'+component.__name__
             
-            if fullname in enabled or fullname in required:
+            if fullname in enabled or fullname in DEFAULT_COMPONENTS:
                 # enable components activated during runtime manually:
                 if not component in self.env:
                     self.env.enabled[component]=True
@@ -136,7 +132,7 @@ class PluginsPanel(Component):
               'classname': classname,
               'description': description,
               'enabled': self.env.is_component_enabled(component),
-              'required': classname in self.required_components,
+              'required': classname in DEFAULT_COMPONENTS,
             }
             packages.setdefault(module.__name__,[]).append(plugin)
         sorted_packages = packages.keys()

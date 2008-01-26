@@ -16,8 +16,8 @@
 # Author: Daniel Lundin <daniel@edgewall.com>
 
 import logging
-import logging.handlers
 import sys
+
 
 def logger_factory(logtype='syslog', logfile=None, level='WARNING',
                    logid='SeisHub', format=None):
@@ -59,8 +59,8 @@ def logger_factory(logtype='syslog', logfile=None, level='WARNING',
     formatter = logging.Formatter(format, datefmt)
     hdlr.setFormatter(formatter)
     logger.addHandler(hdlr)
-
+    
     # Remember our handler so that we can remove it later
     logger._seishub_handler = hdlr 
-
+    
     return logger

@@ -3,12 +3,14 @@
 import os
 
 from twisted.web import http, static
+from twisted.application import internet
 from Cheetah.Template import Template
-from pkg_resources import resource_filename
+from pkg_resources import resource_filename #@UnresolvedImport 
 
 from seishub import __version__ as SEISHUB_VERSION
 from seishub.services.admin.interfaces import IAdminPanel
 from seishub.core import ExtensionPoint
+from seishub.defaults import DEFAULT_ADMIN_PORT
 
 
 class AdminRequestHandler(http.Request):
@@ -159,3 +161,11 @@ class AdminService(http.HTTPFactory):
         http.HTTPFactory.__init__(self, logPath, timeout)
         self.env = env
         self.protocol.env = env
+
+
+def getAdminService(env):
+    """Service for WebAdmin HTTP Server."""
+    port = env.config.getint('admin','port') or DEFAULT_ADMIN_PORT
+    service = internet.TCPServer(port, AdminService(env))
+    service.setName("WebAdmin")
+    return service 

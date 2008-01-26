@@ -2,11 +2,13 @@
 
 from twisted.internet import protocol
 from twisted.protocols import basic
+from twisted.application import internet
 
 from seishub import __version__ as SEISHUB_VERSION
 from seishub.services.telnet.interfaces import ITelnetCmd
 from seishub.core import ExtensionPoint
 from seishub.util.text import getTextUntilDot
+from seishub.defaults import DEFAULT_TELNET_PORT
 
 
 class TelnetLineReciever(basic.LineReceiver):
@@ -42,10 +44,19 @@ class TelnetLineReciever(basic.LineReceiver):
     def _out(self, line):
         self.sendLine('> ' + str(line))
 
+
 class TelnetService(protocol.ServerFactory):
-    """Factory for HTTP Server."""
+    """Factory for Telnet Server."""
     protocol = TelnetLineReciever
     
     def __init__(self, env):
         self.env = env
         self.protocol.env = env
+
+
+def getTelnetService(env):
+    """Service for Telnet Server."""
+    port = env.config.getint('telnet','port') or DEFAULT_TELNET_PORT
+    service = internet.TCPServer(port, TelnetService(env))
+    service.setName("Telnet")
+    return service 

@@ -19,7 +19,7 @@ import os
 from seishub.core import ComponentManager
 from seishub.config import Configuration, Option
 from seishub.loader import loadComponents
-from seishub.xmldb.xmlcatalog import XmlCatalog
+#from seishub.xmldb.xmlcatalog import XmlCatalog
 
 __all__ = ['Environment']
 
@@ -85,7 +85,7 @@ class Environment(ComponentManager):
         self.setupLogging()
         
         # set xml catalog
-        self.catalog = XmlCatalog(self)
+        self.catalog = ""#XmlCatalog(self)
         
         plugins_dir = self.config.get('seishub', 'plugins_dir')
         loadComponents(self, plugins_dir and (plugins_dir,))
