@@ -16,78 +16,80 @@
 
 import os
 
-from seishub.core import Component, ComponentManager
+from seishub.core import ComponentManager
 from seishub.config import Configuration, Option
+from seishub.loader import loadComponents
 from seishub.xmldb.xmlcatalog import XmlCatalog
 
 __all__ = ['Environment']
 
 
-class Environment(Component, ComponentManager):
-    """SeisHub stores project information in a Seishub environment.
-
-    A SeisHub environment consists of a directory structure containing among 
-    other things:
-        * a configuration file.
-        * a SQL database handler
+class Environment(ComponentManager):
+    """One class to rule them all: Enviroment is the base class to handle 
+    configuration, xml catalog, database and logging access.
+    
+    A SeisHub environment consists of:
+        * a configuration handler env.config
+        * a xml catalog handler env.catalog
+        * a database handler env.db
+        * a logging handler env.log
     """   
-
+    
     log_type = Option('logging', 'log_type', 'none',
         """Logging facility to use.
         
         Should be one of (`none`, `file`, `stderr`, `syslog`, `winlog`).""")
-
+    
     log_file = Option('logging', 'log_file', 'seishub.log',
         """If `log_type` is `file`, this should be a path to the log-file.""")
-
+    
     log_level = Option('logging', 'log_level', 'DEBUG',
         """Level of verbosity in log.
         
         Should be one of (`CRITICAL`, `ERROR`, `WARN`, `INFO`, `DEBUG`).""")
-
+    
     log_format = Option('logging', 'log_format', None,
         """Custom logging format.
-
+        
         If nothing is set, the following will be used:
         
         SeisHub[$(module)s] $(levelname)s: $(message)s
-
+        
         In addition to regular key names supported by the Python logger library
         library (see http://docs.python.org/lib/node422.html), one could use:
          - $(path)s     the path for the current environment
          - $(basename)s the last path component of the current environment
          - $(project)s  the project name
-
-         Note the usage of `$(...)s` instead of `%(...)s` as the latter form
-         would be interpreted by the ConfigParser itself.
-
-         Example:
-         ($(thread)d) Trac[$(basename)s:$(module)s] $(levelname)s: $(message)s
-
-         """)
-
+        
+        Note the usage of `$(...)s` instead of `%(...)s` as the latter form
+        would be interpreted by the ConfigParser itself.
+        
+        Example:
+        ($(thread)d) Trac[$(basename)s:$(module)s] $(levelname)s: $(message)s
+        
+        """)
     
     def __init__(self):
         """Initialize the SeisHub environment."""
         ComponentManager.__init__(self)
+        self.compmgr = self
         
         # set config handler
         self.config = Configuration()
         
-        # SeisHub path
+        # set SeisHub path
         import seishub
         self.path = os.path.split(os.path.dirname(seishub.__file__))[0]
         
         # set log handler
-        self.setup_log()
+        self.setupLogging()
         
         # set xml catalog
-        self.catalog=XmlCatalog(self)
+        self.catalog = XmlCatalog(self)
         
-        from seishub.loader import load_components
-        plugins_dir = self.config.get('inherit', 'plugins_dir')
-        load_components(self, plugins_dir and (plugins_dir,))
-                
+        plugins_dir = self.config.get('seishub', 'plugins_dir')
+        loadComponents(self, plugins_dir and (plugins_dir,))
+    
     def component_activated(self, component):
         """Initialize additional member variables for components.
         
@@ -114,26 +116,23 @@ class Environment(Component, ComponentManager):
         rules = [(name.lower(), value.lower() in ('enabled', 'on'))
                  for name, value in self.config.options('components')]
         rules.sort(lambda a, b: -cmp(len(a[0]), len(b[0])))
-
+        
         for pattern, enabled in rules:
             if component_name == pattern or pattern.endswith('*') \
                     and component_name.startswith(pattern[:-1]):
                 return enabled
-
+        
         # By default, all components in the seishub package are enabled
         return component_name.startswith('seishub.')
-
-    def get_log_dir(self):
-        """Return absolute path to the log directory."""
-        return os.path.join(self.path, 'log')
-
-    def setup_log(self):
+    
+    def setupLogging(self):
         """Initialize the logging sub-system."""
         from seishub.log import logger_factory
         logtype = self.log_type
         logfile = self.log_file
+        logdir = os.path.join(self.path, 'log')
         if logtype == 'file' and not os.path.isabs(logfile):
-            logfile = os.path.join(self.get_log_dir(), logfile)
+            logfile = os.path.join(logdir, logfile)
         format = self.log_format
         if format:
             format = format.replace('$(', '%(') \
