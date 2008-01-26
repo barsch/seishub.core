@@ -1,25 +1,11 @@
 # -*- coding: utf-8 -*-
-#
-# Copyright (C) 2003-2005 Edgewall Software
-# Copyright (C) 2003-2005 Jonas Borgström <jonas@edgewall.com>
-# All rights reserved.
-#
-# This software is licensed as described in the file COPYING, which
-# you should have received as part of this distribution. The terms
-# are also available at http://trac.edgewall.org/wiki/TracLicense.
-#
-# This software consists of voluntary contributions made by many
-# individuals. For the exact contribution history, see the revision
-# history and logs, available at http://trac.edgewall.org/log/.
-#
-# Author: Jonas Borgström <jonas@edgewall.com>
 
 import os
 
 from seishub.core import ComponentManager
 from seishub.config import Configuration, Option
 from seishub.loader import loadComponents
-#from seishub.xmldb.xmlcatalog import XmlCatalog
+from seishub.xmldb.xmlcatalog import XmlCatalog
 
 __all__ = ['Environment']
 
@@ -85,7 +71,7 @@ class Environment(ComponentManager):
         self.setupLogging()
         
         # set xml catalog
-        self.catalog = ""#XmlCatalog(self)
+        self.catalog = XmlCatalog(self)
         
         plugins_dir = self.config.get('seishub', 'plugins_dir')
         loadComponents(self, plugins_dir and (plugins_dir,))

@@ -16,7 +16,7 @@ DB_ARGS = {
     'password':'seishub'
     }
 # import a db specific exception, raised on some db errors
-#from pyPgSQL.PgSQL import OperationalError as OperationalError
+from pyPgSQL.PgSQL import OperationalError as OperationalError
 
 # the index tables refer to the resource tables (FOREIGN KEY), this is not
 # forced by seishub.xmldb, so different databases for indexes and resources
