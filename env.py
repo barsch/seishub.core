@@ -6,6 +6,7 @@ from seishub.core import ComponentManager
 from seishub.config import Configuration, Option
 from seishub.loader import loadComponents
 from seishub.xmldb.xmlcatalog import XmlCatalog
+from seishub.db.dbmanager import DatabaseManager 
 
 __all__ = ['Environment']
 
@@ -57,34 +58,35 @@ class Environment(ComponentManager):
     
     def __init__(self):
         """Initialize the SeisHub environment."""
+        # set up component manager
         ComponentManager.__init__(self)
         self.compmgr = self
-        
         # set config handler
         self.config = Configuration()
-        
         # set SeisHub path
         import seishub
         self.path = os.path.split(os.path.dirname(seishub.__file__))[0]
-        
         # set log handler
-        self.setupLogging()
-        
+        self.log = self.setupLogging()
+        # set up db handler
+        self.db = DatabaseManager(self) 
         # set xml catalog
         self.catalog = XmlCatalog(self)
-        
+        # load plugins
         plugins_dir = self.config.get('seishub', 'plugins_dir')
         loadComponents(self, plugins_dir and (plugins_dir,))
     
     def component_activated(self, component):
         """Initialize additional member variables for components.
         
-        Every component activated through the `Environment` object gets three
+        Every component activated through the `Environment` object gets five
         member variables: `env` (the environment object), `config` (the
-        environment configuration) and `log` (a logger object)."""
+        environment configuration), `log` (a logger object), `db` (the 
+        database handler) and `catalog` (a xml catalog object)."""
         component.env = self
         component.config = self.config
         component.log = self.log
+        component.db = self.db
         component.catalog = self.catalog
     
     def is_component_enabled(self, cls):
@@ -125,5 +127,5 @@ class Environment(ComponentManager):
                      .replace('%(path)s', self.path) \
                      .replace('%(basename)s', os.path.basename(self.path)) \
                      .replace('%(project)s', self.project_name)
-        self.log = logger_factory(logtype, logfile, self.log_level, self.path,
-                                  format=format)
+        return logger_factory(logtype, logfile, self.log_level, self.path,
+                              format=format)

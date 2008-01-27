@@ -8,16 +8,6 @@ METADATA_TABLE='meta'
 METADATA_INDEX_TABLE='meta_idx'
 URI_TABLE='uri_map'
 
-DB_DRIVER = "pyPgSQL.PgSQL"
-#DB_DRIVER="pgdb"
-DB_ARGS = {
-    'database':'seishub',
-    'user':'seishub',
-    'password':'seishub'
-    }
-# import a db specific exception, raised on some db errors
-from pyPgSQL.PgSQL import OperationalError as OperationalError
-
 # the index tables refer to the resource tables (FOREIGN KEY), this is not
 # forced by seishub.xmldb, so different databases for indexes and resources
 # should easily be possible, if needed
@@ -68,7 +58,8 @@ GET_RESOURCE_BY_URI_QUERY="""SELECT xml_data FROM %(res_tab)s,%(uri_tab)s
     AND %(uri_tab)s.uri='%(uri)s')"""
 
 
-
+# default db settings
+DEFAULT_DB_URI = "sqlite:db/seishub.db"
 
 # default components
 DEFAULT_COMPONENTS = ('seishub.services.admin.general.PluginsPanel',)

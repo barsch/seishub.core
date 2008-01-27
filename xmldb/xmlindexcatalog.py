@@ -9,7 +9,7 @@ from seishub.xmldb.interfaces import IXmlIndexCatalog, IIndexRegistry, \
                                      IResourceIndexing, IXmlIndex, IXmlResource
 from seishub.xmldb.xmlindex import XmlIndex
 
-from seishub.defaults import OperationalError
+#from seishub.db.dbmanager import OperationalError
 from seishub.defaults import DEFAULT_PREFIX, INDEX_DEF_TABLE, INDEX_TABLE
 from seishub.defaults import ADD_INDEX_QUERY, DELETE_INDEX_BY_ID_QUERY, \
                              GET_NEXT_ID_QUERY, DELETE_INDEX_BY_KEY_QUERY, \
