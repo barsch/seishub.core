@@ -2,6 +2,7 @@
 
 import inspect
 import sys
+import os
 from twisted.web import server
 from twisted.internet import reactor, defer
 from twisted.application import service
@@ -70,8 +71,17 @@ class LogsPanel(Component):
         return ('admin', 'General', 'logs', 'Logs')
     
     def renderPanel(self, request):
+        logtype = self.env.log_type
+        logfile = self.env.log_file
+        logdir = os.path.join(self.env.path, 'log')
+        logfile = os.path.join(logdir, logfile)
+        fh = open(logfile, 'r')
+        seishub_logs = fh.readlines()
+        fh.close()  
+        
         data = {
-          'logs': 'testdaten', 
+          'seishub': seishub_logs, 
+          'twisted': 'testdaten',
         }
         return ('general_logs.tmpl', data)
 

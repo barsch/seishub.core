@@ -1,16 +1,21 @@
-<h1>Submit XML File </h1>
+<h1>Submit XML Resource</h1>
 
 <h2>Copy & Paste</h2>
 <form method="POST">
+  <label>URI</label><br />
+  <input type="text" size="80" name="uri" value="$uri" /><br />
+  <label>XML Resource</label><br />
   <textarea rows="15" cols="80" name="text">$text</textarea><br />
-  <input type="submit" value="Start" />
+  <input type="submit" value="Parse Resource" />
 </form>
 
 <br />
 <br />
 
-<h2>Choose File ...</h2>
+<h2>Upload a XML File ...</h2>
 <form method="post" enctype="multipart/form-data">
-  <input name="file" type="file" size="50" maxlength="100000" accept="text/xml" />
+  <label>XML File</label><br />
+  <input name="file" type="file" size="50" maxlength="100000" 
+         accept="text/xml" /><br />
   <input type="submit" value="Load file" />
 </form>
