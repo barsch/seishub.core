@@ -1,11 +1,14 @@
 # -*- coding: utf-8 -*-
 
 import os
-
-from twisted.web import http, static
+import string
+from twisted.web import static, http
+from twisted.web.server import NOT_DONE_YET
+from twisted.internet import threads
 from twisted.application import internet
 from Cheetah.Template import Template
 from pkg_resources import resource_filename #@UnresolvedImport 
+from urllib import unquote
 
 from seishub import __version__ as SEISHUB_VERSION
 from seishub.services.admin.interfaces import IAdminPanel
@@ -16,12 +19,15 @@ from seishub.defaults import DEFAULT_ADMIN_PORT
 class AdminRequestHandler(http.Request):
     """A HTTP request."""
     
-    def __init__(self, channel, queued):
-        http.Request.__init__(self, channel, queued)
+    def __init__(self, *args, **kw):
+        http.Request.__init__(self, *args, **kw)
         self._initAdminPanels()
         self._initStaticContent()
     
     def process(self):
+        # post process self.path
+        self.postpath = map(unquote, string.split(self.path[1:], '/'))
+        
         # handle web root
         if self.path=='/':
             # in category admin should be always something enabled
@@ -39,30 +45,47 @@ class AdminRequestHandler(http.Request):
         self.panel = None
         for panel in self.admin_panels:
             # get the specific AdminPanel
-            if '/'+panel.cat_id+'/'+panel.page_id == self.path:
+            if len(self.postpath)>1 and \
+               panel.cat_id == self.postpath[0] and \
+               panel.page_id == self.postpath[1]:
                 self.panel = panel
                 break
             # but keep a default panel
-            if '/'+panel.cat_id == self.path and not self.panel:
+            if panel.cat_id == self.postpath[0] and not self.panel:
                 self.panel = panel
         
-        # render panel
+        if not self.panel: 
+            return ''
+        if not hasattr(self.panel, 'renderPanel'):
+            return ''
+        self._getPanelAsThread()
+    
+    def render(self, body):
+        if body==NOT_DONE_YET:
+            return
+            
+        # process template
         temp = Template(file=resource_filename("seishub.services.admin",
                                                "templates"+os.sep+ \
                                                "index.tmpl"))
         temp.navigation = self._getNavigation()
         temp.submenu = self._getSubMenu()
         temp.version = SEISHUB_VERSION
-        temp.content = self._getContent()
-        self.write(str(temp))
+        temp.content = self._getContent(body)
+        content = str(temp)
+        
+        # set various default headers
+        self.setHeader('server', 'SeisHub '+SEISHUB_VERSION)
+        self.setHeader('date', http.datetimeToString())
+        self.setHeader('content-type', "text/html")
+        self.setHeader('content-length', str(len(content)))
+        
+        # write content
+        self.write(content)
         self.finish()
     
-    def _getContent(self):
-        if not self.panel: 
-            return ''
-        if not hasattr(self.panel, 'renderPanel'):
-            return ''
-        template, data = self.panel.renderPanel(self)
+    def _getContent(self, body):
+        template, data = body
         temp = ''
         for path in self._getTemplateDirs():
             filename = path + os.sep + template
@@ -71,6 +94,11 @@ class AdminRequestHandler(http.Request):
             temp = Template(file=filename, searchList=[data]) 
         return temp 
     
+    def _getPanelAsThread(self):
+        d = threads.deferToThread(self.panel.renderPanel, self)
+        d.addCallback(self.render)
+        return NOT_DONE_YET
+   
     def _getNavigation(self):
         """Generate the main navigation bar."""
         temp = Template(file=resource_filename("seishub.services.admin",

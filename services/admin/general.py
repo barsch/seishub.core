@@ -3,7 +3,7 @@
 import inspect
 import sys
 import os
-from twisted.web import server
+from twisted.web.server import NOT_DONE_YET
 from twisted.internet import reactor, defer
 from twisted.application import service
 
@@ -170,6 +170,7 @@ class ServicesPanel(Component):
                 self._shutdownSeisHub()
             elif request.args.has_key('reload'):
                 self._changeServices(request)
+                return NOT_DONE_YET
             elif request.args.has_key('restart'):
                 self._restartSeisHub()
         return ('general_services.tmpl', data)
@@ -193,7 +194,6 @@ class ServicesPanel(Component):
                 actions.append(starting)
                 self.log.info('Starting service %s', srv.name)
         defer.DeferredList(actions).addCallback(self._finishedActions, request)
-        return server.NOT_DONE_YET
     
     def _finishedActions(self, results, request):
         request.redirect(request.path)
