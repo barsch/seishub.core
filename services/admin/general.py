@@ -18,7 +18,7 @@ class BasicPanel(Component):
     implements(IAdminPanel)
     
     def getPanelId(self):
-        return ('admin', 'General', 'basic', 'Basic settings')
+        yield ('admin', 'General', 'basic', 'Basic settings')
     
     def renderPanel(self, request):
         if request.method == 'POST':
@@ -38,7 +38,7 @@ class ConfigPanel(Component):
     implements(IAdminPanel)
     
     def getPanelId(self):
-        return ('admin', 'General', 'config', 'Config')
+        yield ('admin', 'General', 'config', 'Config')
     
     def renderPanel(self, request):
         data = {}
@@ -56,7 +56,7 @@ class RESTRedirect(Component):
     implements(IAdminPanel)
     
     def getPanelId(self):
-        return ('rest', 'REST', 'rest', 'REST')
+        yield ('rest', 'REST', 'rest', 'REST')
     
     def renderPanel(self, request):
         request.redirect('http://localhost:8080/')
@@ -68,7 +68,7 @@ class LogsPanel(Component):
     implements(IAdminPanel)
     
     def getPanelId(self):
-        return ('admin', 'General', 'logs', 'Logs')
+        yield ('admin', 'General', 'logs', 'Logs')
     
     def renderPanel(self, request):
         logtype = self.env.log_type
@@ -78,7 +78,7 @@ class LogsPanel(Component):
         fh = open(logfile, 'r')
         seishub_logs = fh.readlines()
         fh.close()  
-        
+        seishub_logs = seishub_logs[-500:]
         data = {
           'seishub': seishub_logs, 
           'twisted': 'testdaten',
@@ -91,7 +91,7 @@ class PluginsPanel(Component):
     implements(IAdminPanel)
     
     def getPanelId(self):
-        return ('admin', 'General', 'plugins', 'Plugins')
+        yield ('admin', 'General', 'plugins', 'Plugins')
     
     def renderPanel(self, request):
         if request.method == 'POST':
@@ -159,7 +159,7 @@ class ServicesPanel(Component):
     implements(IAdminPanel)
     
     def getPanelId(self):
-        return ('admin', 'General', 'services', 'Services')
+        yield ('admin', 'General', 'services', 'Services')
     
     def renderPanel(self, request):
         data = {

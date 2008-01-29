@@ -9,7 +9,7 @@ class SubmitXMLPanel(Component):
     implements(IAdminPanel)
     
     def getPanelId(self):
-        return ('catalog', 'XML Catalog', 'submit', 'Submit XML Resource')
+        yield ('catalog', 'XML Catalog', 'submit', 'Submit XML Resource')
     
     def renderPanel(self, request):
         data = {'text': '', 'uri': ''}

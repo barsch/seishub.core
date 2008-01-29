@@ -4,7 +4,7 @@ import os
 import string
 from twisted.web import static, http
 from twisted.web.server import NOT_DONE_YET
-from twisted.internet import threads
+from twisted.internet import threads, defer
 from twisted.application import internet
 from Cheetah.Template import Template
 from pkg_resources import resource_filename #@UnresolvedImport 
@@ -28,51 +28,54 @@ class AdminRequestHandler(http.Request):
         # post process self.path
         self.postpath = map(unquote, string.split(self.path[1:], '/'))
         
-        # handle web root
-        if self.path=='/':
-            # in category admin should be always something enabled
-            self.redirect('/admin')
-            self.finish()
-            return
-        
-        # process static content first
+        # process static content
         if self.path in self.static_content.keys():
             self.static_content.get(self.path).render(self)
             self.finish()
             return
         
-        # now its maybe an AdminPanel
-        self.panel = None
-        for panel in self.admin_panels:
-            # get the specific AdminPanel
-            if len(self.postpath)>1 and \
-               panel.cat_id == self.postpath[0] and \
-               panel.page_id == self.postpath[1]:
-                self.panel = panel
-                break
-            # but keep a default panel
-            if panel.cat_id == self.postpath[0] and not self.panel:
-                self.panel = panel
-        
-        if not self.panel: 
-            return ''
-        if not hasattr(self.panel, 'renderPanel'):
-            return ''
-        self._getPanelAsThread()
-    
-    def render(self, body):
-        if body==NOT_DONE_YET:
+        # redirect if only category given or web root
+        if len(self.postpath)<2:
+            categories = [p[0] for p in self.panel_ids]
+            if self.postpath and self.postpath[0] in categories:
+                # ok there is a category - redirect to first sub panel
+                pages = filter(lambda p: p[0] == self.postpath[0], 
+                               self.panel_ids)
+                self.redirect('/'+pages[0][0]+'/'+pages[0][2])
+                self.finish()
+                return
+            # redirect to the available panel
+            self.redirect('/'+self.panel_ids[0][0]+'/'+self.panel_ids[0][2])
+            self.finish()
             return
-            
-        # process template
-        temp = Template(file=resource_filename("seishub.services.admin",
-                                               "templates"+os.sep+ \
-                                               "index.tmpl"))
-        temp.navigation = self._getNavigation()
-        temp.submenu = self._getSubMenu()
-        temp.version = SEISHUB_VERSION
-        temp.content = self._getContent(body)
-        content = str(temp)
+        
+        # now it should be an AdminPanel
+        self.cat_id = self.postpath[0]
+        self.panel_id = self.postpath[1]
+        
+        self.panel = self.panels.get((self.cat_id, self.panel_id), None)
+        if not self.panel:
+            self.redirect('/'+self.panel_ids[0][0]+'/'+self.panel_ids[0][2])
+            self.finish()
+            return
+        
+        self._getPanelAsDeferred()
+    
+    def _getPanelAsDeferred(self):
+        d = defer.maybeDeferred(self.panel.renderPanel, self)
+        d.addCallback(self._render)
+        return NOT_DONE_YET
+    
+    def _getPanelAsThread(self):
+        d = threads.deferToThread(self.panel.renderPanel, self)
+        d.addCallback(self._render)
+        return NOT_DONE_YET
+   
+    def _render(self, body):
+        if body == NOT_DONE_YET:
+            return
+        
+        content = self._processTemplate(body)
         
         # set various default headers
         self.setHeader('server', 'SeisHub '+SEISHUB_VERSION)
@@ -84,6 +87,17 @@ class AdminRequestHandler(http.Request):
         self.write(content)
         self.finish()
     
+    def _processTemplate(self, body):
+        # process template
+        temp = Template(file=resource_filename("seishub.services.admin",
+                                               "templates"+os.sep+ \
+                                               "index.tmpl"))
+        temp.navigation = self._getNavigation()
+        temp.submenu = self._getSubMenu()
+        temp.version = SEISHUB_VERSION
+        temp.content = self._getContent(body)
+        return str(temp)
+    
     def _getContent(self, body):
         template, data = body
         temp = ''
@@ -94,20 +108,16 @@ class AdminRequestHandler(http.Request):
             temp = Template(file=filename, searchList=[data]) 
         return temp 
     
-    def _getPanelAsThread(self):
-        d = threads.deferToThread(self.panel.renderPanel, self)
-        d.addCallback(self.render)
-        return NOT_DONE_YET
-   
     def _getNavigation(self):
         """Generate the main navigation bar."""
         temp = Template(file=resource_filename("seishub.services.admin",
                                                "templates"+os.sep+ \
                                                "navigation.tmpl"))
-        menuitems = self.navigation.items()
+        menuitems = [(i[0],i[1]) for i in self.panel_ids]
+        menuitems = dict(menuitems).items()
         menuitems.sort()
         temp.navigation = menuitems
-        temp.cat_id = self.panel and self.panel.cat_id
+        temp.cat_id = self.cat_id
         return temp
     
     def _getSubMenu(self):
@@ -115,11 +125,11 @@ class AdminRequestHandler(http.Request):
         temp = Template(file=resource_filename("seishub.services.admin",
                                                "templates"+os.sep+ \
                                                "submenu.tmpl"))
-        temp.page_id = self.panel and self.panel.page_id
-        temp.cat_id = self.panel and self.panel.cat_id
-        menuitems = self.submenu.get(temp.cat_id,{}).items()
-        menuitems.sort()
-        temp.submenu = menuitems 
+        menuitems = map((lambda p: (p[2],p[3])),
+                         filter(lambda p: p[0] == self.cat_id, self.panel_ids))
+        temp.submenu = menuitems
+        temp.cat_id = self.cat_id
+        temp.panel_id = self.panel_id
         return temp
     
     def _getTemplateDirs(self):
@@ -130,18 +140,32 @@ class AdminRequestHandler(http.Request):
         return dirs[::-1]
     
     def _initAdminPanels(self):
-        """Returns a list of AdminPanel plug-ins."""
-        # XXX: Performance ??
-        self.admin_panels = ExtensionPoint(IAdminPanel).extensions(self.env)
-        self.navigation = {}
-        self.submenu = {}
-        for p in self.admin_panels:
-            (p.cat_id, p.cat_name, p.page_id, p.page_name) = p.getPanelId()
-            self.navigation[p.cat_id] = p.cat_name
-            if not self.submenu.has_key(p.cat_id):
-                self.submenu[p.cat_id]={}
-            self.submenu[p.cat_id][p.page_id] = p.page_name
-    
+        """Return a list of available admin panels."""
+        panel_list = ExtensionPoint(IAdminPanel).extensions(self.env)
+        self.panel_ids = []
+        self.panels = {}
+        
+        for panel in panel_list:
+            # skip panels without proper interfaces
+            if not hasattr(panel, 'getPanelId') or \
+               not hasattr(panel, 'renderPanel'):
+                continue;
+            options = list(panel.getPanelId())
+            for item in options:
+                self.panels[(item[0], item[2])] = panel
+            self.panel_ids += options
+        
+        def _orderPanelIds(p1, p2):
+            if p1[0] == 'general':
+                if p2[0] == 'general':
+                    return cmp(p1[1:], p2[1:])
+                return -1
+            elif p2[0] == 'general':
+                if p1[0] == 'general':
+                    return cmp(p1[1:], p2[1:])
+                return 1
+            return cmp(p1, p2)
+        self.panel_ids.sort(_orderPanelIds)
     
     def _initStaticContent(self):
         """Returns a dictionary of static web resources."""
@@ -164,8 +188,8 @@ class AdminRequestHandler(http.Request):
                                '/favicon.ico': default_ico,
                                '/images/quake.gif': quake_gif,}
         
-        # panel specific static files
-        for panel in self.admin_panels:
+        # add panel specific static files
+        for panel in self.panels:
             if hasattr(panel, 'getHtdocsDirs'):
                 items = panel.getHtdocsDirs()
                 for path, child in items:
