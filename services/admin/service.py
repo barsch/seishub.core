@@ -59,17 +59,9 @@ class AdminRequestHandler(http.Request):
             self.finish()
             return
         
-        self._getPanelAsDeferred()
-    
-    def _getPanelAsDeferred(self):
+        # get content and try to render
         d = defer.maybeDeferred(self.panel.renderPanel, self)
         d.addCallback(self._render)
-        return NOT_DONE_YET
-    
-    def _getPanelAsThread(self):
-        d = threads.deferToThread(self.panel.renderPanel, self)
-        d.addCallback(self._render)
-        return NOT_DONE_YET
    
     def _render(self, body):
         if body == NOT_DONE_YET:
