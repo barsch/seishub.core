@@ -13,15 +13,11 @@ class DatabaseManager():
     def __init__(self, env):
         #XXX: maybe we should go for weak env references in all objects below env 
         #otherwise destructurs are never called (cyclic references)
-        self.env = env
+        self.env = weakref.proxy(env)
         self.uri = self.env.config.get('seishub','database') or DEFAULT_DB_URI
         self.driver = self.selectDatabaseDriver()
         self.db_args=self.getDbArgs()
         self.connection_pool=self.setupConnectionPool()
-        
-    def __del__(self):
-        print "del db"
-        self.connection_pool.close()
         
     def selectDatabaseDriver(self):
         if self.uri.startswith('mysql:'):

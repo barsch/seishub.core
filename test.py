@@ -8,17 +8,10 @@ from twisted.trial.unittest import TestCase
 
 class SeisHubTestCase(TestCase):
     """Base class used for SeisHub test cases"""
-    def setUp(self):
-        # set up a database environment
+    def __init__(self,methodName):
+        TestCase.__init__(self, methodName)
         self.env=Environment()
         self.db=self.env.db.connection_pool
-        
-#    def tearDown(self):
-#        if hasattr(self,'db'):
-#            del self.db
-#        if hasattr(self,'env'):
-#            print "test_case tear down"
-#            del self.env
 
     def _printRes(self,res):
         """little helper for debuging callbacks"""
