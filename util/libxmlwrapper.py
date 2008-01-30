@@ -94,6 +94,9 @@ class XmlDoc(object):
             return self._xml_doc
         else:
             return None
+        
+    def getRootElementName(self):
+        return self._xml_doc.getRootElement().name
 
 class XmlTreeDoc(XmlDoc):
     """This class parses a document using the libxml2 push parser""" 

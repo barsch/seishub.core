@@ -2,8 +2,7 @@
 
 from zope.interface.exceptions import DoesNotImplement
 
-from twisted.trial.unittest import TestCase
-
+from seishub.test import SeisHubTestCase
 from seishub.core import SeisHubError
 from seishub.xmldb.xmlresource import XmlResource
 from seishub.xmldb.xmlindex import XmlIndex, TEXT_INDEX
@@ -22,16 +21,15 @@ RAW_XML1="""<station rel_uri="bern">
     </XY>
 </station>"""
 
-class XmlIndexTest(TestCase):
+class XmlIndexTest(SeisHubTestCase):
     def testAttributes(self):
         test_index=XmlIndex(key_path="xxx",
                             value_path="yyy",
                             type=TEXT_INDEX)
         
-        test_index.setValue_path("node1/node2/node3")
+        test_index.setValueKeyPath("node1/node2/node3","/resourceBLAH")
         self.assertEquals("node1/node2/node3",
                           test_index.getValue_path())
-        test_index.setKey_path("/resourceBLAH")
         self.assertEquals("/resourceBLAH",
                           test_index.getKey_path())
         self.assertEquals(TEXT_INDEX,

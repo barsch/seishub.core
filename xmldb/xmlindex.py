@@ -15,36 +15,34 @@ class XmlIndexError(SeisHubError):
 class XmlIndex(object):
     implements(IXmlIndex)
     
-    def __init__(self,value_path="",key_path="",xpath_expr="", type=TEXT_INDEX):
-        # do not use 'xpath_expr' argument, not fully implemented till now!
-        # use value_path and key_path instead
-        if not ((value_path and key_path) or xpath_expr):
-            raise XmlIndexError("No key given")
-        if xpath_expr:
-            self.setXpath_expr(xpath_expr)
-        else:
-            self.setValue_path(value_path)
-            self.setKey_path(key_path)
+    def __init__(self,value_path=None, key_path=None,
+                 type=TEXT_INDEX):
+        if not (value_path and key_path):
+            raise XmlIndexError("No index definition given")
+        
+        self.setValueKeyPath(value_path,key_path)
         
         if isinstance(type,basestring):
             self._type=type
         else:
-            raise TypeError("type: basestring expected")
-            self._type=""
+            self._type=TEXT_INDEX
             
         self._values=list()
         
+    def _createXPath(self):
+        if not self._value_path.startswith("/"):
+            str="/"
+        else:
+            str=""
+        return str + self.getValue_path() + '/' + self.getKey_path()
+        
     # methods from IXmlIndex:
-        
-    def setValue_path(self,path):
-        self._value_path=path
-        
-    def setKey_path(self,path):
-        self._key_path=path
-        
-    def setXpath_expr(self,expr):
-        self._xpath_expr=expr
-           
+    
+    def setValueKeyPath(self,value_path,key_path):
+        self._value_path=value_path
+        self._key_path=key_path
+        self._xpath_expr=self._createXPath()
+              
     def getValue_path(self):
         if hasattr(self,'_value_path'):
             return self._value_path
@@ -54,23 +52,16 @@ class XmlIndex(object):
     def getKey_path(self):
         if hasattr(self,'_key_path'):
             return self._key_path
-        else:
-            return None
         
     def getXpath_expr(self):
         if hasattr(self,'_xpath_expr'):
             return self._xpath_expr
-        else:
-            return None
         
     def getType(self):
         return self._type
     
     def getValues(self):
         return self._values
-    
-    def _createXPath(self):
-        return self.getValue_path() + '/' + self.getKey_path()
     
     def eval(self,xml_resource):
         if not IXmlResource.providedBy(xml_resource):
@@ -84,8 +75,6 @@ class XmlIndex(object):
         
         #eval xpath expression:
         xpr=self.getXpath_expr()
-        if not xpr:
-            xpr=self._createXPath()
         nodes = xml_doc.evalXPath(xpr)
         
         node_size=len(nodes)

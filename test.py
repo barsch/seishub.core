@@ -2,8 +2,29 @@
 # -*- coding: utf-8 -*-
 
 import unittest, sys, doctest, os
-from seishub.util.path import rglob 
+from seishub.env import Environment
+from seishub.util.path import rglob
+from twisted.trial.unittest import TestCase
 
+class SeisHubTestCase(TestCase):
+    """Base class used for SeisHub test cases"""
+    def setUp(self):
+        # set up a database environment
+        self.env=Environment()
+        self.db=self.env.db.connection_pool
+        
+#    def tearDown(self):
+#        if hasattr(self,'db'):
+#            del self.db
+#        if hasattr(self,'env'):
+#            print "test_case tear down"
+#            del self.env
+
+    def _printRes(self,res):
+        """little helper for debuging callbacks"""
+        print res
+
+        
 
 class TestProgram(unittest.TestProgram):
     def __init__(self,**kwargs):

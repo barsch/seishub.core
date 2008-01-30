@@ -14,10 +14,10 @@ URI_TABLE='uri_map'
 CREATES=["CREATE TABLE %s_%s (id serial8 primary key, xml_data text)" % \
          (DEFAULT_PREFIX, RESOURCE_TABLE),
          ("CREATE TABLE %s_%s (uri text primary key, res_id int8 " + \
-         "references %s_%s(id))") % \
+         "references %s_%s(id), res_type text)") % \
          (DEFAULT_PREFIX,URI_TABLE,DEFAULT_PREFIX,RESOURCE_TABLE),
          ("CREATE TABLE %s_%s (id serial8 primary key, " + \
-         "key_path text, value_path varchar(50), data_type varchar(10), " + \
+         "key_path text, value_path text, data_type varchar(10), " + \
          "UNIQUE (key_path,value_path))") % \
          (DEFAULT_PREFIX,INDEX_DEF_TABLE),
          ("CREATE TABLE %s_%s (id serial8 primary key, " + \
@@ -33,7 +33,7 @@ QUERY_STR_MAP={'res_tab':DEFAULT_PREFIX+'_'+RESOURCE_TABLE,
 
 ADD_RESOURCE_QUERY="""INSERT INTO %s_%s (id,xml_data) values (%s,%s)"""
 DELETE_RESOURCE_QUERY="""DELETE FROM %(res_tab)s WHERE (id = '%(res_id)s')"""
-REGISTER_URI_QUERY="""INSERT INTO %s_%s (res_id,uri) values (%s,%s)"""
+REGISTER_URI_QUERY="""INSERT INTO %s_%s (res_id,uri,res_type) values (%s,%s,%s)"""
 REMOVE_URI_QUERY="""DELETE FROM %(uri_tab)s WHERE (uri='%(uri)s')"""
 ADD_INDEX_QUERY="INSERT INTO %(prefix)s_%(table)s (id,key_path,value_path,data_type) " + \
                 "values (%(id)s,%(key_path)s,%(value_path)s,%(data_type)s)"                
@@ -56,6 +56,8 @@ GET_ID_BY_URI_QUERY="""SELECT res_id FROM %(uri_tab)s WHERE (uri='%(uri)s')"""
 GET_RESOURCE_BY_URI_QUERY="""SELECT xml_data FROM %(res_tab)s,%(uri_tab)s
     WHERE(%(res_tab)s.id=%(uri_tab)s.res_id
     AND %(uri_tab)s.uri='%(uri)s')"""
+GET_URIS="SELECT uri FROM %(uri_tab)s"
+GET_URIS_BY_TYPE="SELECT uri FROM %(uri_tab)s WHERE (res_type='%(res_type)s')"
 
 
 # default db settings

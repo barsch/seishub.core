@@ -1,9 +1,12 @@
 # -*- coding: utf-8 -*-
 
-from twisted.trial.unittest import TestCase
+from seishub.test import SeisHubTestCase
 from seishub.xmldb.xpath import *
 
-class XpathTest(TestCase):
+class XpathTest(SeisHubTestCase):
+    def setUp(self):
+        pass
+    
     def testRestrictedXpathExpression(self):
         valid="/rootnode[./somenode/achild and @anattribute]"
         invalid="/rootnode/childnode"

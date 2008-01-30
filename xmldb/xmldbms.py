@@ -9,7 +9,8 @@ from seishub.defaults import DEFAULT_PREFIX,RESOURCE_TABLE, \
 from seishub.defaults import ADD_RESOURCE_QUERY, DELETE_RESOURCE_QUERY, \
                              REGISTER_URI_QUERY, REMOVE_URI_QUERY, \
                              GET_NEXT_ID_QUERY, GET_ID_BY_URI_QUERY, \
-                             QUERY_STR_MAP, GET_RESOURCE_BY_URI_QUERY
+                             QUERY_STR_MAP, GET_RESOURCE_BY_URI_QUERY, \
+                             GET_URIS_BY_TYPE, GET_URIS
 from seishub.core import SeisHubError
                        
 from seishub.xmldb.interfaces import IResourceStorage, IXmlIndex
@@ -36,6 +37,29 @@ class XmlDbManager(object):
             self.db=None
         else:
             self.db=adbapi_connection
+            
+    def _resolveUri(self,uri):
+        if not isinstance(uri,basestring):
+            raise ValueError("invalid uri: string expected")
+            return None
+        
+        str_map=QUERY_STR_MAP
+        str_map['uri']=uri
+        query=GET_ID_BY_URI_QUERY % str_map
+        
+        def _procResults(res):
+            if len(res) == 1 and len(res[0]) == 1:
+                id=res[0][0]
+            else:
+                raise UnknownUriError("%s is not present in storage." % uri)
+                id=None
+            return id
+        
+        d=self.db.runQuery(query)
+        d.addCallback(_procResults)
+        return d
+    
+    # methods from IResourceStorage            
         
     def addResource(self,xml_resource):
         """Add a new resource to the storage
@@ -57,6 +81,8 @@ class XmlDbManager(object):
             txn.execute(REGISTER_URI_QUERY % (DEFAULT_PREFIX,URI_TABLE,
                                               next_id,
                                               dbutil.quote(xml_resource.getUri(),
+                                                           "text"),
+                                              dbutil.quote(xml_resource.getResource_type(),
                                                            "text")))
             return next_id
         
@@ -69,7 +95,7 @@ class XmlDbManager(object):
         """Get a resource by it's uri from the database.
         return: Deferred returning a XmlResource on success
         """
-        
+        # TODO: bypass xml parsing on resource retrieval
         map_str=QUERY_STR_MAP
         map_str['uri']=uri
         query=GET_RESOURCE_BY_URI_QUERY % map_str
@@ -108,26 +134,23 @@ class XmlDbManager(object):
         d=self.db.runInteraction(_delResourceTxn)
         return d
     
-    def _resolveUri(self,uri):
-        if not isinstance(uri,basestring):
-            raise ValueError("invalid uri: string expected")
-            return None
+    def getUriList(self,type=None):
+        map_str=QUERY_STR_MAP
         
-        str_map=QUERY_STR_MAP
-        str_map['uri']=uri
-        query=GET_ID_BY_URI_QUERY % str_map
-        
+        if type:
+            map_str['res_type']=type
+            query=GET_URIS_BY_TYPE % map_str
+        else:
+            query=GET_URIS % map_str
+    
         def _procResults(res):
-            if len(res) == 1 and len(res[0]) == 1:
-                id=res[0][0]
-            else:
-                raise UnknownUriError("%s is not present in storage." % uri)
-                id=None
-            return id
+            uri_list=[uri[0] for uri in res]
+            return uri_list
         
-        d=self.db.runQuery(query)
-        d.addCallback(_procResults)
+        d=self.db.runQuery(query).addCallback(_procResults)
         return d
+    
+    
         
         
         

@@ -71,10 +71,13 @@ class Environment(ComponentManager):
         # set up db handler
         self.db = DatabaseManager(self) 
         # set xml catalog
-        self.catalog = XmlCatalog(self)
+        self.catalog = XmlCatalog(self.db)
         # load plugins
         plugins_dir = self.config.get('seishub', 'plugins_dir')
         loadComponents(self, plugins_dir and (plugins_dir,))
+        
+    def __del__(self):
+        print "del env"
     
     def component_activated(self, component):
         """Initialize additional member variables for components.

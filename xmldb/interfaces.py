@@ -5,12 +5,18 @@ from zope.interface import Interface
 class IXmlCatalog(Interface):
     """This is the main interface to access the whole xmldb thing"""
     
-    def newXmlResource(raw_data,uri):
+    def newXmlResource(uri,xml_data):
         """Resource factory; supposed to be used with addResource from 
         IResourceStorage
         @param raw_data: string containing xml data
         @uri: uri of the new resource
         @return: XmlResource instance"""
+        
+    def newXmlIndex(xpath_expr,type):
+        """Index factory; supposed to be used with registerIndex
+        @param xpath_expr: index defining xpath expression
+        @type: index type (e.g. "text", "int")
+        @return: XmlIndex instance"""
     
     def query(xpath_query):
         """@param xpath_query: restricted xpath expression (see xpath.py for 
@@ -27,8 +33,19 @@ class IXmlResource(Interface):
         """@param xml_doc: xml document object as provided by a xml parser,
         must implement seishub.interfaces.ixml.IXmlDoc"""
         
+    def getResourceType(self):
+        """the resource type is determined by the root node of the underlying 
+        xml document
+        @return: resource type (string)"""
+        
     def setData(xml_data):
         """@param data: raw xml data as a string"""
+        
+    def getData(self):
+        """@return: xml data (string)"""
+        
+    def getUri(self):
+        """@return: uri (string)"""
         
 class IResourceStorage(Interface):
     """Basic XML storage manager description"""
@@ -44,18 +61,21 @@ class IResourceStorage(Interface):
         
     def getResource(uri):
         """Retreive an existing resource from the storage"""
+        
+    def getUriList(self,type):
+        """Return a list of all registered uris
+        or the subset of uris corresponding to resources of type 'type'
+        @return: a list of uris"""
              
 class IXmlIndex(Interface):
     """Xml index base class
     
-    __init__ expects a pair of key_path / value_path
-    or a full xpath expression instead"""
-    
-    def setKey_path(path):
-        """@param path: new key path"""
+    __init__ expects a pair of key_path / value_path,
+    and optionally a index type (default: "text")"""
         
-    def setValue_path(path):
-        """@param path: new value path"""
+    def setValueKeyPath(value_path,key_path):
+        """@param value_path: new value path
+        @param key_path: new key_path"""
     
     def getKey_path():
         """@return: my key path"""
@@ -82,24 +102,21 @@ class IIndexRegistry(Interface):
         @return: deferred which will fire the unique index id on success
         """
     
-    def removeIndex(xml_index=None,
-                    key_path=None,value_path=None):
+    def removeIndex(xpath_expr=None,key_path=None,value_path=None):
         """Remove an index and its data.
         All indexed data belonging to the index will be removed.
         To update an existing index without data loss use updateIndex.
         Pass an id or a key_path and value_path or a XmlIndex instance
-        @param id: id
         @param key_path: key path
         @param value_path: value path
-        @param xml_index: XmlIndex instance 
+        @param xpath_expr: index defining xpath expression 
         @return: Deferred"""
         
-    def updateIndex(old_index=None,new_index=None):
-        """@param id: internal index id
-        @param xml_index: new XmlIndex instance
-        @param id: id of index to be updated"""
+    def updateIndex(xpath_expr,new_index):
+        """@param xml_index: new XmlIndex instance
+        @param xpath_expr: index defining xpath expression"""
         
-    def getIndex(key_path,value_path):
+    def getIndex(xpath_expr=None,key_path=None,value_path=None):
         """@return: Deferred which will return a XmlIndex on success"""
         
 class IResourceIndexing(Interface):

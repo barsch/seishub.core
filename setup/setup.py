@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 
+from seishub.env import Environment
+
 from twisted.enterprise import adbapi
 from twisted.internet import reactor
 from twisted.internet.defer import DeferredList
 
-from seishub.defaults import DB_DRIVER,DB_ARGS,CREATES
+from seishub.defaults import CREATES
 
 def _log_errors(results):
     for res in results: 
@@ -27,7 +29,8 @@ def _db_transaction(txn,query_list):
     return result_list
     
 if __name__ == "__main__":     
-    conn=adbapi.ConnectionPool(DB_DRIVER,**DB_ARGS)
+    env=Environment()
+    conn=env.db.connection_pool
     stop_reactor=lambda _: reactor.stop()
     query_list=CREATES
     

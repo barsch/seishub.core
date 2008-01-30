@@ -26,12 +26,14 @@ class XmlResource(Resource):
     def setData(self,xml_data):
         """validate and set xml_data"""
         try:
-            self._validateXml_data(xml_data)
+            self.__xml_doc=self._validateXml_data(xml_data)
         except:
             raise XmlResourceError("Invalid xml data.")
             return False
         
+        self._resource_type=self.__xml_doc.getRootElementName()
         return Resource.setData(self,xml_data)
+    
 
     def getXml_doc(self):
         return self.__xml_doc
@@ -41,10 +43,12 @@ class XmlResource(Resource):
             raise DoesNotImplement(IXmlDoc)
         else:
             self.__xml_doc=xml_doc
+            
+    def getResource_type(self):
+        return self._resource_type
     
     def _validateXml_data(self,value):
         return self._parseXml_data(value)
     
     def _parseXml_data(self,xml_data):
-        self.__xml_doc=XmlTreeDoc(xml_data=xml_data,blocking=True)
-        return True
+        return XmlTreeDoc(xml_data=xml_data,blocking=True)

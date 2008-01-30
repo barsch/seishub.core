@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 
-from twisted.trial.unittest import TestCase
-
+from seishub.test import SeisHubTestCase
 from seishub.validator import XmlSchemaValidator
 
 
-class XmlValidatorTest(TestCase):
+class XmlValidatorTest(SeisHubTestCase):
     
     def setUp(self):
         self.test_schema="""<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">

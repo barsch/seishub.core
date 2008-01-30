@@ -2,17 +2,16 @@
 
 from zope.interface.exceptions import DoesNotImplement
 
-from twisted.trial.unittest import TestCase
-from twisted.enterprise import adbapi
 from twisted.enterprise import util as dbutil
 
+from seishub.test import SeisHubTestCase
 from seishub.xmldb.xmlindexcatalog import XmlIndexCatalog
 from seishub.xmldb.xmlindexcatalog import XmlIndexCatalogError
 from seishub.xmldb.xmldbms import XmlDbManager
 from seishub.xmldb.xmlindex import XmlIndex
 from seishub.xmldb.xmlresource import XmlResource
 
-from seishub.defaults import DB_DRIVER,DB_ARGS, INDEX_DEF_TABLE, DEFAULT_PREFIX
+from seishub.defaults import INDEX_DEF_TABLE, DEFAULT_PREFIX
 
 RAW_XML1="""<station rel_uri="bern">
     <station_code>BERN</station_code>
@@ -28,9 +27,9 @@ RAW_XML1="""<station rel_uri="bern">
     </XY>
 </station>"""
 
-class XmlIndexCatalogTest(TestCase):
+class XmlIndexCatalogTest(SeisHubTestCase):  
     def setUp(self):
-        self._dbConnection=adbapi.ConnectionPool(DB_DRIVER,**DB_ARGS)
+        super(XmlIndexCatalogTest,self).setUp()
         self._last_id=0
         self._test_kp="XY/paramXY"
         self._test_vp="/station"
@@ -41,7 +40,7 @@ class XmlIndexCatalogTest(TestCase):
         # make sure created indexes are removed in the end, 
         # even if not all tests pass:
         
-        catalog=XmlIndexCatalog(adbapi_connection=self._dbConnection)
+        catalog=XmlIndexCatalog(adbapi_connection=self.db)
         d=self.__cleanUp()
         return d
     
@@ -69,7 +68,7 @@ class XmlIndexCatalogTest(TestCase):
                 'table':INDEX_DEF_TABLE,
                 'key_path':dbutil.quote(self._test_kp,"text"),
                 'value_path':dbutil.quote(self._test_vp,"text")}
-        d=self._dbConnection.runOperation(query)
+        d=self.db.runOperation(query)
         return d
     
     def testRegisterIndex(self):
@@ -85,12 +84,12 @@ class XmlIndexCatalogTest(TestCase):
                 "WHERE (key_path=%(key_path)s AND value_path=%(value_path)s)") \
                 % (str_map)
 
-            d=self._dbConnection.runQuery(query) \
+            d=self.db.runQuery(query) \
              .addCallback(lambda res: self.assertEquals(res[0],[test_kp,test_vp]))
             return d
         
         # register an index:
-        catalog=XmlIndexCatalog(adbapi_connection=self._dbConnection)        
+        catalog=XmlIndexCatalog(adbapi_connection=self.db)        
         test_index=XmlIndex(key_path=test_kp,
                             value_path=test_vp
                             )
@@ -109,7 +108,7 @@ class XmlIndexCatalogTest(TestCase):
     
     def testRemoveIndex(self):
         # first register an index to be removed:
-        catalog=XmlIndexCatalog(adbapi_connection=self._dbConnection)
+        catalog=XmlIndexCatalog(adbapi_connection=self.db)
         test_index=XmlIndex(key_path=self._test_kp,
                             value_path=self._test_vp
                             )
@@ -122,7 +121,7 @@ class XmlIndexCatalogTest(TestCase):
     
     def testGetIndex(self):
         # first register an index to grab, and retrieve it's id:
-        catalog=XmlIndexCatalog(adbapi_connection=self._dbConnection)
+        catalog=XmlIndexCatalog(adbapi_connection=self.db)
         test_index=XmlIndex(key_path=self._test_kp,
                             value_path=self._test_vp
                             )
@@ -143,14 +142,14 @@ class XmlIndexCatalogTest(TestCase):
         return d
     
     def testIndexResource(self):
-        catalog=XmlIndexCatalog(adbapi_connection=self._dbConnection)
+        catalog=XmlIndexCatalog(adbapi_connection=self.db)
         
         class Foo:
             pass
         self.assertRaises(DoesNotImplement,catalog.indexResource, Foo(), 1)
         
         # register a test resource:
-        dbmgr=XmlDbManager(self._dbConnection)
+        dbmgr=XmlDbManager(self.db)
         test_res=XmlResource(uri = self._test_uri, xml_data = RAW_XML1)
         dbmgr.addResource(test_res)
 
@@ -174,7 +173,7 @@ class XmlIndexCatalogTest(TestCase):
                                                       key_path="blah",
                                                       value_path="blub"))
         self.assertFailure(d,XmlIndexCatalogError)
-        
+        d.addErrback(self._printRes)
         # clean up:
         d.addBoth(lambda f: catalog.removeIndex(key_path=self._test_kp, 
                                                 value_path=self._test_vp)) \
@@ -182,22 +181,23 @@ class XmlIndexCatalogTest(TestCase):
         return d
     
     def testFlushIndex(self):
-        catalog=XmlIndexCatalog(adbapi_connection=self._dbConnection)
+        catalog=XmlIndexCatalog(adbapi_connection=self.db)
         #first register an index and add some data:
         test_index=XmlIndex(key_path = self._test_kp,
                             value_path = self._test_vp
                             )
         d=catalog.registerIndex(test_index)
-        dbmgr=XmlDbManager(self._dbConnection)
+        dbmgr=XmlDbManager(self.db)
         test_res=XmlResource(uri = self._test_uri, xml_data = RAW_XML1)
         dbmgr.addResource(test_res)
         
         d.addCallback(lambda idx_id: catalog.indexResource(test_res,
                                                            test_index))
         #flush index:
-        d.addCallback(lambda foo: catalog.flushIndex(test_index))
+        d.addCallback(lambda foo: catalog.flushIndex(key_path=self._test_kp,
+                                                     value_path=self._test_vp))
         #TODO: check if index is properly flushed
-        
+        d.addErrback(self._printRes)
         # clean up:
         d.addBoth(lambda f: catalog.removeIndex(test_index)) \
          .addBoth(lambda f: dbmgr.deleteResource(self._test_uri))
@@ -205,6 +205,7 @@ class XmlIndexCatalogTest(TestCase):
         return d
     
     def test_parse_xpath_query(self):
+        #TODO: test_parse_xpath_query
         test_query="/station[./lat=50.23200]"
         print XmlIndexCatalog._parse_xpath_query(test_query)
         
