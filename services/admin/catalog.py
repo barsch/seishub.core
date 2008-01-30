@@ -15,9 +15,10 @@ class SubmitXMLPanel(Component):
         data = {'text': '', 'uri': ''}
         if request.method=='POST':
             if 'text' and 'uri' in request.args.keys():
-                # we have a textual submission - do something with it
-                text = data['text'] = request.args['text'][0].upper()
-                uri = data['uri'] = request.args['uri'][0].upper()
+                # we have a textual submission 
+                text = data['text'] = request.args['text'][0]
+                print text
+                uri = data['uri'] = request.args['uri'][0]
                 res = self.env.catalog.newXmlResource(uri, text)
                 d=self.env.catalog.addResource(res) 
                 d.addCallback(self._finishAction, data)
