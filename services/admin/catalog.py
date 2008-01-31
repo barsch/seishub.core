@@ -5,9 +5,7 @@ from seishub.services.admin.interfaces import IAdminPanel
 
 
 class SubmitXMLPanel(Component):
-    """
-    Submit and index a XML file to the database.
-    """
+    """Submit and index a XML file to the database."""
     implements(IAdminPanel)
     
     def getPanelId(self):

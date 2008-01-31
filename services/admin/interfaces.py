@@ -4,9 +4,7 @@ from seishub.core import Interface
 
 
 class IAdminPanel(Interface):
-    """
-    Extension point for adding panels to the administration interface.
-    """
+    """Extension point for adding panels to the administration interface."""
     
     def getPanelId():
         """
@@ -39,6 +37,4 @@ class IAdminPanel(Interface):
         """
     
     def getTemplatesDirs():
-        """
-        Return a list of directories containing template files.
-        """
+        """Return a list of directories containing template files."""

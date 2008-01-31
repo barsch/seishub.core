@@ -14,9 +14,7 @@ from seishub.defaults import DEFAULT_COMPONENTS
 
 
 class BasicPanel(Component):
-    """
-    Basic configuration.
-    """
+    """Basic configuration."""
     implements(IAdminPanel)
     
     def getPanelId(self):
@@ -36,9 +34,7 @@ class BasicPanel(Component):
         return ('general_basic.tmpl', data)
 
 class ConfigPanel(Component):
-    """
-    General configuration.
-    """
+    """General configuration."""
     implements(IAdminPanel)
     
     def getPanelId(self):
@@ -68,9 +64,7 @@ class RESTRedirect(Component):
 
 
 class LogsPanel(Component):
-    """
-    Web based log viewer.
-    """
+    """Web based log viewer."""
     implements(IAdminPanel)
     
     def getPanelId(self):
@@ -104,9 +98,7 @@ class LogsPanel(Component):
 
 
 class PluginsPanel(Component):
-    """
-    Administration of plugins.
-    """
+    """Administration of plugins."""
     implements(IAdminPanel)
     
     def getPanelId(self):
@@ -120,9 +112,7 @@ class PluginsPanel(Component):
         return self._viewPlugins(request)
 
     def _updatePlugins(self, request):
-        """
-        Update component enablement.
-        """
+        """Update components."""
         enabled = request.args.get('enabled',[])
         
         from seishub.core import ComponentMeta
@@ -176,9 +166,7 @@ class PluginsPanel(Component):
 
 
 class ServicesPanel(Component):
-    """
-    Administration of services.
-    """
+    """Administration of services."""
     implements(IAdminPanel)
     
     def getPanelId(self):
