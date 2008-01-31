@@ -22,7 +22,7 @@ class SubmitXMLPanel(Component):
                 res = self.env.catalog.newXmlResource(uri, text)
                 d=self.env.catalog.addResource(res) 
                 d.addCallback(self._finishAction, data)
-                return d
+                return
             elif 'file' in request.args.keys():
                 # we got a file upload
                 data['text'] = request.args['file'][0]
@@ -32,3 +32,19 @@ class SubmitXMLPanel(Component):
     
     def _finishAction(self, status, data):
         return ('catalog_submit.tmpl', data)
+
+
+class ListResourcesPanel(Component):
+    """List all resources."""
+    implements(IAdminPanel)
+    
+    def getPanelId(self):
+        yield ('catalog', 'XML Catalog', 'list', 'List Resources')
+    
+    def renderPanel(self, request):
+        d=self.env.catalog.getUriList()
+        d.addCallback(self._finishAction)
+    
+    def _finishAction(self, uris):
+        data= dict('uris', uris)
+        return ('catalog_list.tmpl', data)
