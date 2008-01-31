@@ -1,19 +1,4 @@
 # -*- coding: utf-8 -*-
-#
-# Copyright (C) 2005-2006 Edgewall Software
-# Copyright (C) 2005-2006 Christopher Lenz <cmlenz@gmx.de>
-# All rights reserved.
-#
-# This software is licensed as described in the file COPYING, which
-# you should have received as part of this distribution. The terms
-# are also available at http://trac.edgewall.org/wiki/TracLicense.
-#
-# This software consists of voluntary contributions made by many
-# individuals. For the exact contribution history, see the revision
-# history and logs, available at http://trac.edgewall.org/log/.
-#
-# Author: Christopher Lenz <cmlenz@gmx.de>
-
 
 import os
 import sys
@@ -21,49 +6,70 @@ import sys
 from glob import glob
 import imp
 import pkg_resources #@UnresolvedImport 
-from pkg_resources import working_set, DistributionNotFound #@UnresolvedImport 
+from pkg_resources import working_set, DistributionNotFound #@UnresolvedImport
 from pkg_resources import VersionConflict, UnknownExtra #@UnresolvedImport
 
-__all__ = ['loadComponents']
+__all__ = ['ComponentLoader']
 
 
-def _enablePlugin(env, module):
-    """Enable the given plugin module by adding an entry to the configuration.
-    """
-    if module + '.*' not in env.config['components']:
-        env.config['components'].set(module + '.*', 'enabled')
+class ComponentLoader(object):
+    """Load all plugin components found on the given search path."""
+    
+    def __init__(self, env):
+        self.env = env
+        extra_path = env.config.get('seishub', 'plugins_dir')
+        plugins_dir = os.path.join(env.path, 'plugins')
+        search_path = [plugins_dir]
+        # add user defined paths
+        if extra_path:
+            search_path += list((extra_path,))
+        
+        self._loadPyFiles(search_path, auto_enable=plugins_dir)
+        self._loadEggs('seishub.plugins', search_path, auto_enable=plugins_dir)
+    
+    def _enablePlugin(self, module):
+        """Enable the given plugin module by adding an entry to the 
+        configuration.
+        """
+        if module + '.*' not in self.env.config['components']:
+            self.env.config['components'].set(module + '.*', 'enabled')
 
-def loadEggs(entry_point_name):
-    """Loader that loads any eggs on the search path and `sys.path`."""
-    def _loadEggs(env, search_path, auto_enable=None):
+    def _loadEggs(self, entry_point_name, search_path, auto_enable=None):
+        """Loader that loads any eggs on the search path and `sys.path`."""
+        # add system paths
+        search_path += list(sys.path)
+        
         distributions, errors = working_set.find_plugins(
             pkg_resources.Environment(search_path)
         )
         for dist in distributions:
-            env.log.debug('Adding plugin %s from %s' % (dist, dist.location))
+            self.env.log.debug('Processing plugin %s from %s' % 
+                               (dist, dist.location))
             working_set.add(dist)
         
         def _logError(item, e):
             if isinstance(e, DistributionNotFound):
-                env.log.warn('Skipping "%s": ("%s" not found)' % (item, e))
+                self.env.log.warn('Skipping "%s": ("%s" not found)' % 
+                                  (item, e))
             elif isinstance(e, VersionConflict):
-                env.log.error('Skipping "%s": (version conflict "%s")' % 
-                              (item, e))
+                self.env.log.error('Skipping "%s": (version conflict "%s")' 
+                                   % (item, e))
             elif isinstance(e, UnknownExtra):
-                env.log.error('Skipping "%s": (unknown extra "%s")' % 
-                              (item, e))
+                self.env.log.error('Skipping "%s": (unknown extra "%s")' % 
+                                   (item, e))
             elif isinstance(e, ImportError):
-                env.log.error('Skipping "%s": (can\'t import "%s")' % 
-                              (item, e))
+                self.env.log.error('Skipping "%s": (can\'t import "%s")' % 
+                                   (item, e))
             else:
-                env.log.error('Skipping "%s": (error "%s")' % (item, e))
+                self.env.log.error('Skipping "%s": (error "%s")' % 
+                                   (item, e))
         
         for dist, e in errors.iteritems():
             _logError(dist, e)
         
         for entry in working_set.iter_entry_points(entry_point_name):
-            env.log.debug('Loading %s from %s' % (entry.name,
-                          entry.dist.location))
+            self.env.log.info('Loading %s from %s' % (entry.name,
+                              entry.dist.location))
             try:
                 entry.load(require=True)
             except (ImportError, DistributionNotFound, VersionConflict,
@@ -71,15 +77,13 @@ def loadEggs(entry_point_name):
                 _logError(entry, e)
             else:
                 if os.path.dirname(entry.dist.location) == auto_enable:
-                    _enablePlugin(env, entry.module_name)
-    return _loadEggs
-
-def loadPyFiles():
-    """Loader that look for Python source files in the plugins directories,
-    which simply get imported, thereby registering them with the component
-    manager if they define any components.
-    """
-    def _loadPyFiles(env, search_path, auto_enable=None):
+                    self._enablePlugin(entry.module_name)
+    
+    def _loadPyFiles(self, search_path, auto_enable=None):
+        """Loader that look for Python source files in the plugins directories,
+        which simply get imported, thereby registering them with the component
+        manager if they define any components.
+        """
         for path in search_path:
             plugin_files = glob(os.path.join(path, '*'))
             for plugin_file in plugin_files:
@@ -88,32 +92,12 @@ def loadPyFiles():
                 try:
                     plugin_name = os.path.basename(plugin_file)
                     plugin_file += os.sep+'__init__.py'
-                    env.log.debug('Loading file plugin %s from %s' % \
-                                  (plugin_name, plugin_file))
+                    self.env.log.info('Loading file plugin %s from %s' % 
+                                      (plugin_name, plugin_file))
                     if plugin_name not in sys.modules:
                         module = imp.load_source(plugin_name, plugin_file)
                     if path == auto_enable:
-                        _enablePlugin(env, plugin_name)
+                        self._enablePlugin(plugin_name)
                 except Exception, e:
-                    env.log.error('Failed to load plugin from %s' % 
-                                  plugin_file)
-    return _loadPyFiles
-
-def loadComponents(env, extra_path=None, loaders=(loadEggs('seishub.plugins'),
-                                                  loadPyFiles())):
-    """Load all plugin components found on the given search path."""
-    plugins_dir = os.path.normcase(os.path.realpath(
-        os.path.join(env.path, 'plugins')
-    ))
-    
-    search_path = [plugins_dir]
-    
-    # add system paths
-    search_path += list(sys.path)
-    
-    # add user defined paths
-    if extra_path:
-        search_path += list(extra_path)
-    
-    for loadfunc in loaders:
-        loadfunc(env, search_path, auto_enable=plugins_dir)
+                    self.env.log.error('Failed to load plugin from %s' % 
+                                       plugin_file)

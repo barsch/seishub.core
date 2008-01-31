@@ -4,7 +4,7 @@ import os
 
 from seishub.core import ComponentManager
 from seishub.config import Configuration, Option
-from seishub.loader import loadComponents
+from seishub.loader import ComponentLoader
 from seishub.xmldb.xmlcatalog import XmlCatalog
 from seishub.db.dbmanager import DatabaseManager
 from seishub.log import Logger
@@ -51,8 +51,7 @@ class Environment(ComponentManager):
         # set xml catalog
         self.catalog = XmlCatalog(self.db)
         # load plugins
-        plugins_dir = self.config.get('seishub', 'plugins_dir')
-        loadComponents(self, plugins_dir and (plugins_dir,))
+        ComponentLoader(self)
     
     def component_activated(self, component):
         """Initialize additional member variables for components.

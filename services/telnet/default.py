@@ -13,7 +13,7 @@ class ServicesCmd(Component):
     def getCommandId(self):
         return 'services'
     
-    def executeCommand(self, line):
+    def executeCommand(self, args):
         services = service.IServiceCollection(self.env.app)
         data = []
         for s in services:
