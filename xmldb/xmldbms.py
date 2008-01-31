@@ -3,9 +3,7 @@
 from zope.interface import implements
 from twisted.enterprise import util as dbutil
 
-from seishub.defaults import DEFAULT_PREFIX,RESOURCE_TABLE, \
-                             INDEX_TABLE,METADATA_TABLE, \
-                             METADATA_INDEX_TABLE, URI_TABLE
+from seishub.defaults import DEFAULT_PREFIX,RESOURCE_TABLE, URI_TABLE
 from seishub.defaults import ADD_RESOURCE_QUERY, DELETE_RESOURCE_QUERY, \
                              REGISTER_URI_QUERY, REMOVE_URI_QUERY, \
                              GET_NEXT_ID_QUERY, GET_ID_BY_URI_QUERY, \
@@ -13,7 +11,7 @@ from seishub.defaults import ADD_RESOURCE_QUERY, DELETE_RESOURCE_QUERY, \
                              GET_URIS_BY_TYPE, GET_URIS
 from seishub.core import SeisHubError
                        
-from seishub.xmldb.interfaces import IResourceStorage, IXmlIndex
+from seishub.xmldb.interfaces import IResourceStorage
 from seishub.xmldb.xmlresource import XmlResource
 
 __all__=['XMLDBManager']

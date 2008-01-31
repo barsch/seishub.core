@@ -10,12 +10,15 @@ from seishub.xmldb.interfaces import IXmlIndexCatalog, IIndexRegistry, \
 from seishub.xmldb.xmlindex import XmlIndex
 
 #from seishub.db.dbmanager import OperationalError
-from seishub.defaults import DEFAULT_PREFIX, INDEX_DEF_TABLE, INDEX_TABLE
-from seishub.defaults import ADD_INDEX_QUERY, DELETE_INDEX_BY_ID_QUERY, \
-                             GET_NEXT_ID_QUERY, DELETE_INDEX_BY_KEY_QUERY, \
-                             GET_INDEX_BY_ID_QUERY, GET_INDEX_BY_KEY_QUERY, \
-                             ADD_INDEX_DATA_QUERY, REMOVE_INDEX_DATA_BY_ID_QUERY, \
-                             REMOVE_INDEX_DATA_BY_KEY_QUERY
+from seishub.defaults import DEFAULT_PREFIX, INDEX_DEF_TABLE, INDEX_TABLE, \
+                             QUERY_STR_MAP
+from seishub.defaults import ADD_INDEX_QUERY, GET_NEXT_ID_QUERY, \
+                             DELETE_INDEX_BY_KEY_QUERY, \
+                             GET_INDEX_BY_KEY_QUERY, \
+                             ADD_INDEX_DATA_QUERY, \
+                             REMOVE_INDEX_DATA_BY_KEY_QUERY, \
+                             GET_INDEXES_QUERY, WHERE_TYPE, WHERE_KEY_PATH, \
+                             WHERE_VALUE_PATH
 
 class XmlIndexCatalogError(SeisHubError):
     pass
@@ -33,7 +36,7 @@ class XmlIndexCatalog(object):
         else:
             self._db=adbapi_connection
             
-     #TODO: db error handling should move to seishub.db.dbmanager    
+    #TODO: db error handling should move to seishub.db.dbmanager    
     def __handleErrors(self,error):
         # wrap an exception thrown by the db driver in one of our own
         raise XmlIndexCatalogError(error.getErrorMessage())
@@ -99,6 +102,7 @@ class XmlIndexCatalog(object):
                 
         return d
     
+    #TODO: join getIndex with getIndexes
     def getIndex(self,key_path=None,value_path=None):
         if not (isinstance(key_path,basestring) and 
                 isinstance(value_path,basestring)):
@@ -140,6 +144,54 @@ class XmlIndexCatalog(object):
         else:
             d=None
             
+        return d
+    
+    def getIndexes(self,res_type = None,key_path = None,data_type = None):
+        query = GET_INDEXES_QUERY
+        str_map = QUERY_STR_MAP
+        clause = ""
+        op = ""
+        if isinstance(res_type,basestring):
+            clause += WHERE_VALUE_PATH
+            str_map['value_path'] = dbutil.quote(res_type,"text")
+        if isinstance(key_path,basestring):
+            if clause:
+                op = " AND "
+            else:
+                op = ""
+            clause = clause + op + WHERE_KEY_PATH
+            str_map['key_path'] = dbutil.quote(key_path,"text")
+        if isinstance(data_type,basestring):
+            if clause:
+                op = " AND "
+            else:
+                op = ""
+            clause = clause + op + WHERE_TYPE
+            str_map['data_type'] = dbutil.quote(data_type,"text")
+            
+        if len(clause) > 0:
+            query = query + " WHERE (" + clause + ")"
+        
+        def return_indexes(results):
+            if len(results) == 0:
+                raise XmlIndexCatalogError("No index found.")
+                return
+            indexes=list()
+            for res in results:
+                index=XmlIndex(key_path = res[1],
+                               value_path = res[2],
+                               type = res[3])
+                # inject the internal id into obj:
+                index.__id=res[0]
+                indexes.append(index)
+            
+            return indexes
+        
+        query %= str_map
+        d = self._db.runQuery(query)
+        d.addErrback(self.__handleErrors)
+        d.addCallback(return_indexes)
+        
         return d
     
     def updateIndex(self,key_path,value_path,new_index):
@@ -227,7 +279,6 @@ class XmlIndexCatalog(object):
         d.addErrback(self.__handleErrors)
             
         return d
-
     
 #    def reindex(self,key_path,value_path):
 #        if not (isinstance(key_path,basestring) and isinstance(value_path,basestring)):

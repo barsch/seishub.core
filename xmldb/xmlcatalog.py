@@ -4,7 +4,7 @@ from zope.interface import implements
 
 from twisted.internet.defer import DeferredList
 
-from seishub.xmldb.interfaces import IXmlCatalog, IResourceStorage, IIndexRegistry
+from seishub.xmldb.interfaces import IXmlCatalog
 from seishub.xmldb.xmlindexcatalog import XmlIndexCatalog
 from seishub.xmldb.xmldbms import XmlDbManager
 from seishub.xmldb.xmlresource import XmlResource
@@ -18,7 +18,6 @@ class XmlCatalog(XmlDbManager):
     def __init__(self, db):
         self.db=db.connection_pool
         self.index_catalog=XmlIndexCatalog(self.db)
-        #self.xmldbmanager = XmlDbManager(self.db)
     
     # methods from IXmlCatalog:
     def newXmlResource(self,uri,xml_data):
@@ -49,6 +48,10 @@ class XmlCatalog(XmlDbManager):
         exp_obj=RestrictedXpathExpression(xpath_expr)
         return self.index_catalog.flushIndex(value_path = exp_obj.node_test,
                                            key_path = exp_obj.predicates)
+        
+    def listIndexes(self,res_type = None, data_type = None):
+        return self.index_catalog.getIndexes(res_type = res_type,
+                                             data_type = data_type)
         
     def reindex(self,xpath_expr):
         exp_obj=RestrictedXpathExpression(xpath_expr)

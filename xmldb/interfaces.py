@@ -9,14 +9,22 @@ class IXmlCatalog(Interface):
         """Resource factory; supposed to be used with addResource from 
         IResourceStorage
         @param raw_data: string containing xml data
-        @uri: uri of the new resource
+        @param uri: uri of the new resource
         @return: XmlResource instance"""
         
     def newXmlIndex(xpath_expr,type):
         """Index factory; supposed to be used with registerIndex
         @param xpath_expr: index defining xpath expression
-        @type: index type (e.g. "text", "int")
+        @param type: index type (e.g. "text", "int")
         @return: XmlIndex instance"""
+        
+    def listIndexes(res_type = None, data_type = None):
+        """@param res_type: restrict results to specified resource type
+        @type res_type: string 
+        @param data_type: restrict results to a specified data type (string)
+        @type data_type: string 
+        @return: list of XmlIndexes
+        @rtype: list"""
     
     def query(xpath_query):
         """@param xpath_query: restricted xpath expression (see xpath.py for 
@@ -118,6 +126,12 @@ class IIndexRegistry(Interface):
         
     def getIndex(xpath_expr=None,key_path=None,value_path=None):
         """@return: Deferred which will return a XmlIndex on success"""
+        
+    def getIndexes(res_type=None,key_path=None,data_type=None):
+        """@param res_type: resource type (string)
+        @param key_path: key path (string)
+        @param data_type: data type (string, e.g. "text", "int")
+        @return: list of indexes consistent with the given constraints"""
         
 class IResourceIndexing(Interface):
     """Index resources"""
