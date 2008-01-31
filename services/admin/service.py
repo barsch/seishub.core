@@ -3,8 +3,7 @@
 import os
 import string
 from twisted.web import static, http
-from twisted.web.server import NOT_DONE_YET
-from twisted.internet import threads, defer
+from twisted.internet import threads
 from twisted.application import internet
 from Cheetah.Template import Template
 from pkg_resources import resource_filename #@UnresolvedImport 
@@ -59,14 +58,11 @@ class AdminRequestHandler(http.Request):
             self.finish()
             return
         
-        # get content and try to render
-        d = defer.maybeDeferred(self.panel.renderPanel, self)
+        # get content in a extra thread and render after completion
+        d = threads.deferToThread(self.panel.renderPanel, self)
         d.addCallback(self._render)
    
     def _render(self, body):
-        if body == NOT_DONE_YET:
-            return
-        
         content = self._processTemplate(body)
         
         # set various default headers
@@ -181,7 +177,7 @@ class AdminRequestHandler(http.Request):
                                '/images/quake.gif': quake_gif,}
         
         # add panel specific static files
-        for panel in self.panels:
+        for panel in self.panels.values():
             if hasattr(panel, 'getHtdocsDirs'):
                 items = panel.getHtdocsDirs()
                 for path, child in items:
