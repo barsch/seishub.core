@@ -1,11 +1,11 @@
 <h1>Logs</h1>
 
-<h2>SeisHub</h2>
-<textarea rows="20" style="width: 100%;">
-#for $line in $seishub#$line#end for
+<h2>Access Log</h2>
+<textarea class="log">
+#for $line in $accesslog#$line#end for
 </textarea>
 
-<h2>Twisted</h2>
-<pre>
-$twisted
-</pre>
+<h2>Error Log</h2>
+<textarea class="log">
+#for $line in $errorlog#$line#end for
+</textarea>

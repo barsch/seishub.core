@@ -17,7 +17,9 @@ from seishub.defaults import DEFAULT_ADMIN_PORT
 
 
 class AdminRequestHandler(http.Request):
-    """A HTTP request."""
+    """
+    A HTTP request.
+    """
     
     def __init__(self, *args, **kw):
         http.Request.__init__(self, *args, **kw)
@@ -101,7 +103,9 @@ class AdminRequestHandler(http.Request):
         return temp 
     
     def _getNavigation(self):
-        """Generate the main navigation bar."""
+        """
+        Generate the main navigation bar.
+        """
         temp = Template(file=resource_filename("seishub.services.admin",
                                                "templates"+os.sep+ \
                                                "navigation.tmpl"))
@@ -113,7 +117,9 @@ class AdminRequestHandler(http.Request):
         return temp
     
     def _getSubMenu(self):
-        """Generate the sub menu box."""
+        """
+        Generate the sub menu box.
+        """
         temp = Template(file=resource_filename("seishub.services.admin",
                                                "templates"+os.sep+ \
                                                "submenu.tmpl"))
@@ -125,14 +131,18 @@ class AdminRequestHandler(http.Request):
         return temp
     
     def _getTemplateDirs(self):
-        """Returns a list of searchable template directories."""
+        """
+        Returns a list of searchable template directories.
+        """
         dirs = [resource_filename("seishub.services.admin","templates")]
         if hasattr(self.panel, 'getTemplateDirs'):
             dirs+=self.panel.getTemplateDirs()
         return dirs[::-1]
     
     def _initAdminPanels(self):
-        """Return a list of available admin panels."""
+        """
+        Return a list of available admin panels.
+        """
         panel_list = ExtensionPoint(IAdminPanel).extensions(self.env)
         self.panel_ids = []
         self.panels = {}
@@ -160,7 +170,9 @@ class AdminRequestHandler(http.Request):
         self.panel_ids.sort(_orderPanelIds)
     
     def _initStaticContent(self):
-        """Returns a dictionary of static web resources."""
+        """
+        Returns a dictionary of static web resources.
+        """
         default_css = static.File(resource_filename("seishub.services.admin",
                                                     "htdocs"+os.sep+"css"+ \
                                                     os.sep+"default.css"))
@@ -189,7 +201,9 @@ class AdminRequestHandler(http.Request):
 
 
 class AdminHTTP(http.HTTPChannel):
-    """A receiver for HTTP requests."""
+    """
+    A receiver for HTTP requests.
+    """
     requestFactory = AdminRequestHandler
     
     def __init__(self):
@@ -198,7 +212,9 @@ class AdminHTTP(http.HTTPChannel):
 
 
 class AdminService(http.HTTPFactory):
-    """Factory for HTTP Server."""
+    """
+    Factory for HTTP Server.
+    """
     protocol = AdminHTTP
     
     def __init__(self, env, logPath=None, timeout=None):
@@ -208,7 +224,9 @@ class AdminService(http.HTTPFactory):
 
 
 def getAdminService(env):
-    """Service for WebAdmin HTTP Server."""
+    """
+    Service for WebAdmin HTTP Server.
+    """
     port = env.config.getint('admin','port') or DEFAULT_ADMIN_PORT
     service = internet.TCPServer(port, AdminService(env))
     service.setName("WebAdmin")

@@ -7,7 +7,9 @@
          checked="checked" 
     #end if 
          name="service" value="$s.name" /> $s.name
+    #if hasattr($s,'args')
     [#echo $s.args[0]#]
+    #end if
   <br />
   #end for
   <br />

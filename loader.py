@@ -40,28 +40,30 @@ def loadEggs(entry_point_name):
             pkg_resources.Environment(search_path)
         )
         for dist in distributions:
-            env.log.debug('Adding plugin %s from %s', dist, dist.location)
+            env.log.debug('Adding plugin %s from %s' % (dist, dist.location))
             working_set.add(dist)
-
+        
         def _logError(item, e):
             if isinstance(e, DistributionNotFound):
-                env.log.warning('Skipping "%s": ("%s" not found)', item, e)
+                env.log.warn('Skipping "%s": ("%s" not found)' % (item, e))
             elif isinstance(e, VersionConflict):
-                env.log.error('Skipping "%s": (version conflict "%s")',
-                              item, e)
+                env.log.error('Skipping "%s": (version conflict "%s")' % 
+                              (item, e))
             elif isinstance(e, UnknownExtra):
-                env.log.error('Skipping "%s": (unknown extra "%s")', item, e)
+                env.log.error('Skipping "%s": (unknown extra "%s")' % 
+                              (item, e))
             elif isinstance(e, ImportError):
-                env.log.error('Skipping "%s": (can\'t import "%s")', item, e)
+                env.log.error('Skipping "%s": (can\'t import "%s")' % 
+                              (item, e))
             else:
-                env.log.error('Skipping "%s": (error "%s")', item, e)
-
+                env.log.error('Skipping "%s": (error "%s")' % (item, e))
+        
         for dist, e in errors.iteritems():
             _logError(dist, e)
-
+        
         for entry in working_set.iter_entry_points(entry_point_name):
-            env.log.debug('Loading %s from %s', entry.name,
-                          entry.dist.location)
+            env.log.debug('Loading %s from %s' % (entry.name,
+                          entry.dist.location))
             try:
                 entry.load(require=True)
             except (ImportError, DistributionNotFound, VersionConflict,
@@ -93,9 +95,8 @@ def loadPyFiles():
                     if path == auto_enable:
                         _enablePlugin(env, plugin_name)
                 except Exception, e:
-                    env.log.error('Failed to load plugin from %s', plugin_file,
-                                  exc_info=True)
-
+                    env.log.error('Failed to load plugin from %s' % 
+                                  plugin_file)
     return _loadPyFiles
 
 def loadComponents(env, extra_path=None, loaders=(loadEggs('seishub.plugins'),

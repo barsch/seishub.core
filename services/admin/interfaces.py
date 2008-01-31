@@ -4,17 +4,21 @@ from seishub.core import Interface
 
 
 class IAdminPanel(Interface):
-    """Extension point for adding panels to the administration interface."""
+    """
+    Extension point for adding panels to the administration interface.
+    """
     
     def getPanelId():
-        """Return a list of available admin panels.
+        """
+        Return a list of available admin panels.
         
         The items returned by this function must be tuples of the form
         `(category, category_label, page, page_label)`.
         """
     
     def renderPanel(self, request):
-        """Process a request for an admin panel.
+        """
+        Process a request for an admin panel.
         
         This function should return a tuple of the form `(template, data)`,
         where `template` is the name of the template to use and `data` is the
@@ -22,7 +26,8 @@ class IAdminPanel(Interface):
         """
     
     def getHtdocsDirs():
-        """Return a list of directories with static resources (such as style
+        """
+        Return a list of directories with static resources (such as style
         sheets, images, etc.).
         
         Each item in the list must be a `(prefix, abspath)` tuple. The
@@ -34,4 +39,6 @@ class IAdminPanel(Interface):
         """
     
     def getTemplatesDirs():
-        """Return a list of directories containing template files."""
+        """
+        Return a list of directories containing template files.
+        """

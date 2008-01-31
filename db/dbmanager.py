@@ -1,19 +1,16 @@
 # -*- coding: utf-8 -*-
 
-import weakref
 import re
 from twisted.enterprise import adbapi
 
 from seishub.defaults import DEFAULT_DB_URI
 
 
-class DatabaseManager():
+class DatabaseManager(object):
     """A Database Manager to handle a few common databases."""
     
     def __init__(self, env):
-        #XXX: maybe we should go for weak env references in all objects below env 
-        #otherwise destructurs are never called (cyclic references)
-        self.env = weakref.proxy(env)
+        self.env = env
         self.uri = self.env.config.get('seishub','database') or DEFAULT_DB_URI
         self.driver = self.selectDatabaseDriver()
         self.db_args=self.getDbArgs()

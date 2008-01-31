@@ -14,7 +14,9 @@ from seishub.defaults import DEFAULT_COMPONENTS
 
 
 class BasicPanel(Component):
-    """Basic configuration."""
+    """
+    Basic configuration.
+    """
     implements(IAdminPanel)
     
     def getPanelId(self):
@@ -34,7 +36,9 @@ class BasicPanel(Component):
         return ('general_basic.tmpl', data)
 
 class ConfigPanel(Component):
-    """General configuration."""
+    """
+    General configuration.
+    """
     implements(IAdminPanel)
     
     def getPanelId(self):
@@ -64,30 +68,45 @@ class RESTRedirect(Component):
 
 
 class LogsPanel(Component):
-    """Web based log viewer."""
+    """
+    Web based log viewer.
+    """
     implements(IAdminPanel)
     
     def getPanelId(self):
         yield ('admin', 'General', 'logs', 'Logs')
     
     def renderPanel(self, request):
-        logtype = self.env.log_type
-        logfile = self.env.log_file
-        logdir = os.path.join(self.env.path, 'log')
-        logfile = os.path.join(logdir, logfile)
-        fh = open(logfile, 'r')
-        seishub_logs = fh.readlines()
-        fh.close()  
-        seishub_logs = seishub_logs[-500:]
+        access_log_file = self.env.access_log_file
+        error_log_file = self.env.error_log_file
+        log_dir = os.path.join(self.env.path, 'log')
+        log_file = os.path.join(log_dir, access_log_file)
+        try:
+            fh = open(log_file, 'r')
+            logs = fh.readlines()
+            fh.close()  
+        except:
+            logs = ["Can't open log file."]
+        access_logs = logs[-500:]
+        log_file = os.path.join(log_dir, error_log_file)
+        try:
+            fh = open(log_file, 'r')
+            logs = fh.readlines()
+            fh.close()  
+        except:
+            logs = ["Can't open log file."]
+        error_logs = logs[-500:]
         data = {
-          'seishub': seishub_logs, 
-          'twisted': 'testdaten',
+          'accesslog': access_logs, 
+          'errorlog': error_logs, 
         }
         return ('general_logs.tmpl', data)
 
 
 class PluginsPanel(Component):
-    """Administration of plugins."""
+    """
+    Administration of plugins.
+    """
     implements(IAdminPanel)
     
     def getPanelId(self):
@@ -101,7 +120,9 @@ class PluginsPanel(Component):
         return self._viewPlugins(request)
 
     def _updatePlugins(self, request):
-        """Update component enablement."""
+        """
+        Update component enablement.
+        """
         enabled = request.args.get('enabled',[])
         
         from seishub.core import ComponentMeta
@@ -115,14 +136,14 @@ class PluginsPanel(Component):
                     self.env.enabled[component]=True
                     self.env[component]
                     self.config.set('components', fullname, 'enabled')
-                    self.log.info('Enabling component %s', fullname)
+                    self.log.info('Enabling component %s' % fullname)
             else:
                 # disable components
                 if component in self.env:
                     self.env.enabled[component]=False
                     del self.env[component]
                     self.config.set('components', fullname, 'disabled')
-                    self.log.info('Disabling component %s', fullname)
+                    self.log.info('Disabling component %s' % fullname)
         
         self.config.save()
     
@@ -155,7 +176,9 @@ class PluginsPanel(Component):
 
 
 class ServicesPanel(Component):
-    """Administration of services."""
+    """
+    Administration of services.
+    """
     implements(IAdminPanel)
     
     def getPanelId(self):
@@ -188,11 +211,11 @@ class ServicesPanel(Component):
             if srv.running and not srv.name in serviceList:
                 stopping = defer.maybeDeferred(srv.stopService)
                 actions.append(stopping)
-                self.log.info('Stopping service %s', srv.name)
+                self.log.info('Stopping service %s' % srv.name)
             elif not srv.running and srv.name in serviceList:
                 starting = defer.maybeDeferred(srv.startService)
                 actions.append(starting)
-                self.log.info('Starting service %s', srv.name)
+                self.log.info('Starting service %s' % srv.name)
         defer.DeferredList(actions).addCallback(self._finishedActions, request)
     
     def _finishedActions(self, results, request):

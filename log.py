@@ -1,66 +1,80 @@
 # -*- coding: utf-8 -*-
-#
-# Copyright (C) 2003-2006 Edgewall Software
-# Copyright (C) 2003-2005 Daniel Lundin <daniel@edgewall.com>
-# Copyright (C) 2006 Christian Boos <cboos@neuf.fr>
-# All rights reserved.
-#
-# This software is licensed as described in the file COPYING, which
-# you should have received as part of this distribution. The terms
-# are also available at http://trac.edgewall.org/wiki/TracLicense.
-#
-# This software consists of voluntary contributions made by many
-# individuals. For the exact contribution history, see the revision
-# history and logs, available at http://trac.edgewall.org/log/.
-#
-# Author: Daniel Lundin <daniel@edgewall.com>
 
-import logging
-import sys
+import os
+from twisted.python import log, logfile
+
+LOG_LEVELS = ['ERROR','WARN','INFO','DEBUG','ALL']
 
 
-def logger_factory(logtype='syslog', logfile=None, level='WARNING',
-                   logid='SeisHub', format=None):
-    logger = logging.getLogger(logid)
-    logtype = logtype.lower()
-    if logtype == 'file':
-        hdlr = logging.FileHandler(logfile)
-    elif logtype in ('winlog', 'eventlog', 'nteventlog'):
-        # Requires win32 extensions
-        hdlr = logging.handlers.NTEventLogHandler(logid,
-                                                  logtype='Application')
-    elif logtype in ('syslog', 'unix'):
-        hdlr = logging.handlers.SysLogHandler('/dev/log')
-    elif logtype in ('stderr'):
-        hdlr = logging.StreamHandler(sys.stderr)
-    else:
-        hdlr = logging.handlers.BufferingHandler(0)
-        # Note: this _really_ throws away log events, as a `MemoryHandler`
-        # would keep _all_ records in case there's no target handler (a bug?)
+class ErrorLog(log.FileLogObserver):
+    def emit(self, eventDict):
+        if not eventDict["isError"]:
+            return
+        log.FileLogObserver.emit(self, eventDict)
 
-    if not format:
-        format = 'SeisHub[%(module)s] %(levelname)s: %(message)s'
-        if logtype in ('file', 'stderr'):
-            format = '%(asctime)s ' + format
-    datefmt = ''
-    if logtype == 'stderr':
-        datefmt = '%X'
-    level = level.upper()
-    if level in ('DEBUG', 'ALL'):
-        logger.setLevel(logging.DEBUG)
-    elif level == 'INFO':
-        logger.setLevel(logging.INFO)
-    elif level == 'ERROR':
-        logger.setLevel(logging.ERROR)
-    elif level == 'CRITICAL':
-        logger.setLevel(logging.CRITICAL)
-    else:
-        logger.setLevel(logging.WARNING)
-    formatter = logging.Formatter(format, datefmt)
-    hdlr.setFormatter(formatter)
-    logger.addHandler(hdlr)
+
+class AccessLog(log.FileLogObserver):
+    def emit(self, eventDict):
+        if eventDict["isError"]:
+            return
+        log.FileLogObserver.emit(self, eventDict)
+
+
+class Logger(object):
+    """A log manager to handle all incoming log calls. You still may use 
+    twisted.python.log.msg and twisted.python.log.err to emit log messages.
+    """
+    def __init__(self, env):
+        # init new log
+        self.env = env
+        self.start()
     
-    # Remember our handler so that we can remove it later
-    logger._seishub_handler = hdlr 
+    def start(self):
+        log_dir = os.path.join(self.env.path, 'log')
+        
+        # Get log level
+        if self.env.log_level.upper() in LOG_LEVELS:
+            self.log_level = LOG_LEVELS.index(self.env.log_level.upper())
+        else:
+            self.log_level = 0
+        
+        # Error log
+        errlog_file = self.env.error_log_file
+        self.errlog_handler = logfile.LogFile(errlog_file, log_dir, 
+                                              rotateLength=100000)
+        self.errlog_handler.rotate() 
+        self.errlog = ErrorLog(self.errlog_handler)
+        self.errlog.start()
+        
+        # Access log
+        acclog_file = self.env.access_log_file
+        self.acclog_handler = logfile.LogFile(acclog_file, log_dir, 
+                                              rotateLength=100000)
+        self.acclog_handler.rotate()
+        self.acclog = AccessLog(self.acclog_handler)
+        self.acclog.start()
     
-    return logger
+    def stop(self):
+        for l in log.theLogPublisher:
+            log.removeObserver(l)
+    
+    def error(self, msg):
+        log.msg('ERROR: %s' % msg, isError=True)
+    
+    def warn(self, msg):
+        if self.log_level<1:
+            return
+        log.msg('WARN: %s' % msg, isError=True)
+    
+    def info(self, msg):
+        if self.log_level<2:
+            return
+        log.msg('INFO: %s' % msg, isError=True)
+    
+    def msg(self, msg):
+        log.msg(msg, isError=True)
+    
+    def debug(self, msg):
+        if self.log_level<3:
+            return
+        log.msg('DEBUG: %s' % msg, isError=True)

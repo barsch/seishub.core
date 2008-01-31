@@ -6,7 +6,8 @@ from seishub.core import ComponentManager
 from seishub.config import Configuration, Option
 from seishub.loader import loadComponents
 from seishub.xmldb.xmlcatalog import XmlCatalog
-from seishub.db.dbmanager import DatabaseManager 
+from seishub.db.dbmanager import DatabaseManager
+from seishub.log import Logger
 
 __all__ = ['Environment']
 
@@ -22,39 +23,16 @@ class Environment(ComponentManager):
         * a logging handler env.log
     """   
     
-    log_type = Option('logging', 'log_type', 'none',
-        """Logging facility to use.
-        
-        Should be one of (`none`, `file`, `stderr`, `syslog`, `winlog`).""")
+    error_log_file = Option('logging', 'error_log_file', 'error.log',
+        """If `log_type` is `file`, this should be a the name of the file.""")
     
-    log_file = Option('logging', 'log_file', 'seishub.log',
-        """If `log_type` is `file`, this should be a path to the log-file.""")
+    access_log_file = Option('logging', 'access_log_file', 'access.log',
+        """If `log_type` is `file`, this should be a the name of the file.""")
     
     log_level = Option('logging', 'log_level', 'DEBUG',
         """Level of verbosity in log.
         
         Should be one of (`CRITICAL`, `ERROR`, `WARN`, `INFO`, `DEBUG`).""")
-    
-    log_format = Option('logging', 'log_format', None,
-        """Custom logging format.
-        
-        If nothing is set, the following will be used:
-        
-        SeisHub[$(module)s] $(levelname)s: $(message)s
-        
-        In addition to regular key names supported by the Python logger library
-        library (see http://docs.python.org/lib/node422.html), one could use:
-         - $(path)s     the path for the current environment
-         - $(basename)s the last path component of the current environment
-         - $(project)s  the project name
-        
-        Note the usage of `$(...)s` instead of `%(...)s` as the latter form
-        would be interpreted by the ConfigParser itself.
-        
-        Example:
-        ($(thread)d) Trac[$(basename)s:$(module)s] $(levelname)s: $(message)s
-        
-        """)
     
     def __init__(self):
         """Initialize the SeisHub environment."""
@@ -67,7 +45,7 @@ class Environment(ComponentManager):
         import seishub
         self.path = os.path.split(os.path.dirname(seishub.__file__))[0]
         # set log handler
-        self.log = self.setupLogging()
+        self.log = Logger(self)
         # set up db handler
         self.db = DatabaseManager(self) 
         # set xml catalog
@@ -112,20 +90,3 @@ class Environment(ComponentManager):
         
         # By default, all components in the seishub package are enabled
         return component_name.startswith('seishub.')
-    
-    def setupLogging(self):
-        """Initialize the logging sub-system."""
-        from seishub.log import logger_factory
-        logtype = self.log_type
-        logfile = self.log_file
-        logdir = os.path.join(self.path, 'log')
-        if logtype == 'file' and not os.path.isabs(logfile):
-            logfile = os.path.join(logdir, logfile)
-        format = self.log_format
-        if format:
-            format = format.replace('$(', '%(') \
-                     .replace('%(path)s', self.path) \
-                     .replace('%(basename)s', os.path.basename(self.path)) \
-                     .replace('%(project)s', self.project_name)
-        return logger_factory(logtype, logfile, self.log_level, self.path,
-                              format=format)

@@ -7,7 +7,7 @@
     [<a href="" 
         onclick="javascript: toggleDisplay('$package'); return false">+</a>]
   </h2>
-  <dl id="$package" style="display: none;">
+  <dl name="toggledisplay" id="$package" style="display: none;">
     #for $p in $packages.get($package)
     <dt>
       <input type="hidden" name="plugin" value="$p.classname" />
@@ -29,5 +29,7 @@
   </dl>
   #end for
   <input type="submit" name="update" value="Set Plugins" />
+  <input type="button" name="toggle" value="Expand all" 
+         onclick="javascript: expandAll('toggledisplay'); return false" />
 </form>
 
