@@ -64,9 +64,9 @@ class XmlSchema(object):
                                                 xml_doc)
         err_val=xml_doc.getXml_doc().schemaValidateDoc(self.valid_ctxt)
         if (err_val == 0):
-             ret=True
+            ret=True
         else:
-             ret=False
+            ret=False
              
         return ret
     

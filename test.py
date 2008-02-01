@@ -32,7 +32,6 @@ class TestProgram(unittest.TestProgram):
 main=TestProgram
 
 def doctestsuite():
-    import glob
     suite = unittest.TestSuite()
     import seishub
     # get all .txt filenames in current dir and subdirs:
@@ -46,7 +45,6 @@ def doctestsuite():
     return suite
 
 def trialsuite():
-    import os
     sys.path.insert(0, os.curdir)
     sys.path[:] = map(os.path.abspath, sys.path)
 
@@ -56,7 +54,6 @@ def trialsuite():
     run()
 
 if __name__ == '__main__':
-    import doctest, sys, os, string
     doctest.testmod(sys.modules[__name__])
     main(defaultTest='doctestsuite')
     

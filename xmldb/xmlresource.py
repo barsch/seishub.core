@@ -6,7 +6,7 @@ from zope.interface.exceptions import DoesNotImplement
 from seishub.core import SeisHubError
 from seishub.interfaces import IXmlDoc
 from seishub.xmldb.interfaces import IXmlResource
-from seishub.util.libxmlwrapper import XmlTreeDoc,InvalidXmlDataError
+from seishub.util.libxmlwrapper import XmlTreeDoc
 from seishub.resource import Resource
 
 class XmlResourceError(SeisHubError):

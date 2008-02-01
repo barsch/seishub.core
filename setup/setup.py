@@ -2,7 +2,6 @@
 
 from seishub.env import Environment
 
-from twisted.enterprise import adbapi
 from twisted.internet import reactor
 from twisted.internet.defer import DeferredList
 

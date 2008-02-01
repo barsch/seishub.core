@@ -8,7 +8,7 @@ from seishub.defaults import DEFAULT_DB_URI
 
 class DatabaseManager(object):
     """A Database Manager to handle a few common databases."""
-    
+    # XXX: This class is a mess!!!
     def __init__(self, env):
         self.env = env
         self.uri = self.env.config.get('seishub','database') or DEFAULT_DB_URI

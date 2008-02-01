@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 
 from seishub.test import SeisHubTestCase
-from seishub.xmldb.xpath import *
+from seishub.xmldb.xpath import RestrictedXpathExpression, \
+                                RestrictedXpathError
 
 class XpathTest(SeisHubTestCase):
     def setUp(self):
