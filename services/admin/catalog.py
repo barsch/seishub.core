@@ -43,7 +43,7 @@ class SubmitXMLPanel(Component):
             self.env.log.error(e)
             data['error'] = e
         print data
-        defer.returnValue(data) 
+        defer.returnValue(('catalog_submit.tmpl', data))
 
 
 class ListResourcesPanel(Component):
