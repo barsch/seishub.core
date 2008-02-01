@@ -58,18 +58,27 @@ class Logger(object):
         for l in log.theLogPublisher:
             log.removeObserver(l)
     
-    def error(self, msg):
-        log.msg('ERROR: %s' % msg, isError=True)
+    def error(self, msg, exception=None):
+        if exception:
+            log.err(exception, 'ERROR: %s' % msg)
+        else:
+            log.msg('ERROR: %s' % msg, isError=True)
     
-    def warn(self, msg):
+    def warn(self, msg, exception=None):
         if self.log_level<1:
             return
-        log.msg('WARN: %s' % msg, isError=True)
+        if exception:
+            log.err(exception, 'WARN: %s' % msg)
+        else:
+            log.msg('WARN: %s' % msg, isError=True)
     
-    def info(self, msg):
+    def info(self, msg, exception=None):
         if self.log_level<2:
             return
-        log.msg('INFO: %s' % msg, isError=True)
+        if exception:
+            log.err(exception, 'INFO: %s' % msg)
+        else:
+            log.msg('INFO: %s' % msg, isError=True)
     
     def msg(self, msg):
         log.msg(msg, isError=True)

@@ -50,19 +50,19 @@ class ComponentLoader(object):
         def _logError(item, e):
             if isinstance(e, DistributionNotFound):
                 self.env.log.warn('Skipping "%s": ("%s" not found)' % 
-                                  (item, e))
+                                  (item, e), e)
             elif isinstance(e, VersionConflict):
                 self.env.log.error('Skipping "%s": (version conflict "%s")' 
-                                   % (item, e))
+                                   % (item, e), e)
             elif isinstance(e, UnknownExtra):
                 self.env.log.error('Skipping "%s": (unknown extra "%s")' % 
-                                   (item, e))
+                                   (item, e), e)
             elif isinstance(e, ImportError):
                 self.env.log.error('Skipping "%s": (can\'t import "%s")' % 
-                                   (item, e))
+                                   (item, e), e)
             else:
                 self.env.log.error('Skipping "%s": (error "%s")' % 
-                                   (item, e))
+                                   (item, e), e)
         
         for dist, e in errors.iteritems():
             _logError(dist, e)
@@ -100,4 +100,4 @@ class ComponentLoader(object):
                         self._enablePlugin(plugin_name)
                 except Exception, e:
                     self.env.log.error('Failed to load plugin from %s' % 
-                                       plugin_file)
+                                       plugin_file, e)

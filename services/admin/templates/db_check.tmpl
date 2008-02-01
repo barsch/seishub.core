@@ -1,0 +1,24 @@
+<h1>Check DB</h1>
+
+DB Pool running: $running<br />
+Connections: $connections<br />
+DB args: $dbargs<br />
+
+
+<br />
+<br />
+
+<p><strong>$error</strong></p>
+
+<h2>Query</h2>
+<form method="post">
+<textarea name="query" rows="10" cols="80">$query</textarea><br />
+<input type="submit" name="send" value="Send to DB" />
+<input type="submit" name="create" value="Create tables" />
+</form>
+
+<br />
+<br />
+
+<h2>Result</h2>
+<textarea rows="10" cols="80">$result</textarea>

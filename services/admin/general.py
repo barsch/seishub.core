@@ -3,7 +3,6 @@
 import inspect
 import sys
 import os
-from twisted.web.server import NOT_DONE_YET
 from twisted.internet import reactor, defer
 from twisted.application import service
 
@@ -173,17 +172,16 @@ class ServicesPanel(Component):
         yield ('admin', 'General', 'services', 'Services')
     
     def renderPanel(self, request):
-        data = {
-          'services': service.IServiceCollection(self.env.app),
-        }
         if request.method == 'POST':
             if request.args.has_key('shutdown'):
                 self._shutdownSeisHub()
             elif request.args.has_key('reload'):
                 self._changeServices(request)
-                return NOT_DONE_YET
             elif request.args.has_key('restart'):
                 self._restartSeisHub()
+        data = {
+          'services': service.IServiceCollection(self.env.app),
+        }
         return ('general_services.tmpl', data)
     
     def _shutdownSeisHub(self):
@@ -192,20 +190,18 @@ class ServicesPanel(Component):
     def _restartSeisHub(self):
         pass
     
+    @defer.inlineCallbacks
     def _changeServices(self, request):
-        actions = []
         serviceList = request.args.get('service', [])
         for srv in service.IServiceCollection(self.env.app):
             if srv.running and not srv.name in serviceList:
-                stopping = defer.maybeDeferred(srv.stopService)
-                actions.append(stopping)
+                d = defer.maybeDeferred(srv.stopService)
+                yield defer.waitForDeferred(d)
                 self.log.info('Stopping service %s' % srv.name)
             elif not srv.running and srv.name in serviceList:
-                starting = defer.maybeDeferred(srv.startService)
-                actions.append(starting)
+                d = defer.maybeDeferred(srv.startService)
+                yield defer.waitForDeferred(d)
                 self.log.info('Starting service %s' % srv.name)
-        defer.DeferredList(actions).addCallback(self._finishedActions, request)
-    
-    def _finishedActions(self, results, request):
         request.redirect(request.path)
         request.finish()
+        defer.returnValue(None)    

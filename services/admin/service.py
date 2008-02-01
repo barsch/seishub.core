@@ -2,8 +2,8 @@
 
 import os
 import string
-from twisted.web import static, http
-from twisted.internet import threads
+from twisted.web import static, http, util as webutil
+from twisted.internet import threads, defer
 from twisted.application import internet
 from Cheetah.Template import Template
 from pkg_resources import resource_filename #@UnresolvedImport 
@@ -58,36 +58,23 @@ class AdminRequestHandler(http.Request):
             self.finish()
             return
         
+        threads.deferToThread(self._process)
+    
+    def _process(self):
         # get content in a extra thread and render after completion
-        d = threads.deferToThread(self.panel.renderPanel, self)
-        d.addCallback(self._render)
-   
-    def _render(self, body):
-        content = self._processTemplate(body)
-        
-        # set various default headers
-        self.setHeader('server', 'SeisHub '+SEISHUB_VERSION)
-        self.setHeader('date', http.datetimeToString())
-        self.setHeader('content-type', "text/html")
-        self.setHeader('content-length', str(len(content)))
-        
-        # write content
-        self.write(content)
-        self.finish()
+        d = defer.Deferred()
+        d.addCallback(self._getContent)
+        d.addCallback(self._processContent)
+        d.addCallback(self._processTemplate)
+        d.addCallback(self._renderTemplate)
+        d.addErrback(self._processingFailed)
+        d.callback(None)
     
-    def _processTemplate(self, body):
-        # process template
-        temp = Template(file=resource_filename("seishub.services.admin",
-                                               "templates"+os.sep+ \
-                                               "index.tmpl"))
-        temp.navigation = self._getNavigation()
-        temp.submenu = self._getSubMenu()
-        temp.version = SEISHUB_VERSION
-        temp.content = self._getContent(body)
-        return str(temp)
+    def _getContent(self, result):
+        return self.panel.renderPanel(self)
     
-    def _getContent(self, body):
-        template, data = body
+    def _processContent(self, result):
+        template, data = result
         temp = ''
         for path in self._getTemplateDirs():
             filename = path + os.sep + template
@@ -96,7 +83,18 @@ class AdminRequestHandler(http.Request):
             temp = Template(file=filename, searchList=[data]) 
         return temp 
     
-    def _getNavigation(self):
+    def _processTemplate(self, result):
+        # process template
+        temp = Template(file=resource_filename("seishub.services.admin",
+                                               "templates"+os.sep+ \
+                                               "index.tmpl"))
+        temp.navigation = self._processNavigation()
+        temp.submenu = self._processSubMenu()
+        temp.version = SEISHUB_VERSION
+        temp.content = result
+        return str(temp)
+    
+    def _processNavigation(self):
         """Generate the main navigation bar."""
         temp = Template(file=resource_filename("seishub.services.admin",
                                                "templates"+os.sep+ \
@@ -108,7 +106,7 @@ class AdminRequestHandler(http.Request):
         temp.cat_id = self.cat_id
         return temp
     
-    def _getSubMenu(self):
+    def _processSubMenu(self):
         """Generate the sub menu box."""
         temp = Template(file=resource_filename("seishub.services.admin",
                                                "templates"+os.sep+ \
@@ -119,6 +117,33 @@ class AdminRequestHandler(http.Request):
         temp.cat_id = self.cat_id
         temp.panel_id = self.panel_id
         return temp
+    
+    def _renderTemplate(self, result):
+        if isinstance(result, defer.Deferred):
+            return
+        
+        # set various default headers
+        self.setHeader('server', 'SeisHub '+SEISHUB_VERSION)
+        self.setHeader('date', http.datetimeToString())
+        self.setHeader('content-type', "text/html")
+        self.setHeader('content-length', str(len(result)))
+        
+        # write content
+        self.write(result)
+        self.finish()
+    
+    def _processingFailed(self, reason):
+        self.env.log.error('Exception rendering:', reason)
+        body = ("<html><head><title>web.Server Traceback (most recent call "
+                "last)</title></head><body><b>web.Server Traceback (most "
+                "recent call last):</b>\n\n%s\n\n</body></html>\n"
+                % webutil.formatFailure(reason))
+        self.setResponseCode(http.INTERNAL_SERVER_ERROR)
+        self.setHeader('content-type',"text/html")
+        self.setHeader('content-length', str(len(body)))
+        self.write(body)
+        self.finish()
+        return reason
     
     def _getTemplateDirs(self):
         """Returns a list of searchable template directories."""

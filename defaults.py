@@ -56,6 +56,7 @@ GET_INDEXES_QUERY="SELECT * FROM %(idx_def_tab)s"
 WHERE_TYPE="data_type=%(data_type)s"
 WHERE_KEY_PATH="key_path=%(key_path)s"
 WHERE_VALUE_PATH="value_path=%(value_path)s"
+# XXX: nextval is PostgreSQL only!!!!!
 GET_NEXT_ID_QUERY="SELECT nextval('%s_%s_id_seq')"
 GET_ID_BY_URI_QUERY="SELECT res_id FROM %(uri_tab)s WHERE (uri='%(uri)s')"
 GET_RESOURCE_BY_URI_QUERY="""SELECT xml_data FROM %(res_tab)s,%(uri_tab)s
@@ -66,7 +67,7 @@ GET_URIS_BY_TYPE="SELECT uri FROM %(uri_tab)s WHERE (res_type='%(res_type)s')"
 
 
 # default db settings
-DEFAULT_DB_URI = "sqlite:db/seishub.db"
+DEFAULT_DB_URI = "sqlite3:db/seishub.db"
 
 # default components
 DEFAULT_COMPONENTS = ('seishub.services.admin.general.PluginsPanel',)
