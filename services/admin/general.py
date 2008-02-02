@@ -22,7 +22,8 @@ class BasicPanel(Component):
     def renderPanel(self, request):
         if request.method == 'POST':
             for option in ('url', 'default_charset', 'description'):
-                self.config.set('seishub', option, request.args.get(option,[])[0])
+                self.config.set('seishub', option, 
+                                request.args.get(option,[])[0])
             self.config.save()
             request.redirect(request.path)
         data = {

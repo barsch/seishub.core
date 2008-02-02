@@ -120,7 +120,7 @@ class AdminRequestHandler(http.Request):
                                                "templates"+os.sep+ \
                                                "submenu.tmpl"))
         menuitems = map((lambda p: (p[2],p[3])),
-                         filter(lambda p: p[0] == self.cat_id, self.panel_ids))
+                         filter(lambda p: p[0]==self.cat_id, self.panel_ids))
         temp.submenu = menuitems
         temp.cat_id = self.cat_id
         temp.panel_id = self.panel_id
