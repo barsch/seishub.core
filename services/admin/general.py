@@ -177,6 +177,7 @@ class ServicesPanel(Component):
                 self._shutdownSeisHub()
             elif request.args.has_key('reload'):
                 self._changeServices(request)
+                return
             elif request.args.has_key('restart'):
                 self._restartSeisHub()
         data = {
@@ -195,13 +196,10 @@ class ServicesPanel(Component):
         serviceList = request.args.get('service', [])
         for srv in service.IServiceCollection(self.env.app):
             if srv.running and not srv.name in serviceList:
-                d = defer.maybeDeferred(srv.stopService)
-                yield defer.waitForDeferred(d)
+                yield defer.maybeDeferred(srv.stopService)
                 self.log.info('Stopping service %s' % srv.name)
             elif not srv.running and srv.name in serviceList:
-                d = defer.maybeDeferred(srv.startService)
-                yield defer.waitForDeferred(d)
+                yield defer.maybeDeferred(srv.startService)
                 self.log.info('Starting service %s' % srv.name)
         request.redirect(request.path)
-        request.finish()
-        defer.returnValue(None)    
+        request.finish()    

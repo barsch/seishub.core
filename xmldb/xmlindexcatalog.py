@@ -30,10 +30,10 @@ class XmlIndexCatalog(object):
                IXmlIndexCatalog)
     
     def __init__(self,adbapi_connection):
-        if not hasattr(adbapi_connection,'runInteraction'):
-            raise TypeError("adbapi connector expected!")
-            self._db=None
-        else:
+#        if not hasattr(adbapi_connection,'runInteraction'):
+#            raise TypeError("adbapi connector expected!")
+#            self._db=None
+#        else:
             self._db=adbapi_connection
             
     #TODO: db error handling should move to seishub.db.dbmanager    

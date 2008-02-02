@@ -1,48 +1,32 @@
 # -*- coding: utf-8 -*-
 
-import re
-from twisted.enterprise import adbapi
+import sqlalchemy as sa
 
 from seishub.defaults import DEFAULT_DB_URI
 
 
 class DatabaseManager(object):
-    """A Database Manager to handle a few common databases."""
-    # XXX: This class is a mess!!!
+    """A wrapper around SQLAlchemy connection pool."""
+    
+    pool_size = 5
+    max_overflow = 10
+    
     def __init__(self, env):
         self.env = env
-        self.uri = self.env.config.get('seishub','database') or DEFAULT_DB_URI
-        self.driver = self.selectDatabaseDriver()
-        self.db_args=self.getDbArgs()
-        self.connection_pool=self.setupConnectionPool()
+        self.uri = self.env.config.get('seishub', 'database') or DEFAULT_DB_URI
+        self.engine = self._getEngine()
+        self.metadata = None 
         self.env.log.info('DB connection pool started')
     
-    def selectDatabaseDriver(self):
-        if self.uri.startswith('mysql://'):
-            return 'MySQLdb'
-        elif self.uri.startswith('postgres://'):
-            return 'pyPgSQL.PgSQL'
-        elif self.uri.startswith('sqlite://'):
-            return 'sqlite3'
-        else:
-            # use a temporary sqlite database - will be in memory only!!! 
-            self.uri = 'sqlite://:memory:'
-            return 'sqlite3'
+    def _getEngine(self):
+        return sa.create_engine(self.uri,
+                                echo = True,
+                                encoding = 'utf-8',
+                                convert_unicode = True,)
+                                #max_overflow = self.max_overflow, 
+                                #pool_size = self.pool_size)
     
-    def getDbArgs(self):
-        pattern="[^:/@]+"    
-        r=re.compile(pattern)
-        res=r.findall(self.uri)
-        if res[0]=='postgres' or res[0]=='mysql':
-            return {'host':res[3],
-                    'port':res[4],
-                    'database':res[5],
-                    'user':res[1],
-                    'password':res[2]}
-        else:
-            return {'database': self.uri[9:]}
-    
-    def setupConnectionPool(self):
-        cp=adbapi.ConnectionPool(self.driver, **self.db_args)
-        cp.noisy = True
-        return cp
+    def _checkVersion(self):
+        self.version = sa.__version__
+        if not self.version.startswith('0.4'):
+            self.env.log.error("We need at least a SQLAlchemy 0.4.0")

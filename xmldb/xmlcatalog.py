@@ -16,7 +16,7 @@ class XmlCatalog(XmlDbManager):
     implements(IXmlCatalog)
     
     def __init__(self, db):
-        self.db=db.connection_pool
+        self.db=db.engine
         self.index_catalog=XmlIndexCatalog(self.db)
     
     # methods from IXmlCatalog:

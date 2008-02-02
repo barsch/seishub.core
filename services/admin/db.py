@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import string
-from twisted.internet import defer
-
 from seishub.core import Component, implements
 from seishub.services.admin.interfaces import IAdminPanel
 from seishub.defaults import CREATES
@@ -35,40 +32,18 @@ class QueryDBPanel(Component):
         yield ('db', 'Database', 'query', 'Query DB')
     
     def renderPanel(self, request):
-        cp = self.env.db.connection_pool
+        db = self.env.db.engine
         data = {
             'error': '',
-            'running': cp.running, 
+            'db': db, 
             'query': 'select 1;', 
             'result': '', 
-            'connections': cp.connections,
-            'dbargs': cp.connkw,
         }
         if request.method=='POST':
             if 'query' and 'send' in request.args.keys():
-                data['query'] = request.args['query'][0]
-                return self._callDB(cp, data)
+                query = data['query'] = request.args['query'][0]
+                data['result'] = db.execute(query).fetchall()
             elif 'create' in request.args.keys():
-                data['query'] = string.join(CREATES,';\n')+';'
-                return self._createDB(cp, data)
+                for query in CREATES:
+                    db.execute(query).fetchall()
         return ('db_check.tmpl', data)
-    
-    @defer.inlineCallbacks
-    def _callDB(self, cp, data):
-        try:
-            data['result'] = yield cp.runQuery(data.get('query',''))
-        except Exception, e:
-            self.env.log.error(e)
-            data['error'] = e
-        defer.returnValue(('db_check.tmpl', data))
-    
-    @defer.inlineCallbacks
-    def _createDB(self, cp, data):
-        try:
-            for c in CREATES:
-                print c;
-                data['result'] = yield cp.runQuery(c+';')
-        except Exception, e:
-            self.env.log.error(e)
-            data['error'] = e
-        defer.returnValue(('db_check.tmpl', data))

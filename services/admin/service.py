@@ -58,43 +58,51 @@ class AdminRequestHandler(http.Request):
             self.finish()
             return
         
-        threads.deferToThread(self._process)
-    
-    def _process(self):
         # get content in a extra thread and render after completion
-        d = defer.Deferred()
-        d.addCallback(self._getContent)
-        d.addCallback(self._processContent)
-        d.addCallback(self._processTemplate)
-        d.addCallback(self._renderTemplate)
-        d.addErrback(self._processingFailed)
-        d.callback(None)
+        d = threads.deferToThread(self.panel.renderPanel, self) 
+        d.addCallback(self._renderPanel)
+        d.addErrback(self._processingFailed) 
+        return
     
-    def _getContent(self, result):
-        return self.panel.renderPanel(self)
-    
-    def _processContent(self, result):
+    def _renderPanel(self, result):
+        if not result or isinstance(result, defer.Deferred):
+            return
         template, data = result
-        temp = ''
+        
+        # no template given
+        if not template:
+            self.write(data)
+            self.finish()
+            return
+        
+        body = ''
         for path in self._getTemplateDirs():
             filename = path + os.sep + template
             if not os.path.isfile(filename):
                 continue
-            temp = Template(file=filename, searchList=[data]) 
-        return temp 
-    
-    def _processTemplate(self, result):
+            body = Template(file=filename, searchList=[data]) 
+        
         # process template
         temp = Template(file=resource_filename("seishub.services.admin",
                                                "templates"+os.sep+ \
                                                "index.tmpl"))
-        temp.navigation = self._processNavigation()
-        temp.submenu = self._processSubMenu()
+        temp.navigation = self._renderNavigation()
+        temp.submenu = self._renderSubMenu()
         temp.version = SEISHUB_VERSION
-        temp.content = result
-        return str(temp)
+        temp.content = body
+        body = str(temp)
+        
+        # set various default headers
+        self.setHeader('server', 'SeisHub '+ SEISHUB_VERSION)
+        self.setHeader('date', http.datetimeToString())
+        self.setHeader('content-type', "text/html")
+        self.setHeader('content-length', str(len(body)))
+        
+        # write content
+        self.write(body)
+        self.finish()
     
-    def _processNavigation(self):
+    def _renderNavigation(self):
         """Generate the main navigation bar."""
         temp = Template(file=resource_filename("seishub.services.admin",
                                                "templates"+os.sep+ \
@@ -106,7 +114,7 @@ class AdminRequestHandler(http.Request):
         temp.cat_id = self.cat_id
         return temp
     
-    def _processSubMenu(self):
+    def _renderSubMenu(self):
         """Generate the sub menu box."""
         temp = Template(file=resource_filename("seishub.services.admin",
                                                "templates"+os.sep+ \
@@ -117,20 +125,6 @@ class AdminRequestHandler(http.Request):
         temp.cat_id = self.cat_id
         temp.panel_id = self.panel_id
         return temp
-    
-    def _renderTemplate(self, result):
-        if isinstance(result, defer.Deferred):
-            return
-        
-        # set various default headers
-        self.setHeader('server', 'SeisHub '+SEISHUB_VERSION)
-        self.setHeader('date', http.datetimeToString())
-        self.setHeader('content-type', "text/html")
-        self.setHeader('content-length', str(len(result)))
-        
-        # write content
-        self.write(result)
-        self.finish()
     
     def _processingFailed(self, reason):
         self.env.log.error('Exception rendering:', reason)
