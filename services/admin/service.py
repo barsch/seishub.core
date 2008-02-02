@@ -157,10 +157,12 @@ class AdminRequestHandler(http.Request):
             if not hasattr(panel, 'getPanelId') or \
                not hasattr(panel, 'renderPanel'):
                 continue;
-            options = list(panel.getPanelId())
-            for item in options:
-                self.panels[(item[0], item[2])] = panel
-            self.panel_ids += options
+            options = panel.getPanelId()
+            # getPanelId has exact 4 values in a tuple
+            if not isinstance(options, tuple) or len(options)!=4:
+                continue
+            self.panels[(options[0], options[2])] = panel
+            self.panel_ids.append(options)
         
         def _orderPanelIds(p1, p2):
             if p1[0] == 'general':

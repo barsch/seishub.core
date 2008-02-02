@@ -17,7 +17,7 @@ class BasicPanel(Component):
     implements(IAdminPanel)
     
     def getPanelId(self):
-        yield ('admin', 'General', 'basic', 'Basic settings')
+        return ('admin', 'General', 'basic', 'Basic settings')
     
     def renderPanel(self, request):
         if request.method == 'POST':
@@ -37,7 +37,7 @@ class ConfigPanel(Component):
     implements(IAdminPanel)
     
     def getPanelId(self):
-        yield ('admin', 'General', 'config', 'Config')
+        return ('admin', 'General', 'config', 'Config')
     
     def renderPanel(self, request):
         data = {}
@@ -55,7 +55,7 @@ class RESTRedirect(Component):
     implements(IAdminPanel)
     
     def getPanelId(self):
-        yield ('rest', 'REST', 'rest', 'REST')
+        return ('rest', 'REST', 'rest', 'REST')
     
     def renderPanel(self, request):
         request.redirect('http://localhost:8080/')
@@ -67,7 +67,7 @@ class LogsPanel(Component):
     implements(IAdminPanel)
     
     def getPanelId(self):
-        yield ('admin', 'General', 'logs', 'Logs')
+        return ('admin', 'General', 'logs', 'Logs')
     
     def renderPanel(self, request):
         access_log_file = self.env.access_log_file
@@ -101,13 +101,15 @@ class PluginsPanel(Component):
     implements(IAdminPanel)
     
     def getPanelId(self):
-        yield ('admin', 'General', 'plugins', 'Plugins')
+        return ('admin', 'General', 'plugins', 'Plugins')
     
     def renderPanel(self, request):
         if request.method == 'POST':
             if 'update' in request.args:
                 self._updatePlugins(request)
             request.redirect(request.path)
+            request.finish()
+            return
         return self._viewPlugins(request)
 
     def _updatePlugins(self, request):
@@ -169,7 +171,7 @@ class ServicesPanel(Component):
     implements(IAdminPanel)
     
     def getPanelId(self):
-        yield ('admin', 'General', 'services', 'Services')
+        return ('admin', 'General', 'services', 'Services')
     
     def renderPanel(self, request):
         if request.method == 'POST':

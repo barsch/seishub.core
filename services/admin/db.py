@@ -10,7 +10,7 @@ class DBSettingPanel(Component):
     implements(IAdminPanel)
     
     def getPanelId(self):
-        yield ('db', 'Database', 'basic', 'Database Settings')
+        return ('db', 'Database', 'basic', 'Database Settings')
     
     def renderPanel(self, request):
         if request.method == 'POST':
@@ -29,7 +29,7 @@ class QueryDBPanel(Component):
     implements(IAdminPanel)
     
     def getPanelId(self):
-        yield ('db', 'Database', 'query', 'Query DB')
+        return ('db', 'Database', 'query', 'Query DB')
     
     def renderPanel(self, request):
         db = self.env.db.engine
