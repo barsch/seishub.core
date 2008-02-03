@@ -1,20 +1,14 @@
 # -*- coding: utf-8 -*-
 
 from zope.interface import implements
-from twisted.enterprise import util as dbutil
+from sqlalchemy import select
+from sqlalchemy.sql import and_
 
-from seishub.defaults import DEFAULT_PREFIX,RESOURCE_TABLE, URI_TABLE
-from seishub.defaults import ADD_RESOURCE_QUERY, DELETE_RESOURCE_QUERY, \
-                             REGISTER_URI_QUERY, REMOVE_URI_QUERY, \
-                             GET_NEXT_ID_QUERY, GET_ID_BY_URI_QUERY, \
-                             QUERY_STR_MAP, GET_RESOURCE_BY_URI_QUERY, \
-                             GET_URIS_BY_TYPE, GET_URIS
 from seishub.core import SeisHubError
-                       
 from seishub.xmldb.interfaces import IResourceStorage
 from seishub.xmldb.xmlresource import XmlResource
 
-__all__=['XMLDBManager']
+from seishub.xmldb.defaults import xmldbms_metadata, resource_tab, uri_tab
 
 class DbError(SeisHubError):
     pass
@@ -29,124 +23,110 @@ class XmlDbManager(object):
     """XmlResource layer, connects XmlResources to relational db storage"""
     implements(IResourceStorage)
     
-    def __init__(self,adbapi_connection):
-        if not hasattr(adbapi_connection,'runInteraction'):
-            raise TypeError("adbapi connector expected!")
-            self.db=None
-        else:
-            self.db=adbapi_connection
+    def __init__(self,db):
+        self.db = db.engine
+        self._initDb()
+        
+    def _initDb(self):
+        xmldbms_metadata.create_all(self.db)
             
     def _resolveUri(self,uri):
         if not isinstance(uri,basestring):
             raise ValueError("invalid uri: string expected")
+            return
+        
+        query = select([uri_tab.c.res_id],
+                       uri_tab.c.uri == uri)
+        res = self.db.execute(query)
+        try:
+            id = res.fetchone()[0]
+        except:
+            raise UnknownUriError(uri)
             return None
         
-        str_map=QUERY_STR_MAP
-        str_map['uri']=uri
-        query=GET_ID_BY_URI_QUERY % str_map
-        
-        def _procResults(res):
-            if len(res) == 1 and len(res[0]) == 1:
-                id=res[0][0]
-            else:
-                raise UnknownUriError("%s is not present in storage." % uri)
-                id=None
-            return id
-        
-        d=self.db.runQuery(query)
-        d.addCallback(_procResults)
-        return d
+        return id
     
     # methods from IResourceStorage            
         
     def addResource(self,xml_resource):
         """Add a new resource to the storage
+        @return: Boolean"""
+        conn = self.db.connect()
         
-        return: A Deferred which will fire a Failure on error"""
-        def _addResourceTxn(txn):
-            # get next unique id:
-            get_next_id_query=GET_NEXT_ID_QUERY % (DEFAULT_PREFIX,
-                                                   RESOURCE_TABLE)
-            txn.execute(get_next_id_query)
-            next_id=txn.fetchall()[0][0]
-            # insert into RESOURCE_TABLE:
-            add_res_query=ADD_RESOURCE_QUERY % (DEFAULT_PREFIX,RESOURCE_TABLE,
-                                                next_id,
-                                                dbutil.quote(xml_resource.getData(),
-                                                             "text"))
-            txn.execute(add_res_query)
-            # register uri
-            txn.execute(REGISTER_URI_QUERY % (DEFAULT_PREFIX,URI_TABLE,
-                                              next_id,
-                                              dbutil.quote(xml_resource.getUri(),
-                                                           "text"),
-                                              dbutil.quote(xml_resource.getResource_type(),
-                                                           "text")))
-            return next_id
+        # begin transaction:
+        txn = conn.begin()
+        try:
+            res = conn.execute(resource_tab.insert(),
+                               data = xml_resource.getData())
+            conn.execute(uri_tab.insert(), 
+                         uri = xml_resource.getUri(),
+                         res_id = res.last_inserted_ids()[0],
+                         res_type = xml_resource.getResource_type())
+            txn.commit()
+        except Exception, e:
+            txn.rollback()
+            raise DbError(e)
+            return
         
-        # perform this as a transaction to avoid a race condition between two 
-        # requests trying to add a resource with the same uri at the same time
-        d=self.db.runInteraction(_addResourceTxn)
-        return d
+        return True
     
     def getResource(self,uri):
         """Get a resource by it's uri from the database.
-        return: Deferred returning a XmlResource on success
+        @return: XmlResource or None
         """
         # TODO: bypass xml parsing on resource retrieval
-        map_str=QUERY_STR_MAP
-        map_str['uri']=uri
-        query=GET_RESOURCE_BY_URI_QUERY % map_str
+        query = select([resource_tab.c.data],
+                       and_(
+                            resource_tab.c.id == uri_tab.c.res_id,
+                            uri_tab.c.uri == uri
+                       ))
+        res = self.db.execute(query)
+        try:
+            xml_data = res.fetchone()[0]
+        except:
+            raise UnknownUriError(uri)
+            return None
         
-        def _procResults(results,uri):
-            xml_data=results[0][0]
-            return XmlResource(xml_data=xml_data,uri=uri)
-        
-        d=self.db.runQuery(query).addCallback(_procResults,uri)
-        return d
+        return XmlResource(xml_data = xml_data,
+                           uri = uri)
     
     def deleteResource(self,uri):
-        """Remove a resource from the database.
-        return: Deferred which will fire a Failure on error.
+        """Remove a resource from the storage.
+        @return: True on success
         """
-        def _delResourceTxn(txn):
-            str_map=QUERY_STR_MAP
-            str_map['uri']=uri
-            
-            #get res_id:
-            get_id_query=GET_ID_BY_URI_QUERY % str_map
-            txn.execute(get_id_query)
-            res_id=txn.fetchall()[0][0]
-            
-            #remove uri
-            remove_uri_query=REMOVE_URI_QUERY % str_map
-            txn.execute(remove_uri_query)
-            
-            #delete from resource table
-            str_map['res_id']=res_id
-            del_res_query=DELETE_RESOURCE_QUERY % str_map
-            txn.execute(del_res_query)
-            
-            return res_id
+        res_id = self._resolveUri(uri)
+        if not id:
+            return
         
-        d=self.db.runInteraction(_delResourceTxn)
-        return d
+        conn = self.db.connect()
+        
+        # begin transaction:
+        txn = conn.begin()
+        try:
+            # remove uri first:
+            conn.execute(uri_tab.delete(uri_tab.c.uri == uri))
+            # then remove data:
+            conn.execute(resource_tab.delete(resource_tab.c.id == res_id))
+            txn.commit()
+        except Exception, e:
+            txn.rollback()
+            raise DbError(e)
+            return
+        
+        return True
     
-    def getUriList(self,type=None):
-        map_str=QUERY_STR_MAP
-        
+    def getUriList(self,type = None):
+        w = None
         if type:
-            map_str['res_type']=type
-            query=GET_URIS_BY_TYPE % map_str
-        else:
-            query=GET_URIS % map_str
-    
-        def _procResults(res):
-            uri_list=[uri[0] for uri in res]
-            return uri_list
+            w = uri_tab.c.res_type == type
+        query = select([uri_tab.c.uri], w)
+        try:
+            res = self.db.execute(query)
+            uris = res.fetchall()
+        except:
+            return list()
         
-        d=self.db.runQuery(query).addCallback(_procResults)
-        return d
+        return [uri[0] for uri in uris]
     
     
         

@@ -10,9 +10,9 @@ from seishub.xmldb.interfaces import IXmlIndexCatalog, IIndexRegistry, \
 from seishub.xmldb.xmlindex import XmlIndex
 
 #from seishub.db.dbmanager import OperationalError
-from seishub.defaults import DEFAULT_PREFIX, INDEX_DEF_TABLE, INDEX_TABLE, \
+from seishub.xmldb.defaults import DEFAULT_PREFIX, INDEX_DEF_TABLE, INDEX_TABLE, \
                              QUERY_STR_MAP
-from seishub.defaults import ADD_INDEX_QUERY, GET_NEXT_ID_QUERY, \
+from seishub.xmldb.defaults import ADD_INDEX_QUERY, GET_NEXT_ID_QUERY, \
                              DELETE_INDEX_BY_KEY_QUERY, \
                              GET_INDEX_BY_KEY_QUERY, \
                              ADD_INDEX_DATA_QUERY, \

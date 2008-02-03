@@ -16,8 +16,8 @@ class XmlCatalog(XmlDbManager):
     implements(IXmlCatalog)
     
     def __init__(self, db):
-        self.db=db.engine
-        self.index_catalog=XmlIndexCatalog(self.db)
+        XmlDbManager.__init__(self,db)
+        self.index_catalog=XmlIndexCatalog(db)
     
     # methods from IXmlCatalog:
     def newXmlResource(self,uri,xml_data):

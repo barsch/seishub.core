@@ -11,7 +11,7 @@ class SeisHubTestCase(TestCase):
     def __init__(self,methodName):
         TestCase.__init__(self, methodName)
         self.env=Environment()
-        self.db=self.env.db.connection_pool
+        self.db=self.env.db
 
     def _printRes(self,res):
         """little helper for debuging callbacks"""

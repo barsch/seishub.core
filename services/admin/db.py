@@ -2,7 +2,7 @@
 
 from seishub.core import Component, implements
 from seishub.services.admin.interfaces import IAdminPanel
-from seishub.defaults import CREATES
+#from seishub.defaults import CREATES
 
 
 class DBSettingPanel(Component):
