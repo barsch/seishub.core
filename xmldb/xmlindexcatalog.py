@@ -9,8 +9,7 @@ from seishub.core import SeisHubError
 from seishub.xmldb.interfaces import IXmlIndexCatalog, IIndexRegistry, \
                                      IResourceIndexing, IXmlIndex, IXmlResource
 from seishub.xmldb.xmlindex import XmlIndex
-from seishub.xmldb.defaults import xmlindexcatalog_metadata, \
-                                   index_def_tab, index_tab
+from seishub.xmldb.defaults import index_def_tab, index_tab
 
 from seishub.xmldb.defaults import DEFAULT_PREFIX, INDEX_DEF_TABLE, INDEX_TABLE, \
                              QUERY_STR_MAP
@@ -34,10 +33,6 @@ class XmlIndexCatalog(object):
     def __init__(self,db, resource_storage = None):
         self._db = db.engine
         self._storage = resource_storage
-        self._initDb()
-        
-    def _initDb(self):
-        xmlindexcatalog_metadata.create_all(self._db)
                 
 #    def __handleErrors(self,error):
 #        # wrap an exception thrown by the db driver in one of our own

@@ -2,9 +2,10 @@
 
 from seishub.core import Component, implements
 from seishub.services.admin.interfaces import IAdminPanel
+from seishub.defaults import DEFAULT_REST_PORT
 
 
-class SubmitXMLPanel(Component):
+class SubmitResourcePanel(Component):
     """Submit and index a XML file to the database."""
     implements(IAdminPanel)
     
@@ -44,5 +45,10 @@ class ListResourcesPanel(Component):
     
     def renderPanel(self, request):
         uris = self.env.catalog.getUriList()
-        data  = {'uris': uris}
+        # XXX: REST service + Port should be saved somewhere in the environment
+        port = self.env.config.getint('rest','port') or DEFAULT_REST_PORT
+        data  = {
+            'uris': uris,
+            'resturl': 'http://localhost:' + str(port),
+        }
         return ('catalog_list.tmpl', data) 

@@ -51,7 +51,6 @@ class XmlDbManager(object):
         return id
     
     # methods from IResourceStorage            
-        
     def addResource(self,xml_resource):
         """Add a new resource to the storage
         @return: Boolean"""
@@ -74,7 +73,7 @@ class XmlDbManager(object):
         
         return True
     
-    def getResource(self,uri):
+    def getResource(self, uri):
         """Get a resource by it's uri from the database.
         @return: XmlResource or None
         """
@@ -91,8 +90,7 @@ class XmlDbManager(object):
             raise UnknownUriError(uri)
             return None
         
-        return XmlResource(xml_data = xml_data,
-                           uri = uri)
+        return XmlResource(xml_data = xml_data, uri = uri)
     
     def deleteResource(self,uri):
         """Remove a resource from the storage.
@@ -131,9 +129,3 @@ class XmlDbManager(object):
             return list()
         
         return [uri[0] for uri in uris]
-    
-    
-        
-        
-        
-        

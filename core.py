@@ -23,20 +23,9 @@ __all__ = ['Component', 'ExtensionPoint', 'implements', 'Interface',
 class SeisHubError(Exception):
     """Exception base class for errors in SeisHub."""
 
-    title = 'SeisHub Error'
-    
-    def __init__(self, message, title=None, show_traceback=False):
-        """If message is a genshi.builder.tag object, everything up to the
-        first <p> will be displayed in the red box, and everything after will
-        be displayed below the red box.
-        If title is given, it will be displayed as the large header above the
-        error message.
-        """
-        Exception.__init__(self, message)
-        self.message = message
-        if title:
-            self.title = title
-        self.show_traceback = show_traceback
+    def __init__(self, exception, message=None):
+        """not implemented yet"""
+        pass
 
 
 class Interface(object):

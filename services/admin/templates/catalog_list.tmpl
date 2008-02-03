@@ -1,9 +1,14 @@
 <h1>List Resources</h1>
-<ul>
-  #for $uri in $uris
-  <li>
-  <input type="checkbox"  
-         name="uri" value="$uri" /> $uri
-  </li>
-  #end for
-</ul>
+
+<form method="post">
+  <ul>
+    #for $uri in $uris
+    <li style="list-style-type: none">
+      <input type="checkbox" name="uri" value="$uri" /> 
+      <a href="$resturl$uri">$uri</a>
+    </li>
+    #end for
+  </ul>
+  
+  <input disabled="disabled" type="submit" name="delete" value="Delete" />
+</form>
