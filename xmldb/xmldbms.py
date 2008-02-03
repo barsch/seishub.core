@@ -8,7 +8,7 @@ from seishub.core import SeisHubError
 from seishub.xmldb.interfaces import IResourceStorage
 from seishub.xmldb.xmlresource import XmlResource
 
-from seishub.xmldb.defaults import xmldbms_metadata, resource_tab, uri_tab
+from seishub.xmldb.defaults import metadata, resource_tab, uri_tab
 
 class DbError(SeisHubError):
     pass
@@ -23,13 +23,17 @@ class XmlDbManager(object):
     """XmlResource layer, connects XmlResources to relational db storage"""
     implements(IResourceStorage)
     
-    def __init__(self,db):
+    def __init__(self, db):
         self.db = db.engine
+        self.metadata = db.metadata = metadata
         self._initDb()
+        metadata.bind = db.engine
         
     def _initDb(self):
-        xmldbms_metadata.create_all(self.db)
-            
+        #create all tables
+        #this will check for the presence of a table first before creating
+        self.metadata.create_all(self.db, checkfirst=True)
+    
     def _resolveUri(self,uri):
         if not isinstance(uri,basestring):
             raise ValueError("invalid uri: string expected")

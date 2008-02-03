@@ -24,7 +24,11 @@ class SubmitXMLPanel(Component):
                 uri = data['uri'] = request.args['uri'][0]
                 res = self.env.catalog.newXmlResource(uri, text)
                 # XXX: Error checking!
-                self.env.catalog.addResource(res)
+                try:
+                    self.env.catalog.addResource(res)
+                except Exception, e:
+                    self.env.log.error(e)
+                    data['error'] = e
             elif 'file' in request.args.keys():
                 # we got a file upload
                 data['text'] = request.args['file'][0]

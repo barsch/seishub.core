@@ -3,7 +3,7 @@
 from sqlalchemy import MetaData, Table, Column, Integer, String, \
                        UniqueConstraint, ForeignKey
 
-DEFAULT_PREFIX = 'default'
+DEFAULT_PREFIX = 'default_'
 RESOURCE_TABLE = 'data'
 INDEX_TABLE = 'index'
 INDEX_DEF_TABLE = 'index_def'
@@ -12,47 +12,36 @@ INDEX_DEF_TABLE = 'index_def'
 URI_TABLE = 'uri'
 
 # xmldbms tables:
-xmldbms_metadata = MetaData()
-resource_tab = Table(DEFAULT_PREFIX + '_' + RESOURCE_TABLE, 
-                     xmldbms_metadata,
-                     Column('id', Integer, 
-                            primary_key = True, 
-                            autoincrement = True),
-                     Column('data', String),
-                     )
+metadata = MetaData()
+resource_tab = Table(DEFAULT_PREFIX + RESOURCE_TABLE, metadata,
+    Column('id', Integer, primary_key = True, autoincrement = True),
+    Column('data', String),
+)
 
-uri_tab = Table(DEFAULT_PREFIX + '_' + URI_TABLE,
-                xmldbms_metadata,
-                Column('uri', String, 
-                       primary_key = True),
-                Column('res_id', Integer,
-                       ForeignKey(DEFAULT_PREFIX + '_' + RESOURCE_TABLE + \
-                                  '.id')),
-                Column('res_type', String),
-                )
+uri_tab = Table(DEFAULT_PREFIX + URI_TABLE, metadata,
+    Column('uri', String, primary_key = True),
+    Column('res_id', Integer, ForeignKey(DEFAULT_PREFIX + RESOURCE_TABLE +
+                                         '.id')),
+    Column('res_type', String),
+)
 
 # xmlindexcatalog tables:
 xmlindexcatalog_metadata = MetaData()
-index_def_tab = Table(DEFAULT_PREFIX + '_' + INDEX_DEF_TABLE, 
-                      xmlindexcatalog_metadata,
-                      Column('id', Integer, 
-                             primary_key = True, 
-                             autoincrement = True),
-                      Column('key_path', String),
-                      Column('value_path', String),
-                      Column('data_type', String(20)),
-                      UniqueConstraint('key_path','value_path')
-                      )
+index_def_tab = Table(DEFAULT_PREFIX + INDEX_DEF_TABLE, metadata,
+    Column('id', Integer, primary_key = True, autoincrement = True),
+    Column('key_path', String),
+    Column('value_path', String),
+    Column('data_type', String(20)),
+    UniqueConstraint('key_path', 'value_path')
+)
 
-index_tab = Table(DEFAULT_PREFIX + '_' + INDEX_TABLE,
-                  Column('id', Integer, 
-                         primary_key = True, 
-                         autoincrement = True),
-                  Column('index_id', Integer,
-                         ForeignKey('index_def_tab.id')),
-                  Column('key', String),
-                  Column('value', String),
-                  )
+index_tab = Table(DEFAULT_PREFIX + INDEX_TABLE, metadata,
+    Column('id', Integer, primary_key = True, autoincrement = True),
+    Column('index_id', Integer, ForeignKey(DEFAULT_PREFIX + INDEX_DEF_TABLE +
+                                           '.id')),
+    Column('key', String),
+    Column('value', String),
+)
 
 ## the index tables refer to the resource tables (FOREIGN KEY), this is not
 ## forced by seishub.xmldb, so different databases for indexes and resources
@@ -73,9 +62,9 @@ index_tab = Table(DEFAULT_PREFIX + '_' + INDEX_TABLE,
 #          DEFAULT_PREFIX, URI_TABLE)
 #         ]
 
-QUERY_STR_MAP={'res_tab':DEFAULT_PREFIX+'_'+RESOURCE_TABLE,
-               'uri_tab':DEFAULT_PREFIX+'_'+URI_TABLE,
-               'idx_def_tab':DEFAULT_PREFIX+'_'+INDEX_DEF_TABLE
+QUERY_STR_MAP={'res_tab':DEFAULT_PREFIX + RESOURCE_TABLE,
+               'uri_tab':DEFAULT_PREFIX + URI_TABLE,
+               'idx_def_tab':DEFAULT_PREFIX + INDEX_DEF_TABLE
                }
 
 #ADD_RESOURCE_QUERY="""INSERT INTO %s_%s (id,xml_data) values (%s,%s)"""
