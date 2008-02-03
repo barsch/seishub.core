@@ -11,7 +11,7 @@ from seishub.xmldb.xmldbms import XmlDbManager
 from seishub.xmldb.xmlindex import XmlIndex
 from seishub.xmldb.xmlresource import XmlResource
 
-from seishub.defaults import INDEX_DEF_TABLE, DEFAULT_PREFIX
+from seishub.xmldb.defaults import INDEX_DEF_TABLE, DEFAULT_PREFIX
 
 RAW_XML1="""<station rel_uri="bern">
     <station_code>BERN</station_code>
@@ -40,7 +40,7 @@ class XmlIndexCatalogTest(SeisHubTestCase):
         # make sure created indexes are removed in the end, 
         # even if not all tests pass:
         
-        catalog=XmlIndexCatalog(adbapi_connection=self.db)
+        # catalog=XmlIndexCatalog(adbapi_connection=self.db)
         d=self.__cleanUp()
         return d
     
@@ -61,63 +61,51 @@ class XmlIndexCatalogTest(SeisHubTestCase):
     
     def __cleanUp(self,res=None):
         # manually remove some db entries created
-               
         query=("DELETE FROM %(prefix)s_%(table)s WHERE " + \
                "(value_path=%(value_path)s AND key_path=%(key_path)s)") % \
                {'prefix':DEFAULT_PREFIX,
                 'table':INDEX_DEF_TABLE,
                 'key_path':dbutil.quote(self._test_kp,"text"),
                 'value_path':dbutil.quote(self._test_vp,"text")}
-        d=self.db.runOperation(query)
-        return d
+        self.db.engine.execute(query)
     
     def testRegisterIndex(self):
         test_kp=self._test_kp
         test_vp=self._test_vp
+        catalog=XmlIndexCatalog(self.db)
+        test_index=XmlIndex(key_path=test_kp,
+                            value_path=test_vp)
+        catalog.registerIndex(test_index)
         
-        def _checkResults(obj):
-            str_map={'prefix':DEFAULT_PREFIX,
-                     'table':INDEX_DEF_TABLE,
-                     'key_path':dbutil.quote(test_kp,"text"),
-                     'value_path':dbutil.quote(test_vp,"text")}
-            query=("SELECT key_path,value_path FROM %(prefix)s_%(table)s " + \
+        str_map={'prefix':DEFAULT_PREFIX,
+                 'table':INDEX_DEF_TABLE,
+                 'key_path':dbutil.quote(test_kp,"text"),
+                 'value_path':dbutil.quote(test_vp,"text")}
+        query=("SELECT key_path,value_path FROM %(prefix)s_%(table)s " + \
                 "WHERE (key_path=%(key_path)s AND value_path=%(value_path)s)") \
                 % (str_map)
-
-            d=self.db.runQuery(query) \
-             .addCallback(lambda res: self.assertEquals(res[0],[test_kp,test_vp]))
-            return d
+                
+        res = self.db.engine.execute(query).fetchall()
+        self.assertEquals(res[0][0],self._test_kp)
+        self.assertEquals(res[0][1],self._test_vp)
         
-        # register an index:
-        catalog=XmlIndexCatalog(adbapi_connection=self.db)        
-        test_index=XmlIndex(key_path=test_kp,
-                            value_path=test_vp
-                            )
-        
-        d=catalog.registerIndex(test_index)
-        d.addCallback(_checkResults)
-        
-        # try to add a duplicate index:
-        d.addCallback(lambda m: catalog.registerIndex(test_index))
-        self.assertFailure(d,XmlIndexCatalogError)
+        # try to add a duplicate:
+        self.assertRaises(XmlIndexCatalogError,catalog.registerIndex,test_index)
         
         # clean up:
-        d.addCallback(self.__cleanUp)
-
-        return d
+        self.__cleanUp
     
     def testRemoveIndex(self):
         # first register an index to be removed:
-        catalog=XmlIndexCatalog(adbapi_connection=self.db)
-        test_index=XmlIndex(key_path=self._test_kp,
-                            value_path=self._test_vp
-                            )
-        d=catalog.registerIndex(test_index)
+        catalog = XmlIndexCatalog(self.db)
+        test_index = XmlIndex(key_path = self._test_kp,
+                            value_path = self._test_vp)
+        catalog.registerIndex(test_index)
         
-        # remove after registration has finished:
-        d.addCallback(lambda m: catalog.removeIndex(key_path=self._test_kp,
-                                                    value_path=self._test_vp))
-        return d
+        # ... and remove again:
+        r = catalog.removeIndex(key_path=self._test_kp,
+                            value_path=self._test_vp)
+        self.assertTrue(r)
     
     def testGetIndex(self):
         # first register an index to grab, and retrieve it's id:

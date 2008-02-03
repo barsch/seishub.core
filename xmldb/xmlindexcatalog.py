@@ -1,18 +1,20 @@
 # -*- coding: utf-8 -*-
 from zope.interface import implements
 from zope.interface.exceptions import DoesNotImplement
-
 from twisted.enterprise import util as dbutil
+from sqlalchemy import select
+from sqlalchemy.sql import and_
 
 from seishub.core import SeisHubError
 from seishub.xmldb.interfaces import IXmlIndexCatalog, IIndexRegistry, \
                                      IResourceIndexing, IXmlIndex, IXmlResource
 from seishub.xmldb.xmlindex import XmlIndex
+from seishub.xmldb.defaults import xmlindexcatalog_metadata, \
+                                   index_def_tab, index_tab
 
-#from seishub.db.dbmanager import OperationalError
 from seishub.xmldb.defaults import DEFAULT_PREFIX, INDEX_DEF_TABLE, INDEX_TABLE, \
                              QUERY_STR_MAP
-from seishub.xmldb.defaults import ADD_INDEX_QUERY, GET_NEXT_ID_QUERY, \
+from seishub.xmldb.defaults import GET_NEXT_ID_QUERY, \
                              DELETE_INDEX_BY_KEY_QUERY, \
                              GET_INDEX_BY_KEY_QUERY, \
                              ADD_INDEX_DATA_QUERY, \
@@ -29,21 +31,21 @@ class XmlIndexCatalog(object):
                IResourceIndexing,
                IXmlIndexCatalog)
     
-    def __init__(self,adbapi_connection):
-#        if not hasattr(adbapi_connection,'runInteraction'):
-#            raise TypeError("adbapi connector expected!")
-#            self._db=None
-#        else:
-            self._db=adbapi_connection
-            
-    #TODO: db error handling should move to seishub.db.dbmanager    
-    def __handleErrors(self,error):
-        # wrap an exception thrown by the db driver in one of our own
-        raise XmlIndexCatalogError(error.getErrorMessage())
-#        if error.check(OperationalError):
-#            raise XmlIndexCatalogError(error.getErrorMessage())
-#        else:
-#            error.raiseException()
+    def __init__(self,db, resource_storage = None):
+        self._db = db.engine
+        self._storage = resource_storage
+        self._initDb()
+        
+    def _initDb(self):
+        xmlindexcatalog_metadata.create_all(self._db)
+                
+#    def __handleErrors(self,error):
+#        # wrap an exception thrown by the db driver in one of our own
+#        raise XmlIndexCatalogError(error.getErrorMessage())
+##        if error.check(OperationalError):
+##            raise XmlIndexCatalogError(error.getErrorMessage())
+##        else:
+##            error.raiseException()
             
     def _parse_xpath_query(expr):
         pass
@@ -52,55 +54,43 @@ class XmlIndexCatalog(object):
     # methods from IIndexRegistry:
         
     def registerIndex(self,xml_index):
-        def _addIndexTxn(txn):
-            # get next unique id:
-            get_next_id_query=GET_NEXT_ID_QUERY % (DEFAULT_PREFIX,
-                                                   INDEX_DEF_TABLE)
-            txn.execute(get_next_id_query)
-            next_id=txn.fetchall()[0][0]
-            # insert into INDEX_DEF_TABLE:
-            add_query=ADD_INDEX_QUERY % \
-                      {'prefix' : DEFAULT_PREFIX,
-                       'table' : INDEX_DEF_TABLE,
-                       'id' : next_id,
-                       'key_path' : dbutil.quote(xml_index.getKey_path(),
-                                                 "text"),
-                       'value_path' : dbutil.quote(xml_index.getValue_path(),
-                                                   "text"),
-                       'data_type': dbutil.quote(xml_index.getType(), "text"),
-                       }
-            txn.execute(add_query)
-            return next_id
-                
         if not IXmlIndex.providedBy(xml_index):
             raise DoesNotImplement(IXmlIndex)
-        else:
-            d=self._db.runInteraction(_addIndexTxn)
-            d.addErrback(self.__handleErrors)
+            return
         
-        return d
+        conn = self._db.connect()
+        
+        # begin transaction:
+        txn = conn.begin()
+        try:
+            res = conn.execute(index_def_tab.insert(),
+                               key_path = xml_index.getKey_path(),
+                               value_path = xml_index.getValue_path(),
+                               data_type = xml_index.getType())
+            xml_index.__id = res.last_inserted_ids()[0]
+            txn.commit()
+        except Exception, e:
+            txn.rollback()
+            raise XmlIndexCatalogError(e)
+            return
+        
+        return xml_index
     
     def removeIndex(self,key_path=None,value_path=None):
         if not (isinstance(key_path,basestring) and isinstance(value_path,basestring)):
-            raise XmlIndexCatalogError("No xml_index or key_path, value_path given.")
-            return None
-
-        query=DELETE_INDEX_BY_KEY_QUERY
-
+            raise XmlIndexCatalogError("No key_path and value_path given.")
+        
         # flush index first:
-        d=self.flushIndex(key_path=key_path,value_path=value_path)
+        self.flushIndex(key_path=key_path,value_path=value_path)
         
         # then remove index definition:
-        str_map={'prefix' : DEFAULT_PREFIX,
-                 'table' : INDEX_DEF_TABLE,
-                 'key_path' : dbutil.quote(key_path, "text"),
-                 'value_path' : dbutil.quote(value_path,"text"),
-                 }
-        query%=str_map
-        d.addCallback(lambda f: self._db.runOperation(query))
-        d.addErrback(self.__handleErrors)
-                
-        return d
+        self._db.execute(index_def_tab.delete(
+                         and_(
+                         index_def_tab.c.key_path == key_path,
+                         index_def_tab.c.value_path == value_path
+                         )))
+        
+        return True
     
     #TODO: join getIndex with getIndexes
     def getIndex(self,key_path=None,value_path=None):
@@ -264,6 +254,7 @@ class XmlIndexCatalog(object):
         return d
     
     def flushIndex(self,key_path,value_path):
+        return 
         if not (isinstance(key_path,basestring) and isinstance(value_path,basestring)):
             raise XmlIndexCatalogError("No xml_index or key_path, value_path given.")
             return None
