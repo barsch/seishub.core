@@ -26,7 +26,6 @@ uri_tab = Table(DEFAULT_PREFIX + URI_TABLE, metadata,
 )
 
 # xmlindexcatalog tables:
-xmlindexcatalog_metadata = MetaData()
 index_def_tab = Table(DEFAULT_PREFIX + INDEX_DEF_TABLE, metadata,
     Column('id', Integer, primary_key = True, autoincrement = True),
     Column('key_path', String),

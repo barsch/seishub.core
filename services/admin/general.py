@@ -17,7 +17,7 @@ class BasicPanel(Component):
     implements(IAdminPanel)
     
     def getPanelId(self):
-        return ('admin', 'General', 'basic', 'Basic settings')
+        return ('admin', 'General', 'basic', 'Basic Settings')
     
     def renderPanel(self, request):
         if request.method == 'POST':
