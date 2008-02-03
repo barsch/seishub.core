@@ -48,7 +48,7 @@ class XmlIndexCatalog(object):
             
     # methods from IIndexRegistry:
         
-    def registerIndex(self,xml_index):
+    def registerIndex(self, xml_index):
         if not IXmlIndex.providedBy(xml_index):
             raise DoesNotImplement(IXmlIndex)
             return
@@ -173,11 +173,13 @@ class XmlIndexCatalog(object):
             return indexes
         
         query %= str_map
-        d = self._db.runQuery(query)
-        d.addErrback(self.__handleErrors)
-        d.addCallback(return_indexes)
-        
-        return d
+        #d = self._db.runQuery(query)
+        #d.addErrback(self.__handleErrors)
+        #d.addCallback(return_indexes)
+        print query
+        res = self._db.execute(query)
+        indexes = res.fetchall()
+        return indexes
     
     def updateIndex(self,key_path,value_path,new_index):
         #TODO: updateIndex implementation
