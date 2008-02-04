@@ -44,8 +44,8 @@ class XmlDbManagerTest(SeisHubTestCase):
     def testAddResource(self):
         testres=XmlResource(xml_data=self.test_data,uri=self.test_uri)
         self.xmldbm.addResource(testres)
-        db_strings={'res_tab':DEFAULT_PREFIX+'_'+RESOURCE_TABLE,
-                    'uri_tab':DEFAULT_PREFIX+'_'+URI_TABLE,
+        db_strings={'res_tab':DEFAULT_PREFIX+RESOURCE_TABLE,
+                    'uri_tab':DEFAULT_PREFIX+URI_TABLE,
                     'uri':self.test_uri}
         query = """SELECT data FROM %(res_tab)s,%(uri_tab)s
                 WHERE(%(res_tab)s.id=%(uri_tab)s.res_id

@@ -55,8 +55,8 @@ URI1 = "/real/bern"
 URI2 = "/fake/genf"
 URI3 = "/testml/res1"
 
-IDX1 = "/station[XY/paramXY]"
-IDX2 = "/testml[blah1/@id]"
+IDX1 = "/station/XY/paramXY"
+IDX2 = "/testml/blah1/@id"
 
 class XmlCatalogTest(SeisHubTestCase):
     #TODO: a whole bunch of tests is still missing here
@@ -67,54 +67,34 @@ class XmlCatalogTest(SeisHubTestCase):
         res3=self.env.catalog.newXmlResource(URI3,RAW_XML3)
         idx1=self.env.catalog.newXmlIndex(IDX1)
         idx2=self.env.catalog.newXmlIndex(IDX2)
-        d=self.env.catalog.addResource(res1)
-        d.addCallback(lambda f: self.env.catalog.addResource(res2))
-        d.addCallback(lambda f: self.env.catalog.addResource(res3))
-        d.addCallback(lambda f: self.env.catalog.registerIndex(idx1))
-        d.addCallback(lambda f: self.env.catalog.registerIndex(idx2))
-        return d
+        self.env.catalog.addResource(res1)
+        self.env.catalog.addResource(res2)
+        self.env.catalog.addResource(res3)
+        self.env.catalog.registerIndex(idx1)
+        self.env.catalog.registerIndex(idx2)
     
     def tearDown(self):
         # clean up again
-        d = self.env.catalog.removeIndex(IDX1)
-        d.addCallback(lambda foo: self.env.catalog.removeIndex(IDX2))
-        d.addCallback(lambda foo: 
-                      self.env.catalog.deleteResource(URI1)
-                      )
-        d.addCallback(lambda foo: 
-                      self.env.catalog.deleteResource(URI2)
-                      )
-        d.addCallback(lambda foo: 
-                      self.env.catalog.deleteResource(URI3)
-                      )
-        return d
+        self.env.catalog.removeIndex(IDX1)
+        self.env.catalog.removeIndex(IDX2)
+        self.env.catalog.deleteResource(URI1)
+        self.env.catalog.deleteResource(URI2)
+        self.env.catalog.deleteResource(URI3)
         
     def testIResourceManager(self):
         catalog=self.env.catalog
         res=catalog.newXmlResource(URI,RAW_XML)
-        d=catalog.addResource(res)
-        d.addCallback(lambda foo:
-                      catalog.getResource(URI)
-                      )
-        d.addCallback(lambda foo: 
-                      self.assertEquals(RAW_XML,res.getData())
-                      )
-        d.addCallback(lambda foo: 
-                      self.assertEquals(URI,res.getUri())
-                      )
-        d.addCallback(lambda foo: 
-                      catalog.deleteResource(URI)
-                      )
-        
-        return d
+        catalog.addResource(res)
+        catalog.getResource(URI)
+        self.assertEquals(RAW_XML,res.getData())
+        self.assertEquals(URI,res.getUri())
+        catalog.deleteResource(URI)
     
-    def testReindex(self):
-        d=self.env.catalog.reindex(IDX1)
-        return d
+#    def testReindex(self):
+#        self.env.catalog.reindex(IDX1)
     
     def testListIndexes(self):
         #d=self.env.catalog.listIndexes(res_type="testml", data_type="text")
-        d=self.env.catalog.listIndexes()
+        self.env.catalog.listIndexes()
         #d.addCallback(self._printRes)
-        return d
         

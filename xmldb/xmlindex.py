@@ -29,6 +29,9 @@ class XmlIndex(object):
             
         self._values=list()
         
+    def __str__(self):
+        return self.getXpath_expr()
+        
     def _createXPath(self):
         if not self._value_path.startswith("/"):
             str="/"

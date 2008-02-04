@@ -20,7 +20,7 @@
 <h2>List of all indexes</h2>
 <form method="post" name="list">
   #for $index in $indexes
-  <input type="checkbox" name="index[]" value="$index.id" /> $index<br />
+  <input type="checkbox" name="index[]" value="$index.__str__()" /> $index<br />
   #end for
   <br />
   <input type="submit" name="delete" value="Delete" />

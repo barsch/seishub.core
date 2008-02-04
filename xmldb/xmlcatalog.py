@@ -2,14 +2,12 @@
 
 from zope.interface import implements
 
-from twisted.internet.defer import DeferredList
-
 from seishub.xmldb.interfaces import IXmlCatalog
 from seishub.xmldb.xmlindexcatalog import XmlIndexCatalog
 from seishub.xmldb.xmldbms import XmlDbManager
 from seishub.xmldb.xmlresource import XmlResource
 from seishub.xmldb.xmlindex import XmlIndex
-from seishub.xmldb.xpath import RestrictedXpathExpression
+from seishub.xmldb.xpath import IndexDefiningXpathExpression
 
 
 class XmlCatalog(XmlDbManager):
@@ -24,10 +22,10 @@ class XmlCatalog(XmlDbManager):
         return XmlResource(uri,xml_data)
     
     def newXmlIndex(self,xpath_expr,type="text"):
-        exp_obj=RestrictedXpathExpression(xpath_expr)
+        exp_obj=IndexDefiningXpathExpression(xpath_expr)    
         if type=="text":
-            return XmlIndex(value_path = exp_obj.node_test,
-                            key_path = exp_obj.predicates)
+            return XmlIndex(value_path = exp_obj.value_path,
+                            key_path = exp_obj.key_path)
         else:
             return None
     
@@ -35,59 +33,59 @@ class XmlCatalog(XmlDbManager):
         return self.index_catalog.registerIndex(xml_index)
     
     def removeIndex(self,xpath_expr):
-        exp_obj=RestrictedXpathExpression(xpath_expr)
-        return self.index_catalog.removeIndex(value_path = exp_obj.node_test,
-                                              key_path = exp_obj.predicates)
+        exp_obj=IndexDefiningXpathExpression(xpath_expr)
+        return self.index_catalog.removeIndex(value_path = exp_obj.value_path,
+                                              key_path = exp_obj.key_path)
         
     def getIndex(self,xpath_expr):
-        exp_obj=RestrictedXpathExpression(xpath_expr)
-        return self.index_catalog.getIndex(value_path = exp_obj.node_test,
-                                           key_path = exp_obj.predicates)
+        exp_obj=IndexDefiningXpathExpression(xpath_expr)
+        return self.index_catalog.getIndex(value_path = exp_obj.value_path,
+                                           key_path = exp_obj.key_path)
         
     def flushIndex(self,xpath_expr):
-        exp_obj=RestrictedXpathExpression(xpath_expr)
-        return self.index_catalog.flushIndex(value_path = exp_obj.node_test,
-                                           key_path = exp_obj.predicates)
+        exp_obj=IndexDefiningXpathExpression(xpath_expr)
+        return self.index_catalog.flushIndex(value_path = exp_obj.value_path,
+                                           key_path = exp_obj.key_path)
         
     def listIndexes(self,res_type = None, data_type = None):
-        return self.index_catalog.getIndexes(res_type = res_type,
+        return self.index_catalog.getIndexes(value_path = res_type,
                                              data_type = data_type)
         
-    def reindex(self,xpath_expr):
-        exp_obj=RestrictedXpathExpression(xpath_expr)
-        if not exp_obj:
-            return
-        key_path=exp_obj.predicates
-        value_path=exp_obj.node_test
-        
-        # get index from db
-        d = self.index_catalog.getIndex(key_path, value_path)
-        
-        # flush index
-        d.addCallback(lambda f: self.flushIndex(xpath_expr))
-        
-        # find all resources our index applies to by resource type
-        if value_path.startswith('/'):
-            type=value_path[1:]
-        else:
-            type=value_path
-            
-        d.addCallback(lambda f: self.getUriList(type))
-        
-        # get and reindex every resource:
-        def _indexRes(res):
-            return self.index_catalog.indexResource(res, 
-                                                    key_path=key_path, 
-                                                    value_path=value_path)
-        
-        def _reindexResources(uri_list):
-            d_list=list()
-            for uri in uri_list:
-                d=self.getResource(uri)
-                d.addCallback(_indexRes)
-                d_list.append(d)
-            return DeferredList(d_list)
-                
-        d.addCallback(_reindexResources)
-        
-        return d
+#    def reindex(self,xpath_expr):
+#        exp_obj=IndexDefiningXpathExpression(xpath_expr)
+#        if not exp_obj:
+#            return
+#        key_path=exp_obj.key_path
+#        value_path=exp_obj.value_path
+#        
+#        # get index from db
+#        d = self.index_catalog.getIndex(key_path, value_path)
+#        
+#        # flush index
+#        d.addCallback(lambda f: self.flushIndex(xpath_expr))
+#        
+#        # find all resources our index applies to by resource type
+#        if value_path.startswith('/'):
+#            type=value_path[1:]
+#        else:
+#            type=value_path
+#            
+#        d.addCallback(lambda f: self.getUriList(type))
+#        
+#        # get and reindex every resource:
+#        def _indexRes(res):
+#            return self.index_catalog.indexResource(res, 
+#                                                    key_path=key_path, 
+#                                                    value_path=value_path)
+#        
+#        def _reindexResources(uri_list):
+#            d_list=list()
+#            for uri in uri_list:
+#                d=self.getResource(uri)
+#                d.addCallback(_indexRes)
+#                d_list.append(d)
+#            return DeferredList(d_list)
+#                
+#        d.addCallback(_reindexResources)
+#        
+#        return d

@@ -5,6 +5,8 @@ from seishub.xmldb.xpath import RestrictedXpathExpression, \
                                 RestrictedXpathError
 
 class XpathTest(SeisHubTestCase):
+    #TODO: testIndexDefiningXpathExpression
+    
     def setUp(self):
         pass
     

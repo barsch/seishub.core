@@ -8,7 +8,7 @@ Restricted expressions are of the following form:
  - has only one single location step followed by at most one block of predicates
  - node-test matches rootnode
 """
-
+#TODO: update docstrings
 from seishub.core import SeisHubError
 
 class RestrictedXpathError(SeisHubError):
@@ -75,6 +75,37 @@ class RestrictedXpathExpression(object):
         
         return True
 
+class IndexDefiningXpathExpression(object):
+    __r_value_path = "^/[^/\[\]]+"
+    __r_key_path = "[^\[\]]*\Z"
+    
+    value_path = None
+    key_path = None
+    
+    def __init__(self,expr):
+        if self._parseXpathExpr(expr):
+            self._expr=expr
+        else:
+            raise RestrictedXpathError("Invalid xpath expression.")
+            
+    def _parseXpathExpr(self,expr):
+        re_vp=re.compile(self.__r_value_path)
+        re_kp=re.compile(self.__r_key_path)
+        
+        m=re_vp.match(expr)
+        if m:
+            # extract value path and remove leading slash:
+            self.value_path = m.string[m.start() + 1 : m.end()]
+        else:
+            return False
+        m=re_kp.match(expr, m.end())
+        if m:
+            # extract key path and remove leading slash:
+            self.key_path = m.string[m.start() + 1 : m.end()]
+        else:
+            return False
+        
+        return True
 
 
 

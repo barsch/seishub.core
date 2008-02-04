@@ -93,6 +93,13 @@ class IndexesPanel(Component):
         return ('catalog_indexes.tmpl', data)
     
     def _deleteIndexes(self, data):
+        # XXX: deleting by id is possible of course , but the __id attribute of 
+        # XmlIndex is for internal use only, it might not be there in the future
+        # my idea was to access the indexes via their xpath expressions only
+        # every expression is unique in the catalog (or at least it gets 
+        # transformed to a unique key_path, value_path set), so an xpath   
+        # expression corresponding to an XmlIndex is kind of an uri for that 
+        # index
         for id in data.get('index[]',[]):
             print "INDEX NOT YET DELETED: ", id
         data['error'] = "INDEX SHOULD BE DELETED HERE BY ID"
@@ -100,6 +107,10 @@ class IndexesPanel(Component):
     
     def _addIndex(self, data):
         try:
+            # XXX: actually it was meant to be used like:
+            # >>> xml_index = catalog.newXmlIndex(xpath_expression)
+            # >>> catalog.register_index(xml_index)
+            # no key_path / value_path stuff
             xml_index = XmlIndex(key_path = data['key_path'],
                                  value_path = data['value_path'])
         except Exception, e:

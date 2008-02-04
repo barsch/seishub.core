@@ -68,8 +68,7 @@ class XmlDbManager(object):
             txn.commit()
         except Exception, e:
             txn.rollback()
-            raise DbError(e)
-            return
+            raise
         
         return True
     
@@ -112,8 +111,7 @@ class XmlDbManager(object):
             txn.commit()
         except Exception, e:
             txn.rollback()
-            raise DbError(e)
-            return
+            raise
         
         return True
     
