@@ -6,58 +6,67 @@ from seishub.defaults import DEFAULT_REST_PORT
 from seishub.xmldb.xmlindex import XmlIndex
 
 
-class SubmitResourcePanel(Component):
-    """Submit and index a XML file to the database."""
-    implements(IAdminPanel)
-    
-    def getPanelId(self):
-        return ('catalog', 'XML Catalog', 'submit', 'Submit XML Resource')
-    
-    def renderPanel(self, request):
-        data = {
-            'text': '', 
-            'uri': '',
-            'error': ''
-        }
-        if request.method=='POST':
-            if 'text' and 'uri' in request.args.keys():
-                # we have a textual submission
-                data['text'] = request.args['text'][0]
-                data['uri'] = request.args['uri'][0]
-                res = self.env.catalog.newXmlResource(data['uri'], 
-                                                      data['text'])
-                # XXX: Error checking!
-                try:
-                    self.env.catalog.addResource(res)
-                except Exception, e:
-                    self.env.log.error(e)
-                    data['error'] = e
-            elif 'file' in request.args.keys():
-                # we got a file upload
-                data['text'] = request.args['file'][0]
-        return ('catalog_submit.tmpl', data)
-
-
-class ListResourcesPanel(Component):
+class ResourcesPanel(Component):
     """List all resources."""
     implements(IAdminPanel)
     
     def getPanelId(self):
-        return ('catalog', 'XML Catalog', 'list', 'List Resources')
+        return ('catalog', 'XML Catalog', 'resources', 'Resources')
     
     def renderPanel(self, request):
-        uris = self.env.catalog.getUriList()
         # XXX: REST service + Port should be saved somewhere in the environment
         port = self.env.config.getint('rest','port') or DEFAULT_REST_PORT
-        data  = {
-            'uris': uris,
+        data = {
+            'file': '', 
+            'uri': '',
             'resturl': 'http://localhost:' + str(port),
         }
-        return ('catalog_list.tmpl', data)
+        if request.method=='POST':
+            args = request.args
+            if 'file' and 'uri' in args.keys():
+                data['file'] = args['file'][0]
+                data['uri'] = args['uri'][0]
+                data = self._addResource(data)
+            elif 'delete' and 'resource[]' in args.keys():
+                data['resource[]'] = args['resource[]']
+                data = self._deleteResources(data)
+        # fetch all uris
+        data['resources'] = self.env.catalog.getUriList()
+        return ('catalog_resources.tmpl', data)
+    
+    def _addResource(self, data):
+        try:
+            res = self.env.catalog.newXmlResource(data['uri'], data['file'])
+        except Exception, e:
+            self.env.log.error("Error creating resource", e)
+            data['error'] = "Error creating resource"
+            data['exception'] = e
+            return data
+        try:
+            self.env.catalog.addResource(res)
+        except Exception, e:
+            self.env.log.error("Error adding resource", e)
+            data['error'] = "Error adding resource"
+            data['exception'] = e
+            return data
+        data['uri']=''
+        data['file']=''
+        return data
+    
+    def _deleteResources(self, data):
+        for id in data.get('resource[]',[]):
+            try:
+                self.env.catalog.deleteResource(id)
+            except Exception, e:
+                self.env.log.error("Error deleting resource: %s" % id, e)
+                data['error'] = "Error deleting resource: %s" % id
+                data['exception'] = e
+                return data
+        return data
 
 
 class IndexesPanel(Component):
-    """List all indexes and create new ones."""
+    """List all indexes and add new ones."""
     implements(IAdminPanel)
     
     def getPanelId(self):
@@ -71,17 +80,39 @@ class IndexesPanel(Component):
             'value_path': '',
         }
         if request.method=='POST':
-            if 'add' and 'key_path' and 'value_path' in request.args.keys():
-                data['key_path'] = request.args['key_path'][0]
-                data['value_path'] = request.args['value_path'][0]
-                try:
-                    xml_index = XmlIndex(key_path = data['key_path'],
-                                         value_path = data['value_path'])
-                    self.env.catalog.registerIndex(xml_index)
-                except Exception, e:
-                    self.env.log.error(e)
-                    data['error'] = e
+            args = request.args
+            if 'add' and 'key_path' and 'value_path' in args.keys():
+                data['key_path'] = args['key_path'][0]
+                data['value_path'] = args['value_path'][0]
+                data = self._addIndex(data)
+            elif 'delete' and 'index[]' in args.keys():
+                data['index[]'] = args['index[]']
+                data = self._deleteIndexes(data)
         # fetch all indexes
         data['indexes'] = self.env.catalog.listIndexes()
-        print data['indexes']
-        return ('catalog_indexes.tmpl', data) 
+        return ('catalog_indexes.tmpl', data)
+    
+    def _deleteIndexes(self, data):
+        for id in data.get('index[]',[]):
+            print "INDEX NOT YET DELETED: ", id
+        data['error'] = "INDEX SHOULD BE DELETED HERE BY ID"
+        return data
+    
+    def _addIndex(self, data):
+        try:
+            xml_index = XmlIndex(key_path = data['key_path'],
+                                 value_path = data['value_path'])
+        except Exception, e:
+            self.env.log.error("Error generating a xml_index", e)
+            data['error'] = "Error generating a xml_index"
+            data['exception'] = e
+            return data
+        try:
+            self.env.catalog.registerIndex(xml_index)
+        except Exception, e:
+            self.env.log.error("Error registering xml_index", e)
+            data['error'] = "Error registering xml_index"
+            data['exception'] = e
+        data['key_path'] = ''
+        data['value_path'] = ''
+        return data

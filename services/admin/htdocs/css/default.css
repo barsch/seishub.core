@@ -171,3 +171,19 @@ body {
 #submenu li a.selected {
     font-weight: bold;
 }
+
+/* Forms */
+div.field {
+  margin-bottom: 1em;
+}
+
+/* Error message */
+#error {
+    text-align: justify;
+    padding: 1em;
+    margin: 1em;
+    margin-left: 17em;
+    background-color: white;
+    color: #934249;
+    border: 2px solid #934249;
+}

@@ -46,5 +46,6 @@ class QueryPanel(Component):
                     data['result'] = db.execute(query).fetchall()
                 except Exception, e:
                     self.env.log.error(e)
-                    data['error'] = e
+                    data['error'] = 'Database query error'
+                    data['exception'] = e
         return ('db_query.tmpl', data)

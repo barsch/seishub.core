@@ -90,6 +90,7 @@ class AdminRequestHandler(http.Request):
         temp.submenu = self._renderSubMenu()
         temp.version = SEISHUB_VERSION
         temp.content = body
+        temp.error = self._renderError(data)
         body = str(temp)
         
         # set various default headers
@@ -101,6 +102,17 @@ class AdminRequestHandler(http.Request):
         # write content
         self.write(body)
         self.finish()
+    
+    def _renderError(self, data):
+        """Render an error message."""
+        if not data.get('error', None) and not data.get('exception', None):
+            return
+        temp = Template(file=resource_filename("seishub.services.admin",
+                                               "templates"+os.sep+ \
+                                               "error.tmpl"))
+        temp.message = data.get('error','')
+        temp.exception = data.get('exception','')
+        return temp
     
     def _renderNavigation(self):
         """Generate the main navigation bar."""
@@ -226,7 +238,7 @@ class AdminService(http.HTTPFactory):
 
 def getAdminService(env):
     """Service for WebAdmin HTTP Server."""
-    port = env.config.getint('admin','port') or DEFAULT_ADMIN_PORT
+    port = env.config.getint('admin', 'port') or DEFAULT_ADMIN_PORT
     service = internet.TCPServer(port, AdminService(env))
     service.setName("WebAdmin")
     return service 

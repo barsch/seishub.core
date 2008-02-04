@@ -1,0 +1,25 @@
+<h1>Resources</h1>
+
+<h2>Upload XML File</h2>
+<form method="post" enctype="multipart/form-data" name="add">
+  <label>URI</label><br />
+  <input type="text" size="80" name="uri" value="$uri" /><br />
+  <label>XML File</label><br />
+  <input name="file" type="file" size="50" maxlength="100000" 
+         accept="text/xml" /><br/>
+  <br />
+  <input type="submit" value="Submit" />
+</form>
+
+<br />
+<br />
+
+<h2>List of all resources</h2>
+<form method="post" name="list">
+  #for $resource in $resources
+  <input type="checkbox" name="resource[]" value="$resource" /> 
+  <a href="$resturl$resource">$resource</a><br />
+  #end for
+  <br />
+  <input type="submit" name="delete" value="Delete" />
+</form>

@@ -56,7 +56,7 @@ class TelnetService(protocol.ServerFactory):
 
 def getTelnetService(env):
     """Service for Telnet Server."""
-    port = env.config.getint('telnet','port') or DEFAULT_TELNET_PORT
+    port = env.config.getint('telnet', 'port') or DEFAULT_TELNET_PORT
     service = internet.TCPServer(port, TelnetService(env))
     service.setName("Telnet")
     return service 

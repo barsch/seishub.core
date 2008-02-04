@@ -76,7 +76,7 @@ class RESTService(http.HTTPFactory):
 
 def getRESTService(env):
     """Service for REST HTTP Server."""
-    port = env.config.getint('rest','port') or DEFAULT_REST_PORT
+    port = env.config.getint('rest', 'port') or DEFAULT_REST_PORT
     service = internet.TCPServer(port, RESTService(env))
     service.setName("REST")
     return service 
