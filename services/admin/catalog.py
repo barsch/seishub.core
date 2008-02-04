@@ -76,14 +76,12 @@ class IndexesPanel(Component):
         data  = {
             'indexes': [],
             'error': '',
-            'key_path': '',
-            'value_path': '',
+            'xpath': '',
         }
         if request.method=='POST':
             args = request.args
-            if 'add' and 'key_path' and 'value_path' in args.keys():
-                data['key_path'] = args['key_path'][0]
-                data['value_path'] = args['value_path'][0]
+            if 'add' and 'xpath' in args.keys():
+                data['xpath'] = args['xpath'][0]
                 data = self._addIndex(data)
             elif 'delete' and 'index[]' in args.keys():
                 data['index[]'] = args['index[]']
@@ -93,26 +91,19 @@ class IndexesPanel(Component):
         return ('catalog_indexes.tmpl', data)
     
     def _deleteIndexes(self, data):
-        # XXX: deleting by id is possible of course , but the __id attribute of 
-        # XmlIndex is for internal use only, it might not be there in the future
-        # my idea was to access the indexes via their xpath expressions only
-        # every expression is unique in the catalog (or at least it gets 
-        # transformed to a unique key_path, value_path set), so an xpath   
-        # expression corresponding to an XmlIndex is kind of an uri for that 
-        # index
-        for id in data.get('index[]',[]):
-            print "INDEX NOT YET DELETED: ", id
-        data['error'] = "INDEX SHOULD BE DELETED HERE BY ID"
+        for xpath in data.get('index[]',[]):
+            try:
+                self.env.catalog.removeIndex(xpath)
+            except Exception, e:
+                self.env.log.error("Error removing xml_index %s" % xpath, e)
+                data['error'] = "Error removing xml_index %s" % xpath
+                data['exception'] = e
+                return data
         return data
     
     def _addIndex(self, data):
         try:
-            # XXX: actually it was meant to be used like:
-            # >>> xml_index = catalog.newXmlIndex(xpath_expression)
-            # >>> catalog.register_index(xml_index)
-            # no key_path / value_path stuff
-            xml_index = XmlIndex(key_path = data['key_path'],
-                                 value_path = data['value_path'])
+            xml_index = self.env.catalog.newXmlIndex(data['xpath'])
         except Exception, e:
             self.env.log.error("Error generating a xml_index", e)
             data['error'] = "Error generating a xml_index"
@@ -124,6 +115,5 @@ class IndexesPanel(Component):
             self.env.log.error("Error registering xml_index", e)
             data['error'] = "Error registering xml_index"
             data['exception'] = e
-        data['key_path'] = ''
-        data['value_path'] = ''
+        data['xpath'] = ''
         return data

@@ -2,10 +2,8 @@
 
 <h2>Add new index</h2>
 <form method="post" name="add">
-  <label>Key path</label><br />
-  <input type="text" size="80" name="key_path" value="$key_path" /><br />
-  <label>Value path</label><br />
-  <input type="text" size="80" name="value_path" value="$value_path" /><br />
+  <label>Xpath expression</label><br />
+  <input type="text" size="80" name="xpath" value="$xpath" /><br />
   <label>Type</label><br />
   <select>
     <option>Text</option>
@@ -20,7 +18,8 @@
 <h2>List of all indexes</h2>
 <form method="post" name="list">
   #for $index in $indexes
-  <input type="checkbox" name="index[]" value="$index.__str__()" /> $index<br />
+  <input type="checkbox" name="index[]" value="$index.__str__()" /> 
+  $index<br />
   #end for
   <br />
   <input type="submit" name="delete" value="Delete" />
