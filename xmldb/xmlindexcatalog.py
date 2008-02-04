@@ -3,7 +3,8 @@ from zope.interface import implements
 from zope.interface.exceptions import DoesNotImplement
 from twisted.enterprise import util as dbutil
 from sqlalchemy import select
-from sqlalchemy.sql import and_, ClauseList
+from sqlalchemy.sql.expression import ClauseList
+from sqlalchemy.sql import and_
 
 from seishub.core import SeisHubError
 from seishub.xmldb.interfaces import IXmlIndexCatalog, IIndexRegistry, \
