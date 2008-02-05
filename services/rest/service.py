@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from twisted.web import http, util as webutil
+from twisted.web import http
 from twisted.application import internet
 from twisted.internet import threads
 
@@ -20,65 +20,110 @@ class RESTRequestHandler(http.Request):
             self.finish()
             return
         
-        # use catalog to identify resources and return valid resource
+        #process in thread
         d = threads.deferToThread(self._process)
         d.addErrback(self._processingFailed)
     
     def _process(self):
-        if self.method == 'GET':
+        #use method to identify use case
+        if self.method.upper() == 'GET':
             self._processGET()
-        elif self.method == 'PUT':
+        elif self.method.upper() == 'PUT':
             self._processPUT()
-        self.finish()
-
+        elif self.method.upper() == 'POST':
+            self._processPOST()
+        elif self.method.upper() == 'DELETE':
+            self._processDELETE()
+        else:
+            #Service does not implement handlers for this HTTP verb (e.g. HEAD) 
+            #Return HTTP status code 405 (Method Not Allowed)
+            self.setResponseCode(http.NOT_ALLOWED)
+            self.finish()
+    
     def _processGET(self):
+        """Handles a HTTP GET request."""
         uris = self.env.catalog.getUriList()
-        if not self.path in uris:
-            self.write("Could not find requested resource.")
+        #check if resource not exists
+        if self.path not in uris:
+            self.setResponseCode(http.NOT_FOUND)
             self.finish()
             return
-        result = self.env.catalog.getResource(uri = self.path)
-        result = result.getData()
-        result = result.encode("utf-8")
-        
+        #get resource from catalog
+        try:
+            result = self.env.catalog.getResource(uri = self.path)
+            result = result.getData()
+            result = result.encode("utf-8")
+        except Exception, e:
+            self.env.log.error(e)
+            self.setResponseCode(http.INTERNAL_SERVER_ERROR)
+            self.finish()
+            return
+        #write resource data as response
         self.setHeader('server', 'SeisHub '+ SEISHUB_VERSION)
         self.setHeader('date', http.datetimeToString())
         self.setHeader('content-type', "text/xml; charset=UTF-8")
         self.setHeader('content-length', str(len(result)))
-        
+        self.setResponseCode(http.OK)
         self.write(result)
         self.finish()
-
-    def _processPUT(self):
+    
+    def _processPOST(self):
+        """Handles a HTTP POST request."""
         uris = self.env.catalog.getUriList()
+        #check if resource exists
         if self.path in uris:
-            self.write("Resource already exists.")
+            self.setResponseCode(http.NOT_FOUND)
+            self.finish()
+            return
+        #update resource
+        #XXX: missing
+        self.setResponseCode(http.NOT_IMPLEMENTED)
+        self.finish()
+    
+    def _processPUT(self):
+        """Handles a HTTP PUT request."""
+        uris = self.env.catalog.getUriList()
+        #check if resource exists
+        if self.path in uris:
+            self.setResponseCode(http.CONFLICT)
+            self.finish()
             return
         
-        content = self.content.read()
-        res = self.env.catalog.newXmlResource(self.path, content)
-        self.env.catalog.addResource(res)
-        
-        result = "Upload done."
-        self.setHeader('server', 'SeisHub '+ SEISHUB_VERSION)
-        self.setHeader('date', http.datetimeToString())
-        self.setHeader('content-type', "text/xml; charset=UTF-8")
-        self.setHeader('content-length', str(len(result)))
-        
-        self.write(result)
+        #get content and create a new resource using the given path
+        try:
+            content = self.content.read()
+            res = self.env.catalog.newXmlResource(self.path, content)
+            self.env.catalog.addResource(res)
+        except Exception, e:
+            self.env.log.error(e)
+            self.setResponseCode(http.INTERNAL_SERVER_ERROR)
+            self.finish()
+            return
+        self.setResponseCode(http.CREATED)
         self.finish()
-
-
+    
+    def _processDELETE(self):
+        """Handles a HTTP DELETE request."""
+        uris = self.env.catalog.getUriList()
+        #check if resource exists
+        if self.path not in uris:
+            self.setResponseCode(http.NOT_FOUND)
+            self.finish()
+            return
+        #delete resource
+        try:
+            self.env.catalog.deleteResource(self.path)
+        except Exception, e:
+            self.env.log.error(e)
+            self.setResponseCode(http.INTERNAL_SERVER_ERROR)
+            self.finish()
+            return
+        self.setResponseCode(http.OK)
+        self.finish()
+    
     def _processingFailed(self, reason):
-        self.env.log.error('Exception rendering:', reason)
-        body = ("<html><head><title>web.Server Traceback (most recent call "
-                "last)</title></head><body><b>web.Server Traceback (most "
-                "recent call last):</b>\n\n%s\n\n</body></html>\n"
-                % webutil.formatFailure(reason))
+        self.env.log.error(reason)
         self.setResponseCode(http.INTERNAL_SERVER_ERROR)
-        self.setHeader('content-type',"text/html")
-        self.setHeader('content-length', str(len(body)))
-        self.write(body)
         self.finish()
         return reason
 
