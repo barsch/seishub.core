@@ -31,7 +31,7 @@ class RESTRequestHandler(http.Request):
             self.finish()
             return
         result = self.env.catalog.getResource(uri = self.path)
-        result = result.getData()
+        result = result.getData().encode("utf-8")
         
         self.setHeader('server', 'SeisHub '+ SEISHUB_VERSION)
         self.setHeader('date', http.datetimeToString())
