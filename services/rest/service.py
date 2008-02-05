@@ -25,6 +25,13 @@ class RESTRequestHandler(http.Request):
         d.addErrback(self._processingFailed)
     
     def _process(self):
+        if self.method == 'GET':
+            self._processGET()
+        elif self.method == 'PUT':
+            self._processPUT()
+        self.finish()
+
+    def _processGET(self):
         uris = self.env.catalog.getUriList()
         if not self.path in uris:
             self.write("Could not find requested resource.")
@@ -41,6 +48,26 @@ class RESTRequestHandler(http.Request):
         
         self.write(result)
         self.finish()
+
+    def _processPUT(self):
+        uris = self.env.catalog.getUriList()
+        if self.path in uris:
+            self.write("Resource already exists.")
+            return
+        
+        content = self.content.read()
+        res = self.env.catalog.newXmlResource(self.path, content)
+        self.env.catalog.addResource(res)
+        
+        result = "Upload done."
+        self.setHeader('server', 'SeisHub '+ SEISHUB_VERSION)
+        self.setHeader('date', http.datetimeToString())
+        self.setHeader('content-type', "text/xml; charset=UTF-8")
+        self.setHeader('content-length', str(len(result)))
+        
+        self.write(result)
+        self.finish()
+
 
     def _processingFailed(self, reason):
         self.env.log.error('Exception rendering:', reason)
