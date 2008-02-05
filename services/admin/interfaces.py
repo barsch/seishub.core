@@ -14,7 +14,7 @@ class IAdminPanel(Interface):
         `(category, category_label, page, page_label)`.
         """
     
-    def renderPanel(self, request):
+    def renderPanel(request):
         """
         Process a request for an admin panel.
         

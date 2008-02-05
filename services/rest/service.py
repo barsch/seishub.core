@@ -31,11 +31,12 @@ class RESTRequestHandler(http.Request):
             self.finish()
             return
         result = self.env.catalog.getResource(uri = self.path)
-        result = result.getData().encode("utf-8")
+        result = result.getData()
+        result = result.encode("utf-8")
         
         self.setHeader('server', 'SeisHub '+ SEISHUB_VERSION)
         self.setHeader('date', http.datetimeToString())
-        self.setHeader('content-type', "text/xml")
+        self.setHeader('content-type', "text/xml; charset=UTF-8")
         self.setHeader('content-length', str(len(result)))
         
         self.write(result)

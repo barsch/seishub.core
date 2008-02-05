@@ -118,7 +118,15 @@ class XmlTreeDoc(XmlDoc):
         parser_ctxt = libxml2.createPushParser(None, "", 0, 
                                                self._resource_name)
         parser_ctxt.setErrorHandler(self._handleParserError,None)
-        data = self._xml_data.encode("utf-8")
+        
+        data = self._xml_data
+        
+        # XXX: this is the only way its working for uploading *and* showing 
+        # in REST - needs fixing!!!
+        try:
+            data = self._xml_data.encode("utf-8")
+        except:
+            pass
         parser_ctxt.parseChunk(data,len(data),1)
         if self.options['blocking'] and len(self.errors)>0:
             raise InvalidXmlDataError(self.errors)

@@ -96,7 +96,7 @@ class AdminRequestHandler(http.Request):
         # set various default headers
         self.setHeader('server', 'SeisHub '+ SEISHUB_VERSION)
         self.setHeader('date', http.datetimeToString())
-        self.setHeader('content-type', "text/html")
+        self.setHeader('content-type', "text/html; charset=UTF-8")
         self.setHeader('content-length', str(len(body)))
         
         # write content
