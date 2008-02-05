@@ -114,10 +114,12 @@ class XmlTreeDoc(XmlDoc):
         self._parse()
         
     def _parse(self):
+        # TODO: some errors aren't caught by error handler
         parser_ctxt = libxml2.createPushParser(None, "", 0, 
                                                self._resource_name)
         parser_ctxt.setErrorHandler(self._handleParserError,None)
-        parser_ctxt.parseChunk(self._xml_data,len(self._xml_data),1)
+        data = self._xml_data.encode("utf-8")
+        parser_ctxt.parseChunk(data,len(data),1)
         if self.options['blocking'] and len(self.errors)>0:
             raise InvalidXmlDataError(self.errors)
         try:
