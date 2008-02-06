@@ -22,7 +22,7 @@ from seishub.core import SeisHubError
 from seishub.util.text import to_unicode, CRLF
 
 __all__ = ['Configuration', 'Option', 'BoolOption', 'IntOption', 'ListOption',
-           'ConfigurationError', 'default_dir']
+           'ConfigurationError']
 
 _TRUE_VALUES = ('yes', 'true', 'on', '1', 1, True)
 

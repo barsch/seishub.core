@@ -6,9 +6,10 @@ from twisted.internet import threads
 
 from seishub.defaults import DEFAULT_REST_PORT
 from seishub import __version__ as SEISHUB_VERSION
+from seishub.config import IntOption
 
 
-class RESTRequestHandler(http.Request):
+class RESTRequest(http.Request):
     """A HTTP request."""
     
     def __init__(self, channel, queued):
@@ -128,18 +129,18 @@ class RESTRequestHandler(http.Request):
         return reason
 
 
-class RESTHTTP(http.HTTPChannel):
+class RESTHTTPChannel(http.HTTPChannel):
     """A receiver for HTTP requests."""
-    requestFactory = RESTRequestHandler
+    requestFactory = RESTRequest
     
     def __init__(self):
         http.HTTPChannel.__init__(self)
         self.requestFactory.env = self.env
 
 
-class RESTService(http.HTTPFactory):
+class RESTHTTPFactory(http.HTTPFactory):
     """Factory for HTTP Server."""
-    protocol = RESTHTTP
+    protocol = RESTHTTPChannel
     
     def __init__(self, env, logPath=None, timeout=None):
         http.HTTPFactory.__init__(self, logPath, timeout)
@@ -147,9 +148,12 @@ class RESTService(http.HTTPFactory):
         self.protocol.env = env
 
 
-def getRESTService(env):
+class RESTService(internet.TCPServer):
     """Service for REST HTTP Server."""
-    port = env.config.getint('rest', 'port') or DEFAULT_REST_PORT
-    service = internet.TCPServer(port, RESTService(env))
-    service.setName("REST")
-    return service 
+    
+    IntOption('rest', 'port', DEFAULT_REST_PORT, "WebAdmin port number.")
+    
+    def __init__(self, env):
+        port = env.config.getint('rest', 'port') or DEFAULT_REST_PORT
+        internet.TCPServer.__init__(self, port, RESTHTTPFactory(env))
+        self.setName("REST")

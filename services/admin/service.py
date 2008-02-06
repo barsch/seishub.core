@@ -13,9 +13,10 @@ from seishub import __version__ as SEISHUB_VERSION
 from seishub.services.admin.interfaces import IAdminPanel
 from seishub.core import ExtensionPoint
 from seishub.defaults import DEFAULT_ADMIN_PORT
+from seishub.config import IntOption
 
 
-class AdminRequestHandler(http.Request):
+class AdminRequest(http.Request):
     """A HTTP request."""
     
     def __init__(self, *args, **kw):
@@ -217,18 +218,18 @@ class AdminRequestHandler(http.Request):
                     self.static_content[path] = static.File(child)
 
 
-class AdminHTTP(http.HTTPChannel):
+class AdminHTTPChannel(http.HTTPChannel):
     """A receiver for HTTP requests."""
-    requestFactory = AdminRequestHandler
+    requestFactory = AdminRequest
     
     def __init__(self):
         http.HTTPChannel.__init__(self)
         self.requestFactory.env = self.env
 
 
-class AdminService(http.HTTPFactory):
+class AdminHTTPFactory(http.HTTPFactory):
     """Factory for HTTP Server."""
-    protocol = AdminHTTP
+    protocol = AdminHTTPChannel
     
     def __init__(self, env, logPath=None, timeout=None):
         http.HTTPFactory.__init__(self, logPath, timeout)
@@ -236,9 +237,12 @@ class AdminService(http.HTTPFactory):
         self.protocol.env = env
 
 
-def getAdminService(env):
+class AdminService(internet.TCPServer):
     """Service for WebAdmin HTTP Server."""
-    port = env.config.getint('admin', 'port') or DEFAULT_ADMIN_PORT
-    service = internet.TCPServer(port, AdminService(env))
-    service.setName("WebAdmin")
-    return service 
+    IntOption('admin', 'port', DEFAULT_ADMIN_PORT, "WebAdmin port number.")
+    
+    def __init__(self, env):
+        self.env = env
+        port = env.config.getint('admin', 'port') or DEFAULT_ADMIN_PORT
+        internet.TCPServer.__init__(self, port, AdminHTTPFactory(env))
+        self.setName("WebAdmin")

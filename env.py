@@ -42,8 +42,7 @@ class Environment(ComponentManager):
         # set config handler
         self.config = Configuration()
         # set SeisHub path
-        import seishub
-        self.path = os.path.split(os.path.dirname(seishub.__file__))[0]
+        self.path = self.config.path
         # set log handler
         self.log = Logger(self)
         # set up db handler

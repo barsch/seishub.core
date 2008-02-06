@@ -9,6 +9,7 @@ from seishub.services.telnet.interfaces import ITelnetCmd
 from seishub.core import ExtensionPoint
 from seishub.util.text import getTextUntilDot
 from seishub.defaults import DEFAULT_TELNET_PORT
+from seishub.config import IntOption
 
 
 class TelnetLineReciever(basic.LineReceiver):
@@ -45,7 +46,7 @@ class TelnetLineReciever(basic.LineReceiver):
         self.sendLine('> ' + str(line))
 
 
-class TelnetService(protocol.ServerFactory):
+class TelnetServerFactory(protocol.ServerFactory):
     """Factory for Telnet Server."""
     protocol = TelnetLineReciever
     
@@ -54,9 +55,11 @@ class TelnetService(protocol.ServerFactory):
         self.protocol.env = env
 
 
-def getTelnetService(env):
+class TelnetService(internet.TCPServer):
     """Service for Telnet Server."""
-    port = env.config.getint('telnet', 'port') or DEFAULT_TELNET_PORT
-    service = internet.TCPServer(port, TelnetService(env))
-    service.setName("Telnet")
-    return service 
+    IntOption('telnet', 'port', DEFAULT_TELNET_PORT, "Telnet port number.")
+    
+    def __init__(self, env):
+        port = env.config.getint('telnet', 'port') or DEFAULT_TELNET_PORT
+        internet.TCPServer.__init__(self, port, TelnetServerFactory(env))
+        self.setName("Telnet") 
