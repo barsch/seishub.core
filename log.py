@@ -41,16 +41,14 @@ class Logger(object):
         # Error log
         errlog_file = self.env.error_log_file
         self.errlog_handler = logfile.LogFile(errlog_file, log_dir, 
-                                              rotateLength=100000)
-        self.errlog_handler.rotate() 
+                                              rotateLength=1000000)
         self.errlog = ErrorLog(self.errlog_handler)
         self.errlog.start()
         
         # Access log
         acclog_file = self.env.access_log_file
         self.acclog_handler = logfile.LogFile(acclog_file, log_dir, 
-                                              rotateLength=100000)
-        self.acclog_handler.rotate()
+                                              rotateLength=1000000)
         self.acclog = AccessLog(self.acclog_handler)
         self.acclog.start()
     
