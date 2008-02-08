@@ -273,7 +273,7 @@ class ComponentTestCase(unittest.TestCase):
         """
         from seishub.core import ComponentManager
         class DisablingComponentManager(ComponentManager):
-            def is_component_enabled(self, cls):
+            def isComponentEnabled(self, cls):
                 return False
         class ComponentA(Component):
             pass

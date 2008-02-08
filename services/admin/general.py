@@ -154,7 +154,7 @@ class PluginsPanel(Component):
               'file': module.__file__,
               'classname': classname,
               'description': description,
-              'enabled': self.env.is_component_enabled(component),
+              'enabled': self.env.isComponentEnabled(component),
               'required': classname in DEFAULT_COMPONENTS,
             }
             packages.setdefault(module.__name__,[]).append(plugin)

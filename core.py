@@ -16,13 +16,15 @@
 # Author: Jonas BorgstrÃ¶m <jonas@edgewall.com>
 #         Christopher Lenz <cmlenz@gmx.de>
 
+import sys
+
 __all__ = ['Component', 'ExtensionPoint', 'implements', 'Interface',
            'SeisHubError']
 
 
 class SeisHubError(Exception):
     """Exception base class for errors in SeisHub."""
-
+    
     def __init__(self, exception, message=None):
         """not implemented yet"""
         pass
@@ -34,7 +36,7 @@ class Interface(object):
 
 class ExtensionPoint(property):
     """Marker class for extension points in components."""
-
+    
     def __init__(self, interface):
         """Create the extension point.
         
@@ -45,14 +47,14 @@ class ExtensionPoint(property):
         self.interface = interface
         self.__doc__ = 'List of components that implement `%s`' % \
                        self.interface.__name__
-
+    
     def extensions(self, component):
         """Return a list of components that declare to implement the extension
         point interface.
         """
         extensions = ComponentMeta._registry.get(self.interface, [])
         return filter(None, [component.compmgr[cls] for cls in extensions])
-
+    
     def __repr__(self):
         """Return a textual representation of the extension point."""
         return '<ExtensionPoint %s>' % self.interface.__name__
@@ -65,15 +67,15 @@ class ComponentMeta(type):
     """
     _components = []
     _registry = {}
-
+    
     def __new__(cls, name, bases, d):
         """Create the component class."""
-
+        
         new_class = type.__new__(cls, name, bases, d)
         if name == 'Component':
             # Don't put the Component base class in the registry
             return new_class
-
+        
         # Only override __init__ for Components not inheriting ComponentManager
         if True not in [issubclass(x, ComponentManager) for x in bases]:
             # Allow components to have a no-argument initializer so that
@@ -98,11 +100,11 @@ class ComponentMeta(type):
                             raise
             maybe_init._original = init
             new_class.__init__ = maybe_init
-
+        
         if d.get('abstract'):
             # Don't put abstract component classes in the registry
             return new_class
-
+        
         ComponentMeta._components.append(new_class)
         registry = ComponentMeta._registry
         for interface in d.get('_implements', []):
@@ -110,18 +112,18 @@ class ComponentMeta(type):
         for base in [base for base in bases if hasattr(base, '_implements')]:
             for interface in base._implements:
                 registry.setdefault(interface, []).append(new_class)
-
+        
         return new_class
 
 
 class Component(object):
     """Base class for components.
-
+    
     Every component can declare what extension points it provides, as well as
     what extension points of other components it extends.
     """
     __metaclass__ = ComponentMeta
-
+    
     def __new__(cls, *args, **kwargs):
         """Return an existing instance of the component if it has already been
         activated, otherwise create a new instance.
@@ -131,29 +133,28 @@ class Component(object):
             self = super(Component, cls).__new__(cls)
             self.compmgr = self
             return self
-
+        
         # The normal case where the component is not also the component manager
         compmgr = args[0]
         self = compmgr.components.get(cls)
         if self is None:
             self = super(Component, cls).__new__(cls)
             self.compmgr = compmgr
-            compmgr.component_activated(self)
+            compmgr.initComponent(self)
         return self
-
+    
     def implements(*interfaces):
-        """Can be used in the class definiton of `Component` subclasses to
+        """Can be used in the class definition of `Component` subclasses to
         declare the extension points that are extended.
         """
-        import sys
-
+        
         frame = sys._getframe(1)
         locals_ = frame.f_locals
-
+        
         # Some sanity checks
         assert locals_ is not frame.f_globals and '__module__' in locals_, \
                'implements() can only be used in a class definition'
-
+        
         locals_.setdefault('_implements', []).extend(interfaces)
     implements = staticmethod(implements)
 
@@ -163,31 +164,31 @@ implements = Component.implements
 
 class ComponentManager(object):
     """The component manager keeps a pool of active components."""
-
+    
     def __init__(self):
         """Initialize the component manager."""
         self.components = {}
         self.enabled = {}
         if isinstance(self, Component):
             self.components[self.__class__] = self
-
+    
     def __contains__(self, cls):
-        """Return wether the given class is in the list of active components."""
+        """Return if the given class is in the list of active components."""
         return cls in self.components
-
+    
     def __getitem__(self, cls):
         """Activate the component instance for the given class, or return the
         existing the instance if the component has already been activated.
         """
-        #import pdb; pdb.set_trace()
         if cls not in self.enabled:
-            self.enabled[cls] = self.is_component_enabled(cls)
+            self.enabled[cls] = self.isComponentEnabled(cls)
         if not self.enabled[cls]:
             return None
         component = self.components.get(cls)
         if not component:
             if cls not in ComponentMeta._components:
-                raise SeisHubError('Component "%s" not registered' % cls.__name__)
+                raise SeisHubError('Component "%s" not registered' % 
+                                   cls.__name__)
             try:
                 component = cls(self)
             except TypeError, e:
@@ -197,16 +198,16 @@ class ComponentManager(object):
     
     def __delitem__(self,cls):
         del self.components[cls]
-
-    def component_activated(self, component):
+    
+    def initComponent(self, component):
         """Can be overridden by sub-classes so that special initialization for
         components can be provided.
         """
-
-    def is_component_enabled(self, cls):
+    
+    def isComponentEnabled(self, cls):
         """Can be overridden by sub-classes to veto the activation of a
         component.
-
+        
         If this method returns False, the component with the given class will
         not be available.
         """

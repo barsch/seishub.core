@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import os
-
 from seishub.core import ComponentManager
 from seishub.config import Configuration, Option
 from seishub.loader import ComponentLoader
@@ -13,15 +11,15 @@ __all__ = ['Environment']
 
 
 class Environment(ComponentManager):
-    """One class to rule them all: Enviroment is the base class to handle 
-    configuration, xml catalog, database and logging access.
+    """One class to rule them all: Environment is the base class to handle
+    configuration, XML catalog, database and logging access.
     
     A SeisHub environment consists of:
         * a configuration handler env.config
-        * a xml catalog handler env.catalog
+        * a XML catalog handler env.catalog
         * a database handler env.db
         * a logging handler env.log
-    """   
+    """
     
     error_log_file = Option('logging', 'error_log_file', 'error.log',
         """If `log_type` is `file`, this should be a the name of the file.""")
@@ -45,27 +43,27 @@ class Environment(ComponentManager):
         self.path = self.config.path
         # set log handler
         self.log = Logger(self)
-        # set up db handler
+        # set up DB handler
         self.db = DatabaseManager(self) 
-        # set xml catalog
+        # set XML catalog
         self.catalog = XmlCatalog(self.db)
         # load plugins
         ComponentLoader(self)
     
-    def component_activated(self, component):
+    def initComponent(self, component):
         """Initialize additional member variables for components.
         
         Every component activated through the `Environment` object gets five
         member variables: `env` (the environment object), `config` (the
         environment configuration), `log` (a logger object), `db` (the 
-        database handler) and `catalog` (a xml catalog object)."""
+        database handler) and `catalog` (a XML catalog object)."""
         component.env = self
         component.config = self.config
         component.log = self.log
         component.db = self.db
         component.catalog = self.catalog
     
-    def is_component_enabled(self, cls):
+    def isComponentEnabled(self, cls):
         """Implemented to only allow activation of components that are not
         disabled in the configuration.
         
