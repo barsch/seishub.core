@@ -16,9 +16,8 @@ class XmlResource(Resource):
     """auto-parsing xml resource, 
     given xml data gets validated and parsed on resource creation"""
     implements (IXmlResource)
-    def __init__(self,uri=None,xml_data=None):
-        self.__xml_doc=None    
-        #call parent constructor last, because it calls: self.setData()
+    def __init__(self,uri = None,xml_data = None):
+        self.__xml_doc = None
         Resource.__init__(self,uri,xml_data)
     
     # overloaded method setData from Resource
@@ -51,4 +50,5 @@ class XmlResource(Resource):
         return self._parseXml_data(value)
     
     def _parseXml_data(self,xml_data):
+        import pdb; pdb.set_trace()
         return XmlTreeDoc(xml_data=xml_data,blocking=True)
