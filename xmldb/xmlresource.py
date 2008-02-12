@@ -17,8 +17,11 @@ class XmlResource(Resource):
     given xml data gets validated and parsed on resource creation"""
     implements (IXmlResource)
     def __init__(self,uri = None,xml_data = None):
+        """overloaded __init__ to encode utf8 if needed"""
         self.__xml_doc = None
-        Resource.__init__(self,uri,xml_data)
+        if isinstance(xml_data, unicode):
+            xml_data = xml_data.encode("utf-8")
+        Resource.__init__(self, uri, xml_data)
     
     # overloaded method setData from Resource
     # this gets invoked by baseclass's constructor
@@ -50,5 +53,5 @@ class XmlResource(Resource):
         return self._parseXml_data(value)
     
     def _parseXml_data(self,xml_data):
-        import pdb; pdb.set_trace()
+        #import pdb; pdb.set_trace()
         return XmlTreeDoc(xml_data=xml_data,blocking=True)
