@@ -7,7 +7,7 @@ from seishub.core import SeisHubError
 from seishub.interfaces import IXmlDoc
 from seishub.xmldb.interfaces import IXmlResource
 from seishub.util.libxmlwrapper import XmlTreeDoc
-from seishub.resource import Resource
+from seishub.xmldb.resource import Resource
 
 class XmlResourceError(SeisHubError):
     pass

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from seishub.validator import Validator
+from seishub.xmldb.validator import Validator
 
 class InvalidUriError(Exception):
     pass

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from seishub.test import SeisHubTestCase
-from seishub.validator import XmlSchemaValidator
+from seishub.xmldb.validator import XmlSchemaValidator
 
 
 class XmlValidatorTest(SeisHubTestCase):

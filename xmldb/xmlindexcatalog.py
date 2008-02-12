@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from zope.interface import implements
 from zope.interface.exceptions import DoesNotImplement
-from twisted.enterprise import util as dbutil
 from sqlalchemy import select
 from sqlalchemy.sql.expression import ClauseList
 from sqlalchemy.sql import and_
@@ -11,7 +10,7 @@ from seishub.xmldb.interfaces import IXmlIndexCatalog, IIndexRegistry, \
                                      IResourceIndexing, IXmlIndex, \
                                      IResourceStorage
 from seishub.xmldb.xmlindex import XmlIndex
-from seishub.xmldb.defaults import index_def_tab, index_tab, metadata
+from seishub.xmldb.defaults import index_def_tab, index_tab
 from seishub.xmldb.xmldbms import InvalidUriError
 
 class XmlIndexCatalogError(SeisHubError):
