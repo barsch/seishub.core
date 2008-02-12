@@ -8,7 +8,7 @@ class IXmlCatalog(Interface):
     def newXmlResource(uri,xml_data):
         """Resource factory; supposed to be used with addResource from 
         IResourceStorage
-        @param raw_data: string containing xml data
+        @param xml_data: string containing xml data
         @param uri: uri of the new resource
         @return: XmlResource instance"""
         
@@ -47,7 +47,8 @@ class IXmlResource(Interface):
         @return: resource type (string)"""
         
     def setData(xml_data):
-        """@param data: raw xml data as a string"""
+        """@param xml_data: raw xml data
+        @type xml_data: string"""
         
     def getData(self):
         """@return: xml data (string)"""
@@ -121,7 +122,7 @@ class IIndexRegistry(Interface):
         @return: Deferred"""
         
     def updateIndex(xpath_expr,new_index):
-        """@param xml_index: new XmlIndex instance
+        """@param new_index: new XmlIndex instance
         @param xpath_expr: index defining xpath expression"""
         
     def getIndex(xpath_expr=None,key_path=None,value_path=None):
@@ -135,14 +136,10 @@ class IIndexRegistry(Interface):
         
 class IResourceIndexing(Interface):
     """Index resources"""
-    def indexResource(resource,
-                      xml_index=None,
-                      key_path=None,value_path=None):
-        """Index a resource at the first time.
-        Pass either a XmlIndex instance or a key_path, value_path pair
+    def indexResource(uri, value_path, key_path):
+        """Index the given resource with the given index.
         
-        @param resource: IXmlResource to be indexed
-        @param xml_index: IXmlIndex
+        @param uri: uri of resource to be indexed
         @param key_path: key path
         @param value_path: value path
         @return: Deferred returning True on success
@@ -162,15 +159,13 @@ class IResourceIndexing(Interface):
         @param resource_storage: IResourceStorage providing access to resources
         """
         
-    def flushIndex(xml_index=None,
-                   key_path=None,value_path=None):
+    def flushIndex(value_path, key_path):
         """Remove all indexed data for given index.
         To completely remove an index use removeIndex.
-        
-        @param xml_index: IXmlIndex
-        @param key_path: key path
+
         @param value_path: value path
-        @return: Deferred"""
+        @param key_path: key path
+        @return: True on success"""
         
 class IXmlIndexCatalog(Interface):
     """Catalog providing methods for xml resource indexing and searching

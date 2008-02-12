@@ -16,6 +16,9 @@ class DbError(SeisHubError):
 class UnknownUriError(SeisHubError):
     pass
 
+class InvalidUriError(SeisHubError):
+    pass
+
 class XmlDbManagerError(SeisHubError):
     pass
 

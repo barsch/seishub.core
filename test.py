@@ -14,7 +14,7 @@ class SeisHubTestCase(TestCase):
         self.db=self.env.db
 
     def _printRes(self,res):
-        """little helper for debuging callbacks"""
+        """little helper for debugging callbacks"""
         print res
 
         

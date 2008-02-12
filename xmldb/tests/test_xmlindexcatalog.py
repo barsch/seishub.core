@@ -6,7 +6,8 @@ from twisted.enterprise import util as dbutil
 
 from seishub.test import SeisHubTestCase
 from seishub.xmldb.xmlindexcatalog import XmlIndexCatalog
-from seishub.xmldb.xmlindexcatalog import XmlIndexCatalogError
+from seishub.xmldb.xmlindexcatalog import XmlIndexCatalogError, \
+                                          InvalidIndexError
 from seishub.xmldb.xmldbms import XmlDbManager
 from seishub.xmldb.xmlindex import XmlIndex
 from seishub.xmldb.xmlresource import XmlResource
@@ -125,67 +126,72 @@ class XmlIndexCatalogTest(SeisHubTestCase):
         catalog.removeIndex(key_path=self._test_kp,
                             value_path=self._test_vp)
     
-#    def testIndexResource(self):
-#        catalog=XmlIndexCatalog(adbapi_connection=self.db)
-#        
-#        class Foo:
-#            pass
-#        self.assertRaises(DoesNotImplement,catalog.indexResource, Foo(), 1)
-#        
-#        # register a test resource:
-#        dbmgr=XmlDbManager(self.db)
-#        test_res=XmlResource(uri = self._test_uri, xml_data = RAW_XML1)
-#        dbmgr.addResource(test_res)
-#
-#        # register a test index:
-#        test_index=XmlIndex(key_path = self._test_kp,
-#                            value_path = self._test_vp)
-#        d=catalog.registerIndex(test_index)
-#        def printRes(res):
-#            print res
-#            return res
-#        
-#        # index a test resource:
-#        d.addCallback(lambda f: 
-#                      catalog.indexResource(test_res, xml_index=test_index))
-#        
-#        #TODO: check db entries made
-#                
-#        # pass invalid index args:
-#        d.addCallback(lambda f: catalog.indexResource(test_res, 
-#                                                      key_path="blah",
-#                                                      value_path="blub"))
-#        self.assertFailure(d,XmlIndexCatalogError)
-#        d.addErrback(self._printRes)
-#        # clean up:
-#        d.addBoth(lambda f: catalog.removeIndex(key_path=self._test_kp, 
-#                                                value_path=self._test_vp)) \
-#         .addBoth(lambda f: dbmgr.deleteResource(self._test_uri))
-#        return d
+    def testIndexResource(self):
+        dbmgr = XmlDbManager(self.db)
+        catalog = XmlIndexCatalog(db = self.db,
+                                  resource_storage = dbmgr)
+        bad_catalog = XmlIndexCatalog(db = self.db)
+        
+        # register a test resource:
+        test_res=XmlResource(uri = self._test_uri, xml_data = RAW_XML1)
+        try:
+            dbmgr.addResource(test_res)
+        except:
+            print "Resource is already present in db."
+
+        # register a test index:
+        test_index=XmlIndex(key_path = self._test_kp,
+                            value_path = self._test_vp)
+        catalog.registerIndex(test_index)
+        
+        # index test resource:
+        catalog.indexResource(self._test_uri, 
+                              test_index.getValue_path(), 
+                              test_index.getKey_path())
+        
+        # without storage:
+        self.assertRaises(XmlIndexCatalogError,bad_catalog.indexResource,
+                          self._test_uri, 
+                          test_index.getValue_path(), test_index.getKey_path())
+        
+        #TODO: check db entries made
+                
+        # pass invalid index args:
+        self.assertRaises(InvalidIndexError, catalog.indexResource,
+                          self._test_uri, value_path="blub", key_path="blah")
+        
+        # clean up:
+        catalog.removeIndex(key_path=self._test_kp, value_path=self._test_vp)
+        dbmgr.deleteResource(self._test_uri)
     
-#    def testFlushIndex(self):
-#        catalog=XmlIndexCatalog(adbapi_connection=self.db)
-#        #first register an index and add some data:
-#        test_index=XmlIndex(key_path = self._test_kp,
-#                            value_path = self._test_vp
-#                            )
-#        d=catalog.registerIndex(test_index)
-#        dbmgr=XmlDbManager(self.db)
-#        test_res=XmlResource(uri = self._test_uri, xml_data = RAW_XML1)
-#        dbmgr.addResource(test_res)
-#        
-#        d.addCallback(lambda idx_id: catalog.indexResource(test_res,
-#                                                           test_index))
-#        #flush index:
-#        d.addCallback(lambda foo: catalog.flushIndex(key_path=self._test_kp,
-#                                                     value_path=self._test_vp))
-#        #TODO: check if index is properly flushed
-#        d.addErrback(self._printRes)
-#        # clean up:
-#        d.addBoth(lambda f: catalog.removeIndex(test_index)) \
-#         .addBoth(lambda f: dbmgr.deleteResource(self._test_uri))
-#        
-#        return d
+    def testFlushIndex(self):
+        dbmgr=XmlDbManager(self.db)
+        catalog=XmlIndexCatalog(self.db,dbmgr)
+        #first register an index and add some data:
+        test_index=XmlIndex(key_path = self._test_kp,
+                            value_path = self._test_vp)
+        try:
+            catalog.registerIndex(test_index)
+        except:
+            print "Index is already present in db."
+        
+        test_res=XmlResource(uri = self._test_uri, xml_data = RAW_XML1)
+        try:
+            dbmgr.addResource(test_res)
+        except:
+            print "Resource is already present in db."
+        
+        catalog.indexResource(test_res.getUri(), test_index.getValue_path(),
+                              test_index.getKey_path())
+        #flush index:
+        catalog.flushIndex(value_path=self._test_vp, 
+                           key_path=self._test_kp)
+        
+        #TODO: check if index is properly flushed
+        
+        # clean up:
+        catalog.removeIndex(test_index.getValue_path(), test_index.getKey_path())
+        dbmgr.deleteResource(self._test_uri)
     
     def test_parse_xpath_query(self):
         #TODO: test_parse_xpath_query

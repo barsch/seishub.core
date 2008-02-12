@@ -90,8 +90,8 @@ class XmlCatalogTest(SeisHubTestCase):
         self.assertEquals(URI,res.getUri())
         catalog.deleteResource(URI)
     
-#    def testReindex(self):
-#        self.env.catalog.reindex(IDX1)
+    def testReindex(self):
+        self.env.catalog.reindex(IDX1)
     
     def testListIndexes(self):
         #d=self.env.catalog.listIndexes(res_type="testml", data_type="text")

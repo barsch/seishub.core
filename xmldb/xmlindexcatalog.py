@@ -8,11 +8,16 @@ from sqlalchemy.sql import and_
 
 from seishub.core import SeisHubError
 from seishub.xmldb.interfaces import IXmlIndexCatalog, IIndexRegistry, \
-                                     IResourceIndexing, IXmlIndex, IXmlResource
+                                     IResourceIndexing, IXmlIndex, \
+                                     IResourceStorage
 from seishub.xmldb.xmlindex import XmlIndex
 from seishub.xmldb.defaults import index_def_tab, index_tab, metadata
+from seishub.xmldb.xmldbms import InvalidUriError
 
 class XmlIndexCatalogError(SeisHubError):
+    pass
+
+class InvalidIndexError(SeisHubError):
     pass
 
 class XmlIndexCatalog(object):
@@ -23,7 +28,11 @@ class XmlIndexCatalog(object):
     
     def __init__(self,db, resource_storage = None):
         self._db = db.engine
-        self._storage = resource_storage       
+        
+        if resource_storage:
+            if not IResourceStorage.providedBy(resource_storage):
+                raise DoesNotImplement(IResourceStorage)
+            self._storage = resource_storage       
                 
 #    def __handleErrors(self,error):
 #        # wrap an exception thrown by the db driver in one of our own
@@ -40,9 +49,9 @@ class XmlIndexCatalog(object):
     # methods from IIndexRegistry:
         
     def registerIndex(self, xml_index):
+        """@see: L{interfaces.IIndexRegistry}"""
         if not IXmlIndex.providedBy(xml_index):
             raise DoesNotImplement(IXmlIndex)
-            return
         
         conn = self._db.connect()
         
@@ -61,7 +70,8 @@ class XmlIndexCatalog(object):
 
         return xml_index
     
-    def removeIndex(self,key_path=None,value_path=None):
+    def removeIndex(self,value_path=None, key_path=None):
+        """@see: L{interfaces.IIndexRegistry}"""
         if not (isinstance(key_path,basestring) and isinstance(value_path,basestring)):
             raise XmlIndexCatalogError("No key_path and value_path given.")
         
@@ -79,6 +89,7 @@ class XmlIndexCatalog(object):
         return True
 
     def getIndex(self,value_path, key_path):
+        """@see: L{interfaces.IIndexRegistry}"""
         if not (isinstance(key_path,basestring) and 
                 isinstance(value_path,basestring)):
             raise XmlIndexCatalogError("No key_path and value_path given.")
@@ -92,6 +103,7 @@ class XmlIndexCatalog(object):
         return index[0]
     
     def getIndexes(self,value_path = None, key_path = None, data_type = None):
+        """@see: L{interfaces.IIndexRegistry}"""
         w = ClauseList(operator = "AND")
         if isinstance(value_path,basestring):
             w.append(index_def_tab.c.value_path == value_path)
@@ -119,91 +131,67 @@ class XmlIndexCatalog(object):
         return indexes
 
     def updateIndex(self,key_path,value_path,new_index):
+        """@see: L{interfaces.IIndexRegistry}"""
         #TODO: updateIndex implementation
         pass
     
     
     # methods from IResourceIndexing:
     
-#    def indexResource(self,
-#                      resource, 
-#                      xml_index=None,
-#                      key_path=None,
-#                      value_path=None):
-#        #TODO: uri instead of resource obj
+    def indexResource(self, uri, value_path, key_path):
+        """@see: L{interfaces.IResourceIndexing}"""
 #        #TODO: no specific index
-#        if not IXmlResource.providedBy(resource):
-#            raise DoesNotImplement(IXmlResource)
-#            return None
-#        
-#        try:
-#            key_path=xml_index.getKey_path()
-#            value_path=xml_index.getValue_path()
-#        except AttributeError:
-#            if not (isinstance(key_path,basestring) 
-#                    and isinstance(value_path,basestring)):
-#                raise XmlIndexCatalogError("No xml_index or key_path, value_path given.")
-#                return None
-#        
-#        # db transaction
-#        def _indexResTxn(txn,keyval_list,data_type,index_id):
-#            get_next_id_query=GET_NEXT_ID_QUERY % (DEFAULT_PREFIX, INDEX_TABLE)
-#            
-#            for keyval in keyval_list:
-#                # get next id available:
-#                txn.execute(get_next_id_query)
-#                next_id=txn.fetchall()[0][0]
-#
-#                # insert into INDEX_TABLE:
-#                add_query=ADD_INDEX_DATA_QUERY % \
-#                            {'prefix' : DEFAULT_PREFIX,
-#                            'table' : INDEX_TABLE,
-#                            'id' : next_id,
-#                            'index_id' : index_id,
-#                            'key' : dbutil.quote(keyval['key'], data_type),
-#                            'value': dbutil.quote(keyval['value'], "text"),
-#                            }
-#                txn.execute(add_query)
-#                
-#            return True
-#        
-#        # get obj from db even if IXmlIndex obj was provided to ensure consistency
-#        # with stored index and to retrieve an internal id
-#        d=self.getIndex(key_path=key_path,value_path=value_path)
-#        
-#        # eval index on given resource:
-#        def _evalIndexCb(idx_obj):
-#            keyval_dict = idx_obj.eval(xml_resource=resource)
-#            data_type = idx_obj.getType()
-#            index_id=idx_obj.__id # _id has been injected by getIndex
-#            # insert into db:
-#            if keyval_dict:
-#                d=self._db.runInteraction(_indexResTxn,keyval_dict,data_type,
-#                                          index_id)
-#                return d
-#            else:
-#                return None
-#        d.addCallback(_evalIndexCb)
-#        
-#        return d
-#    
-    def flushIndex(self,key_path,value_path):
-        return 
-#        if not (isinstance(key_path,basestring) and isinstance(value_path,basestring)):
-#            raise XmlIndexCatalogError("No xml_index or key_path, value_path given.")
-#            return None
-#            
-#        query=REMOVE_INDEX_DATA_BY_KEY_QUERY
-#        str_map={'prefix' : DEFAULT_PREFIX,
-#                 'table' : INDEX_TABLE,
-#                 'key_path' : dbutil.quote(key_path, "text"),
-#                 'value_path' : dbutil.quote(value_path,"text"),
-#                 }
-#        query%=str_map
-#        d=self._db.runOperation(query)
-#        d.addErrback(self.__handleErrors)
-#            
-#        return d
+
+        if not isinstance(uri, basestring):
+            raise InvalidUriError("String expected.")
+        if not (isinstance(key_path,basestring) and 
+                isinstance(value_path,basestring)):
+                raise XmlIndexCatalogError("Invalid key path or value path")
+        
+        #get objs and evaluate index on resource:
+        try:
+            resource = self._storage.getResource(uri)
+        except AttributeError:
+            raise XmlIndexCatalogError("No resource storage.")
+        index = self.getIndex(value_path, key_path)
+        if not index:
+            raise InvalidIndexError("No index found for (%s,%s)" % 
+                                    (value_path, key_path))
+        keysvals = index.eval(resource)
+        #data_type = index.getType()
+        index_id = index.__id
+        if not keysvals: # index does not apply
+            return
+        
+        conn = self._db.connect()
+        # begin transaction:
+        txn = conn.begin()
+        try:
+            for keyval in keysvals:
+                res = conn.execute(index_tab.insert(),
+                                   index_id = index_id,
+                                   key = keyval['key'],
+                                   value = keyval['value'])
+            txn.commit()
+        except Exception, e:
+            txn.rollback()
+            raise XmlIndexCatalogError(e)
+        
+        return True
+
+    def flushIndex(self,value_path, key_path):
+        """@see: L{interfaces.IResourceIndexing}""" 
+        if not (isinstance(key_path,basestring) and isinstance(value_path,basestring)):
+            raise XmlIndexCatalogError("No key_path, value_path given.")
+
+        self._db.execute(index_tab.delete(
+                         index_tab.c.index_id.in_
+                           (select([index_def_tab.c.id],
+                                   and_ 
+                                   (index_def_tab.c.key_path == key_path,
+                                   index_def_tab.c.value_path == value_path))
+                            )
+                         ))
     
 #    def reindex(self,key_path,value_path):
 #        if not (isinstance(key_path,basestring) and isinstance(value_path,basestring)):
