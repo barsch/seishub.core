@@ -111,8 +111,16 @@ class AdminRequest(http.Request):
         temp = Template(file=resource_filename("seishub.services.admin",
                                                "templates"+os.sep+ \
                                                "error.tmpl"))
-        temp.message = data.get('error','')
-        temp.exception = data.get('exception','')
+        msg = data.get('error', '')
+        if isinstance(msg, basestring):
+            temp.message = msg
+            temp.exception = None
+        elif isinstance(msg, tuple) and len(msg)==2:
+            temp.message = str(msg[0])
+            temp.exception = str(msg[1])
+        else:
+            temp.message = str(msg)
+            temp.exception = None
         return temp
     
     def _renderNavigation(self):

@@ -2,8 +2,7 @@
 
 from seishub.core import Component, implements
 from seishub.services.admin.interfaces import IAdminPanel
-from seishub.defaults import DEFAULT_REST_PORT
-from seishub.xmldb.errors import UnknownUriError
+from seishub.xmldb.errors import UnknownUriError, AddResourceError
 
 
 class ResourcesPanel(Component):
@@ -14,12 +13,11 @@ class ResourcesPanel(Component):
         return ('catalog', 'XML Catalog', 'resources', 'Resources')
     
     def renderPanel(self, request):
-        # XXX: REST service + Port should be saved somewhere in the environment
-        port = self.env.config.getint('rest','port') or DEFAULT_REST_PORT
+        rest_port = self.config.getint('rest', 'port')
         data = {
             'file': '', 
             'uri': '',
-            'resturl': 'http://localhost:' + str(port),
+            'resturl': 'http://localhost:' + str(rest_port),
         }
         if request.method=='POST':
             args = request.args
@@ -31,23 +29,21 @@ class ResourcesPanel(Component):
                 data['resource[]'] = args['resource[]']
                 data = self._deleteResources(data)
         # fetch all uris
-        data['resources'] = self.env.catalog.getUriList()
+        data['resources'] = self.catalog.getUriList()
         return ('catalog_resources.tmpl', data)
     
     def _addResource(self, data):
         try:
-            res = self.env.catalog.newXmlResource(data['uri'], data['file'])
+            res = self.catalog.newXmlResource(data['uri'], data['file'])
         except Exception, e:
-            self.env.log.error("Error creating resource", e)
-            data['error'] = "Error creating resource"
-            data['exception'] = e
+            self.log.error("Error creating resource", e)
+            data['error'] = ("Error creating resource", e)
             return data
         try:
-            self.env.catalog.addResource(res)
-        except Exception, e:
-            self.env.log.error("Error adding resource", e)
-            data['error'] = "Error adding resource"
-            data['exception'] = e
+            self.catalog.addResource(res)
+        except AddResourceError, e:
+            self.log.error("Error adding resource", e)
+            data['error'] = ("Error adding resource", e)
             return data
         data['uri']=''
         data['file']=''
@@ -56,11 +52,10 @@ class ResourcesPanel(Component):
     def _deleteResources(self, data):
         for id in data.get('resource[]',[]):
             try:
-                self.env.catalog.deleteResource(id)
-            except UnknownUriError:
-                self.env.log.info("Error deleting resource: %s" % id, e)
-                data['error'] = "Error deleting resource: %s" % id
-                data['exception'] = e
+                self.catalog.deleteResource(id)
+            except UnknownUriError, e:
+                self.log.info("Error deleting resource: %s" % id, e)
+                data['error'] = ("Error deleting resource: %s" % id, e)
                 return data
         return data
 
@@ -87,33 +82,30 @@ class IndexesPanel(Component):
                 data['index[]'] = args['index[]']
                 data = self._deleteIndexes(data)
         # fetch all indexes
-        data['indexes'] = self.env.catalog.listIndexes()
+        data['indexes'] = self.catalog.listIndexes()
         return ('catalog_indexes.tmpl', data)
     
     def _deleteIndexes(self, data):
         for xpath in data.get('index[]',[]):
             try:
-                self.env.catalog.removeIndex(xpath)
+                self.catalog.removeIndex(xpath)
             except Exception, e:
-                self.env.log.error("Error removing xml_index %s" % xpath, e)
-                data['error'] = "Error removing xml_index %s" % xpath
-                data['exception'] = e
+                self.log.error("Error removing xml_index %s" % xpath, e)
+                data['error'] = ("Error removing xml_index %s" % xpath, e)
                 return data
         return data
     
     def _addIndex(self, data):
         try:
-            xml_index = self.env.catalog.newXmlIndex(data['xpath'])
+            xml_index = self.catalog.newXmlIndex(data['xpath'])
         except Exception, e:
-            self.env.log.error("Error generating a xml_index", e)
-            data['error'] = "Error generating a xml_index"
-            data['exception'] = e
+            self.log.error("Error generating a xml_index", e)
+            data['error'] = ("Error generating a xml_index", e)
             return data
         try:
-            self.env.catalog.registerIndex(xml_index)
+            self.catalog.registerIndex(xml_index)
         except Exception, e:
-            self.env.log.error("Error registering xml_index", e)
-            data['error'] = "Error registering xml_index"
-            data['exception'] = e
+            self.log.error("Error registering xml_index", e)
+            data['error'] = ("Error registering xml_index", e)
         data['xpath'] = ''
         return data

@@ -12,10 +12,11 @@ class BasicPanel(Component):
         return ('db', 'Database', 'basic', 'Database Settings')
     
     def renderPanel(self, request):
-        db = self.env.db.engine
+        db = self.db.engine
         if request.method == 'POST':
             for option in ('database',):
-                self.config.set('seishub', option, request.args.get(option,[])[0])
+                self.config.set('seishub', option, 
+                                request.args.get(option,[])[0])
             self.config.save()
             request.redirect(request.path)
         data = {
@@ -35,7 +36,6 @@ class QueryPanel(Component):
     def renderPanel(self, request):
         db = self.env.db.engine
         data = {
-            'error': '',
             'query': 'select 1;', 
             'result': '', 
         }
@@ -45,7 +45,6 @@ class QueryPanel(Component):
                 try:
                     data['result'] = db.execute(query).fetchall()
                 except Exception, e:
-                    self.env.log.error(e)
-                    data['error'] = 'Database query error'
-                    data['exception'] = e
+                    self.env.log.error('Database query error', e)
+                    data['error'] = ('Database query error', e)
         return ('db_query.tmpl', data)
