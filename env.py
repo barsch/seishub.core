@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+import os
+
 from seishub.core import ComponentManager
 from seishub.config import Configuration, Option
 from seishub.loader import ComponentLoader
@@ -32,15 +34,19 @@ class Environment(ComponentManager):
         
         Should be one of (`ERROR`, `WARN`, `INFO`, `DEBUG`).""")
     
-    def __init__(self):
+    def __init__(self, config_file=None):
         """Initialize the SeisHub environment."""
         # set up component manager
         ComponentManager.__init__(self)
         self.compmgr = self
-        # set config handler
-        self.config = Configuration()
         # set SeisHub path
-        self.path = self.config.path
+        import seishub
+        self.path = os.path.split(os.path.dirname(seishub.__file__))[0]
+        # set SeisHub path
+        if not config_file:
+            config_file = os.path.join(self.path, 'conf', 'seishub.ini') 
+        # set config handler
+        self.config = Configuration(config_file)
         # set log handler
         self.log = Logger(self)
         # set up DB handler

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # default db settings
-DEFAULT_DB_URI = "sqlite://:memory:"
+DEFAULT_DB_URI = "sqlite://"
 
 # default components
 DEFAULT_COMPONENTS = ('seishub.services.admin.general.PluginsPanel',)

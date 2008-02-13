@@ -1,23 +1,39 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import unittest, sys, doctest, os
+import unittest, sys, doctest, os, tempfile
 from seishub.env import Environment
+from seishub.config import Configuration
 from seishub.util.path import rglob
 from twisted.trial.unittest import TestCase
+
 
 class SeisHubTestCase(TestCase):
     """Base class used for SeisHub test cases"""
     def __init__(self,methodName):
         TestCase.__init__(self, methodName)
-        self.env=Environment()
-        self.db=self.env.db
-
+        self.filename = os.path.join(tempfile.gettempdir(), 'seishub-test.ini')
+        self.config = Configuration(self.filename)
+        #set a few standard settings
+        self.config.set('logging', 'log_level', 'OFF')
+        self.config.set('seishub', 'database', 'sqlite://')
+        self._config()
+        self._start()
+    
+    def _config(self):
+        """Method to write into temporary config file."""
+    
+    def _start(self):
+        """Method to set the Environment."""
+        self.config.save()
+        self.env=Environment(self.filename)
+        self.env.initComponent(self)
+    
     def _printRes(self,res):
         """little helper for debugging callbacks"""
         print res
+    
 
-        
 
 class TestProgram(unittest.TestProgram):
     def __init__(self,**kwargs):

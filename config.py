@@ -38,12 +38,9 @@ class Configuration(object):
     the last modification time of the configuration file, and reparses it
     when the file has changed.
     """
-    def __init__(self, filename='seishub.ini'):
-        # set SeisHub path
-        import seishub
-        self.path = os.path.split(os.path.dirname(seishub.__file__))[0]
+    def __init__(self, filename):
         self._sections = {}
-        self.filename = os.path.join(self.path, 'conf', filename)
+        self.filename = filename
         self.parser = ConfigParser()
         self._lastmtime = 0
         self._lastsitemtime = 0

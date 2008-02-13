@@ -15,6 +15,7 @@ class DatabaseManager(object):
     def __init__(self, env):
         self.env = env
         self.uri = self.env.config.get('seishub', 'database') or DEFAULT_DB_URI
+        self.echo = self.env.config.get('logging', 'log_level')!='OFF'
         self.engine = self._getEngine()
         self.metadata = None 
         self.env.log.info('DB connection pool started')
@@ -40,9 +41,11 @@ class DatabaseManager(object):
             else:
                 self.uri='sqlite://'
                 return self._getSQLiteEngine()
+        elif self.uri.startswith('sqlite://'):
+            return self._getSQLiteEngine()
         
         return sa.create_engine(self.uri,
-                                echo = True,
+                                echo = self.echo,
                                 encoding = 'utf-8',
                                 convert_unicode = True,
                                 max_overflow = self.max_overflow, 
@@ -51,7 +54,7 @@ class DatabaseManager(object):
     def _getSQLiteEngine(self):
         """Return a sqlite engine without a connection pool."""
         return sa.create_engine(self.uri,
-                                echo = True,
+                                echo = self.echo,
                                 encoding = 'utf-8',
                                 convert_unicode = True,)
         

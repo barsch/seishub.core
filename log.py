@@ -7,7 +7,8 @@ from twisted.python.failure import Failure
 
 from seishub.core import ERROR, WARN, INFO, DEBUG
 
-LOG_LEVELS = {'ERROR': ERROR,
+LOG_LEVELS = {'OFF': -1,
+              'ERROR': ERROR,
               'WARN': WARN,
               'INFO': INFO,
               'DEBUG': DEBUG}
@@ -69,11 +70,13 @@ class Logger(object):
     def _formatMessage(self, level, msg, showTraceback):
         if showTraceback:
             fail = Failure(sys.exc_value, sys.exc_type, sys.exc_traceback)
-            log.err(fail, 'ERROR %s' % msg)
+            log.err(fail, '%s %s' % (level, msg))
         else:
-            log.err('ERROR %s' % msg)
+            log.msg('%s %s' % (level, msg), isError=True)
     
     def error(self, msg, showTraceback=False):
+        if self.log_level < ERROR:
+            return
         self._formatMessage('ERROR', msg, showTraceback)
         
     def warn(self, msg, showTraceback=False):
