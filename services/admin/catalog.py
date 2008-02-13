@@ -3,7 +3,7 @@
 from seishub.core import Component, implements
 from seishub.services.admin.interfaces import IAdminPanel
 from seishub.defaults import DEFAULT_REST_PORT
-from seishub.xmldb.xmlindex import XmlIndex
+from seishub.xmldb.errors import UnknownUriError
 
 
 class ResourcesPanel(Component):
@@ -57,8 +57,8 @@ class ResourcesPanel(Component):
         for id in data.get('resource[]',[]):
             try:
                 self.env.catalog.deleteResource(id)
-            except Exception, e:
-                self.env.log.error("Error deleting resource: %s" % id, e)
+            except UnknownUriError:
+                self.env.log.info("Error deleting resource: %s" % id, e)
                 data['error'] = "Error deleting resource: %s" % id
                 data['exception'] = e
                 return data

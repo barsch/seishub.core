@@ -19,15 +19,19 @@
 import sys
 
 __all__ = ['Component', 'ExtensionPoint', 'implements', 'Interface',
-           'SeisHubError']
+           'SeisHubError', 'ERROR', 'WARN', 'INFO', 'DEBUG']
+
+ERROR = 0
+WARN = 5
+INFO = 10
+DEBUG = 20
 
 
 class SeisHubError(Exception):
     """Exception base class for errors in SeisHub."""
     
-    def __init__(self, exception, message=None):
-        """not implemented yet"""
-        pass
+    def __init__(self, *args, **kwargs):
+        Exception.__init__(self, *args, **kwargs)
 
 
 class Interface(object):

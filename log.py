@@ -1,20 +1,33 @@
 # -*- coding: utf-8 -*-
 
 import os
+import sys
 from twisted.python import log, logfile
+from twisted.python.failure import Failure
 
-LOG_LEVELS = ['ERROR','WARN','INFO','DEBUG','ALL']
+from seishub.core import ERROR, WARN, INFO, DEBUG
+
+LOG_LEVELS = {'ERROR': ERROR,
+              'WARN': WARN,
+              'INFO': INFO,
+              'DEBUG': DEBUG}
 
 
 class ErrorLog(log.FileLogObserver):
+    """Error log only for logging error messages."""
+    
     def emit(self, eventDict):
+        #skip access messages
         if not eventDict["isError"]:
             return
         log.FileLogObserver.emit(self, eventDict)
 
 
 class AccessLog(log.FileLogObserver):
+    """Access log for logging non errors."""
+    
     def emit(self, eventDict):
+        #skip error messages
         if eventDict["isError"]:
             return
         log.FileLogObserver.emit(self, eventDict)
@@ -33,10 +46,7 @@ class Logger(object):
         log_dir = os.path.join(self.env.path, 'log')
         
         # Get log level
-        if self.env.log_level.upper() in LOG_LEVELS:
-            self.log_level = LOG_LEVELS.index(self.env.log_level.upper())
-        else:
-            self.log_level = 0
+        self.log_level = LOG_LEVELS.get(self.env.log_level.upper(), ERROR)
         
         # Error log
         errlog_file = self.env.error_log_file
@@ -56,32 +66,27 @@ class Logger(object):
         for l in log.theLogPublisher:
             log.removeObserver(l)
     
-    def error(self, msg, exception=None):
-        if exception:
-            log.err(exception, 'ERROR: %s' % msg)
+    def _formatMessage(self, level, msg, showTraceback):
+        if showTraceback:
+            fail = Failure(sys.exc_value, sys.exc_type, sys.exc_traceback)
+            log.err(fail, 'ERROR %s' % msg)
         else:
-            log.msg('ERROR: %s' % msg, isError=True)
+            log.err('ERROR %s' % msg)
     
-    def warn(self, msg, exception=None):
-        if self.log_level<1:
+    def error(self, msg, showTraceback=False):
+        self._formatMessage('ERROR', msg, showTraceback)
+        
+    def warn(self, msg, showTraceback=False):
+        if self.log_level < WARN:
             return
-        if exception:
-            log.err(exception, 'WARN: %s' % msg)
-        else:
-            log.msg('WARN: %s' % msg, isError=True)
+        self._formatMessage('WARN', msg, showTraceback)
     
-    def info(self, msg, exception=None):
-        if self.log_level<2:
+    def info(self, msg, showTraceback=False):
+        if self.log_level < INFO:
             return
-        if exception:
-            log.err(exception, 'INFO: %s' % msg)
-        else:
-            log.msg('INFO: %s' % msg, isError=True)
+        self._formatMessage('INFO', msg, showTraceback)
     
-    def msg(self, msg):
-        log.msg(msg, isError=True)
-    
-    def debug(self, msg):
-        if self.log_level<3:
+    def debug(self, msg, showTraceback=False):
+        if self.log_level < DEBUG:
             return
-        log.msg('DEBUG: %s' % msg, isError=True)
+        self._formatMessage('DEBUG', msg, showTraceback)

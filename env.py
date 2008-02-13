@@ -30,7 +30,7 @@ class Environment(ComponentManager):
     log_level = Option('logging', 'log_level', 'DEBUG',
         """Level of verbosity in log.
         
-        Should be one of (`CRITICAL`, `ERROR`, `WARN`, `INFO`, `DEBUG`).""")
+        Should be one of (`ERROR`, `WARN`, `INFO`, `DEBUG`).""")
     
     def __init__(self):
         """Initialize the SeisHub environment."""
