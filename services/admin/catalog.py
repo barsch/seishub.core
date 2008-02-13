@@ -21,11 +21,11 @@ class ResourcesPanel(Component):
         }
         if request.method=='POST':
             args = request.args
-            if 'file' and 'uri' in args.keys():
+            if 'file' in args.keys() and 'uri' in args.keys():
                 data['file'] = args['file'][0]
                 data['uri'] = args['uri'][0]
                 data = self._addResource(data)
-            elif 'delete' and 'resource[]' in args.keys():
+            elif 'delete' in args.keys() and 'resource[]' in args.keys():
                 data['resource[]'] = args['resource[]']
                 data = self._deleteResources(data)
         # fetch all uris
@@ -73,17 +73,31 @@ class IndexesPanel(Component):
             'error': '',
             'xpath': '',
         }
+        print request.args
         if request.method=='POST':
             args = request.args
-            if 'add' and 'xpath' in args.keys():
+            if 'add' in args.keys() and 'xpath' in args.keys():
                 data['xpath'] = args['xpath'][0]
                 data = self._addIndex(data)
-            elif 'delete' and 'index[]' in args.keys():
+            elif 'delete' in args.keys() and 'index[]' in args.keys():
                 data['index[]'] = args['index[]']
                 data = self._deleteIndexes(data)
+            elif 'reindex' in args.keys() and 'index[]' in args.keys():
+                data['index[]'] = args['index[]']
+                data = self._reindex(data)
         # fetch all indexes
         data['indexes'] = self.catalog.listIndexes()
         return ('catalog_indexes.tmpl', data)
+    
+    def _reindex(self, data):
+        for xpath in data.get('index[]',[]):
+            try:
+                self.env.catalog.reindex(xpath)
+            except Exception, e:
+                self.log.error("Error reindexing xml_index %s" % xpath, e)
+                data['error'] = ("Error reindexing xml_index %s" % xpath, e)
+                return data
+        return data
     
     def _deleteIndexes(self, data):
         for xpath in data.get('index[]',[]):

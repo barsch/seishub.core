@@ -22,7 +22,7 @@ class XmlCatalog(XmlDbManager):
         return XmlResource(uri,xml_data)
     
     def newXmlIndex(self,xpath_expr,type="text"):
-        exp_obj=IndexDefiningXpathExpression(xpath_expr)    
+        exp_obj=IndexDefiningXpathExpression(xpath_expr)
         if type=="text":
             return XmlIndex(value_path = exp_obj.value_path,
                             key_path = exp_obj.key_path)
@@ -74,5 +74,5 @@ class XmlCatalog(XmlDbManager):
         # reindex
         for uri in uris:
             self.index_catalog.indexResource(uri, value_path, key_path)
-            
+        
         return True

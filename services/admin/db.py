@@ -39,8 +39,9 @@ class QueryPanel(Component):
             'query': 'select 1;', 
             'result': '', 
         }
+        args = request.args
         if request.method=='POST':
-            if 'query' and 'send' in request.args.keys():
+            if 'query' in args.keys() and 'send' in args.keys():
                 query = data['query'] = request.args['query'][0]
                 try:
                     data['result'] = db.execute(query).fetchall()
