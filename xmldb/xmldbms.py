@@ -9,6 +9,7 @@ from seishub.xmldb.xmlresource import XmlResource
 from seishub.xmldb.errors import *
 from seishub.xmldb.defaults import metadata, resource_tab, uri_tab
 
+
 class XmlDbManager(object):
     """XmlResource layer, connects XmlResources to relational db storage"""
     implements(IResourceStorage)
@@ -22,7 +23,7 @@ class XmlDbManager(object):
     def _initDb(self):
         #create all tables
         #this will check for the presence of a table first before creating
-        self.metadata.create_all(self.db, checkfirst=True)
+        self.metadata.create_all(self.db, checkfirst = True)
     
     def _resolveUri(self,uri):
         if not isinstance(uri,basestring):
