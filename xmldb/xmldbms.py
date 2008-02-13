@@ -26,8 +26,7 @@ class XmlDbManager(object):
     
     def _resolveUri(self,uri):
         if not isinstance(uri,basestring):
-            raise ValueError("invalid uri: string expected")
-            return
+            raise InvalidUriError("string expected")
         
         query = select([uri_tab.c.res_id],
                        uri_tab.c.uri == uri)
@@ -36,7 +35,6 @@ class XmlDbManager(object):
             id = res.fetchone()[0]
         except:
             raise UnknownUriError(uri)
-            return None
         
         return id
     
