@@ -57,7 +57,7 @@ class XmlDbManager(object):
             txn.commit()
         except Exception, e:
             txn.rollback()
-            raise
+            raise AddResourceError(e)
         
         return True
     
@@ -76,7 +76,6 @@ class XmlDbManager(object):
             xml_data = res.fetchone()[0]
         except:
             raise UnknownUriError(uri)
-            return None
         
         return XmlResource(xml_data = xml_data, uri = uri)
     
@@ -100,7 +99,7 @@ class XmlDbManager(object):
             txn.commit()
         except Exception, e:
             txn.rollback()
-            raise
+            raise DeleteResourceError(e)
         
         return True
     

@@ -24,5 +24,11 @@ class InvalidIndexError(SeisHubError):
 class XmlResourceError(SeisHubError):
     pass
 
+class AddResourceError(SeisHubError):
+    pass
+
+class DeleteResourceError(SeisHubError):
+    pass
+
 class RestrictedXpathError(SeisHubError):
     pass
