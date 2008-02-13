@@ -29,10 +29,11 @@ class Resource(object):
         if self._validateUri(newuri):
             self.__uri=newuri
         else:
-            raise InvalidUriError
+            raise InvalidUriError("%s is not a valid URI!" % newuri)
     
     def _validateUri(self,value):
         #TODO: uri validation
+        uri_pattern = ""
         if Validator(value).isString() and len(value) > 0:
             return True
         else: 
