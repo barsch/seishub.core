@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from seishub.xmldb.validator import Validator
-
-class InvalidUriError(Exception):
-    pass
+from seishub.xmldb.errors import InvalidUriError
 
 class Resource(object):
     """Resource base class"""

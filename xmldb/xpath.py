@@ -10,9 +10,7 @@ Restricted expressions are of the following form:
 """
 #TODO: update docstrings
 from seishub.core import SeisHubError
-
-class RestrictedXpathError(SeisHubError):
-    pass
+from seishub.xmldb.errors import RestrictedXpathError
 
 # XXX: requires PyXML (_xmlplus.xpath)
 # from xml import xpath

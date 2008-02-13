@@ -4,13 +4,11 @@ from zope.interface.exceptions import DoesNotImplement
 
 from seishub.core import SeisHubError
 from seishub.xmldb.interfaces import IXmlIndex, IXmlResource
+from seishub.xmldb.errors import XmlIndexError
 
 __all__=['XmlIndex']
 
 TEXT_INDEX="text"
-
-class XmlIndexError(SeisHubError):
-    pass
 
 class XmlIndex(object):
     implements(IXmlIndex)

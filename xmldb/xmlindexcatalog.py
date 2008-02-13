@@ -11,13 +11,9 @@ from seishub.xmldb.interfaces import IXmlIndexCatalog, IIndexRegistry, \
                                      IResourceStorage
 from seishub.xmldb.xmlindex import XmlIndex
 from seishub.xmldb.defaults import index_def_tab, index_tab
-from seishub.xmldb.xmldbms import InvalidUriError
+from seishub.xmldb.errors import InvalidUriError, XmlIndexCatalogError, \
+                                 InvalidIndexError
 
-class XmlIndexCatalogError(SeisHubError):
-    pass
-
-class InvalidIndexError(SeisHubError):
-    pass
 
 class XmlIndexCatalog(object):
     #TODO: check args in a more central manner
@@ -31,15 +27,7 @@ class XmlIndexCatalog(object):
         if resource_storage:
             if not IResourceStorage.providedBy(resource_storage):
                 raise DoesNotImplement(IResourceStorage)
-            self._storage = resource_storage       
-                
-#    def __handleErrors(self,error):
-#        # wrap an exception thrown by the db driver in one of our own
-#        raise XmlIndexCatalogError(error.getErrorMessage())
-##        if error.check(OperationalError):
-##            raise XmlIndexCatalogError(error.getErrorMessage())
-##        else:
-##            error.raiseException()
+            self._storage = resource_storage
             
     def _parse_xpath_query(expr):
         pass
@@ -48,7 +36,7 @@ class XmlIndexCatalog(object):
     # methods from IIndexRegistry:
         
     def registerIndex(self, xml_index):
-        """@see: L{interfaces.IIndexRegistry}"""
+        """@see: L{seishub.xmldb.xmlindexcatalog.interfaces.IIndexRegistry}"""
         if not IXmlIndex.providedBy(xml_index):
             raise DoesNotImplement(IXmlIndex)
         
@@ -70,7 +58,7 @@ class XmlIndexCatalog(object):
         return xml_index
     
     def removeIndex(self,value_path=None, key_path=None):
-        """@see: L{interfaces.IIndexRegistry}"""
+        """@see: L{seishub.xmldb.xmlindexcatalog.interfaces.IIndexRegistry}"""
         if not (isinstance(key_path,basestring) and isinstance(value_path,basestring)):
             raise XmlIndexCatalogError("No key_path and value_path given.")
         
@@ -88,7 +76,7 @@ class XmlIndexCatalog(object):
         return True
 
     def getIndex(self,value_path, key_path):
-        """@see: L{interfaces.IIndexRegistry}"""
+        """@see: L{seishub.xmldb.xmlindexcatalog.interfaces.IIndexRegistry}"""
         if not (isinstance(key_path,basestring) and 
                 isinstance(value_path,basestring)):
             raise XmlIndexCatalogError("No key_path and value_path given.")
@@ -102,7 +90,7 @@ class XmlIndexCatalog(object):
         return index[0]
     
     def getIndexes(self,value_path = None, key_path = None, data_type = None):
-        """@see: L{interfaces.IIndexRegistry}"""
+        """@see: L{seishub.xmldb.xmlindexcatalog.interfaces.IIndexRegistry}"""
         w = ClauseList(operator = "AND")
         if isinstance(value_path,basestring):
             w.append(index_def_tab.c.value_path == value_path)
@@ -130,7 +118,7 @@ class XmlIndexCatalog(object):
         return indexes
 
     def updateIndex(self,key_path,value_path,new_index):
-        """@see: L{interfaces.IIndexRegistry}"""
+        """@see: L{seishub.xmldb.xmlindexcatalog.interfaces.IIndexRegistry}"""
         #TODO: updateIndex implementation
         pass
     
@@ -138,7 +126,7 @@ class XmlIndexCatalog(object):
     # methods from IResourceIndexing:
     
     def indexResource(self, uri, value_path, key_path):
-        """@see: L{interfaces.IResourceIndexing}"""
+        """@see: L{seishub.xmldb.xmlindexcatalog.interfaces.IResourceIndexing}"""
 #        #TODO: no specific index
 
         if not isinstance(uri, basestring):
@@ -179,7 +167,7 @@ class XmlIndexCatalog(object):
         return True
 
     def flushIndex(self,value_path, key_path):
-        """@see: L{interfaces.IResourceIndexing}""" 
+        """@see: L{seishub.xmldb.xmlindexcatalog.interfaces.IResourceIndexing}""" 
         if not (isinstance(key_path,basestring) and isinstance(value_path,basestring)):
             raise XmlIndexCatalogError("No key_path, value_path given.")
 
