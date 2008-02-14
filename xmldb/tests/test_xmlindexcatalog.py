@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from zope.interface.exceptions import DoesNotImplement
-
 from twisted.enterprise import util as dbutil
 
 from seishub.test import SeisHubTestCase
@@ -196,6 +194,6 @@ class XmlIndexCatalogTest(SeisHubTestCase):
     def test_parse_xpath_query(self):
         #TODO: test_parse_xpath_query
         test_query="/station[./lat=50.23200]"
-        print XmlIndexCatalog._parse_xpath_query(test_query)
+        #print XmlIndexCatalog._parse_xpath_query(test_query)
         
         

@@ -27,8 +27,8 @@ class XmlResource(Resource):
         """validate and set xml_data"""
         try:
             self.__xml_doc = self._validateXml_data(xml_data)
-        except:
-            raise XmlResourceError("Invalid xml data.")
+        except Exception, e:
+            raise XmlResourceError(e)
         
         self._resource_type = self.__xml_doc.getRootElementName()
         return Resource.setData(self,xml_data)

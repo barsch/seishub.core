@@ -82,7 +82,7 @@ class XmlDbManagerTest(SeisHubTestCase):
         self.xmldbm.addResource(testres1)
         self.xmldbm.addResource(testres2)
         
-        print self.xmldbm.getUriList()
+        #print self.xmldbm.getUriList()
         #TODO: check results
         # delete test resource:
         self.xmldbm.deleteResource(self.test_uri)

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from twisted.trial.unittest import TestCase
+from unittest import TestCase
 
 from seishub.util.libxmlwrapper import XmlSchema, XmlTreeDoc, InvalidXPathExpression
 
