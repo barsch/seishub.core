@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 
+import unittest
+
 from seishub.test import SeisHubTestCase
+
 
 RAW_XML = """<station rel_uri="bern">
     <station_code>BERN</station_code>
@@ -97,4 +100,10 @@ class XmlCatalogTest(SeisHubTestCase):
         #d=self.env.catalog.listIndexes(res_type="testml", data_type="text")
         self.env.catalog.listIndexes()
         #d.addCallback(self._printRes)
-        
+
+
+def suite():
+    return unittest.makeSuite(XmlCatalogTest, 'test')
+
+if __name__ == '__main__':
+    unittest.main(defaultTest='suite')

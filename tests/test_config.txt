@@ -5,7 +5,9 @@ Accessing the configuration file
 Get handler for recent configuration file:
 
     >>> import seishub.config
-    >>> conf = seishub.config.Configuration()
+    >>> import tempfile, os
+    >>> filename = os.path.join(tempfile.gettempdir(), 'test.ini')
+    >>> conf = seishub.config.Configuration(filename)
 
 Now we want to set a certain option:
 

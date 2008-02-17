@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import unittest
 from twisted.enterprise import util as dbutil
 
 from seishub.test import SeisHubTestCase
@@ -9,8 +10,8 @@ from seishub.xmldb.xmlindexcatalog import XmlIndexCatalogError, \
 from seishub.xmldb.xmldbms import XmlDbManager
 from seishub.xmldb.xmlindex import XmlIndex
 from seishub.xmldb.xmlresource import XmlResource
-
 from seishub.xmldb.defaults import INDEX_DEF_TABLE, DEFAULT_PREFIX
+
 
 RAW_XML1="""<station rel_uri="bern">
     <station_code>BERN</station_code>
@@ -195,5 +196,10 @@ class XmlIndexCatalogTest(SeisHubTestCase):
         #TODO: test_parse_xpath_query
         test_query="/station[./lat=50.23200]"
         #print XmlIndexCatalog._parse_xpath_query(test_query)
-        
-        
+
+
+def suite():
+    return unittest.makeSuite(XmlIndexCatalogTest, 'test')
+
+if __name__ == '__main__':
+    unittest.main(defaultTest='suite')

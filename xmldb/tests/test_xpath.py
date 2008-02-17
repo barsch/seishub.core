@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
 
+import unittest
+
 from seishub.test import SeisHubTestCase
 from seishub.xmldb.xpath import RestrictedXpathExpression, \
                                 RestrictedXpathError
+
 
 class XpathTest(SeisHubTestCase):
     #TODO: testIndexDefiningXpathExpression
@@ -20,3 +23,10 @@ class XpathTest(SeisHubTestCase):
         self.assertRaises(RestrictedXpathError,
                           RestrictedXpathExpression,
                           invalid)
+
+
+def suite():
+    return unittest.makeSuite(XpathTest, 'test')
+
+if __name__ == '__main__':
+    unittest.main(defaultTest='suite')

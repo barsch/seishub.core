@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 
-from unittest import TestCase
+import unittest
 
-from seishub.util.libxmlwrapper import XmlSchema, XmlTreeDoc, InvalidXPathExpression
+from seishub.util.libxmlwrapper import XmlSchema, XmlTreeDoc, \
+                                       InvalidXPathExpression
+
 
 TEST_SCHEMA="""<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
 <xsd:element name="a" type="AType"/>
@@ -18,7 +20,8 @@ GOOD_XML="""<a><b>A string</b>
 </a>"""
 BAD_XML="""<a><b><an_element></an_element></b></a>"""
 
-class XmlSchemaTest(TestCase):
+
+class XmlSchemaTest(unittest.TestCase):
     def setUp(self):
         self.test_schema=TEST_SCHEMA
         self.good_xml=GOOD_XML
@@ -31,8 +34,9 @@ class XmlSchemaTest(TestCase):
         self.assertEquals(schema.validate(validDoc),True)
         self.assertEquals(schema.validate(invalidDoc),False)
         #print invalidDoc.getErrors()
-        
-class XmlTreeTest(TestCase):
+
+
+class XmlTreeTest(unittest.TestCase):
     def testEvalXPath(self):
         tree_doc=XmlTreeDoc(xml_data=GOOD_XML)
         # an invalid expression:
@@ -48,4 +52,13 @@ class XmlTreeTest(TestCase):
         # getStrContent() concatenates all Element values:
         self.assertEquals(tree_doc.evalXPath('/a')[0].getStrContent(),
                           "A string\nAnother string\n")
-        
+
+
+def suite():
+    suite = unittest.TestSuite()
+    suite.addTest(unittest.makeSuite(XmlSchemaTest, 'test'))
+    suite.addTest(unittest.makeSuite(XmlTreeTest, 'test'))
+    return suite
+
+if __name__ == '__main__':
+    unittest.main(defaultTest='suite')

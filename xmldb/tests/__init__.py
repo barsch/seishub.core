@@ -1,14 +1,24 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import doctest
 import unittest
-import seishub.test
-from seishub.test import doctestsuite,trialsuite
+
+from seishub.xmldb.tests import test_xmlcatalog, test_xmldbms, test_xmlindex, \
+                                test_xmlindexcatalog, test_xmlvalidator, \
+                                test_xpath
+
+
+def suite():
+    suite = unittest.TestSuite()
+    suite.addTest(test_xmlcatalog.suite())
+    suite.addTest(test_xmldbms.suite())
+    suite.addTest(test_xmlindex.suite())
+    suite.addTest(test_xmlindexcatalog.suite())
+    #suite.addTest(doctest.DocFileSuite('test_xmlindexcatalog.txt'))
+    suite.addTest(test_xmlvalidator.suite())
+    suite.addTest(test_xpath.suite())
+    return suite
+
 
 if __name__ == '__main__':
-    import doctest, sys
-    doctest.testmod(sys.modules[__name__])
-    seishub.test.main(defaultTest='doctestsuite')
-    trialsuite()
-    
-    
+    unittest.main(defaultTest='suite')

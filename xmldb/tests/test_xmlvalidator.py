@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+import unittest
+
 from seishub.test import SeisHubTestCase
 from seishub.xmldb.validator import XmlSchemaValidator
 
@@ -23,4 +25,10 @@ class XmlValidatorTest(SeisHubTestCase):
         self.assertEquals(valid,1)
         invalid=XmlSchemaValidator(self.test_schema,self.bad_xml).validate()
         self.assertEquals(invalid,0)
-        
+
+
+def suite():
+    return unittest.makeSuite(XmlValidatorTest, 'test')
+
+if __name__ == '__main__':
+    unittest.main(defaultTest='suite')

@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 
+import unittest
 from zope.interface.exceptions import DoesNotImplement
 
 from seishub.test import SeisHubTestCase
 from seishub.core import SeisHubError
 from seishub.xmldb.xmlresource import XmlResource
 from seishub.xmldb.xmlindex import XmlIndex, TEXT_INDEX
+
 
 RAW_XML1="""<station rel_uri="bern">
     <station_code>BERN</station_code>
@@ -70,4 +72,10 @@ class XmlIndexTest(SeisHubTestCase):
                           xy_index.eval(test_resource)
                           )
         self.assertEquals(['/stations/bern'],xy_index.getValues())
-        
+
+
+def suite():
+    return unittest.makeSuite(XmlIndexTest, 'test')
+
+if __name__ == '__main__':
+    unittest.main(defaultTest='suite')

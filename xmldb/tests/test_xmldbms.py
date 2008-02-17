@@ -1,9 +1,12 @@
 # -*- coding: utf-8 -*-
 
+import unittest
+
 from seishub.test import SeisHubTestCase
 from seishub.xmldb.xmldbms import XmlDbManager
 from seishub.xmldb.xmlresource import XmlResource, XmlResourceError
 from seishub.xmldb.defaults import DEFAULT_PREFIX,RESOURCE_TABLE,URI_TABLE
+
 
 TEST_XML="""<?xml version="1.0"?>
 <testml>
@@ -87,4 +90,13 @@ class XmlDbManagerTest(SeisHubTestCase):
         # delete test resource:
         self.xmldbm.deleteResource(self.test_uri)
         self.xmldbm.deleteResource(self.test_uri+'/2')
-        
+
+
+def suite():
+    suite = unittest.TestSuite()
+    suite.addTest(unittest.makeSuite(XmlResourceTest, 'test'))
+    suite.addTest(unittest.makeSuite(XmlDbManagerTest, 'test'))
+    return suite
+
+if __name__ == '__main__':
+    unittest.main(defaultTest='suite')

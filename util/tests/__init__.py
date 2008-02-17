@@ -1,14 +1,16 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import doctest
 import unittest
-import seishub.test
-from seishub.test import doctestsuite,trialsuite
+
+from seishub.util.tests import test_libxmlwrapper
+
+
+def suite():
+    suite = unittest.TestSuite()
+    suite.addTest(test_libxmlwrapper.suite())
+    return suite
+
 
 if __name__ == '__main__':
-    import doctest, sys
-    doctest.testmod(sys.modules[__name__])
-    seishub.test.main(defaultTest='doctestsuite')
-    trialsuite()
-    
-    
+    unittest.main(defaultTest='suite')

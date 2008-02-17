@@ -1,9 +1,0 @@
->>> from seishub.core import *
->>> from seishub.services.admin.basics import *
->>> cm=ComponentManager()
->>> obj=cm[BasicsPanel]
->>> obj=cm.components.values()[0]
->>> isinstance(obj,BasicsPanel)
-True
->>> cm.components.values()[0].__module__
-'seishub.services.admin.basics'
