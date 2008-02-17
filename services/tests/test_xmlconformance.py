@@ -4,10 +4,9 @@ import unittest
 import os
 import inspect
 import libxml2
-from xml.sax.handler import ContentHandler
-from xml.sax import make_parser
 
 from seishub.test import SeisHubTestCase
+from seishub.util.text import checkXMLWellFormed
 
 
 class XMLConformanceTestCase(SeisHubTestCase):
@@ -54,17 +53,19 @@ class XMLConformanceTestCase(SeisHubTestCase):
     def _runXMLTest(self, path, testcase, filename, props):
         test_file = os.path.join(path, testcase, filename)
         test_id = os.path.join(testcase, filename)
+        
         #check if well formed
-        wfd = self._isWellFormedXMLDocument(test_file)
-        if props['type']=='not-wf':
-            if wfd:
-                print test_id, '-', 'Should not be marked as well formed!'
+        nwfd = checkXMLWellFormed(test_file)
+        if props['type'] in ('not-wf', 'error') and nwfd:
             return
+        if props['type'] in ('not-wf', 'error') or nwfd:
+            print 'NOTWELLFORMED', test_id, '-', nwfd
+        
         #check if valid
         vd = self._isValidXMLDocument(test_file)
         if props['type']=='invalid':
             if vd:
-                print test_id, '-', 'Should not be marked as valid!'
+                print 'INVALID', test_id, '-', 'Should not be marked as valid!'
             return
         
         fh = open(test_file, 'r')
@@ -98,16 +99,6 @@ class XMLConformanceTestCase(SeisHubTestCase):
         valid = ctxt.isValid()
         doc.freeDoc()
         return valid
-    
-    def _isWellFormedXMLDocument(self, filename):
-        """Simple checks if a document is well formed."""
-        parser = make_parser()
-        parser.setContentHandler(ContentHandler())
-        try:
-            parser.parse(filename)
-        except:
-            return False
-        return True
 
 
 def suite():
