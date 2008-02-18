@@ -30,7 +30,10 @@ class XPathQueryTest(SeisHubTestCase):
 
 
 def suite():
-    return unittest.makeSuite(XpathTest, 'test')
+    suite = unittest.TestSuite()
+    suite.addTest(unittest.makeSuite(XpathTest, 'test'))
+    suite.addTest(unittest.makeSuite(XPathQueryTest, 'test'))
+    return suite
 
 if __name__ == '__main__':
     unittest.main(defaultTest='suite')
