@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""For xml resource indexing purposes there's some restrictions made to xpath
+"""For xml index querying purposes there's some restrictions made to xpath
 expressions. In particular node selection is restricted to the root node.
 Restricted expressions are of the following form: 
 /rootnode[prediactes]
@@ -105,5 +105,20 @@ class IndexDefiningXpathExpression(object):
         
         return True
 
+class XPathQuery(RestrictedXpathExpression):
+    def __init__(self,*args):
+        super(XPathQuery, self).__init__(*args)        
+        #p=xpath.Compile(self._expr)
+        self._parsePredicates(self._expr)
+        
+    def _parsePredicates(self, parsed_expr):
+        pass
+    
+    def getValue_path(self):
+        return self.node_test
+    
+    def getKeys(self):
+        predicates = self.predicates
+        print predicates
 
 

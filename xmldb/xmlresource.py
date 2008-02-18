@@ -17,7 +17,7 @@ class XmlResource(Resource):
     def __init__(self,uri=None,xml_data=None):
         """overloaded __init__ to encode utf8 if needed"""
         self.__xml_doc = None
-        if not isinstance(xml_data, unicode):
+        if not isinstance(xml_data, unicode) and xml_data:
             xml_data = unicode(xml_data,"utf-8")
         Resource.__init__(self, uri, xml_data)
     

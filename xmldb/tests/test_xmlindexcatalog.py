@@ -191,6 +191,11 @@ class XmlIndexCatalogTest(SeisHubTestCase):
         # clean up:
         catalog.removeIndex(test_index.getValue_path(), test_index.getKey_path())
         dbmgr.deleteResource(self._test_uri)
+        
+    def testQuery(self):
+        dbmgr=XmlDbManager(self.db)
+        catalog=XmlIndexCatalog(self.db,dbmgr)
+        catalog.query("/blah[blub=100]")
     
     def test_parse_xpath_query(self):
         #TODO: test_parse_xpath_query

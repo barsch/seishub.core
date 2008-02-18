@@ -4,14 +4,12 @@ import unittest
 
 from seishub.test import SeisHubTestCase
 from seishub.xmldb.xpath import RestrictedXpathExpression, \
-                                RestrictedXpathError
+                                RestrictedXpathError, \
+                                XPathQuery
 
 
 class XpathTest(SeisHubTestCase):
     #TODO: testIndexDefiningXpathExpression
-    
-    def setUp(self):
-        pass
     
     def testRestrictedXpathExpression(self):
         valid="/rootnode[./somenode/achild and @anattribute]"
@@ -23,6 +21,12 @@ class XpathTest(SeisHubTestCase):
         self.assertRaises(RestrictedXpathError,
                           RestrictedXpathExpression,
                           invalid)
+        
+class XPathQueryTest(SeisHubTestCase):
+    test_expr = "/rootnode[./element1/element2 = 'blub' and ./element1/@id = 5]"
+    
+    def testXPathQuery(self):
+        q = XPathQuery(self.test_expr)
 
 
 def suite():

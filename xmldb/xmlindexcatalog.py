@@ -5,18 +5,18 @@ from sqlalchemy import select
 from sqlalchemy.sql.expression import ClauseList
 from sqlalchemy.sql import and_
 
-from seishub.core import SeisHubError
 from seishub.xmldb.interfaces import IXmlIndexCatalog, IIndexRegistry, \
                                      IResourceIndexing, IXmlIndex, \
                                      IResourceStorage
 from seishub.xmldb.xmlindex import XmlIndex
 from seishub.xmldb.defaults import index_def_tab, index_tab
+from seishub.xmldb.xpath import RestrictedXpathExpression, XPathQuery
 from seishub.xmldb.errors import InvalidUriError, XmlIndexCatalogError, \
-                                 InvalidIndexError
+                                 InvalidIndexError, InvalidXpathQuery, \
+                                 RestrictedXpathError
 
 
 class XmlIndexCatalog(object):
-    #TODO: check args in a more central manner
     implements(IIndexRegistry,
                IResourceIndexing,
                IXmlIndexCatalog)
@@ -195,10 +195,10 @@ class XmlIndexCatalog(object):
     # methods from IXmlIndexCatalog:
     
     def query(self, query):
-        if not query:
-            return None
-        
-        
+        try:
+            query = XPathQuery(query)
+        except RestrictedXpathError, e:
+            raise InvalidXpathQuery("Invalid query: %s" % query, e)
         
         
         

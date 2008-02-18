@@ -1,34 +1,39 @@
 from seishub.core import SeisHubError
 
 class InvalidUriError(SeisHubError):
-    pass
+    """raised whenever URI validation fails"""
 
 class UnknownUriError(SeisHubError):
-    pass
+    """raised, if the URI is not known within the storage"""
+    
+class InvalidIndexError(SeisHubError):
+    """raised when trying to create an XmlIndex with invalid args"""
+    
+class AddResourceError(SeisHubError):
+    """adding a new resource failed"""
+    
+class DeleteResourceError(SeisHubError):
+    """deleting a resource failed"""
+    
+class RestrictedXpathError(SeisHubError):
+    """invalid restricted xpath expression, 
+    @see: L{seishub.xmldb.xpath}"""
+    
+class InvalidXpathQuery(SeisHubError):
+    """invalid query expression"""
+
 
 class XmlDbManagerError(SeisHubError):
-    pass
+    """general xmldb error"""
 
 class DbError(SeisHubError):
-    pass
+    """general db error"""
 
 class XmlIndexError(SeisHubError):
-    pass
+    """general XmlIndex error"""
 
 class XmlIndexCatalogError(SeisHubError):
-    pass
-
-class InvalidIndexError(SeisHubError):
-    pass
+    """general XmlIndexCatalog error"""
 
 class XmlResourceError(SeisHubError):
-    pass
-
-class AddResourceError(SeisHubError):
-    pass
-
-class DeleteResourceError(SeisHubError):
-    pass
-
-class RestrictedXpathError(SeisHubError):
-    pass
+    """general XMlResource error"""
