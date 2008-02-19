@@ -2,7 +2,9 @@
 
 from seishub.core import Component, implements
 from seishub.services.admin.interfaces import IAdminPanel
-
+from seishub.xmldb.defaults import DEFAULT_PREFIX, RESOURCE_TABLE, \
+                                   INDEX_TABLE, INDEX_DEF_TABLE, \
+                                   URI_TABLE
 
 class BasicPanel(Component):
     """DB configuration."""
@@ -30,6 +32,8 @@ class QueryPanel(Component):
     """Query the database via http form."""
     implements(IAdminPanel)
     
+    tables = [RESOURCE_TABLE, URI_TABLE, INDEX_TABLE, INDEX_DEF_TABLE]
+    
     def getPanelId(self):
         return ('db', 'Database', 'query', 'Query DB')
     
@@ -37,12 +41,20 @@ class QueryPanel(Component):
         db = self.env.db.engine
         data = {
             'query': 'select 1;', 
-            'result': '', 
+            'result': '',
+            'tables': self.tables,
         }
         args = request.args
         if request.method=='POST':
+            query = None
             if 'query' in args.keys() and 'send' in args.keys():
                 query = data['query'] = request.args['query'][0]
+            else:
+                for table in self.tables:
+                    if table in args.keys():
+                        query = 'SELECT * FROM '+DEFAULT_PREFIX+table+';'
+            if query:
+                data['query'] = query
                 try:
                     data['result'] = db.execute(query).fetchall()
                 except Exception, e:

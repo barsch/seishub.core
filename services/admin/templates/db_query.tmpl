@@ -5,6 +5,9 @@
   <textarea name="query" rows="3" cols="80">$query</textarea><br />
   <br />
   <input type="submit" name="send" value="Query" />
+  #for $table in $tables
+  <input type="submit" name="$table" value="$table" />
+  #end for
 </form>
 
 <br />

@@ -11,6 +11,7 @@ def suite():
     suite.addTest(test_core.suite())
     suite.addTest(test_config.suite())
     suite.addTest(doctest.DocFileSuite('test_config.txt'))
+    suite.addTest(test_xmlconformance.suite())
     return suite
 
 

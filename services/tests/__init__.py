@@ -8,7 +8,6 @@ from seishub.services.tests import test_xmlconformance
 
 def suite():
     suite = unittest.TestSuite()
-    suite.addTest(test_xmlconformance.suite())
     return suite
 
 
