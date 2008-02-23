@@ -1,16 +1,9 @@
 # -*- coding: utf-8 -*-
+from zope.interface import implements
 
-"""For xml index querying purposes there's some restrictions made to xpath
-expressions. In particular node selection is restricted to the root node.
-Restricted expressions are of the following form: 
-/rootnode[prediactes]
- - starts with / (absolute path)
- - has only one single location step followed by at most one block of predicates
- - node-test matches rootnode
-"""
-#TODO: update docstrings
 from seishub.core import SeisHubError
 from seishub.xmldb.errors import RestrictedXpathError
+from seishub.xmldb.interfaces import IXPathQuery
 
 # XXX: requires PyXML (_xmlplus.xpath)
 # from xml import xpath
@@ -42,6 +35,14 @@ from seishub.xmldb.errors import RestrictedXpathError
 import re
 
 class RestrictedXpathExpression(object):
+    """For xml index querying purposes there are some restrictions made to xpath
+    expressions. In particular node selection is restricted to the root node.
+    Restricted expressions are of the following form: 
+    /rootnode[prediactes]
+     - starts with / (absolute path)
+     - has only one single location step followed by at most one block of predicates
+     - node-test matches rootnode
+    """
     __r_node_test="^/[^/\[\]]+"
     __r_predicates="(\[.*\])?\Z"
     
@@ -49,6 +50,8 @@ class RestrictedXpathExpression(object):
     predicates=None
     
     def __init__(self,expr):
+        if not isinstance(expr,basestring):
+            raise TypeError("String expected")
         if self._parseXpathExpr(expr):
             self._expr=expr
         else:
@@ -81,6 +84,8 @@ class IndexDefiningXpathExpression(object):
     key_path = None
     
     def __init__(self,expr):
+        if not isinstance(expr,basestring):
+            raise TypeError("String expected")
         if self._parseXpathExpr(expr):
             self._expr=expr
         else:
@@ -104,21 +109,126 @@ class IndexDefiningXpathExpression(object):
             return False
         
         return True
+    
+class PredicateExpression(object):
+    """Representation of a parsed XPath predicates block."""
+    
+    # logical operators
+    _logOp = r"""
+    (?P<left>                # left operand
+      .*?
+    )
+    (?P<op>                  # operators
+        (?<=\s)\band\b(?=\s) | # and 
+        (?<=\s)\bor\b(?=\s)    # or
+    )                                                 
+    (?P<right>               # right operand
+      .*
+    )
+    """
+    _logOpExpr = re.compile(_logOp, re.VERBOSE)
+    
+    # relational operators
+    _relOp = r"""
+    (?P<left>                            # left operand
+      .*?
+    )
+    (?P<op> 
+        = | <(?!=) | >(?!=) |            # operators =, <, >
+        <= | >= | !=                     # <=, >=, !=
+    )
+    (?P<right>                           # right operand
+      .*
+    )
+    """
+    _relOpExpr = re.compile(_relOp, re.VERBOSE)
+    
+    # expression precedence is handled by _patterns
+    # first expression is evaluated first
+    _patterns = (_logOpExpr,_relOpExpr)
+    
+    _left = _right = _op = ""
+    
+    def __init__(self, predicates):
+        self._parse(predicates, self._patterns)
+        
+    def __str__(self):
+        left = op = right = ""
+        if self._left:
+            left = str(self._left)
+        if self._op:
+            op = " " + str(self._op) + " "
+        if self._right:
+            right = str(self._right)
+        return left + op + right
+    
+#    def __iter__(self):
+#        return self._get_nodes(self)
+#    
+#    @staticmethod
+#    def _get_nodes(node):
+##        print node
+##        print node.__class__
+#        if node and not isinstance(node,basestring):
+#            for x in PredicateExpression._get_nodes(node._left):
+#                yield x
+#            yield node
+#            if hasattr(node,'_right'):
+#                for x in PredicateExpression._get_nodes(node._right):
+#                    yield x
+        
+    def _parse(self,expr,patterns):
+        for pattern in patterns:
+            m = pattern.search(expr)
+            if m: 
+                self._left = PredicateExpression(m.group('left'))
+                self._right = PredicateExpression(m.group('right'))
+                self._op = m.group('op')
+                return
+        
+        self._left = expr.strip()
+        
+    def getOperation(self):
+        return {'left': self._left,
+                'op': self._op,
+                'right': self._right}
+    
+    def getOperator(self):
+        return self._op
 
 class XPathQuery(RestrictedXpathExpression):
+    """Query types supported by now:
+     - single key queries: /rootnode[.../key1 = value1]
+     - multi key queries with logical operators ('and', 'or')
+       but no nested logical operations like ( ... and ( ... or ...))
+     - relational operators: =, !=, <, >, <=, >=
+    """
+    implements(IXPathQuery)
+    
     def __init__(self,*args):
         super(XPathQuery, self).__init__(*args)        
-        #p=xpath.Compile(self._expr)
-        self._parsePredicates(self._expr)
+        self.parsed_predicates = self._parsePredicates(self.predicates)
         
-    def _parsePredicates(self, parsed_expr):
-        pass
+    def __str__(self):
+        return "/" + self.node_test + "[%s]" % str(self.parsed_predicates)
+        
+    def _parsePredicates(self, predicates):
+        if len(predicates) > 0:
+            return PredicateExpression(predicates)
+        return None
+    
+    # methods from IXPathQuery
     
     def getValue_path(self):
+        """@see: L{seishub.xmldb.interfaces.IXPathQuery}"""
         return self.node_test
     
-    def getKeys(self):
-        predicates = self.predicates
-        print predicates
+    def getPredicates(self):
+        """@see: L{seishub.xmldb.interfaces.IXPathQuery}"""
+        return self.parsed_predicates
+    
+    def has_predicates(self):
+        """@see: L{seishub.xmldb.interfaces.IXPathQuery}"""
+        return self.parsed_predicates != None
 
 

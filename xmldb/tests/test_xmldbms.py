@@ -54,7 +54,7 @@ class XmlDbManagerTest(SeisHubTestCase):
                 WHERE(%(res_tab)s.id=%(uri_tab)s.res_id
                 AND %(uri_tab)s.uri='%(uri)s')""" % (db_strings)
         res = self.db.engine.execute(query).fetchall()
-        self.assertEquals(res[0][0],self.test_data)
+        self.assertEquals(str(res[0][0]),self.test_data)
         self.xmldbm.deleteResource(self.test_uri)
         
     

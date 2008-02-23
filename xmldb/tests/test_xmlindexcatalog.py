@@ -3,6 +3,8 @@
 import unittest
 from twisted.enterprise import util as dbutil
 
+from sqlalchemy.sql import and_
+
 from seishub.test import SeisHubTestCase
 from seishub.xmldb.xmlindexcatalog import XmlIndexCatalog
 from seishub.xmldb.xmlindexcatalog import XmlIndexCatalogError, \
@@ -10,7 +12,8 @@ from seishub.xmldb.xmlindexcatalog import XmlIndexCatalogError, \
 from seishub.xmldb.xmldbms import XmlDbManager
 from seishub.xmldb.xmlindex import XmlIndex
 from seishub.xmldb.xmlresource import XmlResource
-from seishub.xmldb.defaults import INDEX_DEF_TABLE, DEFAULT_PREFIX
+from seishub.xmldb.defaults import *
+from seishub.xmldb.xpath import XPathQuery
 
 
 RAW_XML1="""<station rel_uri="bern">
@@ -20,30 +23,77 @@ RAW_XML1="""<station rel_uri="bern">
     <lon>12.51200</lon>
     <lat>50.23200</lat>
     <stat_elav>0.63500</stat_elav>
+</station>"""
+
+RAW_XML2 = """<station rel_uri="genf">
+    <station_code>GENF</station_code>
+    <chan_code>1</chan_code>
+    <stat_type>0</stat_type>
+    <lon>22.51200</lon>
+    <lat>55.23200</lat>
+    <stat_elav>0.73500</stat_elav>
     <XY>
-        <paramXY>20.5</paramXY>
-        <paramXY>11.5</paramXY>
-        <paramXY>blah</paramXY>
+        <paramXY>2.5</paramXY>
+        <paramXY>0</paramXY>
+        <paramXY>99</paramXY>
     </XY>
 </station>"""
 
+RAW_XML3 = """<?xml version="1.0"?>
+<testml>
+<blah1 id="3"><blahblah1>blahblahblah</blahblah1></blah1>
+</testml>
+"""
+
+URI1 = "/real/bern"
+URI2 = "/fake/genf"
+URI3 = "/testml/res1"
+
+IDX1 = "/station/lon"
+IDX2 = "/station/lat"
+IDX3 = "/testml/blah1/@id"
+IDX4 = "/station/XY/paramXY"
+
 class XmlIndexCatalogTest(SeisHubTestCase):
     #TODO: testGetIndexes
-    def setUp(self):
-        super(XmlIndexCatalogTest,self).setUp()
-        self._last_id=0
-        self._test_kp="XY/paramXY"
-        self._test_vp="/station"
-        self._test_uri="/stations/bern"
+    _last_id=0
+    _test_kp="XY/paramXY"
+    _test_vp="/station"
+    _test_uri="/stations/bern"
         
+    def __init__(self, *args, **kwargs):
+        super(XmlIndexCatalogTest,self).__init__(*args,**kwargs)
+        self.catalog = self.env.catalog.index_catalog
+    
+    def _setup_testdata(self):
+        # create us a small test catalog
+        res1=self.env.catalog.newXmlResource(URI1,RAW_XML1)
+        res2=self.env.catalog.newXmlResource(URI2,RAW_XML2)
+        res3=self.env.catalog.newXmlResource(URI3,RAW_XML3)
+        idx1=self.env.catalog.newXmlIndex(IDX1)
+        idx2=self.env.catalog.newXmlIndex(IDX2)
+        idx3=self.env.catalog.newXmlIndex(IDX3)
+        idx4=self.env.catalog.newXmlIndex(IDX4)
+        self.env.catalog.addResource(res1)
+        self.env.catalog.addResource(res2)
+        self.env.catalog.addResource(res3)
+        self.env.catalog.registerIndex(idx1)
+        self.env.catalog.registerIndex(idx2)
+        self.env.catalog.registerIndex(idx3)
+        self.env.catalog.registerIndex(idx4)
+        self.env.catalog.reindex(IDX1)
+        self.env.catalog.reindex(IDX2)
+        self.env.catalog.reindex(IDX3)
+        self.env.catalog.reindex(IDX4)
         
-    def tearDown(self):
-        # make sure created indexes are removed in the end, 
-        # even if not all tests pass:
-        
-        # catalog=XmlIndexCatalog(adbapi_connection=self.db)
-        d=self.__cleanUp()
-        return d
+    def _cleanup_testdata(self):
+        self.env.catalog.removeIndex(IDX1)
+        self.env.catalog.removeIndex(IDX2)
+        self.env.catalog.removeIndex(IDX3)
+        self.env.catalog.removeIndex(IDX4)
+        self.env.catalog.deleteResource(URI1)
+        self.env.catalog.deleteResource(URI2)
+        self.env.catalog.deleteResource(URI3)
     
     def _assertClassAttributesEqual(self,first,second):
         return self.assertEquals(first.__dict__,second.__dict__)
@@ -62,12 +112,10 @@ class XmlIndexCatalogTest(SeisHubTestCase):
     
     def __cleanUp(self,res=None):
         # manually remove some db entries created
-        query=("DELETE FROM %(prefix)s%(table)s WHERE " + \
-               "(value_path=%(value_path)s AND key_path=%(key_path)s)") % \
-               {'prefix':DEFAULT_PREFIX,
-                'table':INDEX_DEF_TABLE,
-                'key_path':dbutil.quote(self._test_kp,"text"),
-                'value_path':dbutil.quote(self._test_vp,"text")}
+        query = index_def_tab.delete(and_(
+                                     index_def_tab.c.key_path==self._test_kp,
+                                     index_def_tab.c.value_path==self._test_vp)
+                )
         self.db.engine.execute(query)
     
     def testRegisterIndex(self):
@@ -94,7 +142,7 @@ class XmlIndexCatalogTest(SeisHubTestCase):
         self.assertRaises(XmlIndexCatalogError,catalog.registerIndex,test_index)
         
         # clean up:
-        self.__cleanUp
+        self.__cleanUp()
     
     def testRemoveIndex(self):
         # first register an index to be removed:
@@ -174,10 +222,11 @@ class XmlIndexCatalogTest(SeisHubTestCase):
         except:
             print "Index is already present in db."
         
-        test_res=XmlResource(uri = self._test_uri, xml_data = RAW_XML1)
+        test_res = XmlResource(uri = self._test_uri, xml_data = RAW_XML1)
         try:
             dbmgr.addResource(test_res)
         except:
+            raise
             print "Resource is already present in db."
         
         catalog.indexResource(test_res.getUri(), test_index.getValue_path(),
@@ -193,15 +242,29 @@ class XmlIndexCatalogTest(SeisHubTestCase):
         dbmgr.deleteResource(self._test_uri)
         
     def testQuery(self):
-        dbmgr=XmlDbManager(self.db)
-        catalog=XmlIndexCatalog(self.db,dbmgr)
-        catalog.query("/blah[blub=100]")
-    
-    def test_parse_xpath_query(self):
-        #TODO: test_parse_xpath_query
-        test_query="/station[./lat=50.23200]"
-        #print XmlIndexCatalog._parse_xpath_query(test_query)
+        # create test catalog
+        try:
+            self._setup_testdata()
+        except:
+            print "Test catalog might already be present in db."
+        
+        q0 = "/station[lon != 12.51200 and lat = 55.23200]"
+        q1 = "/station[lat]"
+        q2 = "/station[XY/paramXY or lon = 12.51200]"
+        q3 = "/testml"
 
+        res0 = self.catalog.query(XPathQuery(q0))
+        res1 = self.catalog.query(XPathQuery(q1))
+        res2 = self.catalog.query(XPathQuery(q2))
+        res3 = self.catalog.query(XPathQuery(q3))
+        
+        self.assertEqual(res0.sort(), [URI2].sort())
+        self.assertEqual(res1.sort(), [URI1, URI2].sort())
+        self.assertEqual(res2.sort(), [URI1, URI2].sort())
+        self.assertEqual(res3.sort(), [URI3].sort())
+                
+        # remove test catalog
+        self._cleanup_testdata()
 
 def suite():
     return unittest.makeSuite(XmlIndexCatalogTest, 'test')

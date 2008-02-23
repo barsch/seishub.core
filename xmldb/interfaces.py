@@ -19,7 +19,9 @@ class IXmlCatalog(Interface):
         @return: XmlIndex instance"""
         
     def listIndexes(res_type = None, data_type = None):
-        """@param res_type: restrict results to specified resource type
+        """Return a list of registered indexes. 
+        (Optionally) indexes with the given parameters only: 
+        @param res_type: restrict results to specified resource type
         @type res_type: string 
         @param data_type: restrict results to a specified data type (string)
         @type data_type: string 
@@ -27,8 +29,31 @@ class IXmlCatalog(Interface):
         @rtype: list"""
     
     def query(xpath_query):
-        """@param xpath_query: restricted xpath expression (see xpath.py for 
-        further information)"""
+        """Query the catalog and return a list of URIs
+        where xpath_query is a XPath Query like string. 
+        (see L{seishub.xmldb.xpath.XPathQuery} and
+        L{seishub.xmldb.xpath.RestrictedXpathExpression})
+        
+        The following query types are supported by now (but may still be 
+        unstable though):
+        
+         - B{resource type queries}:
+         
+           "/resource_type"
+           
+           return all registered URIs with given resource type
+           
+         - B{index queries}:
+         
+           "/resource_type[key_path1 operator value (and|or) 
+           key_path2 operator value ...]
+           
+           where operator can be: =, !=, <, >, <=, >=
+        
+        @param xpath_query: restricted xpath expression
+        @type xpath_query: string
+        @return: list of URIs
+        @rtype: python list"""
 
 class IXmlResource(Interface):
     """XmlResource is a subclass of Resource providing some special xml 
@@ -175,6 +200,23 @@ class IXmlIndexCatalog(Interface):
         """@param adbapi_connection: an adbapi conform db connector"""
 
     def query(query):
-        """Drop a query on the catalog"""
+        """Drop a query on the catalog
+        @param query: xpath query to be performed
+        @type query: L{seishub.xmldb.interfaces.IXPathQuery}
+        @return: result set containing uris of resources this query applies to
+        @rtype: list of strings"""
 
+class IXPathQuery(Interface):
+    def getPredicates():
+        """Get parsed predicates
+        @return: parsed predicate expression
+        @rtype: L{seishub.xmldb.xpath.PredicateExpression}"""
         
+    def getValue_path():
+        """Get value path
+        @return: value path this query corresponds to
+        @rtype: string"""
+        
+    def has_predicates():
+        """@return: True if query has predicates
+        @rtype: True | False"""

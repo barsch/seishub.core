@@ -7,7 +7,7 @@ from seishub.xmldb.xmlindexcatalog import XmlIndexCatalog
 from seishub.xmldb.xmldbms import XmlDbManager
 from seishub.xmldb.xmlresource import XmlResource
 from seishub.xmldb.xmlindex import XmlIndex
-from seishub.xmldb.xpath import IndexDefiningXpathExpression
+from seishub.xmldb.xpath import IndexDefiningXpathExpression, XPathQuery
 
 
 class XmlCatalog(XmlDbManager):
@@ -19,9 +19,12 @@ class XmlCatalog(XmlDbManager):
     
     # methods from IXmlCatalog:
     def newXmlResource(self,uri,xml_data):
+        """
+        @see: L{seishub.xmldb.interfaces.IXmlCatalog}"""
         return XmlResource(uri,xml_data)
     
     def newXmlIndex(self,xpath_expr,type="text"):
+        """@see: L{seishub.xmldb.interfaces.IXmlCatalog}"""
         exp_obj=IndexDefiningXpathExpression(xpath_expr)
         if type=="text":
             return XmlIndex(value_path = exp_obj.value_path,
@@ -30,28 +33,34 @@ class XmlCatalog(XmlDbManager):
             return None
     
     def registerIndex(self,xml_index):
+        """@see: L{seishub.xmldb.interfaces.IXmlCatalog}"""
         return self.index_catalog.registerIndex(xml_index)
     
     def removeIndex(self,xpath_expr):
+        """@see: L{seishub.xmldb.interfaces.IXmlCatalog}"""
         exp_obj=IndexDefiningXpathExpression(xpath_expr)
         return self.index_catalog.removeIndex(value_path = exp_obj.value_path,
                                               key_path = exp_obj.key_path)
         
     def getIndex(self,xpath_expr):
+        """@see: L{seishub.xmldb.interfaces.IXmlCatalog}"""
         exp_obj=IndexDefiningXpathExpression(xpath_expr)
         return self.index_catalog.getIndex(value_path = exp_obj.value_path,
                                            key_path = exp_obj.key_path)
         
     def flushIndex(self,xpath_expr):
+        """@see: L{seishub.xmldb.interfaces.IXmlCatalog}"""
         exp_obj=IndexDefiningXpathExpression(xpath_expr)
         return self.index_catalog.flushIndex(value_path = exp_obj.value_path,
                                            key_path = exp_obj.key_path)
         
     def listIndexes(self,res_type = None, data_type = None):
+        """@see: L{seishub.xmldb.interfaces.IXmlCatalog}"""
         return self.index_catalog.getIndexes(value_path = res_type,
                                              data_type = data_type)
         
     def reindex(self,xpath_expr):
+        """@see: L{seishub.xmldb.interfaces.IXmlCatalog}"""
         exp_obj = IndexDefiningXpathExpression(xpath_expr)
         if not exp_obj:
             return
@@ -76,3 +85,7 @@ class XmlCatalog(XmlDbManager):
             self.index_catalog.indexResource(uri, value_path, key_path)
         
         return True
+    
+    def query(self, query):
+        """@see: L{seishub.xmldb.interfaces.IXmlCatalog}"""
+        return self.index_catalog.query(XPathQuery(query))

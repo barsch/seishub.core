@@ -2,14 +2,15 @@
 from zope.interface import implements
 from zope.interface.exceptions import DoesNotImplement
 from sqlalchemy import select
-from sqlalchemy.sql.expression import ClauseList
-from sqlalchemy.sql import and_
+from sqlalchemy.sql import and_, or_, not_
+from sqlalchemy.sql.expression import _BinaryExpression, ClauseList
 
+from seishub.util import unique
 from seishub.xmldb.interfaces import IXmlIndexCatalog, IIndexRegistry, \
                                      IResourceIndexing, IXmlIndex, \
-                                     IResourceStorage
+                                     IResourceStorage, IXPathQuery
 from seishub.xmldb.xmlindex import XmlIndex
-from seishub.xmldb.defaults import index_def_tab, index_tab
+from seishub.xmldb.defaults import index_def_tab, index_tab, uri_tab
 from seishub.xmldb.xpath import RestrictedXpathExpression, XPathQuery
 from seishub.xmldb.errors import InvalidUriError, XmlIndexCatalogError, \
                                  InvalidIndexError, InvalidXpathQuery, \
@@ -167,7 +168,7 @@ class XmlIndexCatalog(object):
         return True
 
     def flushIndex(self,value_path, key_path):
-        """@see: L{seishub.xmldb.xmlindexcatalog.interfaces.IResourceIndexing}""" 
+        """@see: L{seishub.xmldb.interfaces.IResourceIndexing}""" 
         if not (isinstance(key_path,basestring) and isinstance(value_path,basestring)):
             raise XmlIndexCatalogError("No key_path, value_path given.")
 
@@ -180,29 +181,57 @@ class XmlIndexCatalog(object):
                             )
                          ))
     
-#    def reindex(self,key_path,value_path):
-#        if not (isinstance(key_path,basestring) and isinstance(value_path,basestring)):
-#            raise XmlIndexCatalogError("No xml_index or key_path, value_path given.")
-#            return None
-#        
-#        # first get index to make sure it is persistent in db and to get its id
-#        d = self.getIndex(key_path, value_path)
-#        d.addErrback(self.__handleErrors)
-#        
-#        d.addCallback()
+    def _to_sql(self, q):
+        """translate query predicates to SQL where clause"""
+        value_path = q.getValue_path()
+        predicates = q.getPredicates()
+        idx_aliases = list()
         
+        def _walk(p):
+            # recursively walk through predicate tree and convert to sql 
+            if p._op == 'and':
+                return and_(_walk(p._left),_walk(p._right))
+            elif p._op == 'or':
+                return or_(_walk(p._left),_walk(p._right))
+            else:
+                # find appropriate index:
+                idx = self.getIndex(value_path, str(p._left))
+                if not idx:
+                    raise XmlIndexCatalogError("No Index found for %s/%s" % \
+                                               (value_path, str(p._left)))
+                idx_id = idx.__id
+                alias = index_tab.alias("idx_" + str(idx_id))
+                idx_aliases.append(alias)
+
+                if p._op == '':
+                    return _BinaryExpression(alias.c.index_id, idx_id,'=')
+
+                return and_(_BinaryExpression(alias.c.index_id, idx_id,'='),
+                            _BinaryExpression(alias.c.key, str(p._right),p._op))
+                
+        w = _walk(predicates)
         
-    # methods from IXmlIndexCatalog:
-    
+        for alias in idx_aliases:
+            w = and_(w,alias.c.value == index_tab.c.value)
+            
+        return w
+        
     def query(self, query):
-        try:
-            query = XPathQuery(query)
-        except RestrictedXpathError, e:
-            raise InvalidXpathQuery("Invalid query: %s" % query, e)
+        """@see: L{seishub.xmldb.interfaces.IXmlIndexCatalog}"""
+        if not IXPathQuery.providedBy(query):
+            raise DoesNotImplement(IXPathQuery)
         
+        if query.has_predicates(): 
+            # query w/ key path expression(s)
+            w = self._to_sql(query)
+            q = select([index_tab.c.value],w)
+        else:
+            # only value path given: value path <=> resource type
+            q = select([uri_tab.c.uri], 
+                       uri_tab.c.res_type == query.getValue_path()
+                )
         
-        
-        
-        
-        
+        results = self._db.execute(q).fetchall()
+        results = [result[0] for result in results]
+        return unique(results)
         

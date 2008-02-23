@@ -39,6 +39,12 @@ class XmlDbManager(object):
         
         return id
     
+    def _encode(self,data):
+        return data.encode("utf-8")
+    
+    def _decode(self,data):
+        return unicode(data, "utf-8")
+    
     # methods from IResourceStorage            
     def addResource(self,xml_resource):
         """Add a new resource to the storage
@@ -47,9 +53,13 @@ class XmlDbManager(object):
         
         # begin transaction:
         txn = conn.begin()
+        
+        # encode to byte array:
+        data = self._encode(xml_resource.getData())
+
         try:
             res = conn.execute(resource_tab.insert(),
-                               data = xml_resource.getData())
+                               data = data)
             conn.execute(uri_tab.insert(), 
                          uri = xml_resource.getUri(),
                          res_id = res.last_inserted_ids()[0],
@@ -73,9 +83,12 @@ class XmlDbManager(object):
                        ))
         res = self.db.execute(query)
         try:
-            xml_data = res.fetchone()[0]
+            xml_data = str(res.fetchone()[0])
         except:
             raise UnknownUriError(uri)
+        
+        # decode to utf-8 string:
+        xml_data = self._decode(xml_data)
         
         return XmlResource(xml_data = xml_data, uri = uri)
     
