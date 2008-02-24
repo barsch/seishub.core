@@ -41,10 +41,17 @@ class RestrictedXpathExpression(object):
     /rootnode[prediactes]
      - starts with / (absolute path)
      - has only one single location step followed by at most one block of predicates
-     - node-test matches rootnode
+     - first node-test matches rootnode
+     - (only axes allowed are default axis (child) and attribute (@))
     """
-    __r_node_test="^/[^/\[\]]+"
-    __r_predicates="(\[.*\])?\Z"
+    __r_node_test="""^/    # leading slash
+    [^/\[\]]+              # all, but no /, [, ]
+    """
+    __r_predicates="""(\[  # [
+    [^\[\]\(\)]*               # all but no [, ], (, )
+    \])?                   # ]
+    \Z
+    """
     
     node_test=None
     predicates=None
@@ -58,8 +65,8 @@ class RestrictedXpathExpression(object):
             raise RestrictedXpathError("Invalid restricted-xpath expression.")
             
     def _parseXpathExpr(self,expr):
-        re_nt=re.compile(self.__r_node_test)
-        re_pre=re.compile(self.__r_predicates)
+        re_nt=re.compile(self.__r_node_test, re.VERBOSE)
+        re_pre=re.compile(self.__r_predicates, re.VERBOSE)
         
         m=re_nt.match(expr)
         if m:
@@ -77,6 +84,11 @@ class RestrictedXpathExpression(object):
         return True
 
 class IndexDefiningXpathExpression(object):
+    """XPath expression defining an XmlIndex.
+    IndexDefiningXpathExpressions mustn't contain any predicate blocks,
+    but are of the form:
+    "/resource_type/childnode1/childnode2/.../@attribute"
+    """
     __r_value_path = "^/[^/\[\]]+"
     __r_key_path = "[^\[\]]*\Z"
     
@@ -143,7 +155,7 @@ class PredicateExpression(object):
     """
     _relOpExpr = re.compile(_relOp, re.VERBOSE)
     
-    # expression precedence is handled by _patterns
+    # operator expression precedence is handled by _patterns
     # first expression is evaluated first
     _patterns = (_logOpExpr,_relOpExpr)
     
@@ -176,6 +188,16 @@ class PredicateExpression(object):
 #            if hasattr(node,'_right'):
 #                for x in PredicateExpression._get_nodes(node._right):
 #                    yield x
+
+    def _str_expr(self,expr):
+        expr = expr.strip()
+        # remove string delimiter 
+        if expr.startswith("\"") or expr.startswith("'"):
+            expr = expr[1:len(expr)-1]
+        # remove leading ./
+        if expr.startswith("./"):
+            expr = expr[2:]
+        return expr            
         
     def _parse(self,expr,patterns):
         for pattern in patterns:
@@ -185,8 +207,8 @@ class PredicateExpression(object):
                 self._right = PredicateExpression(m.group('right'))
                 self._op = m.group('op')
                 return
-        
-        self._left = expr.strip()
+
+        self._left = self._str_expr(expr)
         
     def getOperation(self):
         return {'left': self._left,
