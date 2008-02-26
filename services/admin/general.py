@@ -10,6 +10,7 @@ from seishub.core import Component, implements
 from seishub.services.admin.interfaces import IAdminPanel
 from seishub.util.text import getTextUntilDot
 from seishub.defaults import DEFAULT_COMPONENTS
+from seishub.config import Option
 
 
 class BasicPanel(Component):
@@ -33,6 +34,7 @@ class BasicPanel(Component):
         }
         return ('general_basic.tmpl', data)
 
+
 class ConfigPanel(Component):
     """General configuration."""
     implements(IAdminPanel)
@@ -48,6 +50,8 @@ class ConfigPanel(Component):
         for s in sections:
             options = self.config.options(s)
             data['options'][s] = options
+        data['opt1'] = self.config.defaults()
+        data['opt2'] = Option.registry
         return ('general_config.tmpl', data)
 
 
@@ -59,6 +63,7 @@ class RESTRedirect(Component):
         return ('rest', 'REST', 'rest', 'REST')
     
     def renderPanel(self, request):
+        # XXX: should not be fixed
         request.redirect('http://localhost:8080/')
         return ('',{})
 
@@ -108,11 +113,17 @@ class PluginsPanel(Component):
         if request.method == 'POST':
             if 'update' in request.args:
                 self._updatePlugins(request)
+            if 'reload' in request.args:
+                self._refreshPlugins()
             request.redirect(request.path)
             request.finish()
             return
         return self._viewPlugins(request)
-
+    
+    def _refreshPlugins(self):
+        from seishub.loader import ComponentLoader
+        ComponentLoader(self.env)
+    
     def _updatePlugins(self, request):
         """Update components."""
         enabled = request.args.get('enabled',[])
