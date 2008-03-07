@@ -1,13 +1,16 @@
 # -*- coding: utf-8 -*-
 
 import os
+import sys
 
+from seishub.auth import Portal
 from seishub.core import ComponentManager
 from seishub.config import Configuration, Option
 from seishub.loader import ComponentLoader
 from seishub.xmldb.xmlcatalog import XmlCatalog
 from seishub.db.dbmanager import DatabaseManager
 from seishub.log import Logger
+from seishub.defaults import DEFAULT_COMPONENTS
 
 __all__ = ['Environment']
 
@@ -40,9 +43,7 @@ class Environment(ComponentManager):
         ComponentManager.__init__(self)
         self.compmgr = self
         # set SeisHub path
-        import seishub
-        self.path = os.path.split(os.path.dirname(seishub.__file__))[0]
-        # set SeisHub path
+        self.path = self.getSeisHubPath()
         if not config_file:
             config_file = os.path.join(self.path, 'conf', 'seishub.ini') 
         # set config handler
@@ -53,8 +54,42 @@ class Environment(ComponentManager):
         self.db = DatabaseManager(self) 
         # set XML catalog
         self.catalog = XmlCatalog(self.db)
+        # User & group management
+        self.portal = Portal()
         # load plugins
         ComponentLoader(self)
+    
+    def getSeisHubPath(self):
+        """Returns the absolute path to the SeisHub directory."""
+        import seishub
+        return os.path.split(os.path.dirname(seishub.__file__))[0]
+    
+    def enableComponent(self, component):
+        """Enables a given component."""
+        module = sys.modules[component.__module__]
+        fullname = module.__name__+'.'+component.__name__
+        
+        if not component in self:
+            self.enabled[component]=True
+            self[component]
+            self.config.set('components', fullname, 'enabled')
+            self.log.info('Enabling component %s' % fullname)
+            self.config.save()
+    
+    def disableComponent(self, component):
+        """Disables a given component."""
+        module = sys.modules[component.__module__]
+        fullname = module.__name__+'.'+component.__name__
+        
+        if fullname in DEFAULT_COMPONENTS:
+            return
+        
+        if component in self:
+            self.enabled[component]=False
+            del self[component]
+            self.config.set('components', fullname, 'disabled')
+            self.log.info('Disabling component %s' % fullname)
+            self.config.save()
     
     def initComponent(self, component):
         """Initialize additional member variables for components.

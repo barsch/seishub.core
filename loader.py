@@ -24,8 +24,8 @@ class ComponentLoader(object):
         if extra_path:
             search_path += list((extra_path,))
         
-        self._loadPyFiles(search_path, auto_enable=plugins_dir)
-        self._loadEggs('seishub.plugins', search_path, auto_enable=plugins_dir)
+        self._loadPyFiles(search_path)
+        self._loadEggs('seishub.plugins', search_path)
     
     def _enablePlugin(self, module):
         """Enable the given plugin module by adding an entry to the 
@@ -34,7 +34,7 @@ class ComponentLoader(object):
         if module + '.*' not in self.env.config['components']:
             self.env.config['components'].set(module + '.*', 'enabled')
 
-    def _loadEggs(self, entry_point_name, search_path, auto_enable=None):
+    def _loadEggs(self, entry_point_name, search_path):
         """Loader that loads any eggs on the search path and `sys.path`."""
         # add system paths
         search_path += list(sys.path)
@@ -75,11 +75,8 @@ class ComponentLoader(object):
             except (ImportError, DistributionNotFound, VersionConflict,
                     UnknownExtra), e:
                 _logError(entry, e)
-            else:
-                if os.path.dirname(entry.dist.location) == auto_enable:
-                    self._enablePlugin(entry.module_name)
     
-    def _loadPyFiles(self, search_path, auto_enable=None):
+    def _loadPyFiles(self, search_path):
         """Loader that look for Python source files in the plugins directories,
         which simply get imported, thereby registering them with the component
         manager if they define any components.
@@ -96,8 +93,6 @@ class ComponentLoader(object):
                                       (plugin_name, plugin_file))
                     if plugin_name not in sys.modules:
                         module = imp.load_source(plugin_name, plugin_file)
-                    if path == auto_enable:
-                        self._enablePlugin(plugin_name)
                 except Exception, e:
                     self.env.log.error('Failed to load plugin from %s' % 
                                        plugin_file, e)

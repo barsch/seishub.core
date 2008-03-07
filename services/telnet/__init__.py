@@ -2,5 +2,5 @@
 
 from seishub.services.telnet.interfaces import *
 
-from seishub.services.telnet.default import *
+from seishub.services.telnet.general import *
 

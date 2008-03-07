@@ -7,9 +7,6 @@ from seishub.core import Component, implements
 from seishub.services.telnet.interfaces import ITelnetCmd
 
 
-ENABLE = ['start','enable', 'on']
-DISABLE = ['stop', 'disable', 'off']
-
 class ServicesCmd(Component):
     """Telnet command to handle services."""
     implements(ITelnetCmd)
@@ -21,6 +18,9 @@ class ServicesCmd(Component):
         services = service.IServiceCollection(self.env.app)
         data = []
         if len(args)==3:
+            ENABLE = ['start','enable', 'on']
+            DISABLE = ['stop', 'disable', 'off']
+            
             srv_name = args[2].lower()
             action = args[1].lower()
             if action in ENABLE:
