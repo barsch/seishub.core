@@ -69,7 +69,8 @@ class Logger(object):
     
     def _formatMessage(self, level, msg, showTraceback):
         if showTraceback:
-            fail = Failure(sys.exc_value, sys.exc_type, sys.exc_traceback)
+            (exc_value, exc_type, exc_traceback) = sys.exc_info()
+            fail = Failure(exc_value, exc_type, exc_traceback)
             log.err(fail, '%s %s' % (level, msg))
         else:
             log.msg('%s %s' % (level, msg), isError=True)
