@@ -3,8 +3,6 @@
 import doctest
 import unittest
 
-from seishub.services.tests import test_xmlconformance
-
 
 def suite():
     suite = unittest.TestSuite()

@@ -3,7 +3,7 @@
 import doctest
 import unittest
 
-from seishub.tests import test_config, test_core
+from seishub.tests import test_config, test_core, test_xmlconformance
 
 
 def suite():
