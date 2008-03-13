@@ -3,7 +3,7 @@
 import os
 import string
 from twisted.web import static, http, util as webutil
-from twisted.internet import threads, defer
+from twisted.internet import threads, defer, ssl
 from twisted.application import internet
 from Cheetah.Template import Template
 from pkg_resources import resource_filename #@UnresolvedImport 
@@ -11,9 +11,9 @@ from urllib import unquote
 
 from seishub import __version__ as SEISHUB_VERSION
 from seishub.services.admin.interfaces import IAdminPanel
-from seishub.core import ExtensionPoint
+from seishub.core import ExtensionPoint, SeisHubError
 from seishub.defaults import DEFAULT_ADMIN_PORT
-from seishub.config import IntOption
+from seishub.config import IntOption, Option
 
 
 class AdminRequest(http.Request):
@@ -245,12 +245,32 @@ class AdminHTTPFactory(http.HTTPFactory):
         self.protocol.env = env
 
 
-class AdminService(internet.TCPServer):
-    """Service for WebAdmin HTTP Server."""
+class AdminService(internet.SSLServer):
+    """Service for WebAdmin HTTPS Server."""
     IntOption('admin', 'port', DEFAULT_ADMIN_PORT, "WebAdmin port number.")
+    Option('admin', 'privatekey_file', 'server.pem', "Private key file.")
+    Option('admin', 'certificate_file', 'server.pem', "Certificate file.")
     
     def __init__(self, env):
         self.env = env
         port = env.config.getint('admin', 'port') or DEFAULT_ADMIN_PORT
-        internet.TCPServer.__init__(self, port, AdminHTTPFactory(env))
+        priv, cert = self._getCertificates()
+        ssl_context = ssl.DefaultOpenSSLContextFactory(priv, cert)
+        internet.SSLServer.__init__(self, port, AdminHTTPFactory(env), \
+                                    ssl_context)
         self.setName("WebAdmin")
+    
+    def _getCertificates(self):
+        """Fetching certifciate files from configuration."""
+        priv = self.env.config.get('admin', 'privatekey_file') or 'server.pem'
+        cert = self.env.config.get('admin', 'certificate_file') or 'server.pem'
+        if not os.path.isfile(priv):
+            priv = os.path.join(self.env.path, 'conf', priv)
+            if not os.path.isfile(priv):
+                raise SeisHubError('Missing file ' + priv)
+        if not os.path.isfile(cert):
+            cert = os.path.join(self.env.path, 'conf', cert)
+            if not os.path.isfile(cert):
+                raise SeisHubError('Missing file ' + cert)
+        return priv, cert
+        
