@@ -4,11 +4,10 @@ from zope.interface import implements
 from sqlalchemy import select
 from sqlalchemy.sql import and_
 
-from seishub.xmldb.interfaces import IResourceStorage
+from seishub.xmldb.interfaces import IResourceTypeRegistry, IResourceStorage
 from seishub.xmldb.xmlresource import XmlResource
 from seishub.xmldb.errors import *
 from seishub.xmldb.defaults import metadata, resource_tab, uri_tab
-
 
 class XmlDbManager(object):
     """XmlResource layer, connects XmlResources to relational db storage"""
@@ -128,3 +127,8 @@ class XmlDbManager(object):
             return list()
         
         return [uri[0] for uri in uris]
+    
+class ResourceTypeRegistry(XmlDbManager):
+    implements(IResourceTypeRegistry)
+    
+    

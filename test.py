@@ -15,7 +15,9 @@ class SeisHubTestCase(unittest.TestCase):
         self.config = Configuration(self.filename)
         #set a few standard settings
         self.config.set('logging', 'log_level', 'OFF')
-        self.config.set('seishub', 'database', 'sqlite://')
+        self.config.set('seishub', 'database', 
+                        'postgres://seishub:seishub@localhost:5432/seishub')
+        #self.config.set('seishub', 'database', 'sqlite://')
         self._config()
         self._start()
     
@@ -28,9 +30,11 @@ class SeisHubTestCase(unittest.TestCase):
         self.env=Environment(self.filename)
         self.env.initComponent(self)
     
-    def _printRes(self,res):
-        """little helper for debugging callbacks"""
-        print res
+#    def _printRes(self,res):
+#        """little helper for debugging callbacks"""
+#        print res
+#        
+    
 
 
 def suite():

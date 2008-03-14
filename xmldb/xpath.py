@@ -174,6 +174,9 @@ class PredicateExpression(object):
             right = str(self._right)
         return left + op + right
     
+    def __getitem__(self, key):
+        return self.getOperation()[key]
+    
 #    def __iter__(self):
 #        return self._get_nodes(self)
 #    

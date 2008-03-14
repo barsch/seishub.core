@@ -5,6 +5,7 @@ from sqlalchemy import MetaData, Table, Column, Integer, String, \
                        PrimaryKeyConstraint, DateTime
 DEFAULT_PREFIX = 'default_'
 RESOURCE_TABLE = 'data'
+RESOURCE_TYPE_TABLE = 'resource_types'
 INDEX_TABLE = 'index'
 INDEX_DEF_TABLE = 'index_def'
 METADATA_TABLE = 'meta'
@@ -16,7 +17,14 @@ metadata = MetaData()
 resource_tab = Table(DEFAULT_PREFIX + RESOURCE_TABLE, metadata,
     Column('id', Integer, primary_key = True, autoincrement = True),
     Column('data', Binary),
-)
+    )
+
+#resource_types_tab = Table(DEFAULT_PREFIX + RESOURCE_TYPE_TABLE, metadata,
+#    Column('name', Text),
+#    Column('type', Text),
+#    Column('uri', Text, ForeignKey(DEFAULT_PREFIX + URI_TABLE +'.uri'),
+#           primary_key = True),
+#    )
 
 uri_tab = Table(DEFAULT_PREFIX + URI_TABLE, metadata,
     Column('uri', Text),
@@ -25,14 +33,14 @@ uri_tab = Table(DEFAULT_PREFIX + URI_TABLE, metadata,
                                          '.id')),
     Column('res_type', Text),
     PrimaryKeyConstraint('uri','revision')
-)
+    )
 
 metadata_tab = Table(DEFAULT_PREFIX + METADATA_TABLE, metadata,
-                     Column('res_id', Integer, 
-                            ForeignKey(DEFAULT_PREFIX + RESOURCE_TABLE + '.id')),
-                     Column('user', Text),
-                     Column('timestamp', DateTime)
-)
+                Column('res_id', Integer, 
+                       ForeignKey(DEFAULT_PREFIX + RESOURCE_TABLE + '.id')),
+                Column('user', Text),
+                Column('timestamp', DateTime)
+                )
 
 # xmlindexcatalog tables:
 index_def_tab = Table(DEFAULT_PREFIX + INDEX_DEF_TABLE, metadata,

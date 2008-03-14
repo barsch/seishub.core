@@ -1,10 +1,53 @@
 # -*- coding: utf-8 -*-
 
 import libxml2
-from zope.interface import implements
+from zope.interface import implements, Interface, Attribute
 from seishub.core import SeisHubError
 
-from seishub.interfaces import IXmlSchema,IXmlDoc,IXmlTreeDoc,IXmlSaxDoc
+class IXmlNode(Interface):
+    """Basic xml node object"""
+    def getStrContent():
+        """@return: element content of node as a string"""
+
+class IXmlSchema(Interface):
+    """parsed XML Schema document"""
+    def setSchemaDoc(self, schema_doc):
+        """@param schema_doc: XML Schema document as plain text
+        @type schema_doc: string"""
+        
+    def getSchemaDoc(self):
+        """@return: XML Schema document as plain text
+        @rtype: string"""
+    
+    def validate(xml_doc):
+        """Validate xml_doc against the schema.
+        @param xml_doc: XML Document
+        @type xml_doc: IXmlDoc 
+        @return: boolean"""
+        
+class IXmlDoc(Interface):
+    """General xml document"""
+    def getXml_doc():
+        """return an internal representation of the parsed xml_document"""
+        
+class IXmlTreeDoc(IXmlDoc):
+    """parses a document into a tree representation"""
+    options=Attribute("""dictionary specifying some options:
+                     'blocking' : True|False : raises an Exception on parser 
+                                               error and stops parser if set 
+                                               to True
+                      """)
+    
+    def getErrors():
+        """return error messages, that occured during parsing"""
+    
+    def evalXPath(expr):
+        """Evaluate an XPath expression
+        @param expr: string
+        @return: array of resulting nodes"""
+    
+class IXmlSaxDoc(IXmlDoc):
+    """parses a document using an event based sax parser"""
 
 class LibxmlError(SeisHubError):
     """general libxml error"""

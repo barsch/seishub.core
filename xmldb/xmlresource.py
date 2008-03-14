@@ -4,7 +4,7 @@ from zope.interface import implements
 from zope.interface.exceptions import DoesNotImplement
 
 from seishub.core import SeisHubError
-from seishub.interfaces import IXmlDoc
+from seishub.util.libxmlwrapper import IXmlDoc, IXmlSchema
 from seishub.xmldb.interfaces import IXmlResource
 from seishub.util.libxmlwrapper import XmlTreeDoc
 from seishub.xmldb.resource import Resource
@@ -33,7 +33,6 @@ class XmlResource(Resource):
         self._resource_type = self.__xml_doc.getRootElementName()
         return Resource.setData(self,xml_data)
     
-
     def getXml_doc(self):
         return self.__xml_doc
     
@@ -41,7 +40,7 @@ class XmlResource(Resource):
         if not IXmlDoc.providedBy(xml_doc):
             raise DoesNotImplement(IXmlDoc)
         else:
-            self.__xml_doc=xml_doc
+            self.__xml_doc = xml_doc
             
     def getResource_type(self):
         return self._resource_type
@@ -53,4 +52,18 @@ class XmlResource(Resource):
         #import pdb; pdb.set_trace()
         # encode before handing it to parser:
         xml_data = xml_data.encode("utf-8")
-        return XmlTreeDoc(xml_data=xml_data,blocking=True)
+        return XmlTreeDoc(xml_data=xml_data, blocking=True)
+    
+class XmlSchemaResource(XmlResource):
+    """XmlResource providing validation against given XML Schema"""
+    
+    def __init__(self, uri=None, xml_data=None, xml_schema=None):
+        super(XmlSchemaResource,self).__init__(uri, xml_data)
+        if not IXmlSchema.providedBy(xml_schema):
+            raise DoesNotImplement(IXmlSchema)
+        self._schema = xml_schema
+        
+    def _validate(self):
+        self._schema.validate(self.__xml_doc)
+        
+    

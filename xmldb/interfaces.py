@@ -46,7 +46,7 @@ class IXmlCatalog(Interface):
          - B{index queries}:
          
            "/resource_type[key_path1 operator value (and|or) 
-           key_path2 operator value ...]
+           key_path2 operator value ...] 
            
            where operator can be: =, !=, <, >, <=, >=
         
@@ -64,7 +64,7 @@ class IXmlResource(Interface):
         
     def setXml_doc(xml_doc):
         """@param xml_doc: xml document object as provided by a xml parser,
-        must implement seishub.interfaces.ixml.IXmlDoc"""
+        must implement seishub.util.libxmlwrapper.ixml.IXmlDoc"""
         
     def getResourceType(self):
         """the resource type is determined by the root node of the underlying 
@@ -80,6 +80,34 @@ class IXmlResource(Interface):
         
     def getUri(self):
         """@return: uri (string)"""
+        
+class IResourceTypeRegistry(Interface):
+    """Handles resource type specific meta data, such as XML Schema definitions 
+    """
+    
+    def registerResourceType(type, xml_schema):
+        """Define new resource type using given XML schema
+        @param type: Name of the new type
+        @type type: string
+        @param xml_schema: XML Schema definition
+        @type xml_schema: L{seishub.xmldb.interfaces.IXmlResource}"""
+        
+    def removeResourceType(type):
+        """Remove all information about given resource type, but leave 
+        resources of that type untouched.
+        @param type: Name of type to be removed
+        @type type: string"""
+        
+    def getSchema(type):
+        """Get XML Schema definition for given resource type.
+        @param type: Name of a resource type
+        @type type: string
+        @return: XML Schema definition
+        @rtype: L{seishub.xmldb.interfaces.IXmlResource}"""
+        
+    def listResourceTypes():
+        """@return: list of known resource types
+        @rtype: python list"""
         
 class IResourceStorage(Interface):
     """Basic XML storage manager description"""

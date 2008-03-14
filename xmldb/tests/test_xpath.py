@@ -36,24 +36,15 @@ class XPathQueryTest(SeisHubTestCase):
         q = XPathQuery(self.test_expr)
         self.assertEqual(q.getValue_path(), "rootnode")
         p = q.getPredicates()
-        self.assertEqual(str(p.getOperation()['op']),
-                         "and")
-        self.assertEqual(str(p.getOperation()['left']),
-                         "element1/element2 = blub")
-        self.assertEqual(str(p.getOperation()['right']),
-                         "element1/@id <= 5")
-        self.assertEqual(str(p.getOperation()['left'].getOperation()['left']),
-                         "element1/element2")
-        self.assertEqual(str(p.getOperation()['left'].getOperation()['op']),
-                         "=")
-        self.assertEqual(str(p.getOperation()['left'].getOperation()['right']),
-                         "blub")
-        self.assertEqual(str(p.getOperation()['right'].getOperation()['left']),
-                         "element1/@id")
-        self.assertEqual(str(p.getOperation()['right'].getOperation()['op']),
-                         "<=")
-        self.assertEqual(str(p.getOperation()['right'].getOperation()['right']),
-                         "5")
+        self.assertEqual(str(p['op']), "and")
+        self.assertEqual(str(p['left']), "element1/element2 = blub")
+        self.assertEqual(str(p['right']), "element1/@id <= 5")
+        self.assertEqual(str(p['left']['left']), "element1/element2")
+        self.assertEqual(str(p['left']['op']), "=")
+        self.assertEqual(str(p['left']['right']), "blub")
+        self.assertEqual(str(p['right']['left']), "element1/@id")
+        self.assertEqual(str(p['right']['op']), "<=")
+        self.assertEqual(str(p['right']['right']), "5")
 
 
 def suite():
