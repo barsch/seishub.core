@@ -37,3 +37,6 @@ class XmlIndexCatalogError(SeisHubError):
 
 class XmlResourceError(SeisHubError):
     """general XMlResource error"""
+    
+class QueryAliasError(SeisHubError):
+    """general QueryAlias error"""

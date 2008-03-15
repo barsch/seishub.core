@@ -11,6 +11,7 @@ RESOURCE_TABLE = 'data'
 RESOURCE_TYPE_TABLE = 'resource_types'
 INDEX_TABLE = 'index'
 INDEX_DEF_TABLE = 'index_def'
+QUERY_ALIASES_TABLE = 'query_aliases'
 METADATA_TABLE = 'meta'
 URI_TABLE = 'uri'
 
@@ -59,3 +60,8 @@ index_tab = Table(DEFAULT_PREFIX + INDEX_TABLE, metadata,
     Column('key', Text),
     Column('value', Text),
 )
+
+query_aliases_tab = Table(DEFAULT_PREFIX + QUERY_ALIASES_TABLE, metadata,
+    Column('name', Text, primary_key = True),
+    Column('expr', Text)
+) 

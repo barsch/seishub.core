@@ -103,7 +103,7 @@ class Environment(ComponentManager):
                 else:
                     self.config.set(section, name, \
                                     defaults.get(section).get(name))
-        self.config.save()
+                    self.config.save()
     
     def initComponent(self, component):
         """Initialize additional member variables for components.

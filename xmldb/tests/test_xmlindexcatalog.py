@@ -6,7 +6,7 @@ from twisted.enterprise import util as dbutil
 from sqlalchemy.sql import and_
 
 from seishub.test import SeisHubTestCase
-from seishub.xmldb.xmlindexcatalog import XmlIndexCatalog
+from seishub.xmldb.xmlindexcatalog import XmlIndexCatalog, QueryAliases
 from seishub.xmldb.xmlindexcatalog import XmlIndexCatalogError, \
                                           InvalidIndexError
 from seishub.xmldb.xmldbms import XmlDbManager
@@ -265,9 +265,24 @@ class XmlIndexCatalogTest(SeisHubTestCase):
                 
         # remove test catalog
         self._cleanup_testdata()
+        
+class QueryAliasesTest(SeisHubTestCase):
+    def testQueryAliases(self):
+        aliases = QueryAliases(self.env.db)
+        aliases["blah"] = "/blah[/blah/blah]"
+        print aliases["blah"]
+        aliases["blah"] = "/andererpfad"
+        print aliases["blah"]
+        print "blah" in aliases
+        del aliases["blah"]
+        print "blah" in aliases
+        
 
 def suite():
-    return unittest.makeSuite(XmlIndexCatalogTest, 'test')
+    suite = unittest.TestSuite()
+    suite.addTest(unittest.makeSuite(XmlIndexCatalogTest, 'test'))
+    suite.addTest(unittest.makeSuite(QueryAliasesTest, 'test'))
+    return suite
 
 if __name__ == '__main__':
     unittest.main(defaultTest='suite')

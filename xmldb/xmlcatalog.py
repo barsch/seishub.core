@@ -3,7 +3,7 @@
 from zope.interface import implements
 
 from seishub.xmldb.interfaces import IXmlCatalog
-from seishub.xmldb.xmlindexcatalog import XmlIndexCatalog
+from seishub.xmldb.xmlindexcatalog import XmlIndexCatalog, QueryAliases
 from seishub.xmldb.xmldbms import XmlDbManager
 from seishub.xmldb.xmlresource import XmlResource
 from seishub.xmldb.xmlindex import XmlIndex
@@ -15,7 +15,8 @@ class XmlCatalog(XmlDbManager):
     
     def __init__(self, db):
         XmlDbManager.__init__(self,db)
-        self.index_catalog=XmlIndexCatalog(db, self)
+        self.index_catalog = XmlIndexCatalog(db, self)
+        self.aliases = QueryAliases(db)
     
     # methods from IXmlCatalog:
     def newXmlResource(self,uri,xml_data):
