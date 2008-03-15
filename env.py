@@ -48,6 +48,8 @@ class Environment(ComponentManager):
             config_file = os.path.join(self.path, 'conf', 'seishub.ini') 
         # set config handler
         self.config = Configuration(config_file)
+        # init all default options
+        self.initOptions()
         # set log handler
         self.log = Logger(self)
         # set up DB handler
@@ -90,6 +92,18 @@ class Environment(ComponentManager):
             self.config.set('components', fullname, 'disabled')
             self.log.info('Disabling component %s' % fullname)
             self.config.save()
+    
+    def initOptions(self):
+        """Initialize any not yet set default options in configuration file."""
+        defaults = self.config.defaults()
+        for section in defaults.keys():
+            for name in defaults.get(section).keys():
+                if self.config.has_site_option(section, name):
+                    continue
+                else:
+                    self.config.set(section, name, \
+                                    defaults.get(section).get(name))
+        self.config.save()
     
     def initComponent(self, component):
         """Initialize additional member variables for components.
