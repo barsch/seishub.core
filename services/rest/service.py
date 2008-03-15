@@ -43,30 +43,42 @@ class RESTRequest(http.Request):
     
     def _processGET(self):
         """Handles a HTTP GET request."""
-        uris = self.env.catalog.getUriList()
-        #check if resource not exists
-        if self.path not in uris:
+        # try to get resource from catalog directly
+        result = self._isResource()
+        if result:
+            try:
+                result = result.getData()
+                result = result.encode("utf-8")
+            except Exception, e:
+                self.env.log.error(e)
+                self.setResponseCode(http.INTERNAL_SERVER_ERROR)
+                self.finish()
+                return
+            #write resource data as response
+            self.setHeader('server', 'SeisHub '+ SEISHUB_VERSION)
+            self.setHeader('date', http.datetimeToString())
+            self.setHeader('content-type', "text/xml; charset=UTF-8")
+            self.setHeader('content-length', str(len(result)))
+            self.setResponseCode(http.OK)
+            self.write(result)
+            self.finish()
+        # test if 
+        elif self.env.catalog.aliases[self.path]:
+            self.setResponseCode(http.OK)
+            print type(self.env.catalog.aliases[self.path])
+            self.write(str(self.env.catalog.aliases[self.path]))
+            self.finish()
+        else:
             self.setResponseCode(http.NOT_FOUND)
             self.finish()
-            return
-        #get resource from catalog
+
+    
+    def _isResource(self):
         try:
             result = self.env.catalog.getResource(uri = self.path)
-            result = result.getData()
-            result = result.encode("utf-8")
-        except Exception, e:
-            self.env.log.error(e)
-            self.setResponseCode(http.INTERNAL_SERVER_ERROR)
-            self.finish()
-            return
-        #write resource data as response
-        self.setHeader('server', 'SeisHub '+ SEISHUB_VERSION)
-        self.setHeader('date', http.datetimeToString())
-        self.setHeader('content-type', "text/xml; charset=UTF-8")
-        self.setHeader('content-length', str(len(result)))
-        self.setResponseCode(http.OK)
-        self.write(result)
-        self.finish()
+        except:
+            return False
+        return result
     
     def _processPOST(self):
         """Handles a HTTP POST request."""

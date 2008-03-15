@@ -73,7 +73,6 @@ class IndexesPanel(Component):
             'error': '',
             'xpath': '',
         }
-        print request.args
         if request.method=='POST':
             args = request.args
             if 'add' in args.keys() and 'xpath' in args.keys():
@@ -121,5 +120,50 @@ class IndexesPanel(Component):
         except Exception, e:
             self.log.error("Error registering xml_index", e)
             data['error'] = ("Error registering xml_index", e)
+        data['xpath'] = ''
+        return data
+
+
+class AliasPanel(Component):
+    """List all REST aliases and add new ones."""
+    implements(IAdminPanel)
+    
+    def getPanelId(self):
+        return ('catalog', 'XML Catalog', 'aliases', 'Aliases')
+    
+    def renderPanel(self, request):
+        data  = {
+            'aliases': {},
+            'error': '',
+            'alias': '',
+            'xpath': '',
+        }
+        if request.method=='POST':
+            args = request.args
+            if 'add' in args.keys() and 'xpath' in args.keys() and \
+               'alias' in args.keys():
+                data['alias'] = args['alias'][0]
+                data['xpath'] = args['xpath'][0]
+                data = self._addAlias(data)
+            elif 'delete' in args.keys() and 'alias[]' in args.keys():
+                data['alias[]'] = args['alias[]']
+                data = self._deleteAliases(data)
+        # fetch all indexes
+        data['aliases'] = self.catalog.aliases
+        return ('catalog_aliases.tmpl', data)
+    
+    def _deleteAliases(self, data):
+        for alias in data.get('alias[]',[]):
+            del self.catalog.aliases[alias]
+        return data
+    
+    def _addAlias(self, data):
+        try:
+            self.catalog.aliases[data['alias']]=data['xpath']
+        except Exception, e:
+            self.log.error("Error generating an alias", e)
+            data['error'] = ("Error generating an alias", e)
+            return data
+        data['alias'] = ''
         data['xpath'] = ''
         return data

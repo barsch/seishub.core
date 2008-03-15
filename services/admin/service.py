@@ -258,7 +258,6 @@ class AdminService(internet.SSLServer):
         port = env.config.getint('admin', 'port')
         secured = env.config.getbool('admin', 'secured')
         priv, cert = self._getCertificates()
-        print secured
         if secured:
             ssl_context = ssl.DefaultOpenSSLContextFactory(priv, cert)
             internet.SSLServer.__init__(self, port, AdminHTTPFactory(env), \

@@ -1,0 +1,24 @@
+<h1>Aliases</h1>
+
+<h2>Add new alias</h2>
+<form method="post" name="add">
+  <label>Alias expression</label><br />
+  <input type="text" size="80" name="alias" value="$alias" /><br />
+  <label>Xpath expression</label><br />
+  <input type="text" size="80" name="xpath" value="$xpath" /><br />
+  <br />
+  <input type="submit" name="add" value="Add" />
+</form>
+
+<br />
+<br />
+
+<h2>List of all aliases</h2>
+<form method="post" name="list">
+  #for $alias in $aliases
+  <input type="checkbox" name="alias[]" value="$alias" /> 
+  $alias - $aliases[$alias]<br />
+  #end for
+  <br />
+  <input type="submit" name="delete" value="Delete" />
+</form>
