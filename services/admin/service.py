@@ -251,7 +251,7 @@ class AdminService(internet.SSLServer):
     IntOption('admin', 'port', DEFAULT_ADMIN_PORT, "WebAdmin port number.")
     Option('admin', 'privatekey_file', 'server.pem', "Private key file.")
     Option('admin', 'certificate_file', 'server.pem', "Certificate file.")
-    Option('admin', 'secured', 'enabled', "Enable HTTPS connection.")
+    Option('admin', 'secured', 'True', "Enable HTTPS connection.")
     
     def __init__(self, env):
         self.env = env
