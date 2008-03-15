@@ -132,11 +132,13 @@ class AliasPanel(Component):
         return ('catalog', 'XML Catalog', 'aliases', 'Aliases')
     
     def renderPanel(self, request):
+        rest_port = self.config.getint('rest', 'port')
         data  = {
             'aliases': {},
             'error': '',
             'alias': '',
             'xpath': '',
+            'resturl': 'http://localhost:' + str(rest_port),
         }
         if request.method=='POST':
             args = request.args
