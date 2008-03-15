@@ -62,12 +62,58 @@ class RESTRequest(http.Request):
             self.setResponseCode(http.OK)
             self.write(result)
             self.finish()
-        # test if 
+        # test if alias 
         elif self.env.catalog.aliases.get(self.path):
+            urls = self.env.catalog.query(self.env.catalog.aliases[self.path])
+            xslt = """<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                xmlns:xlink="http://www.w3.org/1999/xlink"
+                exclude-result-prefixes="xlink"           
+                version="1.0">
+                  <xsl:output method="html"/>
+                
+                  <xsl:template match="*[@xlink:type = 'simple' and @xlink:href]">
+                  <li>
+                    <a href="{@xlink:href}"><xsl:apply-templates/></a>
+                  </li>
+                  </xsl:template>
+                
+                  <xsl:template match="seishub">
+                    <html><body>
+                    <ul>
+                      <xsl:apply-templates/>
+                    </ul>
+                    </body></html>
+                  </xsl:template>
+                
+                </xsl:stylesheet>
+            """
+            
+            root = """<?xml version="1.0"?>
+            <seishub xml:base="http:localhost:8080"
+                     xmlns:xlink="http://www.w3.org/1999/xlink">
+                %s
+            </seishub>"""
+            tmpl = """<link xlink:type="simple" xlink:href="%s">%s</link>"""
+            doc = ""
+            for url in urls:
+                doc += tmpl % (url, url)
+            result = str(root % doc)
+            
+            import libxslt
+            import libxml2
+            styledoc = libxml2.parseDoc(xslt)
+            xmldoc = libxml2.parseDoc(result)
+            style = libxslt.parseStylesheetDoc(styledoc)
+            appl_style = style.applyStylesheet(xmldoc, None)
+            result = str(appl_style)
+            appl_style.freeDoc()
+            style.freeStylesheet()
+            xmldoc.freeDoc()
+            
+            self.setHeader('content-type', "text/html; charset=UTF-8")
+            self.setHeader('content-length', str(len(result)))
+            self.write(result)
             self.setResponseCode(http.OK)
-            print "----------------------------------"
-            print self.env.catalog.query(self.env.catalog.aliases[self.path])
-            #self.write(str(self.env.catalog.aliases[self.path]))
             self.finish()
         else:
             self.setResponseCode(http.NOT_FOUND)
