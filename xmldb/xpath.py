@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from zope.interface import implements
 
-from seishub.core import SeisHubError
 from seishub.xmldb.errors import RestrictedXpathError
 from seishub.xmldb.interfaces import IXPathQuery
 

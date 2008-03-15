@@ -5,6 +5,7 @@ import sqlalchemy as sa
 
 from seishub.defaults import DEFAULT_DB_URI
 
+meta = sa.MetaData()
 
 class DatabaseManager(object):
     """A wrapper around SQLAlchemy connection pool."""
@@ -17,8 +18,14 @@ class DatabaseManager(object):
         self.uri = self.env.config.get('seishub', 'database') or DEFAULT_DB_URI
         self.echo = self.env.config.get('logging', 'log_level')!='OFF'
         self.engine = self._getEngine()
-        self.metadata = None 
+        self._initDb()
         self.env.log.info('DB connection pool started')
+        
+    def _initDb(self):
+        self.metadata = meta
+        self.metadata.bind = self.engine
+        #this will check for the presence of a table first before creating
+        self.metadata.create_all(self.engine, checkfirst = True)        
     
     def _getEngine(self):
         if self.uri.startswith('sqlite:///'):

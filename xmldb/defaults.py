@@ -3,17 +3,18 @@
 from sqlalchemy import MetaData, Table, Column, Integer, String, \
                        UniqueConstraint, ForeignKey, Text, Binary, \
                        PrimaryKeyConstraint, DateTime
+                       
+from seishub.db.dbmanager import meta as metadata
+                       
 DEFAULT_PREFIX = 'default_'
 RESOURCE_TABLE = 'data'
 RESOURCE_TYPE_TABLE = 'resource_types'
 INDEX_TABLE = 'index'
 INDEX_DEF_TABLE = 'index_def'
 METADATA_TABLE = 'meta'
-#METADATA_INDEX_TABLE = 'meta_idx'
 URI_TABLE = 'uri'
 
 # xmldbms tables:
-metadata = MetaData()
 resource_tab = Table(DEFAULT_PREFIX + RESOURCE_TABLE, metadata,
     Column('id', Integer, primary_key = True, autoincrement = True),
     Column('data', Binary),

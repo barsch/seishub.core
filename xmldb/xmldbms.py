@@ -15,14 +15,13 @@ class XmlDbManager(object):
     
     def __init__(self, db):
         self.db = db.engine
-        self.metadata = db.metadata = metadata
-        self._initDb()
-        metadata.bind = db.engine
+        #self._initDb()
+        #metadata.bind = db.engine
         
-    def _initDb(self):
-        #create all tables
-        #this will check for the presence of a table first before creating
-        self.metadata.create_all(self.db, checkfirst = True)
+#    def _initDb(self):
+#        #create all tables
+#        #this will check for the presence of a table first before creating
+#        self.metadata.create_all(self.db, checkfirst = True)
     
     def _resolveUri(self,uri):
         if not isinstance(uri,basestring):
