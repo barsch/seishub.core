@@ -63,10 +63,11 @@ class RESTRequest(http.Request):
             self.write(result)
             self.finish()
         # test if 
-        elif self.env.catalog.aliases[self.path]:
+        elif self.env.catalog.aliases.get(self.path):
             self.setResponseCode(http.OK)
-            print type(self.env.catalog.aliases[self.path])
-            self.write(str(self.env.catalog.aliases[self.path]))
+            print "----------------------------------"
+            print self.env.catalog.query(self.env.catalog.aliases[self.path])
+            #self.write(str(self.env.catalog.aliases[self.path]))
             self.finish()
         else:
             self.setResponseCode(http.NOT_FOUND)

@@ -207,7 +207,9 @@ class XmlIndexCatalog(object):
                     return _BinaryExpression(alias.c.index_id, idx_id,'=')
 
                 return and_(_BinaryExpression(alias.c.index_id, idx_id,'='),
-                            _BinaryExpression(alias.c.key, str(p._right),p._op))
+                            _BinaryExpression(alias.c.key, 
+                                              '\'' + str(p._right) + '\'',
+                                              p._op))
                 
         w = _walk(predicates)
         
@@ -236,6 +238,10 @@ class XmlIndexCatalog(object):
         return unique(results)
 
 class QueryAliases(object):
+    """List of query aliases.
+    Query aliases are static, cacheable, stored querie expressions, used as
+    shortcut for more complex xpath expressions.
+    """
     def __init__(self, db):
         self._db = db.engine
         self.aliases = self.listAliases()
