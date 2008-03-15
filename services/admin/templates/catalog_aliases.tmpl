@@ -17,7 +17,7 @@
 <form method="post" name="list">
   #for $alias in $aliases
   <input type="checkbox" name="alias[]" value="$alias" /> 
-  <a href="$resturl$alias">$alias</a><br /> - $aliases[$alias]<br />
+  <a href="$resturl$alias">$alias</a> - $aliases[$alias]<br />
   #end for
   <br />
   <input type="submit" name="delete" value="Delete" />
