@@ -238,7 +238,7 @@ class XmlIndexCatalog(object):
 class QueryAliases(object):
     def __init__(self, db):
         self._db = db.engine
-        self.aliases = self.listAliases() 
+        self.aliases = self.listAliases()
         
     def __getitem__(self, key):
         return self.aliases[key]
@@ -259,6 +259,12 @@ class QueryAliases(object):
     def __iter__(self):
         return self.aliases.__iter__()
     
+    def __str__(self):
+        return self.aliases.__str__()
+    
+    def get(self, *args, **kwargs):
+        return self.aliases.get(*args, **kwargs)
+    
     def addAlias(self, name, expr):
         self.aliases[name] = expr
         ins = query_aliases_tab.insert()
@@ -275,7 +281,7 @@ class QueryAliases(object):
             results = results.fetchall()[0]
         except:
             return None
-        return results[1]
+        return str(results[1])
     
     def removeAlias(self, name):
         del self.aliases[name]

@@ -274,10 +274,13 @@ class QueryAliasesTest(SeisHubTestCase):
         aliases["blah3"] = "/blah[dududuuu]"
         self.assertEquals(aliases["blah"],"/blah[/blah/blah]")
         aliases["blah"] = "/andererpfad"
+        self.assertEquals(aliases.get("blah"),"/andererpfad")   
         self.assertEquals(aliases["blah"],"/andererpfad")
         self.assertEquals("blah" in aliases, True)
         del aliases["blah"]
         self.assertEquals("blah" in aliases, False)
+        print aliases
+        
         
         
 
