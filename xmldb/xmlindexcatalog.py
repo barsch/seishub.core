@@ -200,7 +200,10 @@ class XmlIndexCatalog(object):
                     raise XmlIndexCatalogError("No Index found for %s/%s" % \
                                                (value_path, str(p._left)))
                 idx_id = idx.__id
-                alias = index_tab.alias("idx_" + str(idx_id))
+                # XXX: maybe simple counter instead of hash
+                alias_id = abs(hash(str(idx_id) + str(p._right)))
+                alias = index_tab.alias("idx_" + str(alias_id))
+                #print alias_cnt
                 idx_aliases.append(alias)
 
                 if p._op == '':
