@@ -154,6 +154,6 @@ class RESTService(internet.TCPServer):
     IntOption('rest', 'port', DEFAULT_REST_PORT, "WebAdmin port number.")
     
     def __init__(self, env):
-        port = env.config.getint('rest', 'port') or DEFAULT_REST_PORT
+        port = env.config.getint('rest', 'port')
         internet.TCPServer.__init__(self, port, RESTHTTPFactory(env))
         self.setName("REST")

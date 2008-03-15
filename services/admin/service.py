@@ -25,6 +25,7 @@ class AdminRequest(http.Request):
         self._initStaticContent()
     
     def process(self):
+        print self.received_headers
         # post process self.path
         self.postpath = map(unquote, string.split(self.path[1:], '/'))
         
@@ -246,22 +247,29 @@ class AdminHTTPFactory(http.HTTPFactory):
 
 
 class AdminService(internet.SSLServer):
-    """Service for WebAdmin HTTPS Server."""
+    """Service for WebAdmin HTTP Server."""
     IntOption('admin', 'port', DEFAULT_ADMIN_PORT, "WebAdmin port number.")
     Option('admin', 'privatekey_file', 'server.pem', "Private key file.")
     Option('admin', 'certificate_file', 'server.pem', "Certificate file.")
+    Option('admin', 'secured', 'enabled', "Enable HTTPS connection.")
     
     def __init__(self, env):
         self.env = env
-        port = env.config.getint('admin', 'port') or DEFAULT_ADMIN_PORT
+        port = env.config.getint('admin', 'port')
+        secured = env.config.getbool('admin', 'secured')
         priv, cert = self._getCertificates()
-        ssl_context = ssl.DefaultOpenSSLContextFactory(priv, cert)
-        internet.SSLServer.__init__(self, port, AdminHTTPFactory(env), \
-                                    ssl_context)
+        print secured
+        if secured:
+            ssl_context = ssl.DefaultOpenSSLContextFactory(priv, cert)
+            internet.SSLServer.__init__(self, port, AdminHTTPFactory(env), \
+                                        ssl_context)
+        else:
+            self.method = 'TCP'
+            internet.SSLServer.__init__(self, port, AdminHTTPFactory(env), 1)
         self.setName("WebAdmin")
     
     def _getCertificates(self):
-        """Fetching certifciate files from configuration."""
+        """Fetching certificate files from configuration."""
         priv = self.env.config.get('admin', 'privatekey_file') or 'server.pem'
         cert = self.env.config.get('admin', 'certificate_file') or 'server.pem'
         if not os.path.isfile(priv):

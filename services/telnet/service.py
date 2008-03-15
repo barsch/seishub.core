@@ -60,6 +60,6 @@ class TelnetService(internet.TCPServer):
     IntOption('telnet', 'port', DEFAULT_TELNET_PORT, "Telnet port number.")
     
     def __init__(self, env):
-        port = env.config.getint('telnet', 'port') or DEFAULT_TELNET_PORT
+        port = env.config.getint('telnet', 'port')
         internet.TCPServer.__init__(self, port, TelnetServerFactory(env))
         self.setName("Telnet") 
