@@ -255,6 +255,9 @@ class QueryAliases(object):
         
     def __delitem__(self, key):
         self.removeAlias(key)
+        
+    def __iter__(self):
+        return self.aliases.__iter__()
     
     def addAlias(self, name, expr):
         self.aliases[name] = expr

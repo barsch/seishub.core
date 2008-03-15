@@ -89,4 +89,9 @@ class XmlCatalog(XmlDbManager):
     
     def query(self, query):
         """@see: L{seishub.xmldb.interfaces.IXmlCatalog}"""
-        return self.index_catalog.query(XPathQuery(query))
+        if query in self.aliases:
+            q = self.aliases[query]
+        else:
+            q = query
+                    
+        return self.index_catalog.query(XPathQuery(q))

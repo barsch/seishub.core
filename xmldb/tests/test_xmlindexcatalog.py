@@ -270,12 +270,15 @@ class QueryAliasesTest(SeisHubTestCase):
     def testQueryAliases(self):
         aliases = QueryAliases(self.env.db)
         aliases["blah"] = "/blah[/blah/blah]"
-        print aliases["blah"]
+        aliases["blah2"] = "/blah[popoppoo]"
+        aliases["blah3"] = "/blah[dududuuu]"
+        self.assertEquals(aliases["blah"],"/blah[/blah/blah]")
         aliases["blah"] = "/andererpfad"
-        print aliases["blah"]
-        print "blah" in aliases
+        self.assertEquals(aliases["blah"],"/andererpfad")
+        self.assertEquals("blah" in aliases, True)
         del aliases["blah"]
-        print "blah" in aliases
+        self.assertEquals("blah" in aliases, False)
+        
         
 
 def suite():
