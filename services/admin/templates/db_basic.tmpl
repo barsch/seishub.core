@@ -1,14 +1,31 @@
 <h1>Database Settings</h1>
 
-Name: $db.name<br />
+<p><i>
+  You have to restart SeisHub in order to see any changes at the database 
+  settings.
+</i></p>
+
+<h2>Status</h2>
+
+DB name: $db.name<br />
 URI: $db.url<br />
+Verbose: $db.echo<br />
 
 <br />
 <br />
+
+<h2>Settings</h2>
 
 <form method="post">
   <label>Database URI</label><br />
-  <input name="database" size="80" type="text" value="$database" /><br />
+  <input name="uri" size="80" type="text" value="$uri" /><br />
+  <br />
+  <label>Verbose</label><br />
+  <input name="verbose" type="checkbox" 
+  #if $verbose
+    checked="checked" 
+  #end if 
+  /><br />
   <br />
   <input type="submit" value="Save" />
 </form>

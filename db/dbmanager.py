@@ -3,20 +3,26 @@
 import os
 import sqlalchemy as sa
 
+from seishub.config import Option
 from seishub.defaults import DEFAULT_DB_URI
+
 
 meta = sa.MetaData()
 
+
 class DatabaseManager(object):
     """A wrapper around SQLAlchemy connection pool."""
+    
+    Option('db', 'uri', DEFAULT_DB_URI, "Database URI.")
+    Option('db', 'verbose', False, "Enables database verbosity.")
     
     pool_size = 5
     max_overflow = 10
     
     def __init__(self, env):
         self.env = env
-        self.uri = self.env.config.get('seishub', 'database') or DEFAULT_DB_URI
-        self.echo = self.env.config.get('logging', 'log_level')!='OFF'
+        self.uri = self.env.config.get('db', 'uri')
+        self.echo = self.env.config.getbool('db', 'verbose')
         self.engine = self._getEngine()
         self._initDb()
         self.env.log.info('DB connection pool started')
@@ -34,7 +40,7 @@ class DatabaseManager(object):
             filepart = filename.split('/')
             #it is a plain filename without sub directories
             if len(filepart)==1:
-                self.uri = 'sqlite:///' + os.path.join(self.env.path, db,
+                self.uri = 'sqlite:///' + os.path.join(self.env.path, 'db',
                                                        filename)
                 return self._getSQLiteEngine()
             #there is a db sub directory given in front of the filename

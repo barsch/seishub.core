@@ -10,6 +10,7 @@ class ITelnetCmd(Interface):
         """Return a command string."""
 
     def executeCommand(self, args):
-        """Process a command line given as an arrays of arguments and 
+        """
+        Process a command line given as an arrays of arguments and 
         returns a list of strings.
         """

@@ -68,7 +68,7 @@ class Logger(object):
             log.removeObserver(l)
     
     def _formatMessage(self, level, msg, showTraceback):
-        if showTraceback:
+        if sys.exc_info()!=(None,None,None) and showTraceback:
             (exc_value, exc_type, exc_traceback) = sys.exc_info()
             fail = Failure(exc_value, exc_type, exc_traceback)
             log.err(fail, '%s %s' % (level, msg))

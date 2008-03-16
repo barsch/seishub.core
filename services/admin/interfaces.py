@@ -8,7 +8,7 @@ class IAdminPanel(Interface):
     
     def getPanelId():
         """
-        Return a list of available admin panels.
+        Defines ids and labels of this admin panel.
         
         The items returned by this function must be tuples of the form
         `(category, category_label, page, page_label)`.

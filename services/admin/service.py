@@ -2,12 +2,13 @@
 
 import os
 import string
+from urllib import unquote
+
 from twisted.web import static, http, util as webutil
 from twisted.internet import threads, defer, ssl
 from twisted.application import internet
 from Cheetah.Template import Template
 from pkg_resources import resource_filename #@UnresolvedImport 
-from urllib import unquote
 
 from seishub import __version__ as SEISHUB_VERSION
 from seishub.services.admin.interfaces import IAdminPanel
@@ -25,7 +26,6 @@ class AdminRequest(http.Request):
         self._initStaticContent()
     
     def process(self):
-        print self.received_headers
         # post process self.path
         self.postpath = map(unquote, string.split(self.path[1:], '/'))
         
@@ -85,7 +85,7 @@ class AdminRequest(http.Request):
             body = Template(file=filename, searchList=[data]) 
         
         # process template
-        temp = Template(file=resource_filename("seishub.services.admin",
+        temp = Template(file=resource_filename(self.__module__,
                                                "templates"+os.sep+ \
                                                "index.tmpl"))
         temp.navigation = self._renderNavigation()
@@ -109,7 +109,7 @@ class AdminRequest(http.Request):
         """Render an error message."""
         if not data.get('error', None) and not data.get('exception', None):
             return
-        temp = Template(file=resource_filename("seishub.services.admin",
+        temp = Template(file=resource_filename(self.__module__,
                                                "templates"+os.sep+ \
                                                "error.tmpl"))
         msg = data.get('error', '')
@@ -126,7 +126,7 @@ class AdminRequest(http.Request):
     
     def _renderNavigation(self):
         """Generate the main navigation bar."""
-        temp = Template(file=resource_filename("seishub.services.admin",
+        temp = Template(file=resource_filename(self.__module__,
                                                "templates"+os.sep+ \
                                                "navigation.tmpl"))
         menuitems = [(i[0],i[1]) for i in self.panel_ids]
@@ -138,7 +138,7 @@ class AdminRequest(http.Request):
     
     def _renderSubMenu(self):
         """Generate the sub menu box."""
-        temp = Template(file=resource_filename("seishub.services.admin",
+        temp = Template(file=resource_filename(self.__module__,
                                                "templates"+os.sep+ \
                                                "submenu.tmpl"))
         menuitems = map((lambda p: (p[2],p[3])),
@@ -163,7 +163,7 @@ class AdminRequest(http.Request):
     
     def _getTemplateDirs(self):
         """Returns a list of searchable template directories."""
-        dirs = [resource_filename("seishub.services.admin","templates")]
+        dirs = [resource_filename(self.__module__, "templates")]
         if hasattr(self.panel, 'getTemplateDirs'):
             dirs+=self.panel.getTemplateDirs()
         return dirs[::-1]
@@ -200,17 +200,17 @@ class AdminRequest(http.Request):
     
     def _initStaticContent(self):
         """Returns a dictionary of static web resources."""
-        default_css = static.File(resource_filename("seishub.services.admin",
+        default_css = static.File(resource_filename(self.__module__,
                                                     "htdocs"+os.sep+"css"+ \
                                                     os.sep+"default.css"))
-        default_ico = static.File(resource_filename("seishub.services.admin",
+        default_ico = static.File(resource_filename(self.__module__,
                                                     "htdocs"+os.sep+\
                                                     "favicon.ico"),
                                   defaultType="image/x-icon")
-        default_js = static.File(resource_filename("seishub.services.admin",
+        default_js = static.File(resource_filename(self.__module__,
                                                    "htdocs"+os.sep+"js"+ \
                                                    os.sep+"default.js"))
-        quake_gif = static.File(resource_filename("seishub.services.admin",
+        quake_gif = static.File(resource_filename(self.__module__,
                                                   "htdocs"+os.sep+"images"+ \
                                                   os.sep+"quake.gif"))
         # default static files

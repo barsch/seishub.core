@@ -16,13 +16,14 @@ class BasicPanel(Component):
     def renderPanel(self, request):
         db = self.db.engine
         if request.method == 'POST':
-            for option in ('database',):
-                self.config.set('seishub', option, 
-                                request.args.get(option,[])[0])
+            for option in ('uri', 'verbose'):
+                self.config.set('db', option, 
+                                request.args.get(option,[''])[0])
             self.config.save()
             request.redirect(request.path)
         data = {
-          'database': self.config.get('seishub', 'database'),
+          'uri': self.config.get('db', 'uri'),
+          'verbose': self.config.get('db', 'verbose'),
           'db': db,
         }
         return ('db_basic.tmpl', data)
