@@ -3,7 +3,7 @@
 from zope.interface import Interface
 
 class IXmlCatalog(Interface):
-    """This is the main interface to access the whole xmldb thing"""
+    """This is the main interface to access all xmldb related classes"""
     
     def newXmlResource(uri,xml_data):
         """Resource factory; supposed to be used with addResource from 
@@ -28,7 +28,7 @@ class IXmlCatalog(Interface):
         @return: list of XmlIndexes
         @rtype: list"""
     
-    def query(xpath_query):
+    def query(query, order_by = None, limit = None):
         """Query the catalog and return a list of URIs
         where xpath_query is a XPath Query like string. 
         (see L{seishub.xmldb.xpath.XPathQuery} and
@@ -49,9 +49,24 @@ class IXmlCatalog(Interface):
            key_path2 operator value ...] 
            
            where operator can be: =, !=, <, >, <=, >=
+           
+        B{Order by clauses}
         
-        @param xpath_query: restricted xpath expression
-        @type xpath_query: string
+        (see also: L{seishub.xmldb.xpath.XPathQuery})
+        
+        One can order search results via order by clauses and also specify a 
+        limit to the number of returned results.
+        Order by clauses are of the following form::
+         order_by = [["/resource_type/sortindex1","asc|desc"],
+                     ["/resource_type/sortindex2","asc|desc"],
+                    ... ]
+        
+        @param query: restricted xpath expression
+        @type query: string
+        @param order_by: List of order by clauses
+        @type order_by: python list
+        @param limit: limit number of results
+        @type limit: int   
         @return: list of URIs
         @rtype: python list"""
 
@@ -82,10 +97,12 @@ class IXmlResource(Interface):
         """@return: uri (string)"""
         
 class IResourceTypeRegistry(Interface):
-    """Handles resource type specific meta data, such as XML Schema definitions 
+    """Resource type registry.
+    Management of resource types and corresponding metadata, such as Schema 
+    definitions, XSL Stylesheets, etc.
     """
     
-    def registerResourceType(type, xml_schema):
+    def registerResourceType(type):
         """Define new resource type using given XML schema
         @param type: Name of the new type
         @type type: string
@@ -108,6 +125,9 @@ class IResourceTypeRegistry(Interface):
     def listResourceTypes():
         """@return: list of known resource types
         @rtype: python list"""
+        
+    def registerMetaResource(type, uri):
+        """Register a meta resource such as a XSD Schema or a XSL Stylesheet"""
         
 class IResourceStorage(Interface):
     """Basic XML storage manager description"""
@@ -235,6 +255,16 @@ class IXmlIndexCatalog(Interface):
         @rtype: list of strings"""
 
 class IXPathQuery(Interface):
+    def init(query, order_by = None, limit = None):
+        """@param param: XPath query
+        @type query: string
+        @param order_by: list of order by clauses of the form: 
+        [["/somenode/someelement/@someattribute" (, "ASC"|"DESC")], 
+        ...]
+        @type order_by: python list
+        @param limit: maximum number of results
+        @type limit: int"""
+        
     def getPredicates():
         """Get parsed predicates
         @return: parsed predicate expression
@@ -248,3 +278,17 @@ class IXPathQuery(Interface):
     def has_predicates():
         """@return: True if query has predicates
         @rtype: True | False"""
+
+    def getOrder_by():
+        """@return: List of parsed order by clauses
+        @rtype: python list"""
+    
+    def getLimit():
+        """@return: Result set limit (maximum number of results)
+        @rtype: integer"""
+        
+class IXPathExpression(Interface):
+    """Parsed XPath expression for use with the index catalog"""
+    def __init__(expr):
+        """@param expr: XPath expression
+        @type expr: string"""

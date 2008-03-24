@@ -15,9 +15,9 @@ class SeisHubTestCase(unittest.TestCase):
         self.config = Configuration(self.filename)
         #set a few standard settings
         self.config.set('logging', 'log_level', 'OFF')
-        #self.config.set('seishub', 'database', 
-        #                'postgres://seishub:seishub@localhost:5432/seishub')
-        self.config.set('seishub', 'database', 'sqlite://')
+#        self.config.set('db', 'uri', 
+#                        'postgres://seishub:seishub@localhost:5432/seishub')
+        self.config.set('db', 'uri', 'sqlite://')
         self._config()
         self._start()
     

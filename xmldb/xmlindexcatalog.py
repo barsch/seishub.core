@@ -5,25 +5,25 @@ from sqlalchemy import select
 from sqlalchemy.sql import and_, or_, not_
 from sqlalchemy.sql.expression import _BinaryExpression, ClauseList
 
-from seishub.util import unique
 from seishub.xmldb.interfaces import IXmlIndexCatalog, IIndexRegistry, \
                                      IResourceIndexing, IXmlIndex, \
-                                     IResourceStorage, IXPathQuery
+                                     IResourceStorage, IXPathQuery, \
+                                     IXPathExpression
+from seishub.xmldb.util import DbEnabled
 from seishub.xmldb.xmlindex import XmlIndex
 from seishub.xmldb.defaults import index_def_tab, index_tab, uri_tab, \
                                    query_aliases_tab
-from seishub.xmldb.xpath import RestrictedXpathExpression, XPathQuery
 from seishub.xmldb.errors import InvalidUriError, XmlIndexCatalogError, \
-                                 InvalidIndexError, InvalidXpathQuery, \
-                                 RestrictedXpathError, QueryAliasError
+                                 InvalidIndexError, QueryAliasError, \
+                                 InvalidQueryError
 
-class XmlIndexCatalog(object):
+class XmlIndexCatalog(DbEnabled):
     implements(IIndexRegistry,
                IResourceIndexing,
                IXmlIndexCatalog)
     
-    def __init__(self,db, resource_storage = None):
-        self._db = db.engine
+    def __init__(self,db,resource_storage = None):
+        DbEnabled.__init__(self, db)
         
         if resource_storage:
             if not IResourceStorage.providedBy(resource_storage):
@@ -52,9 +52,12 @@ class XmlIndexCatalog(object):
                                data_type = xml_index.getType())
             xml_index.__id = res.last_inserted_ids()[0]
             txn.commit()
+            res.close()
         except Exception, e:
             txn.rollback()
             raise XmlIndexCatalogError(e)
+        finally:
+            conn.close()
 
         return xml_index
     
@@ -101,11 +104,12 @@ class XmlIndexCatalog(object):
             w.append(index_def_tab.c.data_type == data_type)
         query = index_def_tab.select(w)
         
-        results = self._db.execute(query)
+        res = self._db.execute(query)
         try:
-            results = results.fetchall()
+            results = res.fetchall()
+            res.close()
         except:
-            return None
+            return None    
         
         indexes = list()
         for res in results:
@@ -128,7 +132,7 @@ class XmlIndexCatalog(object):
     
     def indexResource(self, uri, value_path, key_path):
         """@see: L{seishub.xmldb.xmlindexcatalog.interfaces.IResourceIndexing}"""
-#        #TODO: no specific index
+#        #TODO: do this not index specific but resource type specific
 
         if not isinstance(uri, basestring):
             raise InvalidUriError("String expected.")
@@ -156,14 +160,16 @@ class XmlIndexCatalog(object):
         txn = conn.begin()
         try:
             for keyval in keysvals:
-                res = conn.execute(index_tab.insert(),
-                                   index_id = index_id,
-                                   key = keyval['key'],
-                                   value = keyval['value'])
+                conn.execute(index_tab.insert(),
+                             index_id = index_id,
+                             key = keyval['key'],
+                             value = keyval['value'])
             txn.commit()
         except Exception, e:
             txn.rollback()
             raise XmlIndexCatalogError(e)
+        finally:
+            conn.close()
         
         return True
 
@@ -180,7 +186,7 @@ class XmlIndexCatalog(object):
                                    index_def_tab.c.value_path == value_path))
                             )
                          ))
-    
+        
     def _to_sql(self, q):
         """translate query predicates to SQL where clause"""
         value_path = q.getValue_path()
@@ -228,25 +234,47 @@ class XmlIndexCatalog(object):
         
         if query.has_predicates(): 
             # query w/ key path expression(s)
+            value_col = index_tab.c.value
             w = self._to_sql(query)
-            q = select([index_tab.c.value],w)
+            q = select([value_col],w)
         else:
-            # only value path given: value path <=> resource type
-            q = select([uri_tab.c.uri], 
+            # value path only: => resource type query
+            value_col = uri_tab.c.uri
+            q = select([value_col], 
                        uri_tab.c.res_type == query.getValue_path()
                 )
+        q = q.group_by(value_col)
         
-        results = self._db.execute(q).fetchall()
-        results = [result[0] for result in results]
-        return unique(results)
-
-class QueryAliases(object):
+        # order by
+        alias_id = 0
+        limit = query.getLimit()
+        for ob in query.getOrder_by():
+            # find appropriate index
+            idx = self.getIndex(ob[0].value_path, ob[0].key_path)
+            if not idx:
+                raise XmlIndexCatalogError("No Index found for %s"%str(ob[0]))
+            alias = index_tab.alias("idx_" + str(alias_id))
+            alias_id += 1
+            q = q.where(and_(alias.c.index_id == idx.__id, 
+                             alias.c.value == value_col)) \
+                 .group_by(alias.c.key)
+            if ob[1].lower() == "desc": 
+                q = q.order_by(alias.c.key.desc())
+            else:
+                q = q.order_by(alias.c.key.asc())
+        if limit:
+            q = q.limit(limit)
+        res = self._db.execute(q).fetchall()
+        results = [result[0] for result in res]
+        return results
+        
+class QueryAliases(DbEnabled):
     """List of query aliases.
     Query aliases are static, cacheable, stored querie expressions, used as
     shortcut for more complex xpath expressions.
     """
     def __init__(self, db):
-        self._db = db.engine
+        DbEnabled.__init__(self,db)
         self.aliases = self.listAliases()
         
     def __getitem__(self, key):
@@ -290,6 +318,8 @@ class QueryAliases(object):
             results = results.fetchall()[0]
         except:
             return None
+        finally:
+            results.close()
         return str(results[1])
     
     def removeAlias(self, name):
@@ -305,6 +335,8 @@ class QueryAliases(object):
             #import pdb; pdb.set_trace()
         except:
             return dict()
+        finally:
+            res.close()
         return dict(aliases)
     
     

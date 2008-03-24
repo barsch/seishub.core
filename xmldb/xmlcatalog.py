@@ -87,6 +87,8 @@ class XmlCatalog(XmlDbManager):
         
         return True
     
-    def query(self, query):
+    def query(self, query, order_by = None, limit = None):
         """@see: L{seishub.xmldb.interfaces.IXmlCatalog}"""           
-        return self.index_catalog.query(XPathQuery(query))
+        return self.index_catalog.query(XPathQuery(query,
+                                                   order_by,
+                                                   limit))

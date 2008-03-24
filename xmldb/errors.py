@@ -9,6 +9,9 @@ class UnknownUriError(SeisHubError):
 class InvalidIndexError(SeisHubError):
     """raised when trying to create an XmlIndex with invalid args"""
     
+class InvalidQueryError(SeisHubError):
+    """invalid parameters passed to catalogue's query method"""
+    
 class AddResourceError(SeisHubError):
     """adding a new resource failed"""
     

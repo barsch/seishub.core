@@ -3,7 +3,6 @@
 from zope.interface import implements
 from zope.interface.exceptions import DoesNotImplement
 
-from seishub.core import SeisHubError
 from seishub.util.libxmlwrapper import IXmlDoc, IXmlSchema
 from seishub.xmldb.interfaces import IXmlResource
 from seishub.util.libxmlwrapper import XmlTreeDoc
@@ -53,7 +52,8 @@ class XmlResource(Resource):
         # encode before handing it to parser:
         xml_data = xml_data.encode("utf-8")
         return XmlTreeDoc(xml_data=xml_data, blocking=True)
-    
+
+
 class XmlSchemaResource(XmlResource):
     """XmlResource providing validation against given XML Schema"""
     
@@ -65,5 +65,4 @@ class XmlSchemaResource(XmlResource):
         
     def _validate(self):
         self._schema.validate(self.__xml_doc)
-        
-    
+

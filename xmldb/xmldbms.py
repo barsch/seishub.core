@@ -4,24 +4,15 @@ from zope.interface import implements
 from sqlalchemy import select
 from sqlalchemy.sql import and_
 
-from seishub.xmldb.interfaces import IResourceTypeRegistry, IResourceStorage
+from seishub.xmldb.interfaces import IResourceStorage
+from seishub.xmldb.util import DbEnabled
 from seishub.xmldb.xmlresource import XmlResource
 from seishub.xmldb.errors import *
-from seishub.xmldb.defaults import metadata, resource_tab, uri_tab
+from seishub.xmldb.defaults import resource_tab, uri_tab
 
-class XmlDbManager(object):
+class XmlDbManager(DbEnabled):
     """XmlResource layer, connects XmlResources to relational db storage"""
     implements(IResourceStorage)
-    
-    def __init__(self, db):
-        self.db = db.engine
-        #self._initDb()
-        #metadata.bind = db.engine
-        
-#    def _initDb(self):
-#        #create all tables
-#        #this will check for the presence of a table first before creating
-#        self.metadata.create_all(self.db, checkfirst = True)
     
     def _resolveUri(self,uri):
         if not isinstance(uri,basestring):
@@ -29,9 +20,10 @@ class XmlDbManager(object):
         
         query = select([uri_tab.c.res_id],
                        uri_tab.c.uri == uri)
-        res = self.db.execute(query)
+        res = self._db.execute(query)
         try:
             id = res.fetchone()[0]
+            res.close()
         except:
             raise UnknownUriError(uri)
         
@@ -47,25 +39,28 @@ class XmlDbManager(object):
     def addResource(self,xml_resource):
         """Add a new resource to the storage
         @return: Boolean"""
-        conn = self.db.connect()
-        
-        # begin transaction:
-        txn = conn.begin()
-        
         # encode to byte array:
         data = self._encode(xml_resource.getData())
-
+        
+        # begin transaction:
+        conn = self._db.connect()
+        txn = conn.begin()
+        
         try:
             res = conn.execute(resource_tab.insert(),
-                               data = data)
+                         data = data)
+            #import pdb; pdb.set_trace()
             conn.execute(uri_tab.insert(), 
                          uri = xml_resource.getUri(),
                          res_id = res.last_inserted_ids()[0],
                          res_type = xml_resource.getResource_type())
             txn.commit()
+            res.close()
         except Exception, e:
             txn.rollback()
             raise AddResourceError(e)
+        finally:
+            conn.close()
         
         return True
     
@@ -79,11 +74,13 @@ class XmlDbManager(object):
                             resource_tab.c.id == uri_tab.c.res_id,
                             uri_tab.c.uri == uri
                        ))
-        res = self.db.execute(query)
+        res = self._db.execute(query)
         try:
             xml_data = str(res.fetchone()[0])
         except:
             raise UnknownUriError(uri)
+        finally:
+            res.close()
         
         # decode to utf-8 string:
         xml_data = self._decode(xml_data)
@@ -98,7 +95,7 @@ class XmlDbManager(object):
         if not id:
             return
         
-        conn = self.db.connect()
+        conn = self._db.connect()
         
         # begin transaction:
         txn = conn.begin()
@@ -111,6 +108,8 @@ class XmlDbManager(object):
         except Exception, e:
             txn.rollback()
             raise DeleteResourceError(e)
+        finally:
+            conn.close()
         
         return True
     
@@ -120,14 +119,12 @@ class XmlDbManager(object):
             w = uri_tab.c.res_type == type
         query = select([uri_tab.c.uri], w)
         try:
-            res = self.db.execute(query)
+            res = self._db.execute(query)
             uris = res.fetchall()
         except:
             return list()
+        finally:
+            res.close()
         
         return [uri[0] for uri in uris]
-    
-class ResourceTypeRegistry(XmlDbManager):
-    implements(IResourceTypeRegistry)
-    
     

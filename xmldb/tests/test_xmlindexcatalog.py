@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import unittest
+import os
+import inspect
 from twisted.enterprise import util as dbutil
 
 from sqlalchemy.sql import and_
@@ -54,6 +56,10 @@ IDX2 = "/station/lat"
 IDX3 = "/testml/blah1/@id"
 IDX4 = "/station/XY/paramXY"
 
+so_tests = ['so1.xml','so2.xml','so3.xml','so4.xml','so5.xml']
+so_indexes = ['/sortorder/int1', '/sortorder/int2', 
+              '/sortorder/str1', '/sortorder/str2']
+
 class XmlIndexCatalogTest(SeisHubTestCase):
     #TODO: testGetIndexes
     _last_id=0
@@ -86,6 +92,21 @@ class XmlIndexCatalogTest(SeisHubTestCase):
         self.env.catalog.reindex(IDX3)
         self.env.catalog.reindex(IDX4)
         
+        # furthermore, add sort order tests
+        path = os.path.dirname(inspect.getsourcefile(self.__class__))
+        test_path = os.path.join(path,'data')
+        for f in so_tests:
+            fh = open(test_path+os.sep+f, 'r')
+            data = fh.read()
+            fh.close()
+            res = self.env.catalog.newXmlResource('/so/'+f,data)
+            self.env.catalog.addResource(res)
+            
+        for i in so_indexes:
+            idx=self.env.catalog.newXmlIndex(i)
+            self.env.catalog.registerIndex(idx)
+            self.env.catalog.reindex(i)
+        
     def _cleanup_testdata(self):
         self.env.catalog.removeIndex(IDX1)
         self.env.catalog.removeIndex(IDX2)
@@ -94,6 +115,10 @@ class XmlIndexCatalogTest(SeisHubTestCase):
         self.env.catalog.deleteResource(URI1)
         self.env.catalog.deleteResource(URI2)
         self.env.catalog.deleteResource(URI3)
+        for i in so_indexes:
+            self.env.catalog.removeIndex(i)
+        for f in so_tests:
+            self.env.catalog.deleteResource('/so/'+f)    
     
     def _assertClassAttributesEqual(self,first,second):
         return self.assertEquals(first.__dict__,second.__dict__)
@@ -166,7 +191,7 @@ class XmlIndexCatalogTest(SeisHubTestCase):
                 
         # get by key:
         res = catalog.getIndex(key_path = self._test_kp,
-                         value_path = self._test_vp)
+                               value_path = self._test_vp)
         self._assertClassCommonAttributesEqual(test_index, res)
         
         # remove:
@@ -262,9 +287,31 @@ class XmlIndexCatalogTest(SeisHubTestCase):
         self.assertEqual(res1.sort(), [URI1, URI2].sort())
         self.assertEqual(res2.sort(), [URI1, URI2].sort())
         self.assertEqual(res3.sort(), [URI3].sort())
-                
+        
+        # sort order tests
+        so1 = "/sortorder[int1]"
+        so2 = "/sortorder"
+        res1 = self.catalog.query(XPathQuery(so1, [["/sortorder/int1","asc"]]))
+        res2 = self.catalog.query(XPathQuery(so1, [["/sortorder/int1","desc"]], 
+                                             limit = 3))
+        res3 = self.catalog.query(XPathQuery(so1, [["/sortorder/int2","asc"],
+                                                   ["/sortorder/str2","desc"]], 
+                                             limit = 5))
+        res4 = self.catalog.query(XPathQuery(so2,[["/sortorder/int2","desc"]],
+                                             limit = 3))
+        
+        sot_res = ['/so/'+st for st in so_tests]
+        self.assertEqual(res1,sot_res)
+        sot_res.reverse()
+        self.assertEqual(res2,sot_res[:3])
+        sot_res.reverse()
+        self.assertEqual(res3,[sot_res[0],sot_res[3],sot_res[4],
+                               sot_res[1],sot_res[2]])
+        self.assertEqual(res4,[sot_res[1],sot_res[2],sot_res[0]])
+        
         # remove test catalog
         self._cleanup_testdata()
+
         
 class QueryAliasesTest(SeisHubTestCase):
     def testQueryAliases(self):
@@ -279,10 +326,9 @@ class QueryAliasesTest(SeisHubTestCase):
         self.assertEquals("blah" in aliases, True)
         del aliases["blah"]
         self.assertEquals("blah" in aliases, False)
-        print aliases
-        
-        
-        
+        del aliases["blah2"]
+        del aliases["blah3"]
+
 
 def suite():
     suite = unittest.TestSuite()

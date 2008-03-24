@@ -2,7 +2,7 @@
 from zope.interface import implements
 
 from seishub.xmldb.errors import RestrictedXpathError
-from seishub.xmldb.interfaces import IXPathQuery
+from seishub.xmldb.interfaces import IXPathQuery, IXPathExpression
 
 # XXX: requires PyXML (_xmlplus.xpath)
 # from xml import xpath
@@ -51,6 +51,7 @@ class RestrictedXpathExpression(object):
     \])?                   # ]
     \Z
     """
+    implements(IXPathExpression)
     
     node_test=None
     predicates=None
@@ -88,6 +89,8 @@ class IndexDefiningXpathExpression(object):
     but are of the form:
     "/resource_type/childnode1/childnode2/.../@attribute"
     """
+    implements(IXPathExpression)
+    
     __r_value_path = "^/[^/\[\]]+"
     __r_key_path = "[^\[\]]*\Z"
     
@@ -100,7 +103,7 @@ class IndexDefiningXpathExpression(object):
         if self._parseXpathExpr(expr):
             self._expr=expr
         else:
-            raise RestrictedXpathError("Invalid xpath expression.")
+            raise RestrictedXpathError("Invalid xpath expression: %s" % expr)
             
     def _parseXpathExpr(self,expr):
         re_vp=re.compile(self.__r_value_path)
@@ -122,7 +125,7 @@ class IndexDefiningXpathExpression(object):
         return True
     
 class PredicateExpression(object):
-    """Representation of a parsed XPath predicates block."""
+    """Representation of a parsed XPath predicates node."""
     
     # logical operators
     _logOp = r"""
@@ -226,13 +229,38 @@ class XPathQuery(RestrictedXpathExpression):
      - multi key queries with logical operators ('and', 'or')
        but no nested logical operations like ( ... and ( ... or ...))
      - relational operators: =, !=, <, >, <=, >=
+     
+    Queries may have a order by clause, which is a list of the following form:
+    order_by = [["1st order-by expression","asc"|"desc"],
+                ["2nd order-by expression","asc"|"desc"],
+                ... ]
+    where 'order-by expression' is an index defining xpath expression, note that
+    one can order by nodes only, one has registered an index for.
+    
+    Size of resultsets may be limited via 'limit = ... ' 
     """
     implements(IXPathQuery)
     
-    def __init__(self,*args):
-        super(XPathQuery, self).__init__(*args)        
-        self.parsed_predicates = self._parsePredicates(self.predicates)
+    def __init__(self,query,order_by=None,limit=None):
+        self.order_by = list()
+        if order_by:
+            order_by = list(order_by)
+            for ob in order_by:
+                if not isinstance(ob[0],basestring) \
+                   or not isinstance(ob[1],basestring):
+                    raise TypeError("Invalid order_by clause, string expected.")
+                self.order_by.append([IndexDefiningXpathExpression(ob[0]),
+                                      ob[1]])
+        if limit:
+            try:
+                limit = int(limit)
+            except:
+                raise TypeError("Invalid limit, Integer expected.")
+        self.limit = limit
         
+        super(XPathQuery, self).__init__(query)        
+        self.parsed_predicates = self._parsePredicates(self.predicates)
+
     def __str__(self):
         return "/" + self.node_test + "[%s]" % str(self.parsed_predicates)
         
@@ -241,8 +269,7 @@ class XPathQuery(RestrictedXpathExpression):
             return PredicateExpression(predicates)
         return None
     
-    # methods from IXPathQuery
-    
+    # methods from IXPathQuery    
     def getValue_path(self):
         """@see: L{seishub.xmldb.interfaces.IXPathQuery}"""
         return self.node_test
@@ -254,5 +281,11 @@ class XPathQuery(RestrictedXpathExpression):
     def has_predicates(self):
         """@see: L{seishub.xmldb.interfaces.IXPathQuery}"""
         return self.parsed_predicates != None
-
-
+    
+    def getOrder_by(self):
+        """@see: L{seishub.xmldb.interfaces.IXPathQuery}"""
+        return self.order_by
+    
+    def getLimit(self):
+        """@see: L{seishub.xmldb.interfaces.IXPathQuery}"""
+        return self.limit
