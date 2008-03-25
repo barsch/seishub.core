@@ -87,8 +87,15 @@ class XmlCatalog(XmlDbManager):
         
         return True
     
+    def registerAlias(self, uri, query, order_by = None, limit = None):
+        self.aliases[uri] = {'query':query,
+                             'order_by':order_by,
+                             'limit':limit}
+        
     def query(self, query, order_by = None, limit = None):
-        """@see: L{seishub.xmldb.interfaces.IXmlCatalog}"""           
-        return self.index_catalog.query(XPathQuery(query,
-                                                   order_by,
-                                                   limit))
+        """@see: L{seishub.xmldb.interfaces.IXmlCatalog}"""
+        if isinstance(query,dict):
+            q = XPathQuery(**query)
+        else:
+            q = XPathQuery(query, order_by, limit)
+        return self.index_catalog.query(q)

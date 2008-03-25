@@ -97,9 +97,15 @@ class XmlCatalogTest(SeisHubTestCase):
         self.env.catalog.reindex(IDX1)
     
     def testListIndexes(self):
-        #d=self.env.catalog.listIndexes(res_type="testml", data_type="text")
         self.env.catalog.listIndexes()
-        #d.addCallback(self._printRes)
+        
+    def testQuery(self):
+        self.env.catalog.reindex(IDX1)
+        res1 = self.env.catalog.query('/station',[['/station/XY/paramXY','asc']],limit = 2)
+        res2 = self.env.catalog.query({'query':'/station',
+                                       'order_by':[['/station/XY/paramXY','asc']],
+                                       'limit':2})
+        self.assertEqual(res1,res2)
 
 
 def suite():
