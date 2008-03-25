@@ -48,10 +48,10 @@ class Environment(ComponentManager):
             config_file = os.path.join(self.path, 'conf', 'seishub.ini') 
         # set config handler
         self.config = Configuration(config_file)
-        # init all default options
-        self.initOptions()
         # set log handler
         self.log = Logger(self)
+        # init all default options
+        self.initOptions()
         # set up DB handler
         self.db = DatabaseManager(self) 
         # set XML catalog
@@ -101,8 +101,10 @@ class Environment(ComponentManager):
                 if self.config.has_site_option(section, name):
                     continue
                 else:
-                    self.config.set(section, name, \
-                                    defaults.get(section).get(name))
+                    value = defaults.get(section).get(name)
+                    self.config.set(section, name, value)
+                    self.log.info('Setting default value for [%s] %s = %s' \
+                                  % (section, name, value))
                     self.config.save()
     
     def initComponent(self, component):

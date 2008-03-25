@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import os
+import string
+from urllib import unquote
 
 from twisted.web import http
 from twisted.application import internet
@@ -10,6 +12,8 @@ from pkg_resources import resource_filename #@UnresolvedImport
 from seishub.defaults import DEFAULT_REST_PORT
 from seishub import __version__ as SEISHUB_VERSION
 from seishub.config import IntOption
+from seishub.services.rest.interfaces import IRESTProcessor
+from seishub.core import ExtensionPoint
 
 
 class RESTRequest(http.Request):
@@ -17,9 +21,13 @@ class RESTRequest(http.Request):
     
     def __init__(self, channel, queued):
         http.Request.__init__(self, channel, queued)
+        self._initRESTProcessors()
     
     def process(self):
         """Start processing a request."""
+        # post process self.path
+        self.postpath = map(unquote, string.split(self.path[1:], '/'))
+        
         # root element
         if self.path == '/':
             self.write("I am a REST server - serving atm nothing ;)")
@@ -31,9 +39,41 @@ class RESTRequest(http.Request):
         d.addErrback(self._processingFailed)
     
     def _process(self):
-        """Identify HTTP method."""
-        if self.method.upper() == 'GET':
-            self._processGET()
+        """
+        First we try to resolve to a unique resource directly. If a resource 
+        can't be found we lookup the aliases dictionary. If it still fails, we
+        use the mapping plug-ins.
+        """
+        
+        self.method = self.method.upper()
+        
+        if self.method=='GET' and self.postpath[0]=='seishub':
+            # test if direct resource
+            result = self._isResource()
+            print result
+            if not result:
+                # Resource does not exists
+                self._setHeaders()
+                self.setResponseCode(http.NOT_FOUND)
+                self.finish()
+            self._processGETResource(result)
+        elif self.method=='GET' and self.path in self.env.catalog.aliases:
+            # test if alias 
+            self._processAlias()
+        elif self.method=='GET':
+            # if not alias or not direct resource
+            root_keys = self.processor_root.keys()
+            root_keys.sort()
+            root_keys.reverse()
+            for root_key in root_keys:
+                if not self.path.startswith(root_key):
+                    continue
+                processor_id = self.processor_root.get(root_key)
+                self._processGETMapping(processor_id)
+                return 
+            self._setHeaders()
+            self.setResponseCode(http.NOT_FOUND)
+            self.finish()            
         elif self.method.upper() == 'PUT':
             self._processPUT()
         elif self.method.upper() == 'POST':
@@ -44,28 +84,6 @@ class RESTRequest(http.Request):
             #Service does not implement handlers for this HTTP verb (e.g. HEAD) 
             #Return HTTP status code 405 (Method Not Allowed)
             self.setResponseCode(http.NOT_ALLOWED)
-            self.finish()
-    
-    def _processGET(self):
-        """
-        Handles a HTTP GET request. 
-        
-        First we try to resolve to a unique resource directly. If a resource 
-        can't be found we lookup the aliases dictionary. If it still fails, we
-        use the mapping plug-ins.
-        """
-        # try to get resource from catalog directly
-        result = self._isResource()
-        if result:
-            self._processResource(result)
-        # test if alias 
-        elif self.path in self.env.catalog.aliases:
-            self._processAlias()
-        # test if mapping exists
-        
-        else:
-            self._setHeaders()
-            self.setResponseCode(http.NOT_FOUND)
             self.finish()
     
     def _setHeaders(self, content=None, content_type='text/xml'):
@@ -84,7 +102,7 @@ class RESTRequest(http.Request):
             return False
         return result
     
-    def _processResource(self, result):
+    def _processGETResource(self, result):
         try:
             result = result.getData()
             result = result.encode("utf-8")
@@ -137,6 +155,28 @@ class RESTRequest(http.Request):
         xmldoc.freeDoc()
         
         self._setHeaders(result, 'text/html')
+        self.setResponseCode(http.OK)
+        self.write(result)
+        self.finish()
+    
+    def _processGETMapping(self, processor_id):
+        processor = self.processors.get(processor_id)
+        (pid, purl, pattr) = processor.getProcessorId()
+        if hasattr(processor, 'processGET'):
+            # user handles GET processing
+            result = processor.processGET(self)
+        else:
+            # automatic GET processing
+            
+            # check if resource exists with given path
+            
+            print pid,purl,pattr
+            print self.path
+            print '-------'
+            result = self.env.catalog.query(self.path)
+            print result
+            
+            
         self.setResponseCode(http.OK)
         self.write(result)
         self.finish()
@@ -200,6 +240,22 @@ class RESTRequest(http.Request):
         self.setResponseCode(http.INTERNAL_SERVER_ERROR)
         self.finish()
         return reason
+    
+    def _initRESTProcessors(self):
+        """Return a list of available admin panels."""
+        processor_list = ExtensionPoint(IRESTProcessor).extensions(self.env)
+        self.processor_root = {}
+        self.processors = {}
+        for processor in processor_list:
+            # skip processors without proper interfaces
+            if not hasattr(processor, 'getProcessorId'):
+                continue;
+            options = processor.getProcessorId()
+            # getProcessorId has exact 3 values in a tuple
+            if not isinstance(options, tuple) or len(options)!=3:
+                continue
+            self.processors[options[0]] = processor
+            self.processor_root[options[1]] = options[0]
 
 
 class RESTHTTPChannel(http.HTTPChannel):
@@ -224,7 +280,7 @@ class RESTHTTPFactory(http.HTTPFactory):
 class RESTService(internet.TCPServer):
     """Service for REST HTTP Server."""
     
-    IntOption('rest', 'port', DEFAULT_REST_PORT, "WebAdmin port number.")
+    IntOption('rest', 'port', DEFAULT_REST_PORT, "REST port number.")
     
     def __init__(self, env):
         port = env.config.getint('rest', 'port')

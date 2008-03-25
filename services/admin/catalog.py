@@ -150,7 +150,7 @@ class AliasPanel(Component):
             elif 'delete' in args.keys() and 'alias[]' in args.keys():
                 data['alias[]'] = args['alias[]']
                 data = self._deleteAliases(data)
-        # fetch all indexes
+        # fetch all aliases
         data['aliases'] = self.catalog.aliases
         return ('catalog_aliases.tmpl', data)
     
