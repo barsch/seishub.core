@@ -34,7 +34,7 @@ uri_tab = Table(DEFAULT_PREFIX + URI_TABLE, metadata,
     Column('res_id', Integer, ForeignKey(DEFAULT_PREFIX + RESOURCE_TABLE +
                                          '.id')),
     Column('res_type', Text),
-    PrimaryKeyConstraint('uri','revision')
+    PrimaryKeyConstraint('uri') #,'revision')
     )
 
 metadata_tab = Table(DEFAULT_PREFIX + METADATA_TABLE, metadata,

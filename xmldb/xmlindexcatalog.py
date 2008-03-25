@@ -35,7 +35,7 @@ class XmlIndexCatalog(DbEnabled):
     _parse_xpath_query=staticmethod(_parse_xpath_query)
             
     # methods from IIndexRegistry:
-        
+
     def registerIndex(self, xml_index):
         """@see: L{seishub.xmldb.xmlindexcatalog.interfaces.IIndexRegistry}"""
         if not IXmlIndex.providedBy(xml_index):
