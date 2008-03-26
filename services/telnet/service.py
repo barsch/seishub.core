@@ -7,7 +7,6 @@ from twisted.application import internet
 from seishub import __version__ as SEISHUB_VERSION
 from seishub.services.telnet.interfaces import ITelnetCmd
 from seishub.core import ExtensionPoint
-from seishub.util.text import getTextUntilDot
 from seishub.defaults import DEFAULT_TELNET_PORT
 from seishub.config import IntOption
 
@@ -33,7 +32,7 @@ class TelnetLineReciever(basic.LineReceiver):
             self._out(SEISHUB_VERSION)
         elif line == 'help':
             for keyword, plugin in self.telnet_cmds.items():
-                self._out(keyword+' - '+getTextUntilDot(plugin.__doc__))
+                self._out(keyword+' - '+plugin.__doc__)
         elif splitline[0] in self.telnet_cmds.keys():
             cmd = self.telnet_cmds.get(splitline[0])
             for l in cmd.executeCommand(splitline):

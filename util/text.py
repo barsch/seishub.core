@@ -41,13 +41,6 @@ def to_unicode(text, charset=None):
             return unicode(text, locale.getpreferredencoding(), 'replace')
 
 
-def getTextUntilDot(text=None):
-    """Returns the string until the first dot."""
-    if not text:
-        return ''
-    return text.split('.', 1)[0] + '.'
-
-
 def detectXMLEncoding(filename):
     """Attempts to detect the character encoding of the xml file
     given by a filename.

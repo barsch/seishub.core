@@ -8,7 +8,6 @@ from twisted.application import service
 
 from seishub.core import Component, implements
 from seishub.services.admin.interfaces import IAdminPanel
-from seishub.util.text import getTextUntilDot
 from seishub.defaults import DEFAULT_COMPONENTS
 from seishub.config import Option
 
@@ -143,8 +142,7 @@ class PluginsPanel(Component):
         from seishub.core import ComponentMeta
         for component in ComponentMeta._components:
             module = sys.modules[component.__module__]
-            # create a one line description
-            description = getTextUntilDot(inspect.getdoc(component)) 
+            description = inspect.getdoc(component)
             
             classname = module.__name__+'.'+component.__name__
             plugin = {
