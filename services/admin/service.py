@@ -42,7 +42,9 @@ class AdminRequest(http.Request):
                 # ok there is a category - redirect to first sub panel
                 pages = filter(lambda p: p[0] == self.postpath[0], 
                                self.panel_ids)
-                self.redirect('/'+pages[0][0]+'/'+pages[0][2])
+                menuitems = [p[2] for p in pages]
+                menuitems.sort()
+                self.redirect('/'+pages[0][0]+'/'+menuitems[0])
                 self.finish()
                 return
             # redirect to the available panel
@@ -143,6 +145,8 @@ class AdminRequest(http.Request):
                                                "submenu.tmpl"))
         menuitems = map((lambda p: (p[2],p[3])),
                          filter(lambda p: p[0]==self.cat_id, self.panel_ids))
+        menuitems = dict(menuitems).items()
+        menuitems.sort()
         temp.submenu = menuitems
         temp.cat_id = self.cat_id
         temp.panel_id = self.panel_id
