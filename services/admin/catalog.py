@@ -17,7 +17,7 @@ class ResourcesPanel(Component):
         data = {
             'file': '', 
             'uri': '',
-            'resturl': 'http://localhost:' + str(rest_port),
+            'resturl': 'http://localhost:' + str(rest_port) + '/seishub',
         }
         if request.method=='POST':
             args = request.args
@@ -169,3 +169,30 @@ class AliasPanel(Component):
         data['alias'] = ''
         data['xpath'] = ''
         return data
+
+
+class QueryPanel(Component):
+    """Query the catalog via http form."""
+    implements(IAdminPanel)
+    
+    def getPanelId(self):
+        return ('catalog', 'Catalog', 'query', 'Query Catalog')
+    
+    def renderPanel(self, request):
+        data = {
+            'query': '', 
+            'result': '',
+        }
+        args = request.args
+        if request.method=='POST':
+            query = None
+            if 'query' in args.keys() and 'send' in args.keys():
+                query = data['query'] = request.args['query'][0]
+            if query:
+                data['query'] = query
+                try:
+                    data['result'] = self.catalog.query(query)
+                except Exception, e:
+                    self.env.log.info('Catalog query error', e)
+                    data['error'] = ('Catalog query error', e)
+        return ('catalog_query.tmpl', data)

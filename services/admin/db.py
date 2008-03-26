@@ -6,6 +6,7 @@ from seishub.xmldb.defaults import DEFAULT_PREFIX, RESOURCE_TABLE, \
                                    INDEX_TABLE, INDEX_DEF_TABLE, \
                                    URI_TABLE, QUERY_ALIASES_TABLE
 
+
 class BasicPanel(Component):
     """DB configuration."""
     implements(IAdminPanel)

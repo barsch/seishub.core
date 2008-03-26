@@ -20,10 +20,18 @@
 
 <h2>List of all aliases</h2>
 <form method="post" name="list">
-  #for $alias in $aliases
-  <input type="checkbox" name="alias[]" value="$alias" /> 
-  <a href="$resturl$alias">$alias</a> - $aliases[$alias]<br />
+  <table>
+    #for $alias in $aliases
+    <tr>
+      <td> <input type="checkbox" name="alias[]" value="$alias" /> </td>
+      <td> $alias </td>
+      <td> $aliases[$alias] </td>
+      <td> 
+        [<a href="$resturl$alias">XML</a>] 
+        [<a href="$resturl$alias?output=xhtml">XHTML</a>]
+      </td>
+    </tr>
   #end for
-  <br />
+  </table>
   <input type="submit" name="delete" value="Delete" />
 </form>

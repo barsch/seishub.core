@@ -2,10 +2,12 @@
 
 from seishub.core import Component, implements
 from seishub.services.rest.interfaces import IRESTProcessor
+from seishub.services.rest.alias import registerAlias
 
-#registerAlias('/lastevents', "/quakeml/event?order_by=['/quakeml/event/year']/&limit=20")
-#registerAlias('/historical-events', 'quakeml', '/event', 
-#              order_by = ['/year'], limit = 50)
+
+registerAlias('/lastevents', 'quakeml', "/event?order_by=['/quakeml/event/year']/&limit=20")
+registerAlias('/historical-events', 'quakeml', '/event', 
+              order_by = ['/year'], limit = 50)
 
 
 class QuakeML101Processor(Component):
@@ -23,9 +25,7 @@ class QuakeML101Processor(Component):
 
 
 class QuakeMLRealTime101Processor(Component):
-    """QuakeML RT 1.1 plugin for the REST service."""
-    implements(IRESTProcessor)
-
+    """QuakeML RT 1.0.1 plugin for the REST service."""
     implements(IRESTProcessor)
     
     def getProcessorId(self):

@@ -47,21 +47,17 @@ class RESTRequest(http.Request):
         
         self.method = self.method.upper()
         
-        if self.method=='GET' and self.postpath[0]=='seishub':
-            # test if direct resource
-            result = self._isResource()
-            print result
-            if not result:
-                # Resource does not exists
-                self._setHeaders()
-                self.setResponseCode(http.NOT_FOUND)
+        if self.postpath[0]=='seishub':
+            if self.method=='GET':
+                self._processGETResource()
+            else:
+                self.setResponseCode(http.NOT_ALLOWED)
                 self.finish()
-            self._processGETResource(result)
         elif self.method=='GET' and self.path in self.env.catalog.aliases:
             # test if alias 
             self._processAlias()
         elif self.method=='GET':
-            # if not alias or not direct resource
+            # if not alias or not direct resource, it should be a mapping
             root_keys = self.processor_root.keys()
             root_keys.sort()
             root_keys.reverse()
@@ -81,8 +77,6 @@ class RESTRequest(http.Request):
         elif self.method.upper() == 'DELETE':
             self._processDELETE()
         else:
-            #Service does not implement handlers for this HTTP verb (e.g. HEAD) 
-            #Return HTTP status code 405 (Method Not Allowed)
             self.setResponseCode(http.NOT_ALLOWED)
             self.finish()
     
@@ -94,15 +88,14 @@ class RESTRequest(http.Request):
             self.setHeader('content-type', content_type+"; charset=UTF-8")
             self.setHeader('content-length', str(len(str(content))))
    
-    def _isResource(self):
-        """Test if URL fits to a unique resource."""
+    def _processGETResource(self):
+        resource_id = self.path[8:]
         try:
-            result = self.env.catalog.getResource(uri = self.path)
-        except:
-            return False
-        return result
-    
-    def _processGETResource(self, result):
+            result = self.env.catalog.getResource(uri = resource_id)
+        except Exception, e:
+            self.env.log.debug(e)
+            self.finish()
+            return
         try:
             result = result.getData()
             result = result.encode("utf-8")
@@ -111,9 +104,6 @@ class RESTRequest(http.Request):
             self.setResponseCode(http.INTERNAL_SERVER_ERROR)
             self.finish()
             return
-        # XXX: evaluate any given output option and use XSLT
-        
-        #write resource data as response
         self._setHeaders(result)
         self.setResponseCode(http.OK)
         self.write(result)
@@ -121,8 +111,15 @@ class RESTRequest(http.Request):
     
     def _processAlias(self):
         """Generates a list of resources from an alias query."""
-        urls = self.env.catalog.query(self.env.catalog.aliases[self.path])
         
+        # fetch list of uris via catalog
+        try:
+            uris = self.env.catalog.query(self.env.catalog.aliases[self.path])
+        except Exception, e:
+            self.env.log.error(e)
+            self.setResponseCode(http.INTERNAL_SERVER_ERROR)
+            self.finish()
+            return
         # XXX: here we need to look through all registered stylesheets for this 
         # resource type (linklist) and evaluate any given output option
         fh = open(resource_filename(self.__module__,
@@ -130,17 +127,13 @@ class RESTRequest(http.Request):
         xslt = fh.read()
         fh.close()
         
-        root = """<?xml version="1.0"?>
-        <seishub xml:base="http:localhost:8080"
-                 xmlns:xlink="http://www.w3.org/1999/xlink"
-                 query="%s">
-            %s
-        </seishub>"""
-        tmpl = """<link xlink:type="simple" xlink:href="%s">%s</link>"""
-        doc = ""
-        for url in urls:
-            doc += tmpl % (url, url)
-        result = str(root % (self.path, doc))
+        result = self._getResourceList(uris)
+        
+        if 'output' not in self.args:
+            self._setHeaders(result)
+            self.setResponseCode(http.OK)
+            self.write(result)
+            self.finish() 
         
         # XXX: needs to be in util/wrapper class
         import libxslt
@@ -162,24 +155,65 @@ class RESTRequest(http.Request):
     def _processGETMapping(self, processor_id):
         processor = self.processors.get(processor_id)
         (pid, purl, pattr) = processor.getProcessorId()
+        resource_id = self.path[len(purl):]
+        result = None
         if hasattr(processor, 'processGET'):
             # user handles GET processing
             result = processor.processGET(self)
+            self._setHeaders(result, 'text/html')
+            self.setResponseCode(http.OK)
+            self.write(result)
         else:
             # automatic GET processing
-            
-            # check if resource exists with given path
-            
             print pid,purl,pattr
-            print self.path
+            print resource_id
             print '-------'
-            result = self.env.catalog.query(self.path)
-            print result
-            
-            
-        self.setResponseCode(http.OK)
-        self.write(result)
+            try:
+                uris = self.env.catalog.query(resource_id)
+            except Exception, e:
+                self.env.log.debug(e)
+                self.setResponseCode(http.NOT_FOUND)
+                self.finish()
+                return
+            # single result
+            if len(uris)==1:
+                result = self._getSingleResource('/seishub' + uris[0])
+            else:
+                result = self._getResourceList(uris)
+        if result:
+            self._setHeaders(result, 'text/html')
+            self.setResponseCode(http.OK)
+            self.write(result)
         self.finish()
+    
+    def _getSingleResource(self, uri):
+        try:
+            result = self.env.catalog.getResource(uri = uri)
+        except Exception, e:
+            self.env.log.debug(e)
+            self.setResponseCode(http.NOT_FOUND)
+            return
+        try:
+            result = result.getData()
+            result = result.encode("utf-8")
+        except Exception, e:
+            self.env.log.error(e)
+            self.setResponseCode(http.INTERNAL_SERVER_ERROR)
+            return
+        return result
+    
+    def _getResourceList(self, uris=[]):
+        fh = open(resource_filename(self.__module__,
+                          "xml" + os.sep + "linklist.tmpl"))
+        root = fh.read()
+        fh.close()
+        
+        tmpl = """<link xlink:type="simple" xlink:href="%s">%s</link>"""
+        doc = ""
+        for uri in uris:
+            # XXX: xml:base doesn't work!!!!
+            doc += tmpl % ('/seishub'+uri, uri)
+        return str(root % (self.path, doc))
     
     def _processPOST(self):
         """Handles a HTTP POST request."""
