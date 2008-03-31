@@ -18,6 +18,8 @@
 
 import sys
 
+from zope.interface import Interface as ZopeInterface
+
 __all__ = ['Component', 'ExtensionPoint', 'implements', 'Interface',
            'SeisHubError', 'ERROR', 'WARN', 'INFO', 'DEBUG']
 
@@ -34,8 +36,10 @@ class SeisHubError(Exception):
         Exception.__init__(self, *args, **kwargs)
 
 
-class Interface(object):
-    """Marker base class for extension point interfaces."""
+class Interface(ZopeInterface):
+    """Marker base class for extension point interfaces inherits from Zopes 
+    interface class.
+    """
 
 
 class ExtensionPoint(property):

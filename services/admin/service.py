@@ -273,8 +273,8 @@ class AdminService(internet.SSLServer):
     
     def _getCertificates(self):
         """Fetching certificate files from configuration."""
-        priv = self.env.config.get('admin', 'privatekey_file') or 'server.pem'
-        cert = self.env.config.get('admin', 'certificate_file') or 'server.pem'
+        priv = self.env.config.get('admin', 'privatekey_file') or 'server.pkey'
+        cert = self.env.config.get('admin', 'certificate_file') or 'server.cert'
         if not os.path.isfile(priv):
             priv = os.path.join(self.env.path, 'conf', priv)
             if not os.path.isfile(priv):
