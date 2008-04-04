@@ -51,7 +51,7 @@ class XmlTreeTest(unittest.TestCase):
         # an expression, returning multiple xml elements;
         # getStrContent() concatenates all Element values:
         self.assertEquals(tree_doc.evalXPath('/a')[0].getStrContent(),
-                          "A string\nAnother string\n")
+                          "<a><b>A string</b>\n<b>Another string</b>\n</a>")
 
 
 def suite():

@@ -1,7 +1,11 @@
 # -*- coding: utf-8 -*-
+# import libxml2
+from StringIO import StringIO
 
-import libxml2
+from lxml import etree
 from zope.interface import implements, Interface, Attribute
+from zope.interface.exceptions import DoesNotImplement
+
 from seishub.core import SeisHubError
 
 class IXmlNode(Interface):
@@ -62,6 +66,8 @@ class InvalidXPathExpression(SeisHubError):
 
 class XmlNode(object):
     """simple wrapper for libxml2.xmlNode"""
+    encoding = "utf-8"
+    
     def __init__(self,node_obj=None):
         self.setNode_obj(node_obj)
         
@@ -69,148 +75,250 @@ class XmlNode(object):
         return self.getStrContent()
             
     def setNode_obj(self,node_obj):
-        if isinstance(node_obj,libxml2.xmlNode):
-            self._node_obj=node_obj
-        else:
-            self._node_obj=None
-            raise TypeError('setNode_obj: libxml2.xmlNode expected')
+        self._node_obj = node_obj
         
     def getNode_obj(self):
         return self._node_obj
         
     def getStrContent(self):
-        if self._node_obj:
-            return self._node_obj.getContent()
+        if isinstance(self._node_obj, basestring):
+            str = self._node_obj
+        elif len(self._node_obj.getchildren()) == 0:
+            str = self._node_obj.text
         else:
-            return None
+            str = etree.tostring(self._node_obj, 
+                                 encoding = self.encoding)
+        return str
         
 
 class XmlSchema(object):
-    """IXmlSchema implementation which makes use of libxml2"""
+    """XSD document representation"""
     implements(IXmlSchema)
     
     def __init__(self,schema_data):
-        parser_ctxt = libxml2.schemaNewMemParserCtxt(schema_data, 
-                                                     len(schema_data))
-        schema = parser_ctxt.schemaParse()
-        self.valid_ctxt  = schema.schemaNewValidCtxt()
-        del parser_ctxt
-        del schema
-        
-    def __del__(self):
-        del self.valid_ctxt
-        libxml2.schemaCleanupTypes() #TODO: not sure what that is for
+        f = StringIO(schema_data)
+        schema_doc = etree.parse(f)
+        self.schema = etree.XMLSchema(schema_doc)
     
     def validate(self,xml_doc):
-        self.valid_ctxt.setValidityErrorHandler(self._handleValidationError, 
-                                                self._handleValidationError,
-                                                xml_doc)
-        err_val=xml_doc.getXml_doc().schemaValidateDoc(self.valid_ctxt)
-        if (err_val == 0):
-            ret=True
-        else:
-            ret=False
-             
-        return ret
-    
-    def _handleValidationError(self,msg,data):
-        data.errors.append({'msg':msg})
+        if not IXmlDoc.providedBy(xml_doc):
+            raise DoesNotImplement(IXmlDoc)
+        
+        valid = self.schema.validate(xml_doc.getXml_doc())
+        if not valid:
+            return False
+        
+        return True
         
 class XmlDoc(object):
-    """IXmlDoc implementation which makes use of libxml2"""
+    """XML document"""
     implements(IXmlDoc)
     
     def __init__(self,xml_doc=None):
         if xml_doc:
             self._xml_doc=xml_doc
-            
-    def __del__(self):
-        #import pdb; pdb.set_trace()
-        if hasattr(self,'_xml_doc'):
-            if isinstance(self._xml_doc,libxml2.xmlDoc):
-                self._xml_doc.freeDoc()
-            else:
-                del self._xml_doc
     
     def getXml_doc(self):
         if hasattr(self,'_xml_doc'):
             return self._xml_doc
-        else:
-            return None
+        return None
         
     def getRootElementName(self):
-        return self._xml_doc.getRootElement().name
+        return self._xml_doc.getroot().tag
 
 class XmlTreeDoc(XmlDoc):
-    """This class parses a document using the libxml2 push parser""" 
+    """XML document using lxml's element tree parser""" 
     implements(IXmlTreeDoc)
     
     def __init__(self,xml_data=None,resource_name="",blocking=False):
         XmlDoc.__init__(self)
-        self.errors=list()
-        self.options={'blocking':blocking,}
+        self.errors = list()
+        self.options = {'blocking':blocking,}
         if isinstance(xml_data,basestring):
-            self._xml_data=xml_data
+            self._xml_data = xml_data
         else:
             raise InvalidXmlDataError("No xml data str was given: %s" % xml_data)
-        self._resource_name=resource_name
+        self._resource_name = resource_name
         self._parse()
         
     def _parse(self):
-        # TODO: some errors aren't caught by error handler
-        parser_ctxt = libxml2.createPushParser(None, "", 0, 
-                                               self._resource_name)
-        parser_ctxt.setErrorHandler(self._handleParserError,None)
-        
-        data = self._xml_data
-        
-        # XXX: this is the only way its working for uploading *and* showing 
-        # in REST - needs fixing!!!
-
-#        try:
-#            data = self._xml_data.encode("utf-8")
-#        except:
-#            pass
-#        
-        parser_ctxt.parseChunk(data,len(data),1)
-        if self.options['blocking'] and len(self.errors)>0:
+        parser = etree.XMLParser()
+        data = StringIO(self._xml_data)
+        self._xml_doc = etree.parse(data,parser)
+        self.errors = parser.error_log
+        if self.options['blocking'] and len(self.errors) > 0:
             raise InvalidXmlDataError(self.errors)
-        try:
-            self._xml_doc=parser_ctxt.doc()
-        except:
-            raise InvalidXmlDataError("Xml doc creation failed")
+        return True
     
     def getErrors(self):
         return self.errors
-        
-    def _handleParserError(self,arg,msg,severity,reserved):
-        self.errors.append({'msg':msg,'severity':severity})
 
-    def evalXPath(self,expr):
-        if not isinstance(self._xml_doc,libxml2.xmlDoc):
-            raise LibxmlError('_xml_doc: libxml2.xmlDoc instance expected')
-            return None
-        
+    def evalXPath(self,expr):       
         if not isinstance(expr,basestring):
-            raise TypeError('String expected: expr')
-            return None
-        
-        #TODO: errors are still reported on stderr
-        xpath_ctxt=self._xml_doc.xpathNewContext()
+            raise TypeError('String expected: %s' % expr)
         
         try:
-            res=xpath_ctxt.xpathEval(expr)
-        except libxml2.xpathError:
-            raise InvalidXPathExpression(expr)
+            res = self._xml_doc.xpath(expr)
+        except etree.XPathSyntaxError, e:
+            raise InvalidXPathExpression(e)
+        #import pdb; pdb.set_trace()
         if res:
-            nodes=[XmlNode(node) for node in res]
+            nodes = [XmlNode(node) for node in res]
         else:
-            nodes=list()
-        
-        xpath_ctxt.xpathFreeContext()
+            nodes = list()
         return nodes
-        
-class XmlSaxDoc(XmlDoc):
-    """This class makes use of the libxml2 sax parser"""
-    implements(IXmlSaxDoc)
+
+#class XmlNode(object):
+#    """simple wrapper for libxml2.xmlNode"""
+#    def __init__(self,node_obj=None):
+#        self.setNode_obj(node_obj)
+#        
+#    def __str__(self):
+#        return self.getStrContent()
+#            
+#    def setNode_obj(self,node_obj):
+#        if isinstance(node_obj,libxml2.xmlNode):
+#            self._node_obj=node_obj
+#        else:
+#            self._node_obj=None
+#            raise TypeError('setNode_obj: libxml2.xmlNode expected')
+#        
+#    def getNode_obj(self):
+#        return self._node_obj
+#        
+#    def getStrContent(self):
+#        if self._node_obj:
+#            return self._node_obj.getContent()
+#        else:
+#            return None
+#        
+#
+#class XmlSchema(object):
+#    """IXmlSchema implementation which makes use of libxml2"""
+#    implements(IXmlSchema)
+#    
+#    def __init__(self,schema_data):
+#        parser_ctxt = libxml2.schemaNewMemParserCtxt(schema_data, 
+#                                                     len(schema_data))
+#        schema = parser_ctxt.schemaParse()
+#        self.valid_ctxt  = schema.schemaNewValidCtxt()
+#        del parser_ctxt
+#        del schema
+#        
+#    def __del__(self):
+#        del self.valid_ctxt
+#        libxml2.schemaCleanupTypes() #TODO: not sure what that is for
+#    
+#    def validate(self,xml_doc):
+#        self.valid_ctxt.setValidityErrorHandler(self._handleValidationError, 
+#                                                self._handleValidationError,
+#                                                xml_doc)
+#        err_val=xml_doc.getXml_doc().schemaValidateDoc(self.valid_ctxt)
+#        if (err_val == 0):
+#            ret=True
+#        else:
+#            ret=False
+#             
+#        return ret
+#    
+#    def _handleValidationError(self,msg,data):
+#        data.errors.append({'msg':msg})
+#        
+#class XmlDoc(object):
+#    """IXmlDoc implementation which makes use of libxml2"""
+#    implements(IXmlDoc)
+#    
+#    def __init__(self,xml_doc=None):
+#        if xml_doc:
+#            self._xml_doc=xml_doc
+#            
+#    def __del__(self):
+#        #import pdb; pdb.set_trace()
+#        if hasattr(self,'_xml_doc'):
+#            if isinstance(self._xml_doc,libxml2.xmlDoc):
+#                self._xml_doc.freeDoc()
+#            else:
+#                del self._xml_doc
+#    
+#    def getXml_doc(self):
+#        if hasattr(self,'_xml_doc'):
+#            return self._xml_doc
+#        else:
+#            return None
+#        
+#    def getRootElementName(self):
+#        return self._xml_doc.getRootElement().name
+#
+#class XmlTreeDoc(XmlDoc):
+#    """This class parses a document using the libxml2 push parser""" 
+#    implements(IXmlTreeDoc)
+#    
+#    def __init__(self,xml_data=None,resource_name="",blocking=False):
+#        XmlDoc.__init__(self)
+#        self.errors=list()
+#        self.options={'blocking':blocking,}
+#        if isinstance(xml_data,basestring):
+#            self._xml_data=xml_data
+#        else:
+#            raise InvalidXmlDataError("No xml data str was given: %s" % xml_data)
+#        self._resource_name=resource_name
+#        self._parse()
+#        
+#    def _parse(self):
+#        # TODO: some errors aren't caught by error handler
+#        parser_ctxt = libxml2.createPushParser(None, "", 0, 
+#                                               self._resource_name)
+#        parser_ctxt.setErrorHandler(self._handleParserError,None)
+#        
+#        data = self._xml_data
+#        
+#        # XXX: this is the only way its working for uploading *and* showing 
+#        # in REST - needs fixing!!!
+#
+##        try:
+##            data = self._xml_data.encode("utf-8")
+##        except:
+##            pass
+##        
+#        parser_ctxt.parseChunk(data,len(data),1)
+#        if self.options['blocking'] and len(self.errors)>0:
+#            raise InvalidXmlDataError(self.errors)
+#        try:
+#            self._xml_doc=parser_ctxt.doc()
+#        except:
+#            raise InvalidXmlDataError("Xml doc creation failed")
+#    
+#    def getErrors(self):
+#        return self.errors
+#        
+#    def _handleParserError(self,arg,msg,severity,reserved):
+#        self.errors.append({'msg':msg,'severity':severity})
+#
+#    def evalXPath(self,expr):
+#        if not isinstance(self._xml_doc,libxml2.xmlDoc):
+#            raise LibxmlError('_xml_doc: libxml2.xmlDoc instance expected')
+#            return None
+#        
+#        if not isinstance(expr,basestring):
+#            raise TypeError('String expected: expr')
+#            return None
+#        
+#        #TODO: errors are still reported on stderr
+#        xpath_ctxt=self._xml_doc.xpathNewContext()
+#        
+#        try:
+#            res=xpath_ctxt.xpathEval(expr)
+#        except libxml2.xpathError:
+#            raise InvalidXPathExpression(expr)
+#        if res:
+#            nodes=[XmlNode(node) for node in res]
+#        else:
+#            nodes=list()
+#        
+#        xpath_ctxt.xpathFreeContext()
+#        return nodes
+#        
+#class XmlSaxDoc(XmlDoc):
+#    """This class makes use of the libxml2 sax parser"""
+#    implements(IXmlSaxDoc)
 
