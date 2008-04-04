@@ -3,8 +3,8 @@
 from seishub.core import Interface
 
 
-class ITelnetCmd(Interface):
-    """Extension point interface for adding commands to the telnet service."""
+class ISSHCommand(Interface):
+    """Extension point interface for adding commands to the SSH service."""
 
     def getCommandId(self):
         """Return a command string."""

@@ -13,7 +13,9 @@ from pkg_resources import resource_filename #@UnresolvedImport
 from seishub import __version__ as SEISHUB_VERSION
 from seishub.services.admin.interfaces import IAdminPanel
 from seishub.core import ExtensionPoint, SeisHubError
-from seishub.defaults import DEFAULT_ADMIN_PORT
+from seishub.defaults import DEFAULT_ADMIN_PORT, \
+                             DEFAULT_HTTPS_CERTIFICATE_FILENAME, \
+                             DEFAULT_HTTPS_PRIVATE_KEY_FILENAME
 from seishub.config import IntOption, Option
 
 
@@ -253,8 +255,10 @@ class AdminHTTPFactory(http.HTTPFactory):
 class AdminService(internet.SSLServer):
     """Service for WebAdmin HTTP Server."""
     IntOption('admin', 'port', DEFAULT_ADMIN_PORT, "WebAdmin port number.")
-    Option('admin', 'privatekey_file', 'server.pem', "Private key file.")
-    Option('admin', 'certificate_file', 'server.pem', "Certificate file.")
+    Option('admin', 'private_key_file', DEFAULT_HTTPS_PRIVATE_KEY_FILENAME, 
+           "Private key file.")
+    Option('admin', 'certificate_file', DEFAULT_HTTPS_CERTIFICATE_FILENAME, 
+           "Certificate file.")
     Option('admin', 'secured', 'True', "Enable HTTPS connection.")
     
     def __init__(self, env):
@@ -273,8 +277,10 @@ class AdminService(internet.SSLServer):
     
     def _getCertificates(self):
         """Fetching certificate files from configuration."""
-        priv = self.env.config.get('admin', 'privatekey_file') or 'server.pkey'
-        cert = self.env.config.get('admin', 'certificate_file') or 'server.cert'
+        priv = self.env.config.get('admin', 'private_key_file') or \
+               DEFAULT_HTTPS_PRIVATE_KEY_FILENAME
+        cert = self.env.config.get('admin', 'certificate_file') or \
+               DEFAULT_HTTPS_CERTIFICATE_FILENAME
         if not os.path.isfile(priv):
             priv = os.path.join(self.env.path, 'conf', priv)
             if not os.path.isfile(priv):

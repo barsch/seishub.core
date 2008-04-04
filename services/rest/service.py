@@ -12,7 +12,7 @@ from pkg_resources import resource_filename #@UnresolvedImport
 from seishub.defaults import DEFAULT_REST_PORT
 from seishub import __version__ as SEISHUB_VERSION
 from seishub.config import IntOption
-from seishub.services.rest.interfaces import IRESTProcessor
+from seishub.services.rest.interfaces import IRESTMapper
 from seishub.core import ExtensionPoint
 
 
@@ -277,7 +277,7 @@ class RESTRequest(http.Request):
     
     def _initRESTProcessors(self):
         """Return a list of available admin panels."""
-        processor_list = ExtensionPoint(IRESTProcessor).extensions(self.env)
+        processor_list = ExtensionPoint(IRESTMapper).extensions(self.env)
         self.processor_root = {}
         self.processors = {}
         for processor in processor_list:

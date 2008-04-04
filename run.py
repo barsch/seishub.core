@@ -7,9 +7,9 @@ from twisted.internet import reactor
 from seishub.env import Environment
 from seishub.services.admin.service import AdminHTTPFactory
 from seishub.defaults import DEFAULT_ADMIN_PORT, DEFAULT_REST_PORT, \
-                             DEFAULT_TELNET_PORT
+                             DEFAULT_SSH_PORT
 from seishub.services.rest.service import RESTHTTPFactory
-from seishub.services.telnet.service import TelnetServerFactory
+from seishub.services.ssh.service import SSHServiceFactory
 
 
 def main():
@@ -29,8 +29,8 @@ def main():
     reactor.listenTCP(port, RESTHTTPFactory(env))
     
     ## Telnet
-    port = env.config.getint('telnet', 'port') or DEFAULT_TELNET_PORT
-    reactor.listenTCP(port, TelnetServerFactory(env))
+    port = env.config.getint('telnet', 'port') or DEFAULT_SSH_PORT
+    reactor.listenTCP(port, SSHServiceFactory(env))
     
     reactor.run()
 

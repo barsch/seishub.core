@@ -3,7 +3,7 @@
 from seishub.core import Interface
 
 
-class IRESTProcessor(Interface):
+class IRESTMapper(Interface):
     """Extension point for adding URL mappings for the REST service."""
     
     def getProcessorId():
@@ -45,22 +45,3 @@ class IRESTProcessor(Interface):
         This function should return True if the resource could be deleted 
         otherwise a SeisHubError instance.
         """
-    
-    def getStylesheets():
-        """
-        Return dict of output stylesheets in form of {'output_id': 'URI',}.
-        """
-    
-    def getSchemata():
-        """
-        Return URI list of validation schemas (dtd or xsd).
-        """
-    
-    def getIndexes():
-        """
-        Return dict of indexes and type in form of 
-        {'/root/path1': 'text', '/root/path2': 'double', }.
-        """
-    
-    def getXMLDirs():
-        """Return a list of directories containing XML files."""
