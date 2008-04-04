@@ -136,13 +136,13 @@ class SSHServiceFactory(factory.SSHFactory):
     
     def __init__(self, env):
         self.env = env
-        self.portal = portal.Portal(SSHServiceRealm(env))
         users = {'admin': 'aaa', }
-        checker = checkers.InMemoryUsernamePasswordDatabaseDontUse(**users)
-        self.portal.registerChecker(checker)
+        realm = SSHServiceRealm(env)
+        check = [checkers.InMemoryUsernamePasswordDatabaseDontUse(**users)]
+        self.portal = portal.Portal(realm, check)
         pub, priv = self._getCertificates()
-        self.publicKeys = {'ssh-rsa': keys.getPublicKeyString(pub)}
-        self.privateKeys = {'ssh-rsa': keys.getPrivateKeyObject(priv)}
+        self.publicKeys = {'ssh-rsa': keys.Key.fromFile(pub)}
+        self.privateKeys = {'ssh-rsa': keys.Key.fromFile(priv)}
     
     def _getCertificates(self):
         """Fetching certificate files from configuration."""
