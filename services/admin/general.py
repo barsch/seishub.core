@@ -49,8 +49,6 @@ class ConfigPanel(Component):
         for s in sections:
             options = self.config.options(s)
             data['options'][s] = options
-        data['opt1'] = self.config.defaults()
-        data['opt2'] = Option.registry
         return ('general_config.tmpl', data)
 
 

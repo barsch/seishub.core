@@ -35,7 +35,7 @@ class PasswordDictChecker(object):
         else:
             return defer.fail(credError.UnauthorizedLogin("No such user"))
 
-class TestRealm(object):
+class SeisHubRealm(object):
     implements(portal.IRealm)
     
     def __init__(self, users):
@@ -51,11 +51,11 @@ class TestRealm(object):
             raise KeyError("None of the requested Interfaces is supported.")
 
 
-users = {'admin': 'Administrator',}
-passwords = {'admin': 'aaa',}
+users = {'admin': 'Administrator', 'barsch': 'Robert Barsch'}
+passwords = {'admin': 'aaa', 'barsch': 'muh'}
 
 class Portal(portal.Portal):
     def __init__(self):
-        realm = TestRealm(users)
+        realm = SeisHubRealm(users)
         checkers = (PasswordDictChecker(passwords),)
         portal.Portal.__init__(self, realm, checkers)

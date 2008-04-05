@@ -43,7 +43,7 @@ class ComponentLoader(object):
             pkg_resources.Environment(search_path)
         )
         for dist in distributions:
-            self.env.log.debug('Processing plugin %s from %s' % 
+            self.env.log.debug('Processing egg %s from %s' % 
                                (dist, dist.location))
             working_set.add(dist)
         
@@ -68,7 +68,7 @@ class ComponentLoader(object):
             _logError(dist, e)
         
         for entry in working_set.iter_entry_points(entry_point_name):
-            self.env.log.info('Loading %s from %s' % (entry.name,
+            self.env.log.info('Loading egg %s from %s' % (entry.name,
                               entry.dist.location))
             try:
                 entry.load(require=True)
@@ -89,7 +89,7 @@ class ComponentLoader(object):
                 try:
                     plugin_name = os.path.basename(plugin_file)
                     plugin_file += os.sep+'__init__.py'
-                    self.env.log.info('Loading file plugin %s from %s' % 
+                    self.env.log.info('Loading plugin %s from %s' % 
                                       (plugin_name, plugin_file))
                     if plugin_name not in sys.modules:
                         module = imp.load_source(plugin_name, plugin_file)

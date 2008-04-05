@@ -3,10 +3,10 @@
 import unittest
 import os
 import inspect
-import libxml2
+
+from lxml import etree
 
 from seishub.test import SeisHubTestCase
-from seishub.util.text import checkXMLWellFormed
 
 
 class XMLConformanceTestCase(SeisHubTestCase):
@@ -34,71 +34,75 @@ class XMLConformanceTestCase(SeisHubTestCase):
         filename = 'japanese.xml'
         self._runXMLTestCase(path, testcase, filename)
     
+    def testOasis(self):
+        path = self.test_path
+        testcase = 'oasis'
+        filename = 'oasis.xml'
+        self._runXMLTestCase(path, testcase, filename)
+    
+    def testEduniXML11(self):
+        path = self.test_path
+        testcase = os.path.join('eduni', 'xml-1.1')
+        filename = 'xml11.xml'
+        self._runXMLTestCase(path, testcase, filename)
+    
+    def testEduniErrata4e(self):
+        path = self.test_path
+        testcase = os.path.join('eduni', 'errata-4e')
+        filename = 'errata4e.xml'
+        self._runXMLTestCase(path, testcase, filename)
+    
     def _runXMLTestCase(self, path, testcase, filename):
         """Parse and evaluate a given test case."""
         testcase_file = os.path.join(path, testcase, filename)
-        doc = libxml2.parseFile(testcase_file)
-        ctxt = doc.xpathNewContext()
-        tests = ctxt.xpathEval("//TESTCASES//TEST")
+        xml_doc = etree.parse(testcase_file) 
+        tests = xml_doc.xpath('/TESTCASES/TEST')
         for test in tests:
+            # skip not standalone documents
+            if test.get('ENTITIES') not in ['none', 'parameter']:
+                continue
+            # skip invalid documents
+            if test.get('TYPE')!='valid':
+                continue
             props = {}
-            props['type'] = test.prop('TYPE')
-            props['entities'] = test.prop('ENTITIES')
-            props['output'] = test.prop('OUTPUT')
-            filename = props['uri'] = test.prop('URI')
+            props['type'] = test.get('TYPE')
+            props['entities'] = test.get('ENTITIES')
+            props['output'] = test.get('OUTPUT')
+            filename = props['uri'] = test.get('URI')
             self._runXMLTest(path, testcase, filename, props)
-        doc.freeDoc()
-        ctxt.xpathFreeContext()
     
     def _runXMLTest(self, path, testcase, filename, props):
         test_file = os.path.join(path, testcase, filename)
         test_id = os.path.join(testcase, filename)
         
-        #check if well formed
-        nwfd = checkXMLWellFormed(test_file)
-        if props['type'] in ('not-wf', 'error') and nwfd:
-            return
-        if props['type'] in ('not-wf', 'error') or nwfd:
-            print 'NOTWELLFORMED', test_id, '-', nwfd
-        
-        #check if valid
-        vd = self._isValidXMLDocument(test_file)
-        if props['type']=='invalid':
-            if vd:
-                print 'INVALID', test_id, '-', 'Should not be marked as valid!'
+        #check if well formed and valid
+        parser = etree.XMLParser(dtd_validation=True)
+        try:
+            etree.parse(test_file, parser)
+        except etree.XMLSyntaxError, e:
+            if props['type']!='valid':
+                return
+            #print 'INVALID:', test_id, '-', e
             return
         
-        fh = open(test_file, 'r')
-        data = fh.read()
-        fh.close()
+        #test if still invalid or error doc exists at this point
+        if props['type']!='valid':
+            #print 'VALID:', test_id, '-',
+            #print 'document should not be marked valid:', props['type']
+            return
+        
+        # try to add resources
+        data = file(test_file, 'r').read()
         try:
             res = self.env.catalog.newXmlResource('/test/'+props['uri'], data)
         except Exception, e:
-            print test_id, '-', e
+            print 'CREATE RESOURCE:', test_id, '-', e
             return
         try:
             self.env.catalog.addResource(res)
         except Exception, e:
-            print test_id, '-', e
-    
-    def _isValidXMLDocument(self, filename):
-        """Validates a XML document."""
-        
-        #deactivate error messages from the validation
-        def noerr(ctx, str):
-            pass
-        libxml2.registerErrorHandler(noerr, None)
-        
-        try: 
-            ctxt = libxml2.createFileParserCtxt(filename)
-            ctxt.validate(1)
-            ctxt.parseDocument()
-            doc = ctxt.doc()
-        except:
-            return False
-        valid = ctxt.isValid()
-        doc.freeDoc()
-        return valid
+            print 'ADD RESOURCE:', test_id, '-', e
+            return
 
 
 def suite():

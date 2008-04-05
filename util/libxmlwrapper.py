@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+
 # import libxml2
 from StringIO import StringIO
 
@@ -8,10 +9,21 @@ from zope.interface.exceptions import DoesNotImplement
 
 from seishub.core import SeisHubError
 
+
 class IXmlNode(Interface):
     """Basic xml node object"""
     def getStrContent():
         """@return: element content of node as a string"""
+
+
+class IXmlStylesheet(Interface):
+    """Parsed XML Stylesheet document"""
+    def validate(xml_doc):
+        """Transform given xml_doc with the stylesheet.
+        @param xml_doc: XML Document
+        @type xml_doc: IXmlDoc 
+        @return: XML Document"""
+
 
 class IXmlSchema(Interface):
     """parsed XML Schema document"""
@@ -28,12 +40,14 @@ class IXmlSchema(Interface):
         @param xml_doc: XML Document
         @type xml_doc: IXmlDoc 
         @return: boolean"""
-        
+
+
 class IXmlDoc(Interface):
     """General xml document"""
     def getXml_doc():
         """return an internal representation of the parsed xml_document"""
-        
+
+
 class IXmlTreeDoc(IXmlDoc):
     """parses a document into a tree representation"""
     options=Attribute("""dictionary specifying some options:
@@ -49,20 +63,25 @@ class IXmlTreeDoc(IXmlDoc):
         """Evaluate an XPath expression
         @param expr: string
         @return: array of resulting nodes"""
-    
+
+
 class IXmlSaxDoc(IXmlDoc):
     """parses a document using an event based sax parser"""
+
 
 class LibxmlError(SeisHubError):
     """general libxml error"""
     pass
 
+
 class InvalidXmlDataError(SeisHubError):
     """raised on xml parser errors in blocking mode"""
     pass
 
+
 class InvalidXPathExpression(SeisHubError):
     pass
+
 
 class XmlNode(object):
     """simple wrapper for libxml2.xmlNode"""
@@ -89,13 +108,33 @@ class XmlNode(object):
             str = etree.tostring(self._node_obj, 
                                  encoding = self.encoding)
         return str
+
+
+class XmlStylesheet(object):
+    """XSLT document representation"""
+    implements(IXmlStylesheet)
+    
+    def __init__(self, stylesheet_data):
+        f = StringIO(stylesheet_data)
+        xslt_doc = etree.parse(f)
+        self.transform_func = etree.XSLT(xslt_doc)
+    
+    def transform(self, xml_doc):
+        if not IXmlDoc.providedBy(xml_doc):
+            raise DoesNotImplement(IXmlDoc)
+        # XXX: Can we avoid parsing the xml_doc here ?
+        f = StringIO(xml_doc.getXml_doc())
+        doc = etree.parse(f)
+        result_tree = self.transform_func(doc)
         
+        return result_tree
+
 
 class XmlSchema(object):
     """XSD document representation"""
     implements(IXmlSchema)
     
-    def __init__(self,schema_data):
+    def __init__(self, schema_data):
         f = StringIO(schema_data)
         schema_doc = etree.parse(f)
         self.schema = etree.XMLSchema(schema_doc)
@@ -109,7 +148,8 @@ class XmlSchema(object):
             return False
         
         return True
-        
+
+
 class XmlDoc(object):
     """XML document"""
     implements(IXmlDoc)
@@ -125,6 +165,7 @@ class XmlDoc(object):
         
     def getRootElementName(self):
         return self._xml_doc.getroot().tag
+
 
 class XmlTreeDoc(XmlDoc):
     """XML document using lxml's element tree parser""" 

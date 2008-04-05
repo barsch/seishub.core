@@ -91,7 +91,6 @@ def detectXMLEncoding(filename):
     
     ## if BOM detected, we're done :-)
     if bomDetection :
-        fp.seek(oldFP)
         return bomDetection
     
     
@@ -131,17 +130,3 @@ def detectXMLEncoding(filename):
         return match.group("encstr")
     else :
         return None
-
-
-def checkXMLWellFormed(filename):
-    """Simple checks if a document is well formed using sax."""
-    from xml.sax import make_parser
-    from xml.sax.handler import ContentHandler
-    
-    parser = make_parser()
-    parser.setContentHandler(ContentHandler())
-    try:
-        parser.parse(filename)
-    except Exception, e:
-        return e
-    return

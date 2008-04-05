@@ -14,6 +14,7 @@ from seishub import __version__ as SEISHUB_VERSION
 from seishub.config import IntOption
 from seishub.services.rest.interfaces import IRESTMapper
 from seishub.core import ExtensionPoint
+from seishub.util.libxmlwrapper import XmlDoc, XmlStylesheet
 
 
 class RESTRequest(http.Request):
@@ -135,17 +136,9 @@ class RESTRequest(http.Request):
             self.write(result)
             self.finish() 
         
-        # XXX: needs to be in util/wrapper class
-        import libxslt
-        import libxml2
-        styledoc = libxml2.parseDoc(xslt)
-        xmldoc = libxml2.parseDoc(result)
-        style = libxslt.parseStylesheetDoc(styledoc)
-        appl_style = style.applyStylesheet(xmldoc, None)
-        result = str(appl_style)
-        appl_style.freeDoc()
-        style.freeStylesheet()
-        xmldoc.freeDoc()
+        xslt_doc = XmlStylesheet(xslt)
+        xml_doc = XmlDoc(result)
+        result = str(xslt_doc.transform(xml_doc))
         
         self._setHeaders(result, 'text/html')
         self.setResponseCode(http.OK)

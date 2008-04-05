@@ -22,9 +22,9 @@ class SSHServiceProtocol(recvline.HistoricRecvLine):
     def __init__(self, user, env):
         self.env = env
         self.user = user
-        telnet_plugins = ExtensionPoint(ISSHCommand).extensions(self.env)
-        self.telnet_cmds = dict([(p.getCommandId(), p) 
-                                 for p in telnet_plugins 
+        plugins = ExtensionPoint(ISSHCommand).extensions(self.env)
+        self.commands = dict([(p.getCommandId(), p) 
+                                 for p in plugins 
                                  if hasattr(p, 'executeCommand')
                                  and hasattr(p, 'getCommandId')]) 
     
@@ -55,8 +55,8 @@ class SSHServiceProtocol(recvline.HistoricRecvLine):
             except Exception, e:
                 self.terminal.write("Error: %s" % e)
                 self.terminal.nextLine()
-        elif cmd in self.telnet_cmds.keys():
-            ssh_cmd = self.telnet_cmds.get(cmd)
+        elif cmd in self.commands.keys():
+            ssh_cmd = self.commands.get(cmd)
             for l in ssh_cmd.executeCommand(args):
                 self.terminal.write(l)
                 self.terminal.nextLine()
@@ -69,7 +69,7 @@ class SSHServiceProtocol(recvline.HistoricRecvLine):
         self.showPrompt()
     
     def do_help(self):
-        for keyword, plugin in self.telnet_cmds.items():
+        for keyword, plugin in self.commands.items():
             self.terminal.write(keyword + ' - ' + plugin.__doc__)
             self.terminal.nextLine()
     
