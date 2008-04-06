@@ -294,7 +294,7 @@ class RESTHTTPChannel(http.HTTPChannel):
         self.requestFactory.env = self.env
 
 
-class RESTHTTPFactory(http.HTTPFactory):
+class RESTServiceFactory(http.HTTPFactory):
     """Factory for HTTP Server."""
     protocol = RESTHTTPChannel
     
@@ -311,5 +311,6 @@ class RESTService(internet.TCPServer):
     
     def __init__(self, env):
         port = env.config.getint('rest', 'port')
-        internet.TCPServer.__init__(self, port, RESTHTTPFactory(env))
+        internet.TCPServer.__init__(self, port, RESTServiceFactory(env))
         self.setName("REST")
+        self.setServiceParent(env.app)

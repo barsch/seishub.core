@@ -242,7 +242,7 @@ class AdminHTTPChannel(http.HTTPChannel):
         self.requestFactory.env = self.env
 
 
-class AdminHTTPFactory(http.HTTPFactory):
+class AdminServiceFactory(http.HTTPFactory):
     """Factory for HTTP Server."""
     protocol = AdminHTTPChannel
     
@@ -268,12 +268,13 @@ class AdminService(internet.SSLServer):
         priv, cert = self._getCertificates()
         if secured:
             ssl_context = ssl.DefaultOpenSSLContextFactory(priv, cert)
-            internet.SSLServer.__init__(self, port, AdminHTTPFactory(env), \
+            internet.SSLServer.__init__(self, port, AdminServiceFactory(env),\
                                         ssl_context)
         else:
             self.method = 'TCP'
-            internet.SSLServer.__init__(self, port, AdminHTTPFactory(env), 1)
+            internet.SSLServer.__init__(self, port, AdminServiceFactory(env),1)
         self.setName("WebAdmin")
+        self.setServiceParent(env.app)
     
     def _getCertificates(self):
         """Fetching certificate files from configuration."""

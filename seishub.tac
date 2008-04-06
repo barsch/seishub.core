@@ -3,9 +3,9 @@
 from twisted.application import service
 
 from seishub.env import Environment
-from seishub.services.admin.service import AdminService
-from seishub.services.rest.service import RESTService
-from seishub.services.ssh.service import SSHService
+from seishub.services.admin import AdminService
+from seishub.services.rest import RESTService
+from seishub.services.ssh import SSHService
 
 
 # setup our Environment
@@ -19,15 +19,12 @@ env.app=application
 
 # Admin
 admin_service = AdminService(env)
-admin_service.setServiceParent(application)
 
 # REST
 rest_service = RESTService(env)
-rest_service.setServiceParent(application)
 
 # SSH
-telnet_service = SSHService(env)
-telnet_service.setServiceParent(application)
+ssh_service = SSHService(env)
 
 # heartbeat
 

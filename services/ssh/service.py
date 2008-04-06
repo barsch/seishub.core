@@ -23,10 +23,11 @@ class SSHServiceProtocol(recvline.HistoricRecvLine):
         self.env = env
         self.user = user
         plugins = ExtensionPoint(ISSHCommand).extensions(self.env)
-        self.commands = dict([(p.getCommandId(), p) 
+        self.plugin_cmds = dict([(p.getCommandId(), p) 
                                  for p in plugins 
                                  if hasattr(p, 'executeCommand')
-                                 and hasattr(p, 'getCommandId')]) 
+                                 and hasattr(p, 'getCommandId')])
+        self.buildin_cmds = [f[3:] for f in dir(self) if f.startswith('do_')]
     
     def connectionMade(self):
         recvline.HistoricRecvLine.connectionMade(self)
@@ -37,9 +38,6 @@ class SSHServiceProtocol(recvline.HistoricRecvLine):
     def showPrompt(self):
         self.terminal.write("$ ")
     
-    def getCommandFunc(self, cmd):
-        return getattr(self, 'do_' + cmd, None)
-    
     def lineReceived(self, line):
         line = line.strip()
         if not line:
@@ -48,15 +46,15 @@ class SSHServiceProtocol(recvline.HistoricRecvLine):
         cmd_and_args = line.split()
         cmd = cmd_and_args[0]
         args = cmd_and_args[1:]
-        func = self.getCommandFunc(cmd)
-        if func:
+        if cmd in self.buildin_cmds:
             try:
+                func = getattr(self, 'do_' + cmd, None)
                 func(*args)
             except Exception, e:
                 self.terminal.write("Error: %s" % e)
                 self.terminal.nextLine()
-        elif cmd in self.commands.keys():
-            ssh_cmd = self.commands.get(cmd)
+        elif cmd in self.plugin_cmds.keys():
+            ssh_cmd = self.plugin_cmds.get(cmd)
             for l in ssh_cmd.executeCommand(args):
                 self.terminal.write(l)
                 self.terminal.nextLine()
@@ -68,9 +66,21 @@ class SSHServiceProtocol(recvline.HistoricRecvLine):
             
         self.showPrompt()
     
-    def do_help(self):
-        for keyword, plugin in self.commands.items():
-            self.terminal.write(keyword + ' - ' + plugin.__doc__)
+    def do_help(self, *args):
+        self.terminal.write('== Build-in keywords ==')
+        self.terminal.nextLine()
+        for cmd in self.buildin_cmds:
+            func = getattr(self, 'do_' + cmd, None)
+            func_doc = func.__doc__
+            if not func_doc:
+                continue
+            self.terminal.write(cmd + ' - ' + str(func_doc))
+            self.terminal.nextLine()
+        self.terminal.nextLine()
+        self.terminal.write('== Plugin keywords ==')
+        self.terminal.nextLine()
+        for cmd, plugin in self.plugin_cmds.items():
+            self.terminal.write(cmd + ' - ' + str(plugin.__doc__))
             self.terminal.nextLine()
     
     def do_version(self):
@@ -191,3 +201,4 @@ class SSHService(internet.TCPServer):
         port = env.config.getint('ssh', 'port')
         internet.TCPServer.__init__(self, port, SSHServiceFactory(env))
         self.setName("SSH")
+        self.setServiceParent(env.app)
