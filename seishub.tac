@@ -6,6 +6,7 @@ from seishub.env import Environment
 from seishub.services.admin import AdminService
 from seishub.services.rest import RESTService
 from seishub.services.ssh import SSHService
+from seishub.services.heartbeat import HeartbeatService
 
 
 # setup our Environment
@@ -15,7 +16,7 @@ env=Environment()
 # XXX: maybe use gid and uid for posix environments
 #application = service.Application("SeisHub", uid=XXX, gid=XXX)
 application = service.Application("SeisHub")
-env.app=application
+env.app = application
 
 # Admin
 admin_service = AdminService(env)
@@ -27,6 +28,7 @@ rest_service = RESTService(env)
 ssh_service = SSHService(env)
 
 # heartbeat
+heartbeat_service = HeartbeatService(env)
 
 # update
 

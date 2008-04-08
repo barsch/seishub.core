@@ -66,6 +66,13 @@ class DatabaseManager(object):
     
     def _getSQLiteEngine(self):
         """Return a sqlite engine without a connection pool."""
+        
+        print "---------------------------------------------------------------"
+        print "Warning: A SQLite database should never be used in a productive"
+        print "environment! Instead try to use any supported database listed  "
+        print "at http://www.sqlalchemy.org/trac/wiki/DatabaseNotes.          "
+        print "---------------------------------------------------------------"
+        
         return sa.create_engine(self.uri,
                                 echo = self.echo,
                                 encoding = 'utf-8',

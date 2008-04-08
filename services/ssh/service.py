@@ -12,9 +12,7 @@ from twisted.application import internet
 from seishub import __version__ as SEISHUB_VERSION
 from seishub.services.ssh.interfaces import ISSHCommand
 from seishub.core import ExtensionPoint
-from seishub.defaults import DEFAULT_SSH_PORT, \
-                             DEFAULT_SSH_PRIVATE_KEY_FILENAME, \
-                             DEFAULT_SSH_PUBLIC_KEY_FILENAME
+from seishub.defaults import SSH_PORT, SSH_PRIVATE_KEY, SSH_PUBLIC_KEY
 from seishub.config import IntOption, Option
 
 
@@ -157,10 +155,8 @@ class SSHServiceFactory(factory.SSHFactory):
     def _getCertificates(self):
         """Fetching certificate files from configuration."""
         
-        pub = self.env.config.get('ssh', 'public_key_file') or \
-              DEFAULT_SSH_PRIVATE_KEY_FILENAME
-        priv = self.env.config.get('ssh', 'private_key_file') or \
-               DEFAULT_SSH_PRIVATE_KEY_FILENAME
+        pub = self.env.config.get('ssh', 'public_key_file')
+        priv = self.env.config.get('ssh', 'private_key_file')
         if not os.path.isfile(pub):
             pub = os.path.join(self.env.path, 'conf', pub)
             if not os.path.isfile(pub):
@@ -180,21 +176,17 @@ class SSHServiceFactory(factory.SSHFactory):
         rsaKey = RSA.generate(KEY_LENGTH, common.entropy.get_bytes)
         publicKeyString = keys.makePublicKeyString(rsaKey)
         privateKeyString = keys.makePrivateKeyString(rsaKey)
-        pub = os.path.join(self.env.path, 'conf', 
-                           DEFAULT_SSH_PUBLIC_KEY_FILENAME)
-        priv = os.path.join(self.env.path, 'conf', 
-                            DEFAULT_SSH_PRIVATE_KEY_FILENAME)
+        pub = os.path.join(self.env.path, 'conf', SSH_PUBLIC_KEY)
+        priv = os.path.join(self.env.path, 'conf', SSH_PRIVATE_KEY)
         file(pub, 'w+b').write(publicKeyString)
         file(priv, 'w+b').write(privateKeyString)
 
 
 class SSHService(internet.TCPServer):
     """Service for SSH server."""
-    IntOption('ssh', 'port', DEFAULT_SSH_PORT, "SSH port number.")
-    Option('ssh', 'public_key_file', DEFAULT_SSH_PUBLIC_KEY_FILENAME,
-           "Public RSA key file.")
-    Option('ssh', 'private_key_file', DEFAULT_SSH_PRIVATE_KEY_FILENAME,
-           "Private RSA key file.")
+    IntOption('ssh', 'port', SSH_PORT, "SSH port number.")
+    Option('ssh', 'public_key_file', SSH_PUBLIC_KEY, 'Public RSA key file.')
+    Option('ssh', 'private_key_file', SSH_PRIVATE_KEY, 'Private RSA key file.')
     
     def __init__(self, env):
         self.env = env

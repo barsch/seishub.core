@@ -3,12 +3,12 @@
 import doctest
 import unittest
 
-from seishub.util.tests import test_libxmlwrapper
+from seishub.util.tests import test_xml
 
 
 def suite():
     suite = unittest.TestSuite()
-    suite.addTest(test_libxmlwrapper.suite())
+    suite.addTest(test_xml.suite())
     return suite
 
 

@@ -18,7 +18,7 @@ def main():
     
     # Twisted
     application = service.Application("SeisHub")
-    env.app=application
+    env.app = application
     
     ## Admin
     port = env.config.getint('admin', 'port') or DEFAULT_ADMIN_PORT

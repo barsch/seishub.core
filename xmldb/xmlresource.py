@@ -3,9 +3,9 @@
 from zope.interface import implements
 from zope.interface.exceptions import DoesNotImplement
 
-from seishub.util.libxmlwrapper import IXmlDoc, IXmlSchema
+from seishub.util.xml import IXmlDoc, IXmlSchema
 from seishub.xmldb.interfaces import IXmlResource
-from seishub.util.libxmlwrapper import XmlTreeDoc
+from seishub.util.xml import XmlTreeDoc
 from seishub.xmldb.resource import Resource
 from seishub.xmldb.errors import XmlResourceError
 

@@ -79,7 +79,7 @@ class IXmlResource(Interface):
         
     def setXml_doc(xml_doc):
         """@param xml_doc: xml document object as provided by a xml parser,
-        must implement seishub.util.libxmlwrapper.ixml.IXmlDoc"""
+        must implement seishub.util.xml.IXmlDoc"""
         
     def getResourceType(self):
         """the resource type is determined by the root node of the underlying 

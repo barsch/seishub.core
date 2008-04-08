@@ -18,9 +18,9 @@ class IXmlNode(Interface):
 
 class IXmlStylesheet(Interface):
     """Parsed XML Stylesheet document"""
-    def validate(xml_doc):
-        """Transform given xml_doc with the stylesheet.
-        @param xml_doc: XML Document
+    def validate(xmltree_doc):
+        """Transform given xmltree_doc with the stylesheet.
+        @param xml_doc: XML Tree Document
         @type xml_doc: IXmlDoc 
         @return: XML Document"""
 
@@ -119,13 +119,10 @@ class XmlStylesheet(object):
         xslt_doc = etree.parse(f)
         self.transform_func = etree.XSLT(xslt_doc)
     
-    def transform(self, xml_doc):
-        if not IXmlDoc.providedBy(xml_doc):
+    def transform(self, xmltree_doc):
+        if not IXmlDoc.providedBy(xmltree_doc):
             raise DoesNotImplement(IXmlDoc)
-        # XXX: Can we avoid parsing the xml_doc here ?
-        f = StringIO(xml_doc.getXml_doc())
-        doc = etree.parse(f)
-        result_tree = self.transform_func(doc)
+        result_tree = self.transform_func(xmltree_doc.getXml_doc())
         
         return result_tree
 

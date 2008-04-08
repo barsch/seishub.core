@@ -1,15 +1,19 @@
 # -*- coding: utf-8 -*-
 
 # default db settings
-DEFAULT_DB_URI = "sqlite:///db/seishub.db"
+DEFAULT_DB_URI = 'sqlite:///db/seishub.db'
 
 # default components
 DEFAULT_COMPONENTS = ('seishub.services.admin.general.PluginsPanel', \
                       'seishub.services.admin.general.ServicesPanel', )
-DEFAULT_ADMIN_PORT = 40443
-DEFAULT_HTTPS_CERTIFICATE_FILENAME = "https.cert"
-DEFAULT_HTTPS_PRIVATE_KEY_FILENAME = "https.private.key"
-DEFAULT_REST_PORT = 8080
-DEFAULT_SSH_PORT = 5001
-DEFAULT_SSH_PRIVATE_KEY_FILENAME = "ssh.private.key"
-DEFAULT_SSH_PUBLIC_KEY_FILENAME = "ssh.public.key"
+
+ADMIN_PORT = 40443
+ADMIN_CERTIFICATE = 'https.cert'
+ADMIN_PRIVATE_KEY = 'https.private.key'
+REST_PORT = 8080
+SSH_PORT = 5001
+SSH_PRIVATE_KEY = 'ssh.private.key'
+SSH_PUBLIC_KEY = 'ssh.public.key'
+HEARTBEAT_UDP_PORT = 43278
+HEARTBEAT_CHECK_PERIOD = 20
+HEARTBEAT_CHECK_TIMEOUT = 15

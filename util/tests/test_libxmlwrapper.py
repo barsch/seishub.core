@@ -2,7 +2,7 @@
 
 import unittest
 
-from seishub.util.libxmlwrapper import XmlSchema, XmlTreeDoc, \
+from seishub.util.xml import XmlSchema, XmlTreeDoc, \
                                        InvalidXPathExpression
 
 

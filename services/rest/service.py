@@ -9,12 +9,12 @@ from twisted.application import internet
 from twisted.internet import threads
 from pkg_resources import resource_filename #@UnresolvedImport 
 
-from seishub.defaults import DEFAULT_REST_PORT
+from seishub.defaults import REST_PORT
 from seishub import __version__ as SEISHUB_VERSION
 from seishub.config import IntOption
 from seishub.services.rest.interfaces import IRESTMapper
 from seishub.core import ExtensionPoint
-from seishub.util.libxmlwrapper import XmlDoc, XmlStylesheet
+from seishub.util.xml import XmlTreeDoc, XmlStylesheet
 
 
 class RESTRequest(http.Request):
@@ -137,8 +137,8 @@ class RESTRequest(http.Request):
             self.finish() 
         
         xslt_doc = XmlStylesheet(xslt)
-        xml_doc = XmlDoc(result)
-        result = str(xslt_doc.transform(xml_doc))
+        xmltree_doc = XmlTreeDoc(result)
+        result = str(xslt_doc.transform(xmltree_doc))
         
         self._setHeaders(result, 'text/html')
         self.setResponseCode(http.OK)
@@ -307,7 +307,7 @@ class RESTServiceFactory(http.HTTPFactory):
 class RESTService(internet.TCPServer):
     """Service for REST HTTP Server."""
     
-    IntOption('rest', 'port', DEFAULT_REST_PORT, "REST port number.")
+    IntOption('rest', 'port', REST_PORT, "REST port number.")
     
     def __init__(self, env):
         port = env.config.getint('rest', 'port')
