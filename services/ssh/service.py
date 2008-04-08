@@ -18,6 +18,7 @@ from seishub.config import IntOption, Option
 
 class SSHServiceProtocol(recvline.HistoricRecvLine):
     def __init__(self, user, env):
+        recvline.HistoricRecvLine.__init__(self)
         self.env = env
         self.user = user
         plugins = ExtensionPoint(ISSHCommand).extensions(self.env)
