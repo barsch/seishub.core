@@ -43,3 +43,6 @@ class XmlResourceError(SeisHubError):
     
 class QueryAliasError(SeisHubError):
     """general QueryAlias error"""
+    
+class RegisterMetaResourceError(SeisHubError):
+    """Error registering a meta resource"""

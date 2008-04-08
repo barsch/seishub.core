@@ -14,6 +14,8 @@ INDEX_DEF_TABLE = 'index_def'
 QUERY_ALIASES_TABLE = 'query_aliases'
 METADATA_TABLE = 'meta'
 URI_TABLE = 'uri'
+XSD_TABLE = 'xsd'
+XSLT_TABLE = 'xslt'
 
 # xmldbms tables:
 resource_tab = Table(DEFAULT_PREFIX + RESOURCE_TABLE, metadata,
@@ -65,3 +67,15 @@ query_aliases_tab = Table(DEFAULT_PREFIX + QUERY_ALIASES_TABLE, metadata,
     Column('name', Text, primary_key = True),
     Column('expr', Text)
 ) 
+
+# resourcetypes tables
+xsd_tab = Table(DEFAULT_PREFIX + XSD_TABLE, metadata,
+    Column('uri', Text, primary_key = True),
+    Column('package_id', Text)
+)
+
+xslt_tab = Table(DEFAULT_PREFIX + XSLT_TABLE, metadata,
+    Column('uri', Text, primary_key = True),
+    Column('package_id', Text),
+    Column('format', Text)
+)

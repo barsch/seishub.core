@@ -7,8 +7,8 @@ from seishub.xmldb.xmlindexcatalog import XmlIndexCatalog, QueryAliases
 from seishub.xmldb.xmldbms import XmlDbManager
 from seishub.xmldb.xmlresource import XmlResource
 from seishub.xmldb.xmlindex import XmlIndex
+from seishub.xmldb.metaresources import SchemaRegistry, StylesheetRegistry
 from seishub.xmldb.xpath import IndexDefiningXpathExpression, XPathQuery
-
 
 class XmlCatalog(XmlDbManager):
     implements(IXmlCatalog)
@@ -17,6 +17,8 @@ class XmlCatalog(XmlDbManager):
         XmlDbManager.__init__(self,db)
         self.index_catalog = XmlIndexCatalog(db, self)
         self.aliases = QueryAliases(db)
+        self.schema_registry = SchemaRegistry(db)
+        self.stylesheet_registry = StylesheetRegistry(db)
     
     # methods from IXmlCatalog:
     def newXmlResource(self,uri,xml_data):
@@ -99,3 +101,35 @@ class XmlCatalog(XmlDbManager):
         else:
             q = XPathQuery(query, order_by, limit)
         return self.index_catalog.query(q)
+    
+    def registerSchema(self, xml_resource, package_id):
+        """@see: L{seishub.xmldb.interfaces.IXmlCatalog}"""
+        self.addResource(xml_resource)
+        return self.schema_registry.registerSchema(xml_resource.getUri(), package_id)
+        
+    def unregisterSchema(self, uri):
+        """@see: L{seishub.xmldb.interfaces.IXmlCatalog}"""
+        self.schema_registry.unregisterSchema(uri)
+        return self.deleteResource(uri)
+        
+    def getSchemata(self, package_id = None):
+        """@see: L{seishub.xmldb.interfaces.IXmlCatalog}"""
+        res = self.schema_registry.getSchemata(package_id)
+        return [uri[0] for uri in res]
+        
+    def registerStylesheet(self, xml_resource, package_id, output_format):
+        """@see: L{seishub.xmldb.interfaces.IXmlCatalog}"""
+        self.addResource(xml_resource)
+        return self.stylesheet_registry.registerStylesheet(xml_resource.uri, 
+                                                    package_id, 
+                                                    output_format)
+        
+    def unregisterStylesheet(self, uri):
+        """@see: L{seishub.xmldb.interfaces.IXmlCatalog}"""
+        self.stylesheet_registry.unregisterStylesheet(uri)
+        return self.deleteResource(uri)
+    
+    def getStylesheets(self, package_id = None, output_format = None):
+        """@see: L{seishub.xmldb.interfaces.IXmlCatalog}"""
+        res = self.stylesheet_registry.getStylesheets(package_id, output_format)
+        return [uri[0] for uri in res]

@@ -3,7 +3,6 @@
 import unittest
 import os
 import inspect
-from twisted.enterprise import util as dbutil
 
 from sqlalchemy.sql import and_
 
@@ -153,10 +152,10 @@ class XmlIndexCatalogTest(SeisHubTestCase):
         
         str_map={'prefix':DEFAULT_PREFIX,
                  'table':INDEX_DEF_TABLE,
-                 'key_path':dbutil.quote(test_kp,"text"),
-                 'value_path':dbutil.quote(test_vp,"text")}
+                 'key_path':test_kp,
+                 'value_path':test_vp}
         query=("SELECT key_path,value_path FROM %(prefix)s%(table)s " + \
-                "WHERE (key_path=%(key_path)s AND value_path=%(value_path)s)") \
+                "WHERE (key_path='%(key_path)s' AND value_path='%(value_path)s')") \
                 % (str_map)
                 
         res = self.db.engine.execute(query).fetchall()

@@ -128,3 +128,15 @@ class XmlDbManager(DbEnabled):
         
         return [uri[0] for uri in uris]
     
+    def uriExists(self, uri):
+        query = select([uri_tab.c.uri],
+                       (uri_tab.c.uri == uri))
+        try:
+            res = self._db.execute(query)
+            r = res.fetchall()[0]
+        except:
+            return False
+        finally:
+            res.close()
+        return True
+    

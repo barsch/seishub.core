@@ -273,8 +273,8 @@ class QueryAliases(DbEnabled):
     Query aliases are static, cacheable, stored querie expressions, used as
     shortcut for more complex xpath expressions.
     """
-    def __init__(self, db):
-        DbEnabled.__init__(self,db)
+    def __init__(self, *args, **kwargs):
+        DbEnabled.__init__(self,*args,**kwargs)
         self.aliases = self.listAliases()
         
     def __getitem__(self, key):

@@ -90,6 +90,13 @@ class XmlDbManagerTest(SeisHubTestCase):
         # delete test resource:
         self.xmldbm.deleteResource(self.test_uri)
         self.xmldbm.deleteResource(self.test_uri+'/2')
+        
+    def testUriExists(self):
+        testres1=XmlResource(xml_data=self.test_data,uri=self.test_uri)
+        self.xmldbm.addResource(testres1)
+        self.assertEquals(self.xmldbm.uriExists(self.test_uri),True)
+        self.assertEquals(self.xmldbm.uriExists("/not/there"), False)
+        self.xmldbm.deleteResource(self.test_uri)
 
 
 def suite():

@@ -96,39 +96,6 @@ class IXmlResource(Interface):
     def getUri(self):
         """@return: uri (string)"""
         
-class IResourceTypeRegistry(Interface):
-    """Resource type registry.
-    Management of resource types and corresponding metadata, such as Schema 
-    definitions, XSL Stylesheets, etc.
-    """
-    
-    def registerResourceType(type):
-        """Define new resource type using given XML schema
-        @param type: Name of the new type
-        @type type: string
-        @param xml_schema: XML Schema definition
-        @type xml_schema: L{seishub.xmldb.interfaces.IXmlResource}"""
-        
-    def removeResourceType(type):
-        """Remove all information about given resource type, but leave 
-        resources of that type untouched.
-        @param type: Name of type to be removed
-        @type type: string"""
-        
-    def getSchema(type):
-        """Get XML Schema definition for given resource type.
-        @param type: Name of a resource type
-        @type type: string
-        @return: XML Schema definition
-        @rtype: L{seishub.xmldb.interfaces.IXmlResource}"""
-        
-    def listResourceTypes():
-        """@return: list of known resource types
-        @rtype: python list"""
-        
-    def registerMetaResource(type, uri):
-        """Register a meta resource such as a XSD Schema or a XSL Stylesheet"""
-        
 class IResourceStorage(Interface):
     """Basic XML storage manager description"""
     
