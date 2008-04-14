@@ -92,6 +92,10 @@ class SSHServiceProtocol(recvline.HistoricRecvLine):
         self.terminal.write(self.user.username)
         self.terminal.nextLine()
     
+    def do_exit(self):
+        """Ends your session."""
+        self.do_quit()
+    
     def do_quit(self):
         """Ends your session."""
         self.terminal.write("Bye!")

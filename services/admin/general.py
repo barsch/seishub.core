@@ -3,13 +3,12 @@
 import inspect
 import sys
 import os
-from twisted.internet import reactor, defer
+from twisted.internet import reactor
 from twisted.application import service
 
 from seishub.core import Component, implements
 from seishub.services.admin.interfaces import IAdminPanel
 from seishub.defaults import DEFAULT_COMPONENTS
-from seishub.config import Option
 
 
 class BasicPanel(Component):
@@ -21,13 +20,13 @@ class BasicPanel(Component):
     
     def renderPanel(self, request):
         if request.method == 'POST':
-            for option in ('url', 'default_charset', 'description'):
+            for option in ('ip', 'default_charset', 'description'):
                 self.config.set('seishub', option, 
                                 request.args.get(option,[])[0])
             self.config.save()
             request.redirect(request.path)
         data = {
-          'url': self.config.get('seishub', 'url'),
+          'ip': self.config.get('seishub', 'ip'),
           'default_charset': self.config.get('seishub', 'default_charset'),
           'description': self.config.get('seishub', 'description'),
         }
@@ -60,8 +59,10 @@ class RESTRedirect(Component):
         return ('rest', 'REST', 'rest', 'REST')
     
     def renderPanel(self, request):
-        # XXX: should not be fixed
-        request.redirect('http://localhost:8080/')
+        port = self.env.config.get('rest', 'port')
+        ip = self.env.config.get('seishub', 'ip')
+        url = 'http://%s:%s/' % (ip, port)
+        request.redirect(str(url))
         return ('',{})
 
 
@@ -73,8 +74,8 @@ class LogsPanel(Component):
         return ('admin', 'General', 'logs', 'Logs')
     
     def renderPanel(self, request):
-        access_log_file = self.env.access_log_file
-        error_log_file = self.env.error_log_file
+        access_log_file = self.env.config.get('logging', 'access_log_file')
+        error_log_file = self.env.config.get('logging', 'error_log_file')
         log_dir = os.path.join(self.env.path, 'log')
         log_file = os.path.join(log_dir, access_log_file)
         try:
@@ -189,15 +190,12 @@ class ServicesPanel(Component):
     def _restartSeisHub(self):
         pass
     
-    @defer.inlineCallbacks
     def _changeServices(self, request):
         serviceList = request.args.get('service', [])
         for srv in service.IServiceCollection(self.env.app):
             if srv.running and not srv.name in serviceList:
-                yield defer.maybeDeferred(srv.stopService)
-                self.log.info('Stopping service %s' % srv.name)
+                self.env.disableService(srv.name)
             elif not srv.running and srv.name in serviceList:
-                yield defer.maybeDeferred(srv.startService)
-                self.log.info('Starting service %s' % srv.name)
+                self.env.enableService(srv.name)
         request.redirect(request.path)
         request.finish()    

@@ -3,6 +3,9 @@
 import os
 import sys
 
+from twisted.internet import defer
+from twisted.application import service
+
 from seishub.auth import Portal
 from seishub.core import ComponentManager
 from seishub.config import Configuration, Option
@@ -26,16 +29,7 @@ class Environment(ComponentManager):
         * a logging handler env.log
     """
     
-    error_log_file = Option('logging', 'error_log_file', 'error.log',
-        """If `log_type` is `file`, this should be a the name of the file.""")
-    
-    access_log_file = Option('logging', 'access_log_file', 'access.log',
-        """If `log_type` is `file`, this should be a the name of the file.""")
-    
-    log_level = Option('logging', 'log_level', 'DEBUG',
-        """Level of verbosity in log.
-        
-        Should be one of (`ERROR`, `WARN`, `INFO`, `DEBUG`).""")
+    Option('seishub', 'ip', 'localhost', 'Default IP of this SeisHub server.')
     
     def __init__(self, config_file=None):
         """Initialize the SeisHub environment."""
@@ -66,8 +60,24 @@ class Environment(ComponentManager):
         import seishub
         return os.path.split(os.path.dirname(seishub.__file__))[0]
     
+    @defer.inlineCallbacks
+    def enableService(self, srv_name):
+        """Enables a service."""
+        for srv in service.IServiceCollection(self.app):
+            if srv.name.lower()==srv_name.lower():
+                yield defer.maybeDeferred(srv.startService)
+                self.log.info('Starting service %s' % srv.name)
+    
+    @defer.inlineCallbacks
+    def disableService(self, srv_name):
+        """Disable a service."""
+        for srv in service.IServiceCollection(self.app):
+            if srv.name.lower()==srv_name.lower():
+                yield defer.maybeDeferred(srv.stopService)
+                self.log.info('Stopping service %s' % srv.name)
+    
     def enableComponent(self, component):
-        """Enables a given component."""
+        """Enables a component."""
         module = sys.modules[component.__module__]
         fullname = module.__name__+'.'+component.__name__
         
@@ -79,7 +89,7 @@ class Environment(ComponentManager):
             self.config.save()
     
     def disableComponent(self, component):
-        """Disables a given component."""
+        """Disables a component."""
         module = sys.modules[component.__module__]
         fullname = module.__name__+'.'+component.__name__
         

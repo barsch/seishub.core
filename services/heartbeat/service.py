@@ -6,7 +6,7 @@ import socket
 from twisted.application import internet
 from twisted.internet import protocol
 
-from seishub.config import IntOption, ListOption
+from seishub.config import IntOption, ListOption, BoolOption
 from seishub.defaults import HEARTBEAT_CHECK_PERIOD, HEARTBEAT_HUBS, \
                              HEARTBEAT_CHECK_TIMEOUT
 
@@ -72,10 +72,12 @@ class HeartbeatReceiver(internet.UDPServer):
 
 class HeartbeatService:
     """A asynchronous events-based heartbeat server for SeisHub."""
+    
     IntOption('heartbeat', 'port', HEARTBEAT_UDP_PORT, 
               'Heartbeat port number.')
     ListOption('heartbeat', 'default_hubs', ','.join(HEARTBEAT_HUBS), 
                'Default IPs for very active SeisHub services.')
+    BoolOption('heartbeat', 'active_node', 'on', 'Heartbeat status')
     
     def __init__(self, env):
         env.nodes = {}
