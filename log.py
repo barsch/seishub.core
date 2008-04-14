@@ -2,8 +2,9 @@
 
 import os
 import sys
+import traceback
+
 from twisted.python import log, logfile
-from twisted.python.failure import Failure
 
 from seishub.core import ERROR, WARN, INFO, DEBUG
 
@@ -68,12 +69,9 @@ class Logger(object):
             log.removeObserver(l)
     
     def _formatMessage(self, level, msg, showTraceback):
-        if sys.exc_info()!=(None,None,None) and showTraceback:
-            (exc_value, exc_type, exc_traceback) = sys.exc_info()
-            fail = Failure(exc_value, exc_type, exc_traceback)
-            log.err(fail, '%s %s' % (level, msg))
-        else:
-            log.msg('%s %s' % (level, msg), isError=True)
+        log.msg('%s %s' % (level, msg), isError=True)
+        if showTraceback:
+            traceback.print_exc(sys.exc_info()) 
     
     def error(self, msg, showTraceback=False):
         if self.log_level < ERROR:
