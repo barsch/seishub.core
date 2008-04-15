@@ -1,14 +1,14 @@
 <h1>Plugins</h1>
 
 <form method="post" name="plugins">
-  #for $package in $sorted_packages
+  #for $plugin in $sorted_plugins
   <h2>
-    $package 
+    $plugin 
     [<a href="" 
-        onclick="javascript: toggleDisplay('$package'); return false">+</a>]
+        onclick="javascript: toggleDisplay('$plugin'); return false">+</a>]
   </h2>
-  <dl name="toggledisplay" id="$package" style="display: none;">
-    #for $p in $packages.get($package)
+  <dl name="toggledisplay" id="$plugin" style="display: none;">
+    #for $p in $plugins.get($plugin)
     <dt>
       <input type="hidden" name="plugin" value="$p.classname" />
       <input type="checkbox"

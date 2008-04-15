@@ -76,7 +76,7 @@ class LogsPanel(Component):
     def renderPanel(self, request):
         access_log_file = self.env.config.get('logging', 'access_log_file')
         error_log_file = self.env.config.get('logging', 'error_log_file')
-        log_dir = os.path.join(self.env.path, 'log')
+        log_dir = os.path.join(self.env.config.path, 'log')
         log_file = os.path.join(log_dir, access_log_file)
         try:
             fh = open(log_file, 'r')
@@ -137,7 +137,7 @@ class PluginsPanel(Component):
                 self.env.disableComponent(component)
     
     def _viewPlugins(self, request):
-        packages = {}
+        plugins = {}
         from seishub.core import ComponentMeta
         for component in ComponentMeta._components:
             module = sys.modules[component.__module__]
@@ -153,14 +153,29 @@ class PluginsPanel(Component):
               'enabled': self.env.isComponentEnabled(component),
               'required': classname in DEFAULT_COMPONENTS,
             }
-            packages.setdefault(module.__name__,[]).append(plugin)
-        sorted_packages = packages.keys()
-        sorted_packages.sort()
+            plugins.setdefault(module.__name__,[]).append(plugin)
+        sorted_plugins = plugins.keys()
+        sorted_plugins.sort()
         data = {
-          'sorted_packages': sorted_packages, 
-          'packages': packages,
+          'sorted_plugins': sorted_plugins, 
+          'plugins': plugins,
         }
         return ('general_plugins.tmpl', data)
+
+
+class PackagesPanel(Component):
+    """Lists all installed packages."""
+    implements(IAdminPanel)
+    
+    def getPanelId(self):
+        return ('admin', 'General', 'packages', 'Packages')
+    
+    def renderPanel(self, request):
+        data = {}
+        from seishub.core import ExtensionPoint
+        from seishub.packages.interfaces import IPackage
+        data['packages'] = ExtensionPoint(IPackage).extensions(self.env)
+        return ('general_packages.tmpl', data)
 
 
 class ServicesPanel(Component):

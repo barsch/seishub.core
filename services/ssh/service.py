@@ -163,11 +163,11 @@ class SSHServiceFactory(factory.SSHFactory):
         pub = self.env.config.get('ssh', 'public_key_file')
         priv = self.env.config.get('ssh', 'private_key_file')
         if not os.path.isfile(pub):
-            pub = os.path.join(self.env.path, 'conf', pub)
+            pub = os.path.join(self.env.config.path, 'conf', pub)
             if not os.path.isfile(pub):
                 self._generateRSAKeys()
         if not os.path.isfile(priv):
-            priv = os.path.join(self.env.path, 'conf', priv)
+            priv = os.path.join(self.env.config.path, 'conf', priv)
             if not os.path.isfile(priv):
                 self._generateRSAKeys()
         return pub, priv
@@ -181,8 +181,8 @@ class SSHServiceFactory(factory.SSHFactory):
         rsaKey = RSA.generate(KEY_LENGTH, common.entropy.get_bytes)
         publicKeyString = keys.makePublicKeyString(rsaKey)
         privateKeyString = keys.makePrivateKeyString(rsaKey)
-        pub = os.path.join(self.env.path, 'conf', SSH_PUBLIC_KEY)
-        priv = os.path.join(self.env.path, 'conf', SSH_PRIVATE_KEY)
+        pub = os.path.join(self.env.config.path, 'conf', SSH_PUBLIC_KEY)
+        priv = os.path.join(self.env.config.path, 'conf', SSH_PRIVATE_KEY)
         file(pub, 'w+b').write(publicKeyString)
         file(priv, 'w+b').write(privateKeyString)
 

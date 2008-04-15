@@ -31,7 +31,7 @@ class DatabaseManager(object):
         self.metadata = meta
         self.metadata.bind = self.engine
         #this will check for the presence of a table first before creating
-        self.metadata.create_all(self.engine, checkfirst = True)        
+        self.metadata.create_all(self.engine, checkfirst = True)
     
     def _getEngine(self):
         if self.uri.startswith('sqlite:///'):
@@ -40,12 +40,13 @@ class DatabaseManager(object):
             filepart = filename.split('/')
             #it is a plain filename without sub directories
             if len(filepart)==1:
-                self.uri = 'sqlite:///' + os.path.join(self.env.path, 'db',
-                                                       filename)
+                self.uri = 'sqlite:///' + os.path.join(self.env.config.path, 
+                                                       'db', filename)
                 return self._getSQLiteEngine()
             #there is a db sub directory given in front of the filename
             if len(filepart)==2 and filepart[0]=='db':
-                self.uri = 'sqlite:///' + os.path.join(self.env.path, filename)
+                self.uri = 'sqlite:///' + os.path.join(self.env.config.path, 
+                                                       filename)
                 return self._getSQLiteEngine()
             #check if it is a full absolute file path
             if os.path.isdir(os.path.dirname(filename)):

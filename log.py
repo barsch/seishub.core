@@ -61,7 +61,7 @@ class Logger(object):
         self.start()
     
     def start(self):
-        log_dir = os.path.join(self.env.path, 'log')
+        log_dir = os.path.join(self.env.config.path, 'log')
         
         # Get log level and rotation size
         log_level = self.env.config.get('logging', 'log_level').upper()

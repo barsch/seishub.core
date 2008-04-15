@@ -3,14 +3,12 @@
 import time
 import socket
 
-from twisted.application import internet
+from twisted.application import internet, service
 from twisted.internet import protocol
 
 from seishub.config import IntOption, ListOption, BoolOption
 from seishub.defaults import HEARTBEAT_CHECK_PERIOD, HEARTBEAT_HUBS, \
-                             HEARTBEAT_CHECK_TIMEOUT
-
-HEARTBEAT_UDP_PORT = 43278
+                             HEARTBEAT_CHECK_TIMEOUT, HEARTBEAT_UDP_PORT
 
 
 class HeartbeatProtocol(protocol.DatagramProtocol):
@@ -22,7 +20,7 @@ class HeartbeatProtocol(protocol.DatagramProtocol):
     def datagramReceived(self, data, (ip, port)):
         if data=='SeisHub':
             # XXX: Check for version and given REST port
-            self.env.nodes[ip] = [time.time(), data]
+            self.env.config.hubs[ip] = [time.time(), data]
 
 
 class HeartbeatDetector(internet.TimerService):
@@ -30,13 +28,16 @@ class HeartbeatDetector(internet.TimerService):
     
     def __init__(self, env):
         self.env = env
-        internet.TimerService.__init__(self, HEARTBEAT_CHECK_PERIOD, self.detect)
+        internet.TimerService.__init__(self, HEARTBEAT_CHECK_PERIOD, 
+                                       self.detect)
     
     def detect(self):
         """Detects clients w/ heartbeat older than HEARTBEAT_CHECK_TIMEOUT."""
+        #XXX: delete clients from list is not implemented yet
         limit = time.time() - HEARTBEAT_CHECK_TIMEOUT
         #silent = [ip for (ip, ipTime) in self.env.nodes.items() if ipTime < limit]
-        self.env.log.debug('Active SeisHub nodes: %s' % self.env.nodes.items())
+        self.env.log.debug('Active SeisHub nodes: %s' % \
+                           self.env.config.hubs.items())
 
 
 class HeartbeatTransmitter(internet.TimerService):
@@ -44,22 +45,26 @@ class HeartbeatTransmitter(internet.TimerService):
 
     def __init__(self, env):
         self.env = env
-        internet.TimerService.__init__(self, HEARTBEAT_CHECK_PERIOD, self.transmit)
+        internet.TimerService.__init__(self, HEARTBEAT_CHECK_PERIOD, 
+                                       self.transmit)
     
     def transmit(self):
-        if len(self.env.nodes)==0:
+        if len(self.env.config.hubs)==0:
             ips = self.env.config.getlist('heartbeat', 'default_hubs') or \
                   HEARTBEAT_HUBS
         else:
-            ips = [node[0] for node in self.env.nodes.items()]
+            ips = [node[0] for node in self.env.config.hubs.items()]
         for ip in ips:
             self.heartbeat(ip)
     
     def heartbeat(self, ip):
-        hbsocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        hbsocket.sendto('SeisHub', (ip, HEARTBEAT_UDP_PORT))
-        self.env.log.debug('Sending heartbeat to ' + ip + ':' + 
-                           str(HEARTBEAT_UDP_PORT))
+        try:
+            hbsocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            hbsocket.sendto('SeisHub', (ip, HEARTBEAT_UDP_PORT))
+            self.env.log.debug('Sending heartbeat to ' + ip + ':' + 
+                               str(HEARTBEAT_UDP_PORT))
+        except:
+            pass
 
 
 class HeartbeatReceiver(internet.UDPServer):
@@ -70,7 +75,7 @@ class HeartbeatReceiver(internet.UDPServer):
                                     HeartbeatProtocol(env))
 
 
-class HeartbeatService:
+class HeartbeatService(service.MultiService):
     """A asynchronous events-based heartbeat server for SeisHub."""
     
     IntOption('heartbeat', 'port', HEARTBEAT_UDP_PORT, 
@@ -80,16 +85,18 @@ class HeartbeatService:
     BoolOption('heartbeat', 'active_node', 'on', 'Heartbeat status')
     
     def __init__(self, env):
-        env.nodes = {}
+        service.MultiService.__init__(self)
+        self.setName('Heartbeat')
+        self.setServiceParent(env.app)
         
         detector_service = HeartbeatDetector(env)
         detector_service.setName("Heartbeat Detector")
-        detector_service.setServiceParent(env.app)
+        self.addService(detector_service)
         
         transmitter_service = HeartbeatTransmitter(env)
         transmitter_service.setName("Heartbeat Transmitter")
-        transmitter_service.setServiceParent(env.app)
+        self.addService(transmitter_service)
         
         receiver_service = HeartbeatReceiver(env)
         receiver_service.setName("Heartbeat Receiver")
-        receiver_service.setServiceParent(env.app)
+        self.addService(receiver_service)

@@ -277,11 +277,11 @@ class AdminService(internet.SSLServer):
         priv = self.env.config.get('admin', 'private_key_file')
         cert = self.env.config.get('admin', 'certificate_file')
         if not os.path.isfile(priv):
-            priv = os.path.join(self.env.path, 'conf', priv)
+            priv = os.path.join(self.env.config.path, 'conf', priv)
             if not os.path.isfile(priv):
                 raise SeisHubError('Missing file ' + priv)
         if not os.path.isfile(cert):
-            cert = os.path.join(self.env.path, 'conf', cert)
+            cert = os.path.join(self.env.config.path, 'conf', cert)
             if not os.path.isfile(cert):
                 raise SeisHubError('Missing file ' + cert)
         return priv, cert

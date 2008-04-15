@@ -3,7 +3,7 @@
 from seishub.core import Component, implements
 from seishub.services.rest.interfaces import IRESTMapper
 from seishub.services.rest.alias import registerAlias
-from seishub.services.interfaces import IPackage, IXMLSchema
+from seishub.packages.interfaces import IPackage, IXMLSchema
 
 
 registerAlias('/lastevents', 'quakeml', "/event?order_by=['/quakeml/event/year']/&limit=20")

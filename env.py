@@ -36,12 +36,14 @@ class Environment(ComponentManager):
         # set up component manager
         ComponentManager.__init__(self)
         self.compmgr = self
-        # set SeisHub path
-        self.path = self.getSeisHubPath()
+        # get SeisHub path
+        path = self.getSeisHubPath()
         if not config_file:
-            config_file = os.path.join(self.path, 'conf', 'seishub.ini') 
+            config_file = os.path.join(path, 'conf', 'seishub.ini') 
         # set config handler
         self.config = Configuration(config_file)
+        self.config.path = path
+        self.config.hubs = {}
         # set log handler
         self.log = Logger(self)
         # init all default options
@@ -141,7 +143,6 @@ class Environment(ComponentManager):
             component_name = (cls.__module__ + '.' + cls.__name__).lower()
         else:
             component_name = cls.lower()
-        
         rules = [(name.lower(), value.lower() in ('enabled', 'on'))
                  for name, value in self.config.options('components')]
         rules.sort(lambda a, b: -cmp(len(a[0]), len(b[0])))
