@@ -33,9 +33,10 @@ class HeartbeatDetector(internet.TimerService):
     
     def detect(self):
         """Detects clients w/ heartbeat older than HEARTBEAT_CHECK_TIMEOUT."""
-        #XXX: delete clients from list is not implemented yet
         limit = time.time() - HEARTBEAT_CHECK_TIMEOUT
-        #silent = [ip for (ip, ipTime) in self.env.nodes.items() if ipTime < limit]
+        for node in self.env.config.hubs.items():
+            if node[1][0] < limit:
+                del self.env.config.hubs[node[0]]
         self.env.log.debug('Active SeisHub nodes: %s' % \
                            self.env.config.hubs.items())
 
