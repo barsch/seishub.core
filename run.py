@@ -6,9 +6,10 @@ from twisted.internet import reactor
 
 from seishub.env import Environment
 from seishub.services.admin import AdminServiceFactory
-from seishub.defaults import ADMIN_PORT, REST_PORT, SSH_PORT
+from seishub.defaults import ADMIN_PORT, REST_PORT, SSH_PORT, SFTP_PORT
 from seishub.services.rest import RESTServiceFactory
 from seishub.services.ssh import SSHServiceFactory
+from seishub.services.sftp import SFTPServiceFactory
 
 
 def main():
@@ -30,7 +31,11 @@ def main():
     ## SSH
     port = env.config.getint('ssh', 'port') or SSH_PORT
     reactor.listenTCP(port, SSHServiceFactory(env))
-
+    
+    ## SSH
+    port = env.config.getint('sftp', 'port') or SFTP_PORT
+    reactor.listenTCP(port, SFTPServiceFactory(env))
+    
     reactor.run()
 
 

@@ -6,6 +6,7 @@ from seishub.env import Environment
 from seishub.services.admin import AdminService
 from seishub.services.rest import RESTService
 from seishub.services.ssh import SSHService
+from seishub.services.sftp import SFTPService
 from seishub.services.heartbeat import HeartbeatService
 
 
@@ -26,6 +27,9 @@ rest_service = RESTService(env)
 
 # SSH
 ssh_service = SSHService(env)
+
+# SFTP
+sftp_service = SFTPService(env)
 
 # heartbeat
 heartbeat_service = HeartbeatService(env)

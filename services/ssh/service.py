@@ -5,7 +5,7 @@ import os
 from zope.interface import implements
 from twisted.cred import portal, checkers
 from twisted.conch import recvline, avatar, interfaces as conchinterfaces
-from twisted.conch.ssh import factory, keys, session, common
+from twisted.conch.ssh import factory, keys, common, session
 from twisted.conch.insults import insults
 from twisted.application import internet
 
@@ -17,25 +17,26 @@ from seishub.config import IntOption, Option
 
 
 class SSHServiceProtocol(recvline.HistoricRecvLine):
+    
     def __init__(self, user, env):
         recvline.HistoricRecvLine.__init__(self)
         self.env = env
         self.user = user
         plugins = ExtensionPoint(ISSHCommand).extensions(self.env)
-        self.plugin_cmds = dict([(p.getCommandId(), p) 
+        self.plugin_cmds = dict([(p.getCommandId().upper(), p) 
                                  for p in plugins 
                                  if hasattr(p, 'executeCommand')
                                  and hasattr(p, 'getCommandId')])
-        self.buildin_cmds = [f[3:] for f in dir(self) if f.startswith('do_')]
+        self.buildin_cmds = [f[4:].upper() for f in dir(self) \
+                             if f.startswith('cmd_')]
     
     def connectionMade(self):
         recvline.HistoricRecvLine.connectionMade(self)
-        self.terminal.write("Welcome to SeisHub " + SEISHUB_VERSION)
-        self.terminal.nextLine()
+        self.writeln("Welcome to SeisHub " + SEISHUB_VERSION)
         self.showPrompt()
     
     def showPrompt(self):
-        self.terminal.write("$ ")
+        self.write("$ ")
     
     def lineReceived(self, line):
         line = line.strip()
@@ -43,66 +44,64 @@ class SSHServiceProtocol(recvline.HistoricRecvLine):
             self.showPrompt()
             return
         cmd_and_args = line.split()
-        cmd = cmd_and_args[0]
+        cmd = cmd_and_args[0].upper()
         args = cmd_and_args[1:]
         if cmd in self.buildin_cmds:
             try:
-                func = getattr(self, 'do_' + cmd, None)
+                func = getattr(self, 'cmd_' + cmd, None)
                 func(*args)
             except Exception, e:
-                self.terminal.write("Error: %s" % e)
-                self.terminal.nextLine()
+                self.writeln("Error: %s" % e)
         elif cmd in self.plugin_cmds.keys():
             ssh_cmd = self.plugin_cmds.get(cmd)
             for l in ssh_cmd.executeCommand(args):
-                self.terminal.write(l)
-                self.terminal.nextLine()
+                self.writeln(l)
         else:
-            self.terminal.write("No such command: " + cmd)
-            self.terminal.nextLine()
-            self.terminal.write("Use help to get all available commands.")
-            self.terminal.nextLine()
-            
+            self.writeln("No such command: " + cmd)
+            self.writeln("Use help to get all available commands.")
         self.showPrompt()
     
-    def do_help(self, *args):
-        self.terminal.write('== Build-in keywords ==')
-        self.terminal.nextLine()
+    def write(self, data):
+        self.terminal.write(data)
+    
+    def writeln(self, data):
+        self.write(data)
+        self.nextLine()
+    
+    def nextLine(self):
+        self.write('\r\n')
+    
+    def cmd_HELP(self, *args):
+        self.writeln('== Build-in keywords ==')
         for cmd in self.buildin_cmds:
-            func = getattr(self, 'do_' + cmd, None)
+            func = getattr(self, 'cmd_' + cmd, None)
             func_doc = func.__doc__
             if not func_doc:
                 continue
-            self.terminal.write(cmd + ' - ' + str(func_doc))
-            self.terminal.nextLine()
-        self.terminal.nextLine()
-        self.terminal.write('== Plugin keywords ==')
-        self.terminal.nextLine()
+            self.writeln(cmd + ' - ' + str(func_doc))
+        self.nextLine()
+        self.writeln('== Plugin keywords ==')
         for cmd, plugin in self.plugin_cmds.items():
-            self.terminal.write(cmd + ' - ' + str(plugin.__doc__))
-            self.terminal.nextLine()
+            self.writeln(cmd + ' - ' + str(plugin.__doc__))
     
-    def do_version(self):
+    def cmd_VERSION(self):
         """Prints the current SeisHub version."""
-        self.terminal.write(SEISHUB_VERSION)
-        self.terminal.nextLine()
+        self.writeln('SeisHub SSH version %s' % SEISHUB_VERSION)
     
-    def do_whoami(self):
+    def cmd_WHOAMI(self):
         """Prints your user name."""
-        self.terminal.write(self.user.username)
-        self.terminal.nextLine()
+        self.writeln(self.user.username)
     
-    def do_exit(self):
+    def cmd_EXIT(self):
         """Ends your session."""
         self.do_quit()
     
-    def do_quit(self):
+    def cmd_QUIT(self):
         """Ends your session."""
-        self.terminal.write("Bye!")
-        self.terminal.nextLine()
+        self.writeln("Bye!")
         self.terminal.loseConnection()
     
-    def do_clear(self):
+    def cmd_CLEAR(self):
         """Clears the screen."""
         self.terminal.reset()
 
@@ -117,17 +116,24 @@ class SSHServiceAvatar(avatar.ConchUser):
         self.channelLookup.update({'session': session.SSHSession})
     
     def openShell(self, protocol):
-        serverProtocol = insults.ServerProtocol(SSHServiceProtocol, self, self.env)
+        serverProtocol = insults.ServerProtocol(SSHServiceProtocol, self, 
+                                                self.env)
         serverProtocol.makeConnection(protocol)
         protocol.makeConnection(session.wrapProtocol(serverProtocol))
     
     def getPty(self, terminal, windowSize, attrs):
-        return None
+        pass
     
     def execCommand(self, protocol, cmd):
         raise NotImplementedError
     
     def closed(self):
+        pass
+    
+    def windowChanged(self, windowSize):
+        pass
+    
+    def eofReceived(self):
         pass
 
 
@@ -139,7 +145,8 @@ class SSHServiceRealm:
     
     def requestAvatar(self, avatarId, mind, *interfaces):
         if conchinterfaces.IConchUser in interfaces:
-            return interfaces[0], SSHServiceAvatar(avatarId, self.env), lambda: None
+            return interfaces[0], SSHServiceAvatar(avatarId, self.env), \
+                   lambda: None
         else:
             raise Exception, "No supported interfaces found."
 
@@ -149,10 +156,12 @@ class SSHServiceFactory(factory.SSHFactory):
     
     def __init__(self, env):
         self.env = env
+        #set portal
         users = {'admin': 'aaa', }
         realm = SSHServiceRealm(env)
         check = [checkers.InMemoryUsernamePasswordDatabaseDontUse(**users)]
         self.portal = portal.Portal(realm, check)
+        #set keys
         pub, priv = self._getCertificates()
         self.publicKeys = {'ssh-rsa': keys.Key.fromFile(pub)}
         self.privateKeys = {'ssh-rsa': keys.Key.fromFile(priv)}

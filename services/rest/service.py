@@ -15,6 +15,7 @@ from seishub.config import IntOption
 from seishub.services.rest.interfaces import IRESTMapper
 from seishub.core import ExtensionPoint
 from seishub.util.xml import XmlTreeDoc, XmlStylesheet
+from seishub.packages.interfaces import IPackage
 
 
 class RESTRequest(http.Request):
@@ -29,9 +30,12 @@ class RESTRequest(http.Request):
         # post process self.path
         self.postpath = map(unquote, string.split(self.path[1:], '/'))
         
-        # root element
+        # root element shows a list of all available packages 
         if self.path == '/':
-            self.write("I am a REST server - serving atm nothing ;)")
+            package_list = ExtensionPoint(IPackage).extensions(self.env)
+            
+            for package in package_list:
+                self.write(str(package.getPackageId()))
             self.finish()
             return
         
