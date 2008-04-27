@@ -8,29 +8,62 @@ from seishub.xmldb.interfaces import IXmlResource
 from seishub.util.xml import XmlTreeDoc
 from seishub.xmldb.resource import Resource
 from seishub.xmldb.errors import XmlResourceError
+from seishub.xmldb.util import Serializable
 
-class XmlResource(Resource):
+class XmlResource(Resource, Serializable):
     """auto-parsing xml resource, 
     given xml data gets validated and parsed on resource creation"""
+    
     implements (IXmlResource)
+    
     def __init__(self,uri=None,xml_data=None):
-        """overloaded __init__ to encode utf8 if needed"""
         self.__xml_doc = None
-        if not isinstance(xml_data, unicode) and xml_data:
-            xml_data = unicode(xml_data,"utf-8")
         Resource.__init__(self, uri, xml_data)
+        Serializable.__init__(self)
+        
+    # overloaded method from Serializable
+    def getFields(self):
+        return {'_id':self._id,
+                'uri':self.uri,
+                'data':self.data,
+                'resource_type':self.resource_type
+                }
     
     # overloaded method setData from Resource
-    # this gets invoked by baseclass's constructor
-    def setData(self,xml_data):
-        """validate and set xml_data"""
+    # gets invoked by Resource's constructor
+    def setData(self, xml_data):
+        xml_data = str(xml_data)
+        # parse and validate xml_data
         try:
             self.__xml_doc = self._validateXml_data(xml_data)
         except Exception, e:
             raise XmlResourceError(e)
         
+        # find resource type from xml data
         self._resource_type = self.__xml_doc.getRootElementName()
+        
+        #import pdb;pdb.set_trace()
+        # decode raw data to utf-8 unicode string
+        if not isinstance(xml_data, unicode) and xml_data:
+            xml_data = unicode(xml_data,"utf-8")
+        
         return Resource.setData(self,xml_data)
+    
+    def getData(self):
+        # utf-8 encode data
+        data = super(XmlResource,self).getData()
+        if not data:
+            return None
+        return data.encode("utf-8")
+    
+    data = property(getData, setData, 'Raw xml data as a string')
+    
+    def getResource_type(self):
+        if not hasattr(self,'_resource_type'):
+            return None
+        return self._resource_type
+    
+    resource_type = property(getResource_type, "Resource type")
     
     def getXml_doc(self):
         return self.__xml_doc
@@ -40,9 +73,6 @@ class XmlResource(Resource):
             raise DoesNotImplement(IXmlDoc)
         else:
             self.__xml_doc = xml_doc
-            
-    def getResource_type(self):
-        return self._resource_type
     
     def _validateXml_data(self,value):
         return self._parseXml_data(value)
@@ -52,7 +82,6 @@ class XmlResource(Resource):
         # encode before handing it to parser:
         xml_data = xml_data.encode("utf-8")
         return XmlTreeDoc(xml_data=xml_data, blocking=True)
-
 
 class XmlSchemaResource(XmlResource):
     """XmlResource providing validation against given XML Schema"""

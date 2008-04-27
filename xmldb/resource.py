@@ -2,6 +2,7 @@
 
 from seishub.xmldb.validator import Validator
 from seishub.xmldb.errors import InvalidUriError
+from seishub.xmldb.util import Serializable
 
 class Resource(object):
     """Resource base class"""
@@ -19,8 +20,10 @@ class Resource(object):
         return self.__data
     
     def setData(self,newdata):
-        self.__data=newdata
+        self.__data = newdata
         return True
+    
+    data = property(getData, setData, 'Raw data')
     
     def getUri(self):
         return self.__uri
@@ -30,6 +33,8 @@ class Resource(object):
             self.__uri=newuri
         else:
             raise InvalidUriError("%s is not a valid URI!" % newuri)
+        
+    uri = property(getUri, setUri, "Uri")
     
     def _validateUri(self,value):
         #TODO: uri validation
@@ -38,3 +43,8 @@ class Resource(object):
             return True
         else: 
             return False
+        
+class ResourceMetadata(Resource, Serializable):
+    """Resource metadata"""
+    
+    

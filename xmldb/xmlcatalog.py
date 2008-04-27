@@ -6,7 +6,7 @@ from seishub.xmldb.interfaces import IXmlCatalog
 from seishub.xmldb.xmlindexcatalog import XmlIndexCatalog, QueryAliases
 from seishub.xmldb.xmldbms import XmlDbManager
 from seishub.xmldb.xmlresource import XmlResource
-from seishub.xmldb.xmlindex import XmlIndex
+from seishub.xmldb.index import XmlIndex
 from seishub.xmldb.metaresources import SchemaRegistry, StylesheetRegistry
 from seishub.xmldb.xpath import IndexDefiningXpathExpression, XPathQuery
 

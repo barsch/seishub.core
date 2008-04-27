@@ -6,7 +6,7 @@ from zope.interface.exceptions import DoesNotImplement
 from seishub.test import SeisHubTestCase
 from seishub.core import SeisHubError
 from seishub.xmldb.xmlresource import XmlResource
-from seishub.xmldb.xmlindex import XmlIndex, TEXT_INDEX
+from seishub.xmldb.index import XmlIndex, TEXT_INDEX
 
 
 RAW_XML1="""<station rel_uri="bern">

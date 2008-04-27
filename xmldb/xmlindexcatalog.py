@@ -9,21 +9,24 @@ from seishub.xmldb.interfaces import IXmlIndexCatalog, IIndexRegistry, \
                                      IResourceIndexing, IXmlIndex, \
                                      IResourceStorage, IXPathQuery, \
                                      IXPathExpression
-from seishub.xmldb.util import DbEnabled
-from seishub.xmldb.xmlindex import XmlIndex
+from seishub.xmldb.util import DbStorage, DbEnabled
+from seishub.xmldb.index import XmlIndex
 from seishub.xmldb.defaults import index_def_tab, index_tab, uri_tab, \
                                    query_aliases_tab
 from seishub.xmldb.errors import InvalidUriError, XmlIndexCatalogError, \
                                  InvalidIndexError, QueryAliasError, \
                                  InvalidQueryError
 
-class XmlIndexCatalog(DbEnabled):
+class XmlIndexCatalog(DbStorage):
     implements(IIndexRegistry,
                IResourceIndexing,
                IXmlIndexCatalog)
     
+    # XXX: order of tables is IMPORTANT here!
+    db_tables = [index_def_tab]
+    
     def __init__(self,db,resource_storage = None):
-        DbEnabled.__init__(self, db)
+        super(XmlIndexCatalog, self).__init__(db)
         
         if resource_storage:
             if not IResourceStorage.providedBy(resource_storage):
@@ -33,6 +36,13 @@ class XmlIndexCatalog(DbEnabled):
     def _parse_xpath_query(expr):
         pass
     _parse_xpath_query=staticmethod(_parse_xpath_query)
+    
+    # overloaded methods from DbStorage
+    def getMapping(self, table):
+        if table == index_def_tab:
+            return {'key_path':'key_path',
+                    'value_path':'value_path',
+                    'type':'data_type'}
             
     # methods from IIndexRegistry:
 
@@ -40,43 +50,20 @@ class XmlIndexCatalog(DbEnabled):
         """@see: L{seishub.xmldb.xmlindexcatalog.interfaces.IIndexRegistry}"""
         if not IXmlIndex.providedBy(xml_index):
             raise DoesNotImplement(IXmlIndex)
-        
-        conn = self._db.connect()
-        
-        # begin transaction:
-        txn = conn.begin()
         try:
-            res = conn.execute(index_def_tab.insert(),
-                               key_path = xml_index.getKey_path(),
-                               value_path = xml_index.getValue_path(),
-                               data_type = xml_index.getType())
-            xml_index.__id = res.last_inserted_ids()[0]
-            txn.commit()
-            res.close()
+            self.store(xml_index)
         except Exception, e:
-            txn.rollback()
             raise XmlIndexCatalogError(e)
-        finally:
-            conn.close()
-
         return xml_index
     
     def removeIndex(self,value_path=None, key_path=None):
         """@see: L{seishub.xmldb.xmlindexcatalog.interfaces.IIndexRegistry}"""
         if not (isinstance(key_path,basestring) and isinstance(value_path,basestring)):
             raise XmlIndexCatalogError("No key_path and value_path given.")
-        
         # flush index first:
-        self.flushIndex(key_path=key_path,value_path=value_path)
-        
+        self.flushIndex(key_path = key_path, value_path = value_path)
         # then remove index definition:
-        self._db.execute(index_def_tab.delete(
-                         and_(
-                              index_def_tab.c.key_path == key_path,
-                              index_def_tab.c.value_path == value_path
-                              ))
-                         )
-        
+        self.drop(key_path = key_path, value_path = value_path)
         return True
 
     def getIndex(self,value_path, key_path):
@@ -117,7 +104,7 @@ class XmlIndexCatalog(DbEnabled):
                                value_path = res[2],
                                type = res[3])
                 # inject the internal id into obj:
-                index.__id=res[0]
+                index._setId(res[0])
                 indexes.append(index)
 
         return indexes
@@ -151,7 +138,7 @@ class XmlIndexCatalog(DbEnabled):
                                     (value_path, key_path))
         keysvals = index.eval(resource)
         #data_type = index.getType()
-        index_id = index.__id
+        index_id = index._getId()
         if not keysvals: # index does not apply
             return
         
@@ -205,7 +192,7 @@ class XmlIndexCatalog(DbEnabled):
                 if not idx:
                     raise XmlIndexCatalogError("No Index found for %s/%s" % \
                                                (value_path, str(p._left)))
-                idx_id = idx.__id
+                idx_id = idx._getId()
                 # XXX: maybe simple counter instead of hash
                 alias_id = abs(hash(str(idx_id) + str(p._right)))
                 alias = index_tab.alias("idx_" + str(alias_id))
@@ -255,7 +242,7 @@ class XmlIndexCatalog(DbEnabled):
                 raise XmlIndexCatalogError("No Index found for %s"%str(ob[0]))
             alias = index_tab.alias("idx_" + str(alias_id))
             alias_id += 1
-            q = q.where(and_(alias.c.index_id == idx.__id, 
+            q = q.where(and_(alias.c.index_id == idx._getId(), 
                              alias.c.value == value_col)) \
                  .group_by(alias.c.key)
             if ob[1].lower() == "desc": 
@@ -338,6 +325,4 @@ class QueryAliases(DbEnabled):
         finally:
             res.close()
         return dict(aliases)
-    
-    
     

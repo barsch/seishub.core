@@ -115,33 +115,44 @@ class IResourceStorage(Interface):
         """Return a list of all registered uris
         or the subset of uris corresponding to resources of type 'type'
         @return: a list of uris"""
-             
-class IXmlIndex(Interface):
-    """Xml index base class
-    
-    __init__ expects a pair of key_path / value_path,
-    and optionally a index type (default: "text")"""
         
+class IIndex(Interface):
+    def init(value_path=None, key_path=None, type="text"):
+        pass
+    
     def setValueKeyPath(value_path,key_path):
         """@param value_path: new value path
         @param key_path: new key_path"""
     
     def getKey_path():
-        """@return: my key path"""
+        """@return: key path"""
         
     def getValue_path():
-        """@return: my value path"""
+        """@return: value path"""
         
     def getType():
         """@return: data type of the index key"""
         
     def getValues():
         """@return: values of this index"""
+             
+class IXmlIndex(IIndex):
+    """An XmlIndex is used in order to index data stored inside a XmlResource's
+    XML structure
+    """
     
     def eval(xml_resource):
         """Evaluate this index on a given XmlResource
         @param xml_resource: xmldb.xmlresource.XmlResource object
         @return: list with key, value pairs on success, None else"""
+
+class IVirtualIndex(IIndex):
+    """A VirtualIndex is used in order to make additional information about a XmlResource 
+    available to the index"""
+        
+    def setValue(data):
+        """set value of virtual index
+        @param data: any data of correct type"""
         
 class IIndexRegistry(Interface):
     """Manages index creation, retrieval, update and removal"""
@@ -259,3 +270,22 @@ class IXPathExpression(Interface):
     def __init__(expr):
         """@param expr: XPath expression
         @type expr: string"""
+        
+class IDbEnabled(Interface):
+    """Object provides access to db manager"""
+    def setDb(db):
+        """@param db: database engine"""
+        
+    def getDb():
+        """@return: database engine"""
+        
+class ISerializable(Interface):
+    """Object providing functionality for serialization"""
+    def _getId():
+        """return internal storage id"""
+    
+    def _setId(self, id):
+        """set internal storage id"""
+    
+    def getFields():
+        """@return: dict of the form {'fieldname':value}"""

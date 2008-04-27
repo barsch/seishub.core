@@ -11,7 +11,7 @@ from seishub.xmldb.xmlindexcatalog import XmlIndexCatalog, QueryAliases
 from seishub.xmldb.xmlindexcatalog import XmlIndexCatalogError, \
                                           InvalidIndexError
 from seishub.xmldb.xmldbms import XmlDbManager
-from seishub.xmldb.xmlindex import XmlIndex
+from seishub.xmldb.index import XmlIndex
 from seishub.xmldb.xmlresource import XmlResource
 from seishub.xmldb.defaults import *
 from seishub.xmldb.xpath import XPathQuery
@@ -134,6 +134,11 @@ class XmlIndexCatalogTest(SeisHubTestCase):
                 s[k]=f[k]
         return self.assertEquals(f,s)
     
+    def _assertClassAttributeListEqual(self,first,second,attribute_list):
+        for attr in attribute_list:
+            self.assertEqual(first.__getattribute__(attr),
+                             second.__getattribute__(attr))
+    
     def __cleanUp(self,res=None):
         # manually remove some db entries created
         query = index_def_tab.delete(and_(
@@ -191,7 +196,9 @@ class XmlIndexCatalogTest(SeisHubTestCase):
         # get by key:
         res = catalog.getIndex(key_path = self._test_kp,
                                value_path = self._test_vp)
-        self._assertClassCommonAttributesEqual(test_index, res)
+        self._assertClassAttributeListEqual(test_index, res, 
+                                            ['key_path','value_path','type',
+                                             '_xpath_expr'])
         
         # remove:
         catalog.removeIndex(key_path=self._test_kp,
