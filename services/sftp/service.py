@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
-import os, getpass, struct, tty, fcntl, stat
-import fnmatch, pwd, time, glob
+import os, getpass, struct, stat
+import fnmatch, time, glob
 
 from zope.interface import implements
 from twisted.cred import portal, checkers
@@ -38,9 +38,9 @@ class SFTPServiceProtocol(basic.LineReceiver):
     ps = 'cftp> '
     delimiter = '\n'
     
-    def __init__(self, client, env, f = '~/'):
+    def __init__(self, client, f = '~/'):
         print "hier"
-        self.env = env
+        #self.env = env
         self.client = client
         self.currentDirectory = ''
         self.file = f
@@ -536,10 +536,10 @@ version                         Print the SFTP version.
         else:
             glob = 0
         if tail and not glob: # could be file or directory
-           # try directory first
-           d = self.client.openDirectory(fullPath)
-           d.addCallback(self._cbOpenList, '')
-           d.addErrback(self._ebNotADirectory, head, tail)
+            # try directory first
+            d = self.client.openDirectory(fullPath)
+            d.addCallback(self._cbOpenList, '')
+            d.addErrback(self._ebNotADirectory, head, tail)
         else:
             d = self.client.openDirectory(head)
             d.addCallback(self._cbOpenList, tail)
@@ -653,7 +653,8 @@ class SFTPServiceAvatar(avatar.ConchUser):
         avatar.ConchUser.__init__(self)
         self.username = username
         self.env = env
-        self.channelLookup.update({'session': session.SSHSession})
+        self.channelLookup['session'] = session.SSHSession
+        self.subsystemLookup['sftp'] = filetransfer.FileTransferServer
     
     def openShell(self, protocol):
         serverProtocol = insults.ServerProtocol(SFTPServiceProtocol, self, self.env)

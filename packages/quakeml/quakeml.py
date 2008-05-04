@@ -1,22 +1,24 @@
 # -*- coding: utf-8 -*-
 
+import os
+
 from seishub.core import Component, implements
-from seishub.services.rest.interfaces import IRESTMapper
-from seishub.services.rest.alias import registerAlias
-from seishub.packages.interfaces import IPackage, IXMLSchema
-
-
-registerAlias('/lastevents', 'quakeml', "/event?order_by=['/quakeml/event/year']/&limit=20")
-registerAlias('/historical-events', 'quakeml', '/event', 
-              order_by = ['/year'], limit = 50)
+from seishub.services.interfaces import IPackage, ISchemas, IAliases
 
 
 class QuakeMLPackage(Component):
     """QuakeML package for SeisHub."""
-    implements(IPackage, IXMLSchema)
+    implements(IPackage, ISchemas, IAliases)
     
     def getPackageId(self):
-        return ('quakeml', '/quakeml/', 'publicId')
+        return 'quakeml'
     
     def getSchemas(self):
-        return ['QuakeML-BED-1.0.1.xsd', 'QuakeML-RT-BED-1.0.1.xsd']
+        """Package validation schemas."""
+        return ['xml' + os.sep + 'QuakeML-BED-1.0.1.xsd', 
+                'xml' + os.sep + 'QuakeML-RT-BED-1.0.1.xsd']
+
+    def getAliases(self):
+        """Package aliases."""
+        return {'lastevents': "/event?order_by=['/quakeml/event/year']/&limit=20",
+                'historical-events': "/event?order_by=['/year']/&limit=50",}

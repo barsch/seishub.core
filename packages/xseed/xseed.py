@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from seishub.core import Component, implements
-from seishub.packages.interfaces import IPackage
+from seishub.services.interfaces import IPackage
 
 
 class XSeedPackage(Component):
@@ -9,4 +9,4 @@ class XSeedPackage(Component):
     implements(IPackage)
     
     def getPackageId(self):
-        return ('xseed', '/xseed/', 'publicId')
+        return 'xseed'

@@ -173,7 +173,7 @@ class PackagesPanel(Component):
     def renderPanel(self, request):
         data = {}
         from seishub.core import ExtensionPoint
-        from seishub.packages.interfaces import IPackage
+        from seishub.interfaces import IPackage
         data['packages'] = ExtensionPoint(IPackage).extensions(self.env)
         return ('general_packages.tmpl', data)
 

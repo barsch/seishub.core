@@ -14,13 +14,14 @@
 #
 # Author: Christopher Lenz <cmlenz@gmx.de>
 
-from seishub.core import *
+from seishub.core import Interface, Component, SeisHubError, ExtensionPoint, \
+                         implements
 
 import unittest
 
 
 class ITest(Interface):
-    def test():
+    def test(self):
         """Dummy function."""
 
 
@@ -278,7 +279,7 @@ class ComponentTestCase(unittest.TestCase):
         class ComponentA(Component):
             pass
         mgr = DisablingComponentManager()
-        instance = ComponentA(mgr)
+        ComponentA(mgr)
         self.assertEqual(None, mgr[ComponentA])
 
 def suite():

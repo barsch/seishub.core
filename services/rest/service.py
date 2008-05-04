@@ -15,33 +15,32 @@ from seishub.config import IntOption
 from seishub.services.rest.interfaces import IRESTMapper
 from seishub.core import ExtensionPoint
 from seishub.util.xml import XmlTreeDoc, XmlStylesheet
-from seishub.packages.interfaces import IPackage
+from seishub.services.interfaces import IPackage
+from seishub.services.processor import Processor
 
 
-class RESTRequest(http.Request):
+class RESTRequest(Processor, http.Request):
     """A HTTP request."""
     
     def __init__(self, channel, queued):
         http.Request.__init__(self, channel, queued)
-        self._initRESTProcessors()
+        Processor.__init__(self, self.env)
     
     def process(self):
         """Start processing a request."""
         # post process self.path
         self.postpath = map(unquote, string.split(self.path[1:], '/'))
         
-        # root element shows a list of all available packages 
-        if self.path == '/':
-            package_list = ExtensionPoint(IPackage).extensions(self.env)
-            
-            for package in package_list:
-                self.write(str(package.getPackageId()))
-            self.finish()
-            return
+        print self.postpath
+
+        output = Processor.process(self)
+        self.write(str(output))
+        self.finish()
+        return
         
         # process in thread
-        d = threads.deferToThread(self._process)
-        d.addErrback(self._processingFailed)
+        #d = threads.deferToThread(self._process)
+        #d.addErrback(self._processingFailed)
     
     def _process(self):
         """

@@ -18,8 +18,10 @@ class ComponentLoader(object):
     def __init__(self, env):
         self.env = env
         extra_path = env.config.get('seishub', 'plugins_dir')
+        # add plug-in directory
         plugins_dir = os.path.join(env.config.path, 'plugins')
-        packages_dir = os.path.join(env.config.path, 'seishub', 'plugins')
+        # add package directory
+        packages_dir = os.path.join(env.config.path, 'seishub', 'packages')
         search_path = [plugins_dir, packages_dir]
         # add user defined paths
         if extra_path:
@@ -78,7 +80,7 @@ class ComponentLoader(object):
                 _logError(entry, e)
     
     def _loadPyFiles(self, search_path):
-        """Loader that look for Python source files in the plugins directories,
+        """Loader that look for Python source files in the plug-in directories,
         which simply get imported, thereby registering them with the component
         manager if they define any components.
         """
@@ -90,10 +92,10 @@ class ComponentLoader(object):
                 try:
                     plugin_name = os.path.basename(plugin_file)
                     plugin_file += os.sep+'__init__.py'
-                    self.env.log.info('Loading plugin %s from %s' % 
+                    self.env.log.info('Loading plug-in %s from %s' % 
                                       (plugin_name, plugin_file))
                     if plugin_name not in sys.modules:
-                        module = imp.load_source(plugin_name, plugin_file)
+                        imp.load_source(plugin_name, plugin_file)
                 except Exception, e:
-                    self.env.log.error('Failed to load plugin from %s' % 
+                    self.env.log.error('Failed to load plug-in from %s' % 
                                        plugin_file, e)
