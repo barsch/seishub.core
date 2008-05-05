@@ -12,10 +12,7 @@ from pkg_resources import resource_filename #@UnresolvedImport
 from seishub.defaults import REST_PORT
 from seishub import __version__ as SEISHUB_VERSION
 from seishub.config import IntOption
-from seishub.services.rest.interfaces import IRESTMapper
-from seishub.core import ExtensionPoint
 from seishub.util.xml import XmlTreeDoc, XmlStylesheet
-from seishub.services.interfaces import IPackage
 from seishub.services.processor import Processor
 
 
@@ -30,26 +27,23 @@ class RESTRequest(Processor, http.Request):
         """Start processing a request."""
         # post process self.path
         self.postpath = map(unquote, string.split(self.path[1:], '/'))
+        #fetch method
+        self.method = self.method.upper()
+        # fetch output type
+        self.output = self.args.get('output', None)
         
-        print self.postpath
-
-        output = Processor.process(self)
-        self.write(str(output))
+        # process in thread
+        d = threads.deferToThread(self.processThread)
+        d.addErrback(self.processingFailed)
+    
+    def processThread(self):
+        data = Processor.process(self)
+        self.write(str(data))
+        self.setResponseCode(http.OK)
         self.finish()
         return
         
-        # process in thread
-        #d = threads.deferToThread(self._process)
-        #d.addErrback(self._processingFailed)
-    
-    def _process(self):
-        """
-        First we try to resolve to a unique resource directly. If a resource 
-        can't be found we lookup the aliases dictionary. If it still fails, we
-        use the mapping plug-ins.
-        """
         
-        self.method = self.method.upper()
         
         if self.postpath[0]=='seishub':
             if self.method=='GET':
@@ -84,70 +78,14 @@ class RESTRequest(Processor, http.Request):
             self.setResponseCode(http.NOT_ALLOWED)
             self.finish()
     
-    def _setHeaders(self, content=None, content_type='text/xml'):
-        """Sets standard headers."""
+    def setHeaders(self, content=None, content_type='text/xml'):
+        """Sets standard HTTP headers."""
         self.setHeader('server', 'SeisHub '+ SEISHUB_VERSION)
         self.setHeader('date', http.datetimeToString())
         if content:
             self.setHeader('content-type', content_type+"; charset=UTF-8")
             self.setHeader('content-length', str(len(str(content))))
    
-    def _processGETResource(self):
-        resource_id = self.path[8:]
-        try:
-            result = self.env.catalog.getResource(uri = resource_id)
-        except Exception, e:
-            self.env.log.debug(e)
-            self.finish()
-            return
-        try:
-            result = result.getData()
-            result = result.encode("utf-8")
-        except Exception, e:
-            self.env.log.error(e)
-            self.setResponseCode(http.INTERNAL_SERVER_ERROR)
-            self.finish()
-            return
-        self._setHeaders(result)
-        self.setResponseCode(http.OK)
-        self.write(result)
-        self.finish()
-    
-    def _processAlias(self):
-        """Generates a list of resources from an alias query."""
-        
-        # fetch list of uris via catalog
-        try:
-            uris = self.env.catalog.query(self.env.catalog.aliases[self.path])
-        except Exception, e:
-            self.env.log.error(e)
-            self.setResponseCode(http.INTERNAL_SERVER_ERROR)
-            self.finish()
-            return
-        # XXX: here we need to look through all registered stylesheets for this 
-        # resource type (linklist) and evaluate any given output option
-        fh = open(resource_filename(self.__module__,
-                          "xml"+os.sep+ "linklist_to_xhtml.xslt"))
-        xslt = fh.read()
-        fh.close()
-        
-        result = self._getResourceList(uris)
-        
-        if 'output' not in self.args:
-            self._setHeaders(result)
-            self.setResponseCode(http.OK)
-            self.write(result)
-            self.finish() 
-        
-        xslt_doc = XmlStylesheet(xslt)
-        xmltree_doc = XmlTreeDoc(result)
-        result = str(xslt_doc.transform(xmltree_doc))
-        
-        self._setHeaders(result, 'text/html')
-        self.setResponseCode(http.OK)
-        self.write(result)
-        self.finish()
-    
     def _processGETMapping(self, processor_id):
         processor = self.processors.get(processor_id)
         (pid, purl, pattr) = processor.getProcessorId()
@@ -182,7 +120,7 @@ class RESTRequest(Processor, http.Request):
             self.write(result)
         self.finish()
     
-    def _getSingleResource(self, uri):
+    def formatResource(self, uri):
         try:
             result = self.env.catalog.getResource(uri = uri)
         except Exception, e:
@@ -198,94 +136,21 @@ class RESTRequest(Processor, http.Request):
             return
         return result
     
-    def _getResourceList(self, uris=[]):
-        fh = open(resource_filename(self.__module__,
-                          "xml" + os.sep + "linklist.tmpl"))
-        root = fh.read()
-        fh.close()
-        
+    def formatResourceList(self, uris=[], base=''):
+        root = open(resource_filename(self.__module__,"xml" + os.sep + 
+                                      "linklist.tmpl")).read()
         tmpl = """<link xlink:type="simple" xlink:href="%s">%s</link>"""
         doc = ""
         for uri in uris:
             # XXX: xml:base doesn't work!!!!
-            doc += tmpl % ('/seishub'+uri, uri)
+            doc += tmpl % (base + '/' + uri, uri)
         return str(root % (self.path, doc))
     
-    def _processPOST(self):
-        """Handles a HTTP POST request."""
-        uris = self.env.catalog.getUriList()
-        #check if resource exists
-        if self.path in uris:
-            self.setResponseCode(http.NOT_FOUND)
-            self.finish()
-            return
-        #update resource
-        #XXX: missing
-        self.setResponseCode(http.NOT_IMPLEMENTED)
-        self.finish()
-    
-    def _processPUT(self):
-        """Handles a HTTP PUT request."""
-        uris = self.env.catalog.getUriList()
-        #check if resource exists
-        if self.path in uris:
-            self.setResponseCode(http.CONFLICT)
-            self.finish()
-            return
-        
-        #get content and create a new resource using the given path
-        try:
-            content = self.content.read()
-            res = self.env.catalog.newXmlResource(self.path, content)
-            self.env.catalog.addResource(res)
-        except Exception, e:
-            self.env.log.error(e)
-            self.setResponseCode(http.INTERNAL_SERVER_ERROR)
-            self.finish()
-            return
-        self.setResponseCode(http.CREATED)
-        self.finish()
-    
-    def _processDELETE(self):
-        """Handles a HTTP DELETE request."""
-        uris = self.env.catalog.getUriList()
-        #check if resource exists
-        if self.path not in uris:
-            self.setResponseCode(http.NOT_FOUND)
-            self.finish()
-            return
-        #delete resource
-        try:
-            self.env.catalog.deleteResource(self.path)
-        except Exception, e:
-            self.env.log.error(e)
-            self.setResponseCode(http.INTERNAL_SERVER_ERROR)
-            self.finish()
-            return
-        self.setResponseCode(http.OK)
-        self.finish()
-    
-    def _processingFailed(self, reason):
+    def processingFailed(self, reason):
         self.env.log.error(reason)
         self.setResponseCode(http.INTERNAL_SERVER_ERROR)
         self.finish()
         return reason
-    
-    def _initRESTProcessors(self):
-        """Return a list of available admin panels."""
-        processor_list = ExtensionPoint(IRESTMapper).extensions(self.env)
-        self.processor_root = {}
-        self.processors = {}
-        for processor in processor_list:
-            # skip processors without proper interfaces
-            if not hasattr(processor, 'getProcessorId'):
-                continue;
-            options = processor.getProcessorId()
-            # getProcessorId has exact 3 values in a tuple
-            if not isinstance(options, tuple) or len(options)!=3:
-                continue
-            self.processors[options[0]] = processor
-            self.processor_root[options[1]] = options[0]
 
 
 class RESTHTTPChannel(http.HTTPChannel):
