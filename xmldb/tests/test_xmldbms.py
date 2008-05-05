@@ -45,7 +45,7 @@ class XmlDbManagerTest(SeisHubTestCase):
         self.test_uri=TEST_URI
     
     def testAddResource(self):
-        testres=XmlResource(xml_data=self.test_data,uri=self.test_uri)
+        testres = XmlResource(xml_data=self.test_data,uri=self.test_uri)
         self.xmldbm.addResource(testres)
         db_strings={'res_tab':DEFAULT_PREFIX+RESOURCE_TABLE,
                     'uri_tab':DEFAULT_PREFIX+URI_TABLE,

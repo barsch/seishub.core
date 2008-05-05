@@ -4,7 +4,6 @@ from seishub.core import Component, implements
 from seishub.services.admin.interfaces import IAdminPanel
 from seishub.xmldb.errors import UnknownUriError, AddResourceError
 
-
 class ResourcesPanel(Component):
     """List all resources."""
     implements(IAdminPanel)

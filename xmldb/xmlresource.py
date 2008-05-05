@@ -4,6 +4,7 @@ from zope.interface import implements
 from zope.interface.exceptions import DoesNotImplement
 
 from seishub.util.xml import IXmlDoc, IXmlSchema
+from seishub.util.text import to_unicode
 from seishub.xmldb.interfaces import IXmlResource
 from seishub.util.xml import XmlTreeDoc
 from seishub.xmldb.resource import Resource
@@ -34,6 +35,10 @@ class XmlResource(Resource, Serializable):
     def setData(self, xml_data):
         xml_data = str(xml_data)
         # parse and validate xml_data
+        # decode raw data to utf-8 unicode string
+        if not isinstance(xml_data, unicode) and xml_data:
+            xml_data = unicode(xml_data,"utf-8")
+            
         try:
             self.__xml_doc = self._validateXml_data(xml_data)
         except Exception, e:
@@ -41,12 +46,6 @@ class XmlResource(Resource, Serializable):
         
         # find resource type from xml data
         self._resource_type = self.__xml_doc.getRootElementName()
-        
-        #import pdb;pdb.set_trace()
-        # decode raw data to utf-8 unicode string
-        if not isinstance(xml_data, unicode) and xml_data:
-            xml_data = unicode(xml_data,"utf-8")
-        
         return Resource.setData(self,xml_data)
     
     def getData(self):
