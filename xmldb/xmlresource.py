@@ -4,7 +4,6 @@ from zope.interface import implements
 from zope.interface.exceptions import DoesNotImplement
 
 from seishub.util.xml import IXmlDoc, IXmlSchema
-from seishub.util.text import to_unicode
 from seishub.xmldb.interfaces import IXmlResource
 from seishub.util.xml import XmlTreeDoc
 from seishub.xmldb.resource import Resource
@@ -53,7 +52,9 @@ class XmlResource(Resource, Serializable):
         data = super(XmlResource,self).getData()
         if not data:
             return None
-        return data.encode("utf-8")
+        # XXX: use encoded byte strings or unicode strings internally?
+        #return data.encode("utf-8")
+        return data
     
     data = property(getData, setData, 'Raw xml data as a string')
     
