@@ -8,5 +8,7 @@ class XSeedPackage(Component):
     """XML SEED package for SeisHub."""
     implements(IPackage)
     
+    package_id = 'xseed'
+    
     def getPackageId(self):
         return 'xseed'

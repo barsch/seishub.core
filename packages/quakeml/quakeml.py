@@ -10,6 +10,8 @@ class QuakeMLPackage(Component):
     """QuakeML package for SeisHub."""
     implements(IPackage, ISchemas, IAliases)
     
+    package_id = 'quakeml'
+    
     def getPackageId(self):
         return 'quakeml'
     

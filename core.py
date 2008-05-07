@@ -78,12 +78,11 @@ class ComponentMeta(type):
     
     def __new__(cls, name, bases, d):
         """Create the component class."""
-        
         new_class = type.__new__(cls, name, bases, d)
         if name == 'Component':
             # Don't put the Component base class in the registry
             return new_class
-        
+
         # Only override __init__ for Components not inheriting ComponentManager
         if True not in [issubclass(x, ComponentManager) for x in bases]:
             # Allow components to have a no-argument initializer so that
@@ -120,9 +119,56 @@ class ComponentMeta(type):
         for base in [base for base in bases if hasattr(base, '_implements')]:
             for interface in base._implements:
                 registry.setdefault(interface, []).append(new_class)
+                
+        # add to package manager
+        PackageManager._addClass(new_class)
         
         return new_class
 
+
+class PackageManager(object):
+    """package manager
+    
+    Takes care of package registration."""
+    
+    # XXX: this solution implies a package_id attribute in any component that
+    # should be assignable to a specific package, a cleaner approach would be 
+    # to require a static (!) getPackageId in a Package defined in an interface 
+    # (e.g. IPackageExtension)
+    
+    _registry = {}
+    
+    def _addClass(cls):
+        if not hasattr(cls,'package_id'):
+            return
+        registry = PackageManager._registry
+        registry.setdefault(cls.package_id, []).append(cls)
+        
+    _addClass = staticmethod(_addClass)
+    
+    def getComponents(interface, package_id, component):
+        """get classes implementing interface within specified package,
+        if package_id == None, this is the same as a call to 
+        seishub.core.ExtensionPoint(interface).etensions(component)
+        """
+        registry = PackageManager._registry
+        # get all classes that declare to implement interface
+        classes = ComponentMeta._registry.get(interface, [])
+        # filter for classes with correct package id
+        if package_id:
+            classes = [cls for cls in classes if cls in registry[package_id]]
+        # get, activate and return objects 
+        return filter(None, [component.compmgr[cls] for cls in classes])
+        
+    getComponents = staticmethod(getComponents)
+    
+    def getPackageIds(component):
+        """get a list of id's of all enabled packages (enabled and disabled ones) 
+        without activating any components"""
+        return PackageManager._registry.keys()
+        
+    getPackageIds = staticmethod(getPackageIds)
+    
 
 class Component(object):
     """Base class for components.

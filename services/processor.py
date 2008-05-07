@@ -7,7 +7,7 @@ from urllib import unquote
 from pkg_resources import resource_filename #@UnresolvedImport 
 
 from seishub.util.xml import XmlTreeDoc, XmlStylesheet
-from seishub.core import ExtensionPoint
+from seishub.core import ExtensionPoint, PackageManager
 from seishub.services.interfaces import IPackage, IResourceType
 
 
@@ -25,10 +25,17 @@ class Processor(object):
     
     def getPackages(self):
         """Returns sorted dict of all packages."""
-        # XXX: This shoulc be done via a registry!!!
+        # XXX: IMO there is no need for a special PackageManager.getEnabledPackages()
+        # function from a performance point of view, as no overhead is generated
+        # by the following code (besides inactive but enabled packages become activated),
+        # though it might be convenient to have one,
+        # in that case we would have to lift the IPackage interface to core level,
+        # to make it available to the PackageManager
+        # see also the comments on PackageManager in seishub.core
+         
         packages = ExtensionPoint(IPackage).extensions(self.env)
-        packages = [str(p.getPackageId()) for p in packages 
-                    if hasattr(p, 'getPackageId')]
+        packages = [str(p.package_id) for p in packages]
+#        packages = PackageManager.getPackageIds(self.env)
         packages.sort()
         return packages
     
@@ -37,17 +44,25 @@ class Processor(object):
         Returns sorted dict of all resource types, optional filtered by a 
         package id.
         """
-        # XXX: This shoulc be done via a registry!!!
-        components = ExtensionPoint(IResourceType).extensions(self.env)
+        # XXX: This should be done via a registry!!!
+        
+#        components = ExtensionPoint(IResourceType).extensions(self.env)
+#        resourcetypes = {}
+#        for c in components:
+#            if not hasattr(c, 'getResourceTypeId'):
+#                continue
+#            if package_id and (not hasattr(c, 'getPackageId') or 
+#                               c.getPackageId()!=package_id):
+#                continue
+#            id = str(c.getResourceTypeId())
+#            resourcetypes[id]=c
+        components = PackageManager.getComponents(IResourceType, package_id, 
+                                                  self.env)
         resourcetypes = {}
         for c in components:
-            if not hasattr(c, 'getResourceTypeId'):
-                continue
-            if package_id and (not hasattr(c, 'getPackageId') or 
-                               c.getPackageId()!=package_id):
-                continue
-            id = str(c.getResourceTypeId())
-            resourcetypes[id]=c
+            id = c.getResourceTypeId()
+            resourcetypes[id] = c
+            
         return resourcetypes
     
     def process(self):

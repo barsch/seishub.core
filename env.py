@@ -82,7 +82,6 @@ class Environment(ComponentManager):
         """Enables a component."""
         module = sys.modules[component.__module__]
         fullname = module.__name__+'.'+component.__name__
-        
         if not component in self:
             self.enabled[component]=True
             self[component]
