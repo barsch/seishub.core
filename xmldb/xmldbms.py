@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.sql import and_
 
 from seishub.xmldb.interfaces import IResourceStorage
-from seishub.xmldb.util import DbStorage
+from seishub.db.util import DbStorage
 from seishub.xmldb.xmlresource import XmlResource
 from seishub.xmldb.errors import *
 from seishub.xmldb.defaults import resource_tab, uri_tab

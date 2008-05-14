@@ -8,7 +8,7 @@ from seishub.xmldb.interfaces import IXmlResource
 from seishub.util.xml import XmlTreeDoc
 from seishub.xmldb.resource import Resource
 from seishub.xmldb.errors import XmlResourceError
-from seishub.xmldb.util import Serializable
+from seishub.db.util import Serializable
 
 class XmlResource(Resource, Serializable):
     """auto-parsing xml resource, 

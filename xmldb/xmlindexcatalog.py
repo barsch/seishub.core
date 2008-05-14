@@ -9,7 +9,7 @@ from seishub.xmldb.interfaces import IXmlIndexCatalog, IIndexRegistry, \
                                      IResourceIndexing, IXmlIndex, \
                                      IResourceStorage, IXPathQuery, \
                                      IXPathExpression
-from seishub.xmldb.util import DbStorage, DbEnabled
+from seishub.db.util import DbStorage, DbEnabled
 from seishub.xmldb.index import XmlIndex
 from seishub.xmldb.defaults import index_def_tab, index_tab, uri_tab, \
                                    query_aliases_tab

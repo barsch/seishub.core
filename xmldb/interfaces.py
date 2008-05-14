@@ -270,22 +270,4 @@ class IXPathExpression(Interface):
     def __init__(expr):
         """@param expr: XPath expression
         @type expr: string"""
-        
-class IDbEnabled(Interface):
-    """Object provides access to db manager"""
-    def setDb(db):
-        """@param db: database engine"""
-        
-    def getDb():
-        """@return: database engine"""
-        
-class ISerializable(Interface):
-    """Object providing functionality for serialization"""
-    def _getId():
-        """return internal storage id"""
     
-    def _setId(self, id):
-        """set internal storage id"""
-    
-    def getFields():
-        """@return: dict of the form {'fieldname':value}"""

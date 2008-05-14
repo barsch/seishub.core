@@ -22,7 +22,7 @@ class Processor(object):
     
     def getPackages(self):
         """Returns sorted dict of all packages."""
-        packages = PackageManager.getComponents(IPackage, None, self.env)
+        packages = self.env.registry.getComponents(IPackage)
         packages = [str(p.package_id) for p in packages]
         packages.sort()
         return packages
@@ -32,8 +32,7 @@ class Processor(object):
         Returns sorted dict of all resource types, optional filtered by a 
         package id.
         """
-        components = PackageManager.getComponents(IResourceType, package_id, 
-                                                  self.env)
+        components = self.env.registry.getComponents(IResourceType, package_id)
         resourcetypes = {}
         for c in components:
             id = c.resourcetype_id

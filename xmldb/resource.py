@@ -2,7 +2,7 @@
 
 from seishub.xmldb.validator import Validator
 from seishub.xmldb.errors import InvalidUriError
-from seishub.xmldb.util import Serializable
+from seishub.db.util import Serializable
 
 class Resource(object):
     """Resource base class"""

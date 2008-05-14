@@ -3,7 +3,7 @@ from zope.interface import implements
 from zope.interface.exceptions import DoesNotImplement
 
 from seishub.core import SeisHubError
-from seishub.xmldb.util import Serializable
+from seishub.db.util import Serializable
 from seishub.xmldb.interfaces import IXmlIndex, IVirtualIndex, IXmlResource
 from seishub.xmldb.errors import XmlIndexError
 

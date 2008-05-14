@@ -1,11 +1,31 @@
 # -*- coding: utf-8 -*-
-from zope.interface import implements
+from zope.interface import implements, Interface
 from zope.interface.exceptions import DoesNotImplement
 from sqlalchemy import select
 from sqlalchemy.sql import and_
 from sqlalchemy.sql.expression import ClauseList
 
-from seishub.xmldb.interfaces import IDbEnabled, ISerializable
+
+class IDbEnabled(Interface):
+    """Object provides access to db manager"""
+    def setDb(db):
+        """@param db: database engine"""
+        
+    def getDb():
+        """@return: database engine"""
+        
+        
+class ISerializable(Interface):
+    """Object providing functionality for serialization"""
+    def _getId():
+        """return internal storage id"""
+    
+    def _setId(self, id):
+        """set internal storage id"""
+    
+    def getFields():
+        """@return: dict of the form {'fieldname':value}"""
+        
 
 class DbEnabled(object):
     """Mixin providing access to a sqlite database manager"""
@@ -19,6 +39,7 @@ class DbEnabled(object):
         
     def getDb(self):
         return self._db
+        
         
 class DbStorage(DbEnabled):
     """Mixin providing object serialization to a sqlite SQL database"""

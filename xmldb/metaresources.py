@@ -4,7 +4,7 @@ from zope.interface import implements
 from sqlalchemy import select
 from sqlalchemy.sql.expression import ClauseElement
 
-from seishub.xmldb.util import DbEnabled
+from seishub.db.util import DbEnabled
 from seishub.xmldb.errors import RegisterMetaResourceError
 from seishub.xmldb.defaults import xsd_tab, xslt_tab
 
