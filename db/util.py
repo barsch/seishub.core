@@ -58,7 +58,8 @@ class DbStorage(DbEnabled):
     def _to_where_clause(self, table, map, values):
         cl = ClauseList(operator = "AND")
         for key in values:
-            cl.append(table.c[map[key]] == values[key])
+            if values[key] != None:
+                cl.append(table.c[map[key]] == values[key])
         return cl
        
     def getMapping(self, table):

@@ -17,11 +17,11 @@ class PackageRegistry(object):
 
 
 class SchemaRegsitry(DbStorage):
-    db_tables = [schema_tab, stylesheet_tab]
+    db_tables = [schema_tab]
     
     # overloaded methods from DbStorage
     def getMapping(self, table):
-        if table == schema_tab or table == stylesheet_tab:
+        if table == schema_tab:
             return {'resourcetype_id':'resourcetype_id',
                     'package_id':'package_id',
                     'type':'type',
@@ -33,11 +33,19 @@ class SchemaRegsitry(DbStorage):
         self.store(schema)
         return True
     
-    def getSchema(self):
-        pass
+    def getSchema(self, package_id = None, resourcetype_id = None, 
+                  type = None, uri = None):
+        schema = Schema()
+        keys = {'package_id':package_id,
+                'resourcetype_id':resourcetype_id,
+                'type':type,
+                'uri':uri}
+        self.pickup(schema, **keys)
+        return schema
     
-    def deleteSchema(self):
-        pass
+    def deleteSchema(self, uri):
+        self.drop(uri = uri)
+        return True
     
 class StylesheetRegistry(DbStorage):
     pass
@@ -48,7 +56,8 @@ class AliasRegistry(DbStorage):
 
 
 class Schema(Serializable):
-    def __init__(self, package_id, resourcetype_id, type, uri):
+    def __init__(self, package_id = None, resourcetype_id = None, 
+                 type = None, uri = None):
         super(Serializable, self).__init__()
         self.package_id = package_id
         self.resourcetype_id = resourcetype_id
