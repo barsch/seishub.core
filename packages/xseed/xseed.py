@@ -9,6 +9,3 @@ class XSeedPackage(Component):
     implements(IPackage)
     
     package_id = 'xseed'
-    
-    def getPackageId(self):
-        return 'xseed'

@@ -1,24 +1,23 @@
 # -*- coding: utf-8 -*-
 
 from seishub.core import Interface
+from zope.interface import Attribute
 
 
 class IPackage(Interface):
     """This is the main interface for a unique seishub package."""
     
-    def getPackageId():
-        """
+    package_id = Attribute("""
         Defines the package ID of this resource.
         
         This items should return a single string with an unique package id.
-        """
-
+        """)
+    
 
 class IResourceType(IPackage):
     """Interface definition for a unique resource type of a package."""
-
-    def getResourceTypeId():
-        """Defines the resource ID of this resource."""
+    
+    resourcetype_id = Attribute("Defines the ID of this resource type.")
 
 
 class IAliases(IPackage):

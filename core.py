@@ -131,11 +131,6 @@ class PackageManager(object):
     
     Takes care of package registration."""
     
-    # XXX: this solution implies a package_id attribute in any component that
-    # should be assignable to a specific package, a cleaner approach would be 
-    # to require a static (!) getPackageId in a Package defined in an interface 
-    # (e.g. IPackageExtension)
-    
     _registry = {}
     
     def _addClass(cls):

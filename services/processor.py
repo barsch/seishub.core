@@ -25,17 +25,8 @@ class Processor(object):
     
     def getPackages(self):
         """Returns sorted dict of all packages."""
-        # XXX: IMO there is no need for a special PackageManager.getEnabledPackages()
-        # function from a performance point of view, as no overhead is generated
-        # by the following code (besides inactive but enabled packages become activated),
-        # though it might be convenient to have one,
-        # in that case we would have to lift the IPackage interface to core level,
-        # to make it available to the PackageManager
-        # see also the comments on PackageManager in seishub.core
-         
-        packages = ExtensionPoint(IPackage).extensions(self.env)
+        packages = PackageManager.getComponents(IPackage, None, self.env)
         packages = [str(p.package_id) for p in packages]
-#        packages = PackageManager.getPackageIds(self.env)
         packages.sort()
         return packages
     
@@ -44,23 +35,11 @@ class Processor(object):
         Returns sorted dict of all resource types, optional filtered by a 
         package id.
         """
-        # XXX: This should be done via a registry!!!
-        
-#        components = ExtensionPoint(IResourceType).extensions(self.env)
-#        resourcetypes = {}
-#        for c in components:
-#            if not hasattr(c, 'getResourceTypeId'):
-#                continue
-#            if package_id and (not hasattr(c, 'getPackageId') or 
-#                               c.getPackageId()!=package_id):
-#                continue
-#            id = str(c.getResourceTypeId())
-#            resourcetypes[id]=c
         components = PackageManager.getComponents(IResourceType, package_id, 
                                                   self.env)
         resourcetypes = {}
         for c in components:
-            id = c.getResourceTypeId()
+            id = c.resourcetype_id
             resourcetypes[id] = c
             
         return resourcetypes
@@ -71,7 +50,8 @@ class Processor(object):
         if self.path == '/' and self.method=='GET':
             return self.processRoot()
         # post process self.path
-        self.postpath = map(unquote, string.split(self.path[1:], '/'))
+        self.postpath = filter(len, 
+                               map(unquote, string.split(self.path[1:], '/')))
         # test if direct resource
         if self.postpath[0]=='seishub':
             return self.processResource()

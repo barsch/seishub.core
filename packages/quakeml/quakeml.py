@@ -12,9 +12,6 @@ class QuakeMLPackage(Component):
     
     package_id = 'quakeml'
     
-    def getPackageId(self):
-        return 'quakeml'
-    
     def getSchemas(self):
         """Package validation schemas."""
         return ['xml' + os.sep + 'QuakeML-BED-1.0.1.xsd', 
