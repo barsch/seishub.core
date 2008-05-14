@@ -174,7 +174,7 @@ class PackagesPanel(Component):
         data = {}
         # XXX: we should use a package registry!!!
         from seishub.core import ExtensionPoint
-        from seishub.services.interfaces import IPackage
+        from seishub.packages.interfaces import IPackage
         data['packages'] = ExtensionPoint(IPackage).extensions(self.env)
         return ('general_packages.tmpl', data)
 

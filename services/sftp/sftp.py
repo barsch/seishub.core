@@ -72,7 +72,6 @@ class AdaptFileSystemUserToISFTP:
         root.createDirectory('degenesis')
         root.createDirectory('quakeml')
         root.createDirectory('xseed')
-        root.createDirectory('seishub/degenesis')
         seishub = self.filesystem.fetch('/seishub')
         seishub.createDirectory('xslt')
         seishub.createDirectory('xsd')

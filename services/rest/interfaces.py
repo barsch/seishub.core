@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from seishub.services.interfaces import IResourceMapper
+from seishub.packages.interfaces import IResourceMapper
 
 
 class IRESTMapper(IResourceMapper):

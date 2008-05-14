@@ -9,7 +9,7 @@ from twisted.application import internet
 from twisted.conch.interfaces import IConchUser
 from twisted.protocols.ftp import IFTPShell
 
-from seishub import __version__ as SEISHUB_VERSION
+#from seishub import __version__ as SEISHUB_VERSION
 from seishub.defaults import SFTP_PORT, SFTP_PRIVATE_KEY, SFTP_PUBLIC_KEY
 from seishub.config import IntOption, Option
 

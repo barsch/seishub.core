@@ -14,6 +14,7 @@ from seishub.xmldb.xmlcatalog import XmlCatalog
 from seishub.db.dbmanager import DatabaseManager
 from seishub.log import Logger
 from seishub.defaults import DEFAULT_COMPONENTS
+from seishub.packages.registry import PackageRegistry
 
 __all__ = ['Environment']
 
@@ -27,6 +28,7 @@ class Environment(ComponentManager):
         * a XML catalog handler env.catalog
         * a database handler env.db
         * a logging handler env.log
+        * a package handler
     """
     
     Option('seishub', 'ip', 'localhost', 'Default IP of this SeisHub server.')
@@ -54,6 +56,8 @@ class Environment(ComponentManager):
         self.catalog = XmlCatalog(self.db)
         # User & group management
         self.portal = Portal()
+        # Package manager
+        self.registry = PackageRegistry(self)
         # load plugins
         ComponentLoader(self)
     

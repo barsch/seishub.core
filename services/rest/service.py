@@ -12,8 +12,8 @@ from pkg_resources import resource_filename #@UnresolvedImport
 from seishub.defaults import REST_PORT
 from seishub import __version__ as SEISHUB_VERSION
 from seishub.config import IntOption
-from seishub.util.xml import XmlTreeDoc, XmlStylesheet
-from seishub.services.processor import Processor
+#from seishub.util.xml import XmlTreeDoc, XmlStylesheet
+from seishub.packages.processor import Processor
 
 
 class RESTRequest(Processor, http.Request):
