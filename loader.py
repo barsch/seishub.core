@@ -20,9 +20,7 @@ class ComponentLoader(object):
         extra_path = env.config.get('seishub', 'plugins_dir')
         # add plug-in directory
         plugins_dir = os.path.join(env.config.path, 'plugins')
-        # add package directory
-        packages_dir = os.path.join(env.config.path, 'seishub', 'packages')
-        search_path = [plugins_dir, packages_dir]
+        search_path = [plugins_dir,]
         # add user defined paths
         if extra_path:
             search_path += list((extra_path,))
