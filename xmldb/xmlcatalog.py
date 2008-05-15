@@ -7,7 +7,7 @@ from seishub.xmldb.xmlindexcatalog import XmlIndexCatalog, QueryAliases
 from seishub.xmldb.xmldbms import XmlDbManager
 from seishub.xmldb.xmlresource import XmlResource
 from seishub.xmldb.index import XmlIndex
-from seishub.xmldb.metaresources import SchemaRegistry, StylesheetRegistry
+#from seishub.xmldb.metaresources import SchemaRegistry, StylesheetRegistry
 from seishub.xmldb.xpath import IndexDefiningXpathExpression, XPathQuery
 
 class XmlCatalog(XmlDbManager):
@@ -17,8 +17,8 @@ class XmlCatalog(XmlDbManager):
         XmlDbManager.__init__(self,db)
         self.index_catalog = XmlIndexCatalog(db, self)
         self.aliases = QueryAliases(db)
-        self.schema_registry = SchemaRegistry(db)
-        self.stylesheet_registry = StylesheetRegistry(db)
+        #self.schema_registry = SchemaRegistry(db)
+        #self.stylesheet_registry = StylesheetRegistry(db)
     
     # methods from IXmlCatalog:
     def newXmlResource(self,uri,xml_data):

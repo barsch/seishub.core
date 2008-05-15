@@ -68,14 +68,14 @@ query_aliases_tab = Table(DEFAULT_PREFIX + QUERY_ALIASES_TABLE, metadata,
     Column('expr', Text)
 ) 
 
-# resourcetypes tables
-xsd_tab = Table(DEFAULT_PREFIX + XSD_TABLE, metadata,
-    Column('uri', Text, primary_key = True),
-    Column('package_id', Text)
-)
-
-xslt_tab = Table(DEFAULT_PREFIX + XSLT_TABLE, metadata,
-    Column('uri', Text, primary_key = True),
-    Column('package_id', Text),
-    Column('format', Text)
-)
+## resourcetypes tables
+#xsd_tab = Table(DEFAULT_PREFIX + XSD_TABLE, metadata,
+#    Column('uri', Text, primary_key = True),
+#    Column('package_id', Text)
+#)
+#
+#xslt_tab = Table(DEFAULT_PREFIX + XSLT_TABLE, metadata,
+#    Column('uri', Text, primary_key = True),
+#    Column('package_id', Text),
+#    Column('format', Text)
+#)

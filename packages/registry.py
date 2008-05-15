@@ -7,7 +7,7 @@ class PackageRegistry(object):
     def __init__(self, env):
         self.env = env
         self.stylesheets = StylesheetRegistry(self.env.db)
-        self.schemas = SchemaRegsitry(self.env.db)
+        self.schemas = SchemaRegistry(self.env.db)
         self.aliases = AliasRegistry(self.env.db)
         
     def getComponents(self, interface, package_id = None):
@@ -16,43 +16,33 @@ class PackageRegistry(object):
         return components
 
 
-class SchemaRegsitry(DbStorage):
-    db_tables = [schema_tab]
-    
+class Regsitry(DbStorage):
     # overloaded methods from DbStorage
     def getMapping(self, table):
-        if table == schema_tab:
-            return {'resourcetype_id':'resourcetype_id',
-                    'package_id':'package_id',
-                    'type':'type',
-                    'uri':'uri'}
+        return {'resourcetype_id':'resourcetype_id',
+                'package_id':'package_id',
+                'type':'type',
+                'uri':'uri'}
     
     # methods from IResourceStorage
-    def registerSchema(self, package_id, resourcetype_id, type, uri):
-        schema = Schema(package_id, resourcetype_id, type, uri)
-        self.store(schema)
+    def register(self, package_id, resourcetype_id, type, uri):
+        o = self.cls(package_id, resourcetype_id, type, uri)
+        self.store(o)
         return True
     
-    def getSchema(self, package_id = None, resourcetype_id = None, 
+    def get(self, package_id = None, resourcetype_id = None, 
                   type = None, uri = None):
-        schema = Schema()
+        o = self.cls()
         keys = {'package_id':package_id,
                 'resourcetype_id':resourcetype_id,
                 'type':type,
                 'uri':uri}
-        self.pickup(schema, **keys)
-        return schema
+        self.pickup(o, **keys)
+        return o
     
-    def deleteSchema(self, uri):
+    def delete(self, uri):
         self.drop(uri = uri)
         return True
-    
-class StylesheetRegistry(DbStorage):
-    pass
-
-
-class AliasRegistry(DbStorage):
-    pass
 
 
 class Schema(Serializable):
@@ -106,6 +96,20 @@ class Schema(Serializable):
     
 
 class Stylesheet(Schema):
+    pass
+
+
+class SchemaRegistry(Regsitry):
+    db_tables = [schema_tab]
+    cls = Schema
+
+    
+class StylesheetRegistry(Regsitry):
+    db_tables = [stylesheet_tab]
+    cls = Stylesheet
+    
+
+class AliasRegistry(DbStorage):
     pass
 
 
