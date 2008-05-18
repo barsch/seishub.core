@@ -12,7 +12,6 @@ from pkg_resources import resource_filename #@UnresolvedImport
 from seishub.defaults import REST_PORT
 from seishub import __version__ as SEISHUB_VERSION
 from seishub.config import IntOption
-#from seishub.util.xml import XmlTreeDoc, XmlStylesheet
 from seishub.packages.processor import Processor
 
 
@@ -145,6 +144,13 @@ class RESTRequest(Processor, http.Request):
             # XXX: xml:base doesn't work!!!!
             doc += tmpl % (base + '/' + uri, uri)
         return str(root % (self.path, doc))
+    
+    def formatError(self, error_id, reason=None):
+        if reason:
+            self.env.log.error(reason)
+        self.setResponseCode(error_id)
+        self.finish()
+        return reason
     
     def processingFailed(self, reason):
         self.env.log.error(reason)

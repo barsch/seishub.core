@@ -3,9 +3,7 @@
 import string
 
 from urllib import unquote
-
-from seishub.core import PackageManager
-from seishub.packages.interfaces import IPackage, IResourceType
+from twisted.web import http
 
 
 class Processor(object):
@@ -18,27 +16,7 @@ class Processor(object):
     
     def __init__(self, env):
         self.env = env
-        self.packages = self.getPackages()
-    
-    def getPackages(self):
-        """Returns sorted dict of all packages."""
-        packages = self.env.registry.getComponents(IPackage)
-        packages = [str(p.package_id) for p in packages]
-        packages.sort()
-        return packages
-    
-    def getResourceTypes(self, package_id=None):
-        """
-        Returns sorted dict of all resource types, optional filtered by a 
-        package id.
-        """
-        components = self.env.registry.getComponents(IResourceType, package_id)
-        resourcetypes = {}
-        for c in components:
-            id = c.resourcetype_id
-            resourcetypes[id] = c
-            
-        return resourcetypes
+        self.package_ids = self.env.registry.getPackageIds()
     
     def process(self):
         """Working through the process chain."""
@@ -51,30 +29,51 @@ class Processor(object):
         # test if direct resource
         if self.postpath[0]=='seishub':
             return self.processResource()
-        # test if a package_id
-        self.packages = self.getPackages()
-        if self.postpath[0] in self.packages:
+        # test if a predefined package_id
+        if self.postpath[0] in self.package_ids:
             return self.processPackage()
-        # return NotImplementedYet
+        # everything else should not be processed
+        return self.formatError(http.NOT_ALLOWED)
     
     def processRoot(self):
-        return self.formatResourceList(self.packages + ['seishub'])
+        """
+        The root element can be only browsed via GET method and shows a list 
+        of all packages and the extra entry 'seishub', which points to the 
+        resources directly.
+        """
+        return self.formatResourceList(self.package_ids + ['seishub'])
     
     def processResource(self):
-        """Direct access on a resource."""
-        
-        # test if only 'seishub' is given
-        if len(self.postpath)==1 and self.method=='GET':
-            return self.formatResourceList(self.packages, '/seishub')
-        # test for method
-        if self.method=='GET':
-            return self.getResource()
+        """
+        Direct access on a resource starts always with the base url '/seishub', 
+        followed by package_id and resource_id.
+        """
+        # check if correct method
+        if self.method not in ['GET','PUT','POST','DELETE']:
+            return self.formatError(http.NOT_IMPLEMENTED)
+        # only GETs may browse through the tree
+        if len(self.postpath)<3 and self.method!='GET':
+            self.returnError(http.NOT_ALLOWED)
+        # POST, PUT and DELETE can be handled directly now
         if self.method=='POST':
             return self.modifyResource()
-        if self.method=='PUT':
+        elif self.method=='PUT':
             return self.createResource()
-        if self.method=='DELETE':
+        elif self.method=='DELETE':
             return self.deleteResource()
+        # only GET requests are left
+        # just '/seishub' is given
+        if len(self.postpath)==1:
+            return self.formatResourceList(self.package_ids, '/seishub')
+        # '/seishub' and a package_id is given
+        if len(self.postpath)==2 and self.postpath[1] in self.package_ids:
+            # fetch only resource types
+            resourcetypes = self.env.registry.getResourceTypes(self.package_id)
+            resourcetype_ids = resourcetypes.keys()
+            resourcetype_ids.sort()
+            return self.formatResourceList(resourcetype_ids, 
+                                           '/seishub/'+self.postpath[1])
+        return self.getResource()
     
     def processPackage(self):
         """
@@ -82,11 +81,9 @@ class Processor(object):
         package. If this fails we will look for package aliases or package
         mappings defined by the user.
         """
-        
         self.package_id = self.postpath[0]
-        
         # fetch resource types
-        self.resourcetypes = self.getResourceTypes(self.package_id)
+        self.resourcetypes = self.env.registry.getResourceTypes(self.package_id)
         resourcetype_ids = self.resourcetypes.keys()
         resourcetype_ids.sort()
         
@@ -119,9 +116,6 @@ class Processor(object):
             return 
         
         pass
-    
-    def formatResourceList(self, uris, baseuri):
-        assert 0, 'formatResourceList must be defined'
     
     def processAlias(self):
         """Generates a list of resources from an alias query."""
@@ -169,3 +163,15 @@ class Processor(object):
         except Exception, e:
             self.env.log.error(e)
             return
+    
+    def formatResourceList(self, uris, baseuri):
+        """Resource list handler for the inheriting class."""
+        assert 0, 'formatResourceList must be defined'
+    
+    def formatResource(self, uris, baseuri):
+        """Resource handler for the inheriting class."""
+        assert 0, 'formatResource must be defined'
+    
+    def formatError(self, error_id, msg=None):
+        """Error handler for the inheriting class."""
+        assert 0, 'formatError must be defined'

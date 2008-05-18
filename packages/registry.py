@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
-from defaults import *
+
+from defaults import schema_tab, stylesheet_tab
 from seishub.core import PackageManager
 from seishub.db.util import DbStorage, Serializable
+from seishub.packages.interfaces import IPackage, IResourceType
+
 
 class PackageRegistry(object):
     def __init__(self, env):
@@ -14,9 +17,28 @@ class PackageRegistry(object):
         components = PackageManager.getComponents(interface, package_id, 
                                                   self.env)
         return components
+    
+    def getPackageIds(self):
+        """Returns sorted dict of all packages."""
+        packages = self.getComponents(IPackage)
+        packages = [str(p.package_id) for p in packages]
+        packages.sort()
+        return packages
+    
+    def getResourceTypes(self, package_id=None):
+        """
+        Returns sorted dict of all resource types, optional filtered by a 
+        package id.
+        """
+        components = self.getComponents(IResourceType, package_id)
+        resourcetypes = {}
+        for c in components:
+            id = c.resourcetype_id
+            resourcetypes[id] = c
+        return resourcetypes
 
 
-class Regsitry(DbStorage):
+class Registry(DbStorage):
     # overloaded methods from DbStorage
     def getMapping(self, table):
         return {'resourcetype_id':'resourcetype_id',
@@ -99,12 +121,12 @@ class Stylesheet(Schema):
     pass
 
 
-class SchemaRegistry(Regsitry):
+class SchemaRegistry(Registry):
     db_tables = [schema_tab]
     cls = Schema
 
     
-class StylesheetRegistry(Regsitry):
+class StylesheetRegistry(Registry):
     db_tables = [stylesheet_tab]
     cls = Stylesheet
     
