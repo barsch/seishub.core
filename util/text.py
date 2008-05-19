@@ -5,6 +5,17 @@ import locale
 
 CRLF = '\r\n'
 
+
+def isInteger(source):
+    try:
+        stripped = str(int(source))
+    except:
+        return False
+    if source == stripped:
+        return True
+    return False
+
+
 def to_unicode(text, charset=None):
     """Convert a `str` object to an `unicode` object.
 

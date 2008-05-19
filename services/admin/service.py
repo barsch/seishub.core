@@ -2,7 +2,7 @@
 
 import os
 import string
-from urllib import unquote
+import urllib
 
 from twisted.web import static, http, util as webutil
 from twisted.internet import threads, defer, ssl
@@ -27,12 +27,19 @@ class AdminRequest(http.Request):
     
     def process(self):
         # post process self.path
-        self.postpath = map(unquote, string.split(self.path[1:], '/'))
+        self.postpath = map(urllib.unquote, string.split(self.path[1:], '/'))
         
         # process static content
         if self.path in self.static_content.keys():
             self.static_content.get(self.path).render(self)
             self.finish()
+            return
+        
+        # process ajax request
+        if self.path.startswith('/ajax'):
+            # get content in a extra thread and render after completion
+            d = threads.deferToThread(self._processAjax, self) 
+            d.addErrback(self._processingFailed) 
             return
         
         # redirect if only category given or web root
@@ -67,6 +74,13 @@ class AdminRequest(http.Request):
         d.addCallback(self._renderPanel)
         d.addErrback(self._processingFailed) 
         return
+    
+    def _processAjax(self, result):
+        """Fetch resources from the REST server."""
+        remoteaddr = self.env.getRestUrl() + self.path[5:]
+        doc = urllib.urlopen(remoteaddr).read()
+        self.write(doc)
+        self.finish()
     
     def _renderPanel(self, result):
         if not result or isinstance(result, defer.Deferred):
@@ -214,12 +228,16 @@ class AdminRequest(http.Request):
         default_js = static.File(resource_filename(self.__module__,
                                                    "htdocs"+os.sep+"js"+ \
                                                    os.sep+"default.js"))
+        ajax_js = static.File(resource_filename(self.__module__,
+                                                "htdocs"+os.sep+"js"+ \
+                                                os.sep+"jxs.js"))
         quake_gif = static.File(resource_filename(self.__module__,
                                                   "htdocs"+os.sep+"images"+ \
                                                   os.sep+"quake.gif"))
         # default static files
         self.static_content = {'/css/default.css': default_css,
                                '/js/default.js': default_js,
+                               '/js/jxs.js': ajax_js,
                                '/favicon.ico': default_ico,
                                '/images/quake.gif': quake_gif,}
         

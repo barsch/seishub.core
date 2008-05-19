@@ -31,7 +31,7 @@ class Environment(ComponentManager):
         * a package handler
     """
     
-    Option('seishub', 'ip', 'localhost', 'Default IP of this SeisHub server.')
+    Option('seishub', 'host', 'localhost', 'Default host of this server.')
     
     def __init__(self, config_file=None):
         """Initialize the SeisHub environment."""
@@ -65,6 +65,12 @@ class Environment(ComponentManager):
         """Returns the absolute path to the SeisHub directory."""
         import seishub
         return os.path.split(os.path.dirname(seishub.__file__))[0]
+    
+    def getRestUrl(self):
+        """Returns the root URL of the REST pages."""
+        rest_host = self.config.get('seishub', 'host')
+        rest_port = self.config.getint('rest', 'port')
+        return 'http://'+ str(rest_host) + ':' + str(rest_port)
     
     @defer.inlineCallbacks
     def enableService(self, srv_name):

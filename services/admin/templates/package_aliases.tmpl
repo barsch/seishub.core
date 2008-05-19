@@ -1,3 +1,20 @@
+<script type="text/javascript" src="/js/jxs.js" ></script>
+<script type="text/javascript">
+    jx.load('/ajax/',function(data){
+    alert(data); },'json','get');
+    
+    function muh(xmldoc)
+    {
+      var root = xmldoc.getElementsByTagName('seishub').item(0);
+      alert(root.name)
+      for (var iNode = 0; iNode < root.childNodes.length; iNode++) 
+      {
+         var node = root.childNodes.item(iNode);
+      }
+    }
+    
+</script>
+
 <h1>Aliases</h1>
 
 <p><i>
@@ -7,6 +24,14 @@
 
 <h2>Add new alias</h2>
 <form method="post" name="add">
+  <label>Package</label><br />
+  <select name="package">
+    <option></option>
+  </select><br />
+  <label>Resource type</label><br />
+  <select name="resourcetype">
+    <option></option>
+  </select><br />
   <label>Alias expression</label><br />
   <input type="text" size="80" name="alias" value="$alias" /><br />
   <label>Xpath expression</label><br />

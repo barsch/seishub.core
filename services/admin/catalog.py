@@ -2,14 +2,77 @@
 
 from seishub.core import Component, implements
 from seishub.services.admin.interfaces import IAdminPanel
+from seishub.xmldb.defaults import DEFAULT_PREFIX, RESOURCE_TABLE, \
+                                   INDEX_TABLE, INDEX_DEF_TABLE, \
+                                   URI_TABLE, QUERY_ALIASES_TABLE
 from seishub.xmldb.errors import UnknownUriError, AddResourceError
+
+
+class BasicPanel(Component):
+    """DB configuration."""
+    implements(IAdminPanel)
+    
+    def getPanelId(self):
+        return ('catalog', 'Catalog', 'dbbasic', 'Database Settings')
+    
+    def renderPanel(self, request):
+        db = self.db.engine
+        if request.method == 'POST':
+            for option in ('uri', 'verbose'):
+                self.config.set('db', option, 
+                                request.args.get(option,[''])[0])
+            self.config.save()
+            request.redirect(request.path)
+        data = {
+          'uri': self.config.get('db', 'uri'),
+          'verbose': self.config.get('db', 'verbose'),
+          'db': db,
+        }
+        return ('catalog_db_basic.tmpl', data)
+
+
+class DatabaseQueryPanel(Component):
+    """Query the database via http form."""
+    implements(IAdminPanel)
+    
+    tables = [RESOURCE_TABLE, URI_TABLE, INDEX_TABLE, INDEX_DEF_TABLE, \
+              QUERY_ALIASES_TABLE]
+    
+    def getPanelId(self):
+        return ('catalog', 'Catalog', 'dbquery', 'Query DB')
+    
+    def renderPanel(self, request):
+        db = self.env.db.engine
+        data = {
+            'query': 'select 1;', 
+            'result': '',
+            'tables': self.tables,
+        }
+        args = request.args
+        if request.method=='POST':
+            query = None
+            if 'query' in args.keys() and 'send' in args.keys():
+                query = data['query'] = request.args['query'][0]
+            else:
+                for table in self.tables:
+                    if table in args.keys():
+                        query = 'SELECT * FROM '+DEFAULT_PREFIX+table+';'
+            if query:
+                data['query'] = query
+                try:
+                    data['result'] = db.execute(query).fetchall()
+                except Exception, e:
+                    self.env.log.error('Database query error', e)
+                    data['error'] = ('Database query error', e)
+        return ('catalog_db_query.tmpl', data)
+
 
 class ResourcesPanel(Component):
     """List all resources."""
     implements(IAdminPanel)
     
     def getPanelId(self):
-        return ('catalog', 'XML Catalog', 'resources', 'Resources')
+        return ('catalog', 'Catalog', 'resources', 'Resources')
     
     def renderPanel(self, request):
         rest_port = self.config.getint('rest', 'port')
@@ -59,118 +122,7 @@ class ResourcesPanel(Component):
         return data
 
 
-class IndexesPanel(Component):
-    """List all indexes and add new ones."""
-    implements(IAdminPanel)
-    
-    def getPanelId(self):
-        return ('catalog', 'XML Catalog', 'indexes', 'Indexes')
-    
-    def renderPanel(self, request):
-        data  = {
-            'indexes': [],
-            'error': '',
-            'xpath': '',
-        }
-        if request.method=='POST':
-            args = request.args
-            if 'add' in args.keys() and 'xpath' in args.keys():
-                data['xpath'] = args['xpath'][0]
-                data = self._addIndex(data)
-            elif 'delete' in args.keys() and 'index[]' in args.keys():
-                data['index[]'] = args['index[]']
-                data = self._deleteIndexes(data)
-            elif 'reindex' in args.keys() and 'index[]' in args.keys():
-                data['index[]'] = args['index[]']
-                data = self._reindex(data)
-        # fetch all indexes
-        data['indexes'] = self.catalog.listIndexes()
-        return ('catalog_indexes.tmpl', data)
-    
-    def _reindex(self, data):
-        for xpath in data.get('index[]',[]):
-            try:
-                self.env.catalog.reindex(xpath)
-            except Exception, e:
-                self.log.error("Error reindexing xml_index %s" % xpath, e)
-                data['error'] = ("Error reindexing xml_index %s" % xpath, e)
-                return data
-        return data
-    
-    def _deleteIndexes(self, data):
-        for xpath in data.get('index[]',[]):
-            try:
-                self.catalog.removeIndex(xpath)
-            except Exception, e:
-                self.log.error("Error removing xml_index %s" % xpath, e)
-                data['error'] = ("Error removing xml_index %s" % xpath, e)
-                return data
-        return data
-    
-    def _addIndex(self, data):
-        try:
-            xml_index = self.catalog.newXmlIndex(data['xpath'])
-        except Exception, e:
-            self.log.error("Error generating a xml_index", e)
-            data['error'] = ("Error generating a xml_index", e)
-            return data
-        try:
-            self.catalog.registerIndex(xml_index)
-        except Exception, e:
-            self.log.error("Error registering xml_index", e)
-            data['error'] = ("Error registering xml_index", e)
-        data['xpath'] = ''
-        return data
-
-
-class AliasPanel(Component):
-    """List all REST aliases and add new ones."""
-    implements(IAdminPanel)
-    
-    def getPanelId(self):
-        return ('catalog', 'XML Catalog', 'aliases', 'Aliases')
-    
-    def renderPanel(self, request):
-        rest_port = self.config.getint('rest', 'port')
-        data  = {
-            'aliases': {},
-            'error': '',
-            'alias': '',
-            'xpath': '',
-            'resturl': 'http://localhost:' + str(rest_port),
-        }
-        if request.method=='POST':
-            args = request.args
-            if 'add' in args.keys() and 'xpath' in args.keys() and \
-               'alias' in args.keys():
-                data['alias'] = args['alias'][0]
-                data['xpath'] = args['xpath'][0]
-                data = self._addAlias(data)
-            elif 'delete' in args.keys() and 'alias[]' in args.keys():
-                data['alias[]'] = args['alias[]']
-                data = self._deleteAliases(data)
-        # fetch all aliases
-        data['aliases'] = self.catalog.aliases
-        return ('catalog_aliases.tmpl', data)
-    
-    def _deleteAliases(self, data):
-        for alias in data.get('alias[]',[]):
-            del self.catalog.aliases[alias]
-        return data
-    
-    def _addAlias(self, data):
-        try:
-            self.catalog.aliases[data['alias']]=data['xpath']
-        except Exception, e:
-            self.log.error("Error generating an alias", e)
-            data['error'] = ("Error generating an alias", e)
-            return data
-        data['alias'] = ''
-        data['xpath'] = ''
-        return data
-
-
-class QueryPanel(Component):
+class CatalogQueryPanel(Component):
     """Query the catalog via http form."""
     implements(IAdminPanel)
     

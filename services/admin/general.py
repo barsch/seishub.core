@@ -20,13 +20,13 @@ class BasicPanel(Component):
     
     def renderPanel(self, request):
         if request.method == 'POST':
-            for option in ('ip', 'default_charset', 'description'):
+            for option in ('host', 'default_charset', 'description'):
                 self.config.set('seishub', option, 
                                 request.args.get(option,[])[0])
             self.config.save()
             request.redirect(request.path)
         data = {
-          'ip': self.config.get('seishub', 'ip'),
+          'host': self.config.get('seishub', 'host'),
           'default_charset': self.config.get('seishub', 'default_charset'),
           'description': self.config.get('seishub', 'description'),
         }
@@ -59,10 +59,8 @@ class RESTRedirect(Component):
         return ('rest', 'REST', 'rest', 'REST')
     
     def renderPanel(self, request):
-        port = self.env.config.get('rest', 'port')
-        ip = self.env.config.get('seishub', 'ip')
-        url = 'http://%s:%s/' % (ip, port)
-        request.redirect(str(url))
+        url = self.env.getRestUrl()
+        request.redirect(url)
         return ('',{})
 
 
@@ -161,22 +159,6 @@ class PluginsPanel(Component):
           'plugins': plugins,
         }
         return ('general_plugins.tmpl', data)
-
-
-class PackagesPanel(Component):
-    """Lists all installed packages."""
-    implements(IAdminPanel)
-    
-    def getPanelId(self):
-        return ('admin', 'General', 'packages', 'Packages')
-    
-    def renderPanel(self, request):
-        data = {}
-        # XXX: we should use a package registry!!!
-        from seishub.core import ExtensionPoint
-        from seishub.packages.interfaces import IPackage
-        data['packages'] = ExtensionPoint(IPackage).extensions(self.env)
-        return ('general_packages.tmpl', data)
 
 
 class ServicesPanel(Component):
