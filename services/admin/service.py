@@ -35,13 +35,6 @@ class AdminRequest(http.Request):
             self.finish()
             return
         
-        # process ajax request
-        if self.path.startswith('/ajax'):
-            # get content in a extra thread and render after completion
-            d = threads.deferToThread(self._processAjax, self) 
-            d.addErrback(self._processingFailed) 
-            return
-        
         # redirect if only category given or web root
         if len(self.postpath)<2:
             categories = [p[0] for p in self.panel_ids]
@@ -74,13 +67,6 @@ class AdminRequest(http.Request):
         d.addCallback(self._renderPanel)
         d.addErrback(self._processingFailed) 
         return
-    
-    def _processAjax(self, result):
-        """Fetch resources from the REST server."""
-        remoteaddr = self.env.getRestUrl() + self.path[5:]
-        doc = urllib.urlopen(remoteaddr).read()
-        self.write(doc)
-        self.finish()
     
     def _renderPanel(self, result):
         if not result or isinstance(result, defer.Deferred):
@@ -218,6 +204,7 @@ class AdminRequest(http.Request):
     
     def _initStaticContent(self):
         """Returns a dictionary of static web resources."""
+        # XXX: we don't to hardcode this !!!!!
         default_css = static.File(resource_filename(self.__module__,
                                                     "htdocs"+os.sep+"css"+ \
                                                     os.sep+"default.css"))
@@ -228,18 +215,22 @@ class AdminRequest(http.Request):
         default_js = static.File(resource_filename(self.__module__,
                                                    "htdocs"+os.sep+"js"+ \
                                                    os.sep+"default.js"))
-        ajax_js = static.File(resource_filename(self.__module__,
-                                                "htdocs"+os.sep+"js"+ \
-                                                os.sep+"jxs.js"))
         quake_gif = static.File(resource_filename(self.__module__,
                                                   "htdocs"+os.sep+"images"+ \
                                                   os.sep+"quake.gif"))
+        package_gif = static.File(resource_filename(self.__module__,
+                                                    "htdocs"+os.sep+"images"+ \
+                                                    os.sep+"package.gif"))
+        resourcetype_gif = static.File(resource_filename(self.__module__,
+                                       "htdocs"+os.sep+"images"+ \
+                                       os.sep+"resourcetype.gif"))
         # default static files
         self.static_content = {'/css/default.css': default_css,
                                '/js/default.js': default_js,
-                               '/js/jxs.js': ajax_js,
                                '/favicon.ico': default_ico,
-                               '/images/quake.gif': quake_gif,}
+                               '/images/quake.gif': quake_gif,
+                               '/images/resourcetype.gif': resourcetype_gif,
+                               '/images/package.gif': package_gif,}
         
         # add panel specific static files
         for panel in self.panels.values():

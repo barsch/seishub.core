@@ -1,36 +1,22 @@
-<script type="text/javascript" src="/js/jxs.js" ></script>
-<script type="text/javascript">
-    jx.load('/ajax/',function(data){
-    alert(data); },'json','get');
-    
-    function muh(xmldoc)
-    {
-      var root = xmldoc.getElementsByTagName('seishub').item(0);
-      alert(root.name)
-      for (var iNode = 0; iNode < root.childNodes.length; iNode++) 
-      {
-         var node = root.childNodes.item(iNode);
-      }
-    }
-    
-</script>
-
 <h1>Aliases</h1>
 
 <p><i>
-  Aliases are shortcuts to very specific xpath-like queries. 
-  The result of an alias is always a list of unique resources.
+  Aliases are shortcuts to very specific XPath-like queries. An alias is always
+  linked to a package and optional to a resource type. The result of an alias 
+  is a list of unique resources.
 </i></p>
 
 <h2>Add new alias</h2>
 <form method="post" name="add">
   <label>Package</label><br />
-  <select name="package">
-    <option></option>
+  <select name="package" id="package">
+  #for $p in $packages
+    <option value="$p" onclick="changePackage('$p');">$p</option>
+  #end for
   </select><br />
-  <label>Resource type</label><br />
-  <select name="resourcetype">
-    <option></option>
+  <label>Resource type (optional)</label><br />
+  <select name="resourcetype" id="resourcetype" >
+    <option value="">-</option>
   </select><br />
   <label>Alias expression</label><br />
   <input type="text" size="80" name="alias" value="$alias" /><br />
@@ -60,3 +46,25 @@
   </table>
   <input type="submit" name="delete" value="Delete" />
 </form>
+
+<script type="text/javascript">
+    var resourcetypes = new Array();
+    #for $p in $packages
+    resourcetypes['$p'] = $resourcetypes[$p];
+    #end for
+
+    function changePackage(package_id)
+    {
+      var selectbox = document.getElementById('resourcetype');
+      selectbox.options.length = 0;
+      var emptylink = new Option('-', '');
+      selectbox.options[0] = emptylink;
+      for (var i=0;i<resourcetypes[package_id].length;i++)
+      {
+        var link = resourcetypes[package_id][i];
+        var addme = new Option(link, link);
+        selectbox.options[i+1] = addme;
+      }
+    }
+    changePackage('$packages[0]');
+</script>

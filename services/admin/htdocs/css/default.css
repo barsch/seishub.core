@@ -117,6 +117,24 @@ body {
     text-decoration: none;
 }
 
+#content li.package {
+    list-style-type: none;
+    list-style-position: outside;
+    background: url('/images/package.gif');
+    background-repeat: no-repeat;
+    padding-left: 20px;
+    margin-left: 0px;
+}
+
+#content li.resourcetype {
+    list-style-type: none;
+    list-style-position: outside;
+    background: url('/images/resourcetype.gif');
+    background-repeat: no-repeat;
+    padding-left: 20px;
+    margin-left: 0px;
+}
+
 #content h1 {
     font-family: "trebuchet ms", verdana, helvetica, arial, sans-serif;
     font-size: 150%;

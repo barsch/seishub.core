@@ -4,6 +4,30 @@ from seishub.core import Component, implements
 from seishub.services.admin.interfaces import IAdminPanel
 
 
+class SchemasPanel(Component):
+    """Lists all installed schemas."""
+    implements(IAdminPanel)
+    
+    def getPanelId(self):
+        return ('packages', 'Packages', 'schemas', 'Schemas')
+    
+    def renderPanel(self, request):
+        data = {}
+        return ('package_schemas.tmpl', data)
+
+
+class StylesheetsPanel(Component):
+    """Lists all installed stylesheets."""
+    implements(IAdminPanel)
+    
+    def getPanelId(self):
+        return ('packages', 'Packages', 'stylesheets', 'Stylesheets')
+    
+    def renderPanel(self, request):
+        data = {}
+        return ('package_stylesheets.tmpl', data)
+
+
 class ListPackagesPanel(Component):
     """Lists all installed packages."""
     implements(IAdminPanel)
@@ -12,8 +36,14 @@ class ListPackagesPanel(Component):
         return ('packages', 'Packages', 'packages', 'Packages')
     
     def renderPanel(self, request):
+        packages = self.env.registry.getPackageIds()
+        resourcetypes = dict([(p, self.env.registry.getResourceTypes(p).keys())
+                              for p in packages])
+        
         data = {}
-        data['packages'] = self.env.registry.getPackageIds()
+        data['packages'] = packages
+        data['resourcetypes'] = resourcetypes
+        data['resturl'] = self.env.getRestUrl()
         return ('package_list.tmpl', data)
 
 
@@ -81,7 +111,7 @@ class IndexesPanel(Component):
         return data
 
 
-class AliasPanel(Component):
+class AliasesPanel(Component):
     """List all aliases and add new ones."""
     implements(IAdminPanel)
     
@@ -89,11 +119,17 @@ class AliasPanel(Component):
         return ('packages', 'Packages', 'aliases', 'Aliases')
     
     def renderPanel(self, request):
+        packages = self.env.registry.getPackageIds()
+        resourcetypes = dict([(p, self.env.registry.getResourceTypes(p).keys())
+                              for p in packages])
+        
         data  = {
             'aliases': {},
             'error': '',
             'alias': '',
             'xpath': '',
+            'packages': packages,
+            'resourcetypes': resourcetypes,
             'resturl': self.env.getRestUrl(),
         }
         if request.method=='POST':
