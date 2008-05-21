@@ -25,14 +25,13 @@ class IAdminPanel(Interface):
     
     def getHtdocsDirs():
         """
-        Return a list of directories with static resources (such as style
-        sheets, images, etc.).
+        Return a dict of static resources (such as css files, images, etc.).
         
-        Each item in the list must be a `(prefix, abspath)` tuple. The
-        `prefix` part defines the path in the URL that requests to these
-        resources are prefixed with.
+        Each entry consists of a 'prefix' and an 'abspath'. The 'prefix' part 
+        defines the full path that requests to these resources are prefixed 
+        with, e.g. '/images/test.jpg'.
         
-        The `abspath` is the absolute path to the directory containing the
+        The 'abspath' is the absolute path to the directory containing the
         resources on the local file system.
         """
     

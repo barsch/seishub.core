@@ -26,14 +26,21 @@ class AdminRequest(http.Request):
         self._initStaticContent()
     
     def process(self):
+        """
+        Running through the process chain. First we look for default and user 
+        defined static content. If this doesn't solve the request, we will try
+        to fit in a admin panel.
+        """
         # post process self.path
         self.postpath = map(urllib.unquote, string.split(self.path[1:], '/'))
         
-        # process static content
+        # process user defined static content
         if self.path in self.static_content.keys():
-            self.static_content.get(self.path).render(self)
-            self.finish()
-            return
+            return self._renderUserDefinedStatics()
+        
+        # process system wide default static content
+        if self.postpath[0] in ['images', 'css', 'js']:
+            return self._renderDefaultStatics()
         
         # redirect if only category given or web root
         if len(self.postpath)<2:
@@ -56,6 +63,7 @@ class AdminRequest(http.Request):
         self.cat_id = self.postpath[0]
         self.panel_id = self.postpath[1]
         
+        # test if panel exists
         self.panel = self.panels.get((self.cat_id, self.panel_id), None)
         if not self.panel:
             self.redirect('/'+self.panel_ids[0][0]+'/'+self.panel_ids[0][2])
@@ -66,6 +74,24 @@ class AdminRequest(http.Request):
         d = threads.deferToThread(self.panel.renderPanel, self) 
         d.addCallback(self._renderPanel)
         d.addErrback(self._processingFailed) 
+        return
+    
+    def _renderUserDefinedStatics(self):
+        filename = self.static_content.get(self.path)
+        node = static.File(filename)
+        node.render(self)
+        self.finish()
+        return
+    
+    def _renderDefaultStatics(self):
+        node = static.File(resource_filename(self.__module__, 'htdocs' + 
+                                             os.sep + self.postpath[0]))
+        for p in self.postpath[1:]:
+            node = node.getChild(p, self)
+        if not node.isLeaf:
+            self.setHeader('content-type', "text/html; charset=UTF-8")
+        node.render(self)
+        self.finish()
         return
     
     def _renderPanel(self, result):
@@ -204,40 +230,13 @@ class AdminRequest(http.Request):
     
     def _initStaticContent(self):
         """Returns a dictionary of static web resources."""
-        # XXX: we don't to hardcode this !!!!!
-        default_css = static.File(resource_filename(self.__module__,
-                                                    "htdocs"+os.sep+"css"+ \
-                                                    os.sep+"default.css"))
-        default_ico = static.File(resource_filename(self.__module__,
-                                                    "htdocs"+os.sep+\
-                                                    "favicon.ico"),
-                                  defaultType="image/x-icon")
-        default_js = static.File(resource_filename(self.__module__,
-                                                   "htdocs"+os.sep+"js"+ \
-                                                   os.sep+"default.js"))
-        quake_gif = static.File(resource_filename(self.__module__,
-                                                  "htdocs"+os.sep+"images"+ \
-                                                  os.sep+"quake.gif"))
-        package_gif = static.File(resource_filename(self.__module__,
-                                                    "htdocs"+os.sep+"images"+ \
-                                                    os.sep+"package.gif"))
-        resourcetype_gif = static.File(resource_filename(self.__module__,
-                                       "htdocs"+os.sep+"images"+ \
-                                       os.sep+"resourcetype.gif"))
-        # default static files
-        self.static_content = {'/css/default.css': default_css,
-                               '/js/default.js': default_js,
-                               '/favicon.ico': default_ico,
-                               '/images/quake.gif': quake_gif,
-                               '/images/resourcetype.gif': resourcetype_gif,
-                               '/images/package.gif': package_gif,}
-        
+        self.static_content = {}
         # add panel specific static files
         for panel in self.panels.values():
             if hasattr(panel, 'getHtdocsDirs'):
                 items = panel.getHtdocsDirs()
-                for path, child in items:
-                    self.static_content[path] = static.File(child)
+                if isinstance(items, dict):
+                    self.static_content.update(items)
 
 
 class AdminHTTPChannel(http.HTTPChannel):

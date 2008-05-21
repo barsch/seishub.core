@@ -1,29 +1,26 @@
 <h1>Aliases</h1>
 
-<p><i>
-  Aliases are shortcuts to very specific XPath-like queries. An alias is always
-  linked to a package and optional to a resource type. The result of an alias 
-  is a list of unique resources.
-</i></p>
+<p><i> Aliases are shortcuts to very specific XPath-like
+queries. An alias is always linked to a package and optional to a
+resource type. The result of an alias is a list of unique resources. </i></p>
 
 <h2>Add new alias</h2>
-<form method="post" name="add">
-  <label>Package</label><br />
-  <select name="package" id="package">
-  #for $p in $packages
-    <option value="$p" onclick="changePackage('$p');">$p</option>
-  #end for
-  </select><br />
-  <label>Resource type (optional)</label><br />
-  <select name="resourcetype" id="resourcetype" >
-    <option value="">-</option>
-  </select><br />
-  <label>Alias expression</label><br />
-  <input type="text" size="80" name="alias" value="$alias" /><br />
-  <label>Xpath expression</label><br />
-  <input type="text" size="80" name="xpath" value="$xpath" /><br />
-  <br />
-  <input type="submit" name="add" value="Add" />
+<form method="post" name="add"><label>Package</label><br />
+    <select name="package" id="package">
+        #for $p in $packages
+        <option value="$p" onclick="changePackage('$p');">$p</option>
+        #end for
+    </select><br />
+    <label>Resource type (optional)</label><br />
+    <select name="resourcetype" id="resourcetype">
+        <option value="">-</option>
+    </select><br />
+    <label>Alias expression</label><br />
+    <input type="text" size="80" name="alias" value="$alias" /><br />
+    <label>Xpath expression</label><br />
+    <input type="text" size="80" name="xpath" value="$xpath" /><br />
+    <br />
+    <input type="submit" name="add" value="Add" />
 </form>
 
 <br />
@@ -31,21 +28,20 @@
 
 <h2>List of all aliases</h2>
 <form method="post" name="list">
-  <table>
+<table>
     #for $alias in $aliases
     <tr>
-      <td> <input type="checkbox" name="alias[]" value="$alias" /> </td>
-      <td> $alias </td>
-      <td> $aliases[$alias] </td>
-      <td> 
-        [<a href="$resturl$alias">XML</a>] 
-        [<a href="$resturl$alias?output=xhtml">XHTML</a>]
-      </td>
+        <td><input type="checkbox" name="alias[]" value="$alias" />
+        </td>
+        <td>$alias</td>
+        <td>$aliases[$alias]</td>
+        <td>[<a href="$resturl$alias">XML</a>] [<a
+            href="$resturl$alias?output=xhtml">XHTML</a>]</td>
     </tr>
-  #end for
-  </table>
-  <input type="submit" name="delete" value="Delete" />
-</form>
+    #end for
+</table>
+<br />
+<input type="submit" name="delete" value="Delete" /></form>
 
 <script type="text/javascript">
     var resourcetypes = new Array();

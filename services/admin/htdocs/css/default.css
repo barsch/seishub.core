@@ -2,14 +2,12 @@ body {
     color: black;
     background-color: white;
     font-family: verdana, helvetica, arial, sans-serif;
-    font-size: 71%; /* Enables font size scaling in MSIE */
+    font-size: 9pt; /* Enables font size scaling in MSIE */
     margin: 0;
     padding: 0;
 }
 
-
 /* Logo */
-
 #logo {
     color: rgb(175, 175, 175);
     background-color: transparent;
@@ -19,9 +17,7 @@ body {
     padding: 15px 0 0 0;
 }
 
-
 /* Version string */
-
 #version {
     position: absolute;
     right: 5px;
@@ -41,7 +37,6 @@ body {
 }
 
 /* Navigation bar */
-
 #navigation {
     margin: 0;
     padding: 0.75em 1ex 0.5ex 1ex;
@@ -88,9 +83,7 @@ body {
     border-left-color: steelblue;
 }
 
-
 /* Content */
-
 #content {
     text-align: justify;
     line-height: 1.5em;
@@ -115,6 +108,10 @@ body {
     color: steelblue;
     background-color: transparent;
     text-decoration: none;
+}
+
+#content ul {
+    padding-left: 0;
 }
 
 #content li.package {
@@ -165,9 +162,11 @@ body {
     margin-bottom: 2em;
 }
 
+input, option, select, textarea {
+    font-size: 9pt;
+}
 
 /* Submenu */
-
 #submenu {
     border: 1px solid steelblue;
     margin: 1em;
@@ -183,7 +182,7 @@ body {
 }
 
 #submenu li a {
-    color: rgb(40,40,40);
+    color: rgb(40, 40, 40);
 }
 
 #submenu li a.selected {
@@ -192,7 +191,7 @@ body {
 
 /* Forms */
 div.field {
-  margin-bottom: 1em;
+    margin-bottom: 1em;
 }
 
 /* Error message */

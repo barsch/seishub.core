@@ -28,12 +28,12 @@ class StylesheetsPanel(Component):
         return ('package_stylesheets.tmpl', data)
 
 
-class ListPackagesPanel(Component):
+class PackageOverviewPanel(Component):
     """Lists all installed packages."""
     implements(IAdminPanel)
     
     def getPanelId(self):
-        return ('packages', 'Packages', 'packages', 'Packages')
+        return ('packages', 'Packages', 'overview', 'Overview')
     
     def renderPanel(self, request):
         packages = self.env.registry.getPackageIds()
@@ -55,10 +55,17 @@ class IndexesPanel(Component):
         return ('packages', 'Packages', 'indexes', 'Indexes')
     
     def renderPanel(self, request):
+        packages = self.env.registry.getPackageIds()
+        resourcetypes = dict([(p, self.env.registry.getResourceTypes(p).keys())
+                              for p in packages])
+        
         data  = {
             'indexes': [],
             'error': '',
             'xpath': '',
+            'packages': packages,
+            'resourcetypes': resourcetypes,
+            'resturl': self.env.getRestUrl(),
         }
         if request.method=='POST':
             args = request.args

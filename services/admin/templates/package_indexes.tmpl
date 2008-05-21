@@ -1,15 +1,24 @@
 <h1>Indexes</h1>
 
 <h2>Add new index</h2>
-<form method="post" name="add">
-  <label>Xpath expression</label><br />
-  <input type="text" size="80" name="xpath" value="$xpath" /><br />
-  <label>Type</label><br />
-  <select>
-    <option>Text</option>
-  </select><br />
-  <br />
-  <input type="submit" name="add" value="Add" />
+<form method="post" name="add"><label>Package</label><br />
+    <select name="package" id="package">
+        #for $p in $packages
+        #if $resourcetypes[$p]
+        <option value="$p" onclick="changePackage('$p');">$p</option>
+        #end if
+        #end for
+    </select><br />
+    <label>Resource type</label><br />
+    <select name="resourcetype" id="resourcetype"></select><br />
+    <label>Type</label><br />
+    <select>
+        <option>Text</option>
+    </select><br />
+    <label>XPath expression</label><br />
+    <input type="text" size="80" name="xpath" value="$xpath" /><br />
+    <br />
+    <input type="submit" name="add" value="Add" />
 </form>
 
 <br />
@@ -17,11 +26,31 @@
 
 <h2>List of all indexes</h2>
 <form method="post" name="list">
-  #for $index in $indexes
-  <input type="checkbox" name="index[]" value="$index.__str__()" /> 
-  $index<br />
-  #end for
-  <br />
-  <input type="submit" name="reindex" value="Reindex" />
-  <input type="submit" name="delete" value="Delete" />
+    #for $index in $indexes 
+    <input type="checkbox" name="index[]" value="$index.__str__()" /> 
+    $index<br />
+    #end for
+    <br />
+    <input type="submit" name="reindex" value="Reindex" /> 
+    <input type="submit" name="delete" value="Delete" />
 </form>
+
+<script type="text/javascript">
+    var resourcetypes = new Array();
+    #for $p in $packages
+    resourcetypes['$p'] = $resourcetypes[$p];
+    #end for
+
+    function changePackage(package_id)
+    {
+      var selectbox = document.getElementById('resourcetype');
+      selectbox.options.length = 0;
+      for (var i=0;i<resourcetypes[package_id].length;i++)
+      {
+        var link = resourcetypes[package_id][i];
+        var addme = new Option(link, link);
+        selectbox.options[i] = addme;
+      }
+    }
+    changePackage('$packages[0]');
+</script>
