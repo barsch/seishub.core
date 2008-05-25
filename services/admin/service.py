@@ -44,7 +44,7 @@ class AdminRequest(http.Request):
             return self._renderUserDefinedStatics()
         
         # process system wide default static content
-        if self.postpath[0] in ['images', 'css', 'js']:
+        if self.postpath[0] in ['images', 'css', 'js', 'favicon.ico']:
             return self._renderDefaultStatics()
         
         # redirect if only category given or web root
