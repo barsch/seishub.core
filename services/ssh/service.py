@@ -8,6 +8,7 @@ from twisted.conch import recvline, avatar, interfaces as conchinterfaces
 from twisted.conch.ssh import factory, keys, common, session
 from twisted.conch.insults import insults
 from twisted.application import internet
+from twisted.internet import threads
 
 from seishub import __version__ as SEISHUB_VERSION
 from seishub.services.ssh.interfaces import ISSHCommand
@@ -27,8 +28,6 @@ class SSHServiceProtocol(recvline.HistoricRecvLine):
                                  for p in plugins 
                                  if hasattr(p, 'executeCommand')
                                  and hasattr(p, 'getCommandId')])
-        self.buildin_cmds = [f[4:].upper() for f in dir(self) \
-                             if f.startswith('cmd_')]
     
     def connectionMade(self):
         recvline.HistoricRecvLine.connectionMade(self)
@@ -46,20 +45,34 @@ class SSHServiceProtocol(recvline.HistoricRecvLine):
         cmd_and_args = line.split()
         cmd = cmd_and_args[0].upper()
         args = cmd_and_args[1:]
+        # check if its a build-in command
         if cmd in self.buildin_cmds:
             try:
                 func = getattr(self, 'cmd_' + cmd, None)
                 func(*args)
             except Exception, e:
                 self.writeln("Error: %s" % e)
-        elif cmd in self.plugin_cmds.keys():
-            ssh_cmd = self.plugin_cmds.get(cmd)
-            for l in ssh_cmd.executeCommand(args):
-                self.writeln(l)
-        else:
+            self.showPrompt()
+            return
+        # command not known
+        if cmd not in self.plugin_cmds.keys():
             self.writeln("No such command: " + cmd)
             self.writeln("Use help to get all available commands.")
+            self.showPrompt()
+            return
+        # its a user defined command
+        d = threads.deferToThread(self._processThread, cmd, args)
+        d.addErrback(self._processingFailed)
+    
+    def _processThread(self, cmd, args):
+        ssh_cmd = self.plugin_cmds.get(cmd)
+        for l in ssh_cmd.executeCommand(args):
+            self.writeln(l)
         self.showPrompt()
+    
+    def _processingFailed(self, reason):
+        self.env.log.error(reason)
+        return reason
     
     def write(self, data):
         self.terminal.write(data)
@@ -94,7 +107,7 @@ class SSHServiceProtocol(recvline.HistoricRecvLine):
     
     def cmd_EXIT(self):
         """Ends your session."""
-        self.do_quit()
+        self.cmd_QUIT()
     
     def cmd_QUIT(self):
         """Ends your session."""

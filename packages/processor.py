@@ -6,6 +6,11 @@ from urllib import unquote
 from twisted.web import http
 
 from seishub.util.text import isInteger 
+from seishub.core import SeisHubError
+
+
+class RequestError(SeisHubError):
+    pass
 
 
 class Processor(object):
@@ -24,30 +29,28 @@ class Processor(object):
         """Working through the process chain."""
         # check if correct method
         if self.method not in ['GET','PUT','POST','DELETE']:
-            return self.formatError(http.NOT_ALLOWED)
+            raise RequestError(http.NOT_ALLOWED)
         # post process self.path
         self.postpath = filter(len, 
                                map(unquote, string.split(self.path[1:], '/')))
         # test if root element
         if len(self.postpath)==0:
             if self.method=='GET':
-                return self.processRoot()
-            else:
-                return self.formatError(http.NOT_ALLOWED)
+                return self._processRoot()
+            raise RequestError(http.NOT_ALLOWED)
         
         # test if valid package_id
         if self.postpath[0] not in self.package_ids:
-            return self.formatError(http.NOT_FOUND)
+            raise RequestError(http.NOT_FOUND)
         else:
             self.package_id = self.postpath[0]
         # if only package_id is requested
         if len(self.postpath)==1:
             if self.method=='GET':
-                return self.processPackage()
-            else:
-                return self.formatError(http.NOT_ALLOWED)
+                return self._processPackage()
+            raise RequestError(http.NOT_ALLOWED)
         
-        # fetch package aliases
+        # fetch package aliases XXX: missing
         alias_ids = []
         # its may be an package alias
         if len(self.postpath)==2 and self.postpath[1] in alias_ids:
@@ -59,26 +62,30 @@ class Processor(object):
         resourcetype_ids.sort()
         # test if valid resourcetype_id
         if self.postpath[1] not in resourcetype_ids:
-            return self.formatError(http.NOT_FOUND)
+            raise RequestError(http.NOT_FOUND)
         else:
-            self.resourcetype_id = self.postpath[1] 
+            self.resourcetype_id = self.postpath[1]
+        
+        # check if a PUT request were called in a resourcetype directory 
+        if len(self.postpath)==2 and self.method=='PUT':
+            return self._addResource()
         # we may have a direct resource
         if len(self.postpath)==3 and isInteger(self.postpath[2]):
-            return self.processResource()
+            return self._processResource()
         # only package_id + resourcetype_id should be a GET request
         if len(self.postpath)==2 and self.method!='GET':
-            return self.formatError(http.NOT_ALLOWED)
+            raise RequestError(http.NOT_ALLOWED)
         # now only mappings and aliases are left ...
-        return self.processResourcetype()
+        return self._processResourcetype()
     
-    def processRoot(self):
+    def _processRoot(self):
         """
-        The root element can be only accessed via the GET method and shows a 
-        list of all packages.
+        The root element can be only accessed via the GET method and shows only
+        a list of all packages.
         """
-        return self.formatResourceList(self.package_ids)
+        return self.renderResourceList(self.package_ids)
     
-    def processPackage(self):
+    def _processPackage(self):
         """
         Request on a package. Now we search all valid resource types of this
         package. If this fails we will look for all defined package aliases and 
@@ -87,28 +94,28 @@ class Processor(object):
         # fetch resource types
         resourcetypes = self.env.registry.getResourceTypes(self.package_id)
         resourcetype_ids = resourcetypes.keys()
-        # fetch package aliases
+        # fetch package aliases XXX: missing
         alias_ids = []
-        list = alias_ids + resourcetype_ids
-        list.sort()
-        return self.formatResourceList(list, '/'+self.package_id)
+        uris = alias_ids + resourcetype_ids
+        uris.sort()
+        return self.renderResourceList(uris, '/'+self.package_id)
     
-    def processResourceTypes(self):
+    def _processResourceTypes(self):
         """
         Request on a certain resource type of a package. Now we try to solve 
         for resource type aliases or package mappings defined by the user. Also
         we add a few special hardcoded aliases.
         """
-        # fetch resourcetype aliases
+        # fetch resourcetype aliases XXX: missing
         alias_ids = []
-        # fetch resourcetype mappings
+        # fetch resourcetype mappings XXX: missing
         mapping_ids = []
         # test if only package_id and resourcetype_id is given
         if len(self.postpath)==2:
-            list = alias_ids + mapping_ids
-            return self.formatResourceList(list, '/'+self.package_id+
+            uris = alias_ids + mapping_ids
+            return self.renderResourceList(uris, '/'+self.package_id+
                                                  '/'+self.resourcetype_id)
-        # now only aliases nd mappings are left
+        # now only aliases and mappings are left
         if len(self.postpath)==3:
             # test if mapping
             if self.postpath[2] in mapping_ids:
@@ -116,26 +123,25 @@ class Processor(object):
             # test if alias
             if self.postpath[2] in alias_ids:
                 return self.processAlias()
-        return self.formatError(http.NOT_FOUND)
+        raise RequestError(http.NOT_FOUND)
     
-    def processResource(self):
+    def _processResource(self):
         """
         Direct access on a resource consists always of a package_id, 
         resourcetype_id and an integer as document_id.
         """
         if self.method=='GET':
-            return self.getResource()
+            return self._getResource()
         if self.method=='POST':
-            return self.modifyResource()
-        elif self.method=='PUT':
-            return self.createResource()
+            return self._modifyResource()
         elif self.method=='DELETE':
-            return self.deleteResource()
+            return self._deleteResource()
+        raise RequestError(http.NOT_ALLOWED)
     
-    def processMapping(self):
+    def _processMapping(self):
         pass
     
-    def processAlias(self):
+    def _processAlias(self):
         """Generates a list of resources from an alias query."""
         # fetch list of uris via catalog
         try:
@@ -143,53 +149,65 @@ class Processor(object):
         except Exception, e:
             self.env.log.error(e)
             return
-        return self.formatResourceList(uris)
+        return self.renderResourceList(uris)
     
-    def getResource(self):
-        """Handles a GET request."""
-        resource_id = self.path[8:]
+    def _getResource(self):
+        """Handles a GET request on a direct resource."""
         try:
-            result = self.env.catalog.getResource(uri = resource_id)
+            result = self.env.catalog.getResource(self.package_id,
+                                                  self.resourcetype_id,
+                                                  self.postpath[2])
         except Exception, e:
-            self.env.log.debug(e)
-            return
+            self.env.log.error(e)
+            raise RequestError(http.NOT_FOUND)
         try:
-            result = result.getData()
+            # XXX: really necessary ?
             result = result.encode("utf-8")
+            return result
         except Exception, e:
             self.env.log.error(e)
-            return
-        return result
+            raise RequestError(http.INTERNAL_SERVER_ERROR)
     
-    def modifyResource(self, content):
-        """Handles a POST request."""
-        pass
-    
-    def addResource(self, content):
-        """Handles a PUT request."""
+    def _modifyResource(self):
+        """Handles a POST request on a direct resource."""
         try:
-            res = self.env.catalog.newXmlResource(self.path, content)
-            self.env.catalog.addResource(res)
+            self.env.catalog.modifyResource(self.package_id,
+                                            self.resourcetype_id,
+                                            self.postpath[2],
+                                            self.content)
         except Exception, e:
             self.env.log.error(e)
-            return
+            raise RequestError(http.NOT_ALLOWED)
+        
+        # XXX: Return OK
+        raise RequestError(http.NOT_ALLOWED)
     
-    def deleteResource(self):
-        """Handles a DELETE request."""
+    def _addResource(self):
+        """Handles a PUT request on a direct resource."""
         try:
-            self.env.catalog.deleteResource(self.path)
+            document_id = self.env.catalog.addResource(self.package_id,
+                                                       self.resourcetype_id,
+                                                       self.content)
+        except Exception, e:
+            self.env.log.error(e)
+            return
+        # XXX: document ID should be returned in a standardized way
+        return document_id
+    
+    def _deleteResource(self):
+        """Handles a DELETE request on a direct resource."""
+        try:
+            self.env.catalog.deleteResource(self.package_id,
+                                            self.resourcetype_id,
+                                            self.postpath[2])
         except Exception, e:
             self.env.log.error(e)
             return
     
-    def formatResourceList(self, uris, baseuri):
+    def renderResourceList(self, uris, baseuri):
         """Resource list handler for the inheriting class."""
-        assert 0, 'formatResourceList must be defined'
+        assert 0, 'renderResourceList must be defined'
     
-    def formatResource(self, uris, baseuri):
+    def renderResource(self, content, baseuri):
         """Resource handler for the inheriting class."""
-        assert 0, 'formatResource must be defined'
-    
-    def formatError(self, error_id, msg=None):
-        """Error handler for the inheriting class."""
-        assert 0, 'formatError must be defined'
+        assert 0, 'renderResource must be defined'

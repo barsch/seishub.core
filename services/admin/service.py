@@ -45,7 +45,7 @@ class AdminRequest(http.Request):
         # redirect if only category given or web root
         if len(self.postpath)<2:
             categories = [p[0] for p in self.panel_ids]
-            if self.postpath and self.postpath[0] in categories:
+            if self.postpath[0] in categories:
                 # ok there is a category - redirect to first sub panel
                 pages = filter(lambda p: p[0] == self.postpath[0], 
                                self.panel_ids)

@@ -1,22 +1,22 @@
 # -*- coding: utf-8 -*-
 
 import os
-import string
-from urllib import unquote
 
 from twisted.web import http
 from twisted.application import internet
 from twisted.internet import threads
 from pkg_resources import resource_filename #@UnresolvedImport 
+from lxml import etree
 
 from seishub.defaults import REST_PORT
 from seishub import __version__ as SEISHUB_VERSION
 from seishub.config import IntOption
-from seishub.packages.processor import Processor
+from seishub.packages.processor import Processor, RequestError
+from seishub.util.http import parseAccept, qualityOf, validMediaType
 
 
 class RESTRequest(Processor, http.Request):
-    """A HTTP request."""
+    """A REST request via the http(s) protocol."""
     
     def __init__(self, channel, queued):
         http.Request.__init__(self, channel, queued)
@@ -24,118 +24,46 @@ class RESTRequest(Processor, http.Request):
     
     def process(self):
         """Start processing a request."""
-        # post process self.path
-        self.postpath = map(unquote, string.split(self.path[1:], '/'))
-        #fetch method
+        # process headers 
+        self._processHeaders()
+        # process content in thread
+        d = threads.deferToThread(self._processContent)
+        d.addErrback(self._processingFailed)
+    
+    def _processHeaders(self):
+        # fetch method
         self.method = self.method.upper()
         # fetch output type
-        self.output = self.args.get('output', None)
-        
-        # process in thread
-        d = threads.deferToThread(self.processThread)
-        d.addErrback(self.processingFailed)
+        self.accept = parseAccept(self.getHeader('accept'))
+        if 'format' in self.args.keys():
+            format = self.args.get('format')[0]
+            if validMediaType(format):
+                # add the valid format to the front of the list!
+                self.accept = [(1.0, format, {}, {})] + self.accept
     
-    def processThread(self):
-        data = Processor.process(self)
-        self.write(str(data))
-        self.setResponseCode(http.OK)
+    def _processContent(self):
+        try:
+            content = Processor.process(self)
+        except RequestError, e:
+            content = self._renderRequestError(int(e.message))
+        content=str(content)
+        self._setHeaders(content)
+        self.write(content)
         self.finish()
-        return
-        
-        
-        
-        if self.postpath[0]=='seishub':
-            if self.method=='GET':
-                self._processGETResource()
-            else:
-                self.setResponseCode(http.NOT_ALLOWED)
-                self.finish()
-        elif self.method=='GET' and self.path in self.env.catalog.aliases:
-            # test if alias 
-            self._processAlias()
-        elif self.method=='GET':
-            # if not alias or not direct resource, it should be a mapping
-            root_keys = self.processor_root.keys()
-            root_keys.sort()
-            root_keys.reverse()
-            for root_key in root_keys:
-                if not self.path.startswith(root_key):
-                    continue
-                processor_id = self.processor_root.get(root_key)
-                self._processGETMapping(processor_id)
-                return 
-            self._setHeaders()
-            self.setResponseCode(http.NOT_FOUND)
-            self.finish()            
-        elif self.method.upper() == 'PUT':
-            self._processPUT()
-        elif self.method.upper() == 'POST':
-            self._processPOST()
-        elif self.method.upper() == 'DELETE':
-            self._processDELETE()
-        else:
-            self.setResponseCode(http.NOT_ALLOWED)
-            self.finish()
     
-    def setHeaders(self, content=None, content_type='text/xml'):
+    def _setHeaders(self, content=None):
         """Sets standard HTTP headers."""
         self.setHeader('server', 'SeisHub '+ SEISHUB_VERSION)
         self.setHeader('date', http.datetimeToString())
         if content:
-            self.setHeader('content-type', content_type+"; charset=UTF-8")
             self.setHeader('content-length', str(len(str(content))))
-   
-    def _processGETMapping(self, processor_id):
-        processor = self.processors.get(processor_id)
-        (pid, purl, pattr) = processor.getProcessorId()
-        resource_id = self.path[len(purl):]
-        result = None
-        if hasattr(processor, 'processGET'):
-            # user handles GET processing
-            result = processor.processGET(self)
-            self._setHeaders(result, 'text/html')
-            self.setResponseCode(http.OK)
-            self.write(result)
-        else:
-            # automatic GET processing
-            print pid,purl,pattr
-            print resource_id
-            print '-------'
-            try:
-                uris = self.env.catalog.query(resource_id)
-            except Exception, e:
-                self.env.log.debug(e)
-                self.setResponseCode(http.NOT_FOUND)
-                self.finish()
-                return
-            # single result
-            if len(uris)==1:
-                result = self._getSingleResource('/seishub' + uris[0])
-            else:
-                result = self._getResourceList(uris)
-        if result:
-            self._setHeaders(result, 'text/html')
-            self.setResponseCode(http.OK)
-            self.write(result)
-        self.finish()
     
-    def formatResource(self, uri):
-        try:
-            result = self.env.catalog.getResource(uri = uri)
-        except Exception, e:
-            self.env.log.debug(e)
-            self.setResponseCode(http.NOT_FOUND)
-            return
-        try:
-            result = result.getData()
-            result = result.encode("utf-8")
-        except Exception, e:
-            self.env.log.error(e)
-            self.setResponseCode(http.INTERNAL_SERVER_ERROR)
-            return
-        return result
+    def renderResource(self, content, base=''):
+        # handle output/format conversion here
+        self.setResponseCode(http.OK)
+        return content
     
-    def formatResourceList(self, uris=[], base=''):
+    def renderResourceList(self, uris=[], base=''):
         root = open(resource_filename(self.__module__,"xml" + os.sep + 
                                       "linklist.tmpl")).read()
         tmpl = """<link xlink:type="simple" xlink:href="%s">%s</link>"""
@@ -143,16 +71,41 @@ class RESTRequest(Processor, http.Request):
         for uri in uris:
             # XXX: xml:base doesn't work!!!!
             doc += tmpl % (base + '/' + uri, uri)
-        return str(root % (self.path, doc))
+        result = str(root % (self.path, doc))
+        
+        # look into accept header
+        accept_html = qualityOf('text/html','',self.accept)
+        accept_xhtml = qualityOf('application/xhtml+xml','',self.accept)
+        accept_xml = qualityOf('application/xml','',self.accept)
+        # test if XHTML or HTML format is requested
+        if (accept_html or accept_xhtml) > accept_xml:
+            # return a XHTML document by using a stylesheet
+            # XXX: Use stylesheet registry!!
+            try:
+                filename = resource_filename(self.__module__,"xml" + os.sep + 
+                                             "linklist_to_pretty_xhtml.xslt")
+                xslt = open(filename).read()
+                xslt_doc = etree.XML(xslt)
+                transform = etree.XSLT(xslt_doc)
+                doc = etree.XML(result)
+                result = transform(doc)
+                self.setHeader('content-type', 'text/html; charset=UTF-8')
+            except Exception, e:
+                self.env.log.debug(e)
+                raise RequestError(http.INTERNAL_SERVER_ERROR)
+        else:
+            self.setHeader('content-type', 'application/xml; charset=UTF-8')
+        self.setResponseCode(http.OK)
+        return result 
     
-    def formatError(self, error_id, reason=None):
-        if reason:
-            self.env.log.error(reason)
-        self.setResponseCode(error_id)
-        self.finish()
-        return reason
+    def _renderRequestError(self, http_status_code):
+        http_status_code = int(http_status_code)
+        self.setResponseCode(http_status_code)
+        response_text = http.responses.get(http_status_code)
+        self.env.log.error(response_text)
+        return response_text
     
-    def processingFailed(self, reason):
+    def _processingFailed(self, reason):
         self.env.log.error(reason)
         self.setResponseCode(http.INTERNAL_SERVER_ERROR)
         self.finish()
@@ -160,7 +113,7 @@ class RESTRequest(Processor, http.Request):
 
 
 class RESTHTTPChannel(http.HTTPChannel):
-    """A receiver for HTTP requests."""
+    """A receiver for the HTTP requests."""
     requestFactory = RESTRequest
     
     def __init__(self):
@@ -169,7 +122,7 @@ class RESTHTTPChannel(http.HTTPChannel):
 
 
 class RESTServiceFactory(http.HTTPFactory):
-    """Factory for HTTP Server."""
+    """Factory for the HTTP Server."""
     protocol = RESTHTTPChannel
     
     def __init__(self, env, logPath=None, timeout=None):
@@ -179,7 +132,7 @@ class RESTServiceFactory(http.HTTPFactory):
 
 
 class RESTService(internet.TCPServer):
-    """Service for REST HTTP Server."""
+    """Service for the REST HTTP Server."""
     
     IntOption('rest', 'port', REST_PORT, "REST port number.")
     
