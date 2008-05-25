@@ -33,18 +33,14 @@ class PackageOverviewPanel(Component):
     implements(IAdminPanel)
     
     def getPanelId(self):
-        return ('packages', 'Packages', 'overview', 'Overview')
+        return ('packages', 'Packages', '-overview', 'Overview')
     
     def renderPanel(self, request):
         packages = self.env.registry.getPackageIds()
-        resourcetypes = dict([(p, self.env.registry.getResourceTypes(p).keys())
-                              for p in packages])
-        
         data = {}
         data['packages'] = packages
-        data['resourcetypes'] = resourcetypes
         data['resturl'] = self.env.getRestUrl()
-        return ('package_list.tmpl', data)
+        return ('package_overview.tmpl', data)
 
 
 class IndexesPanel(Component):

@@ -1,1 +1,44 @@
 <h1>Schemas</h1>
+
+<script type="text/javascript" src="http://yui.yahooapis.com/2.5.1/build/yahoo/yahoo-min.js"></script>
+<script type="text/javascript" src="http://yui.yahooapis.com/2.5.1/build/event/event-min.js"></script>
+<script type="text/javascript" src="http://yui.yahooapis.com/2.5.1/build/connection/connection-min.js"></script>
+
+<div id="container"></div>
+
+<script>
+  var div = document.getElementById('container');
+
+  var handleSuccess = function(o){
+    if(o.responseText !== undefined){
+        div.innerHTML = "<li>Transaction id: " + o.tId + "</li>";
+        div.innerHTML += "<li>HTTP status: " + o.status + "</li>";
+        div.innerHTML += "<li>Status code message: " + o.statusText + "</li>";
+        div.innerHTML += "<li>HTTP headers: <ul>" + o.getAllResponseHeaders + "</ul></li>";
+        div.innerHTML += "<li>Server response: " + o.responseText + "</li>";
+        div.innerHTML += "<li>Argument object: Object ( [foo] => " + o.argument.foo +
+                         " [bar] => " + o.argument.bar +" )</li>";
+    }
+  }
+  
+  var handleFailure = function(o){
+    if(o.responseText !== undefined){
+        div.innerHTML = "<ul><li>Transaction id: " + o.tId + "</li>";
+        div.innerHTML += "<li>HTTP status: " + o.status + "</li>";
+        div.innerHTML += "<li>Status code message: " + o.statusText + "</li></ul>";
+    }
+  }
+  
+  var callback =
+  {
+    success:handleSuccess,
+    failure:handleFailure,
+    argument: { foo:"foo", bar:"bar" }
+  };
+  
+  var sUrl = "/rest";
+  function makeRequest(){
+    var request = YAHOO.util.Connect.asyncRequest('GET', sUrl, callback);
+  }
+</script>
+<form><input type="button" value="Send a GET Request" onClick="makeRequest();"></form>

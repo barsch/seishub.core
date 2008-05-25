@@ -15,6 +15,7 @@ from seishub.services.admin.interfaces import IAdminPanel
 from seishub.core import ExtensionPoint, SeisHubError
 from seishub.defaults import ADMIN_PORT, ADMIN_CERTIFICATE, ADMIN_PRIVATE_KEY
 from seishub.config import IntOption, Option
+from seishub.packages.processor import Processor, RequestError
 
 
 class AdminRequest(http.Request):
@@ -33,6 +34,10 @@ class AdminRequest(http.Request):
         """
         # post process self.path
         self.postpath = map(urllib.unquote, string.split(self.path[1:], '/'))
+        
+        # process REST redirects
+        if self.postpath[0]=='rest':
+            return self._renderRESTContent()
         
         # process user defined static content
         if self.path in self.static_content.keys():
@@ -76,7 +81,33 @@ class AdminRequest(http.Request):
         d.addErrback(self._processingFailed) 
         return
     
+    def _renderRESTContent(self):
+        """
+        Sends a request to the local REST service and returns the resulting XML
+        document.
+        
+        Asynchronous calls from JavaScript are only allowed from the same 
+        server (ip and port). So in order to fetch a REST request via the admin
+        service, we need to provide a REST fetcher on server side.
+        """ 
+        request = Processor(self.env)
+        request.method = 'GET'
+        request.path = self.path[5:]
+        try:
+            data = request.process()
+        except RequestError, e:
+            self.finish()
+            return
+        self.write(data)
+        self.finish()
+        self.setHeader('content-type', 'application/xml; charset=UTF-8')
+        self.setResponseCode(http.OK)
+        return
+    
     def _renderUserDefinedStatics(self):
+        """
+        Render user defined static files, like CSS, JavaScript and Images.
+        """ 
         filename = self.static_content.get(self.path)
         node = static.File(filename)
         node.render(self)
@@ -84,6 +115,9 @@ class AdminRequest(http.Request):
         return
     
     def _renderDefaultStatics(self):
+        """
+        Render default static files, like CSS, JavaScript and Images.
+        """ 
         node = static.File(resource_filename(self.__module__, 'htdocs' + 
                                              os.sep + self.postpath[0]))
         for p in self.postpath[1:]:
@@ -95,6 +129,9 @@ class AdminRequest(http.Request):
         return
     
     def _renderPanel(self, result):
+        """
+        Render the selected panel.
+        """ 
         if not result or isinstance(result, defer.Deferred):
             return
         template, data = result

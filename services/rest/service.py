@@ -58,21 +58,27 @@ class RESTRequest(Processor, http.Request):
         if content:
             self.setHeader('content-length', str(len(str(content))))
     
+    def _renderRequestError(self, http_status_code):
+        http_status_code = int(http_status_code)
+        self.setResponseCode(http_status_code)
+        response_text = http.responses.get(http_status_code)
+        self.env.log.error(response_text)
+        return response_text
+    
+    def _processingFailed(self, reason):
+        self.env.log.error(reason)
+        self.setResponseCode(http.INTERNAL_SERVER_ERROR)
+        self.finish()
+        return reason
+    
     def renderResource(self, content, base=''):
         # handle output/format conversion here
         self.setResponseCode(http.OK)
         return content
     
-    def renderResourceList(self, uris=[], base=''):
-        root = open(resource_filename(self.__module__,"xml" + os.sep + 
-                                      "linklist.tmpl")).read()
-        tmpl = """<link xlink:type="simple" xlink:href="%s">%s</link>"""
-        doc = ""
-        for uri in uris:
-            # XXX: xml:base doesn't work!!!!
-            doc += tmpl % (base + '/' + uri, uri)
-        result = str(root % (self.path, doc))
-        
+    def renderResourceList(self, **kwargs):
+        # get pre-rendered resources list
+        result = Processor.renderResourceList(self, **kwargs)
         # look into accept header
         accept_html = qualityOf('text/html','',self.accept)
         accept_xhtml = qualityOf('application/xhtml+xml','',self.accept)
@@ -83,7 +89,7 @@ class RESTRequest(Processor, http.Request):
             # XXX: Use stylesheet registry!!
             try:
                 filename = resource_filename(self.__module__,"xml" + os.sep + 
-                                             "linklist_to_pretty_xhtml.xslt")
+                                             "linklist_to_xhtml.xslt")
                 xslt = open(filename).read()
                 xslt_doc = etree.XML(xslt)
                 transform = etree.XSLT(xslt_doc)
@@ -97,19 +103,7 @@ class RESTRequest(Processor, http.Request):
             self.setHeader('content-type', 'application/xml; charset=UTF-8')
         self.setResponseCode(http.OK)
         return result 
-    
-    def _renderRequestError(self, http_status_code):
-        http_status_code = int(http_status_code)
-        self.setResponseCode(http_status_code)
-        response_text = http.responses.get(http_status_code)
-        self.env.log.error(response_text)
-        return response_text
-    
-    def _processingFailed(self, reason):
-        self.env.log.error(reason)
-        self.setResponseCode(http.INTERNAL_SERVER_ERROR)
-        self.finish()
-        return reason
+
 
 
 class RESTHTTPChannel(http.HTTPChannel):

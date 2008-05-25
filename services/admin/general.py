@@ -56,7 +56,7 @@ class RESTRedirect(Component):
     implements(IAdminPanel)
     
     def getPanelId(self):
-        return ('rest', 'REST', 'rest', 'REST')
+        return ('rest-redirect', 'REST', 'rest-redirect', 'REST')
     
     def renderPanel(self, request):
         url = self.env.getRestUrl()
