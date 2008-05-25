@@ -24,6 +24,7 @@ class Processor(object):
     def __init__(self, env):
         self.env = env
         self.package_ids = self.env.registry.getPackageIds()
+        self.package_ids.sort()
     
     def process(self):
         """Working through the process chain."""
@@ -83,7 +84,7 @@ class Processor(object):
         The root element can be only accessed via the GET method and shows only
         a list of all packages.
         """
-        return self.renderResourceList(self.package_ids)
+        return self.renderResourceList(package=self.package_ids)
     
     def _processPackage(self):
         """
@@ -94,11 +95,13 @@ class Processor(object):
         # fetch resource types
         resourcetypes = self.env.registry.getResourceTypes(self.package_id)
         resourcetype_ids = resourcetypes.keys()
+        resourcetype_ids.sort()
         # fetch package aliases XXX: missing
-        alias_ids = []
-        uris = alias_ids + resourcetype_ids
-        uris.sort()
-        return self.renderResourceList(uris, '/'+self.package_id)
+        alias_ids = ['testalias']
+        alias_ids.sort()
+        return self.renderResourceList(alias=alias_ids,
+                                       resourcetype=resourcetype_ids,
+                                       base='/'+self.package_id)
     
     def _processResourceTypes(self):
         """
@@ -108,13 +111,16 @@ class Processor(object):
         """
         # fetch resourcetype aliases XXX: missing
         alias_ids = []
+        alias_ids.sort()
         # fetch resourcetype mappings XXX: missing
         mapping_ids = []
+        mapping_ids.sort()
         # test if only package_id and resourcetype_id is given
         if len(self.postpath)==2:
-            uris = alias_ids + mapping_ids
-            return self.renderResourceList(uris, '/'+self.package_id+
-                                                 '/'+self.resourcetype_id)
+            return self.renderResourceList(alias=alias_ids,
+                                           mapping=mapping_ids,
+                                           base='/'+self.package_id+
+                                                '/'+self.resourcetype_id)
         # now only aliases and mappings are left
         if len(self.postpath)==3:
             # test if mapping
@@ -149,7 +155,7 @@ class Processor(object):
         except Exception, e:
             self.env.log.error(e)
             return
-        return self.renderResourceList(uris)
+        return self.renderResourceList(resource=uris)
     
     def _getResource(self):
         """Handles a GET request on a direct resource."""
@@ -204,10 +210,25 @@ class Processor(object):
             self.env.log.error(e)
             return
     
-    def renderResourceList(self, uris, baseuri):
+    def renderResourceList(self, **kwargs):
         """Resource list handler for the inheriting class."""
-        assert 0, 'renderResourceList must be defined'
+        root = """<?xml version="1.0"?>
+            
+    <seishub xml:base="http://localhost:8080/"
+             xmlns:xlink="http://www.w3.org/1999/xlink"
+             query="%s">
+    %s
+    </seishub>"""
+        tmpl = """<%s xlink:type="simple" xlink:href="%s">%s</%s>\n"""
+        doc = ""
+        base = kwargs.get('base','')
+        # generate a list of standard elements
+        for item in ['package','resourcetype','alias','mapping','resource']:
+            for uri in kwargs.get(item,[]):
+                doc += tmpl % (item, base + '/' + uri, uri, item)
+        # XXX: xml:base doesn't work!!!!
+        return str(root % (self.path, doc))
     
-    def renderResource(self, content, baseuri):
+    def renderResource(self, content, baseurl):
         """Resource handler for the inheriting class."""
         assert 0, 'renderResource must be defined'
