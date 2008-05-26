@@ -23,20 +23,21 @@
       //prepare our callback object
       var callback = {
         success: function(oResponse) {
-          var root = oResponse.responseXML.documentElement; 
-          for each (var element in elements) {
-            var items = root.getElementsByTagName(element); 
-            for (var i=0; i<items.length; i++) {
-              var value = items[i].firstChild.nodeValue;
-              var tmp = new YAHOO.widget.TextNode(value, node, false);
-              tmp.labelStyle = "icon-"+element;
-              tmp.href = "$resturl/" + nodeLabel + "/" + value + "?format=application/xml";
+          if (oResponse.responseXML) {
+            var root = oResponse.responseXML.documentElement; 
+            for each (var element in elements) {
+              var items = root.getElementsByTagName(element); 
+              for (var i=0; i<items.length; i++) {
+                var value = items[i].firstChild.nodeValue;
+                var tmp = new YAHOO.widget.TextNode(value, node, false);
+                tmp.labelStyle = "icon-"+element;
+                tmp.href = "$resturl/" + nodeLabel + "/" + value + "?format=application/xml";
+              }
             }
           }
           oResponse.argument.fnLoadComplete();
         },
         failure: function(oResponse) {
-          alert(oResponse);
           oResponse.argument.fnLoadComplete();
         },
         argument: {
