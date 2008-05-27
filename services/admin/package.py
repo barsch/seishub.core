@@ -9,7 +9,7 @@ class SchemasPanel(Component):
     implements(IAdminPanel)
     
     def getPanelId(self):
-        return ('packages', 'Packages', 'schemas', 'Schemas')
+        return ('packages', 'Packages', 'edit-schemas', 'Schemas')
     
     def renderPanel(self, request):
         data = {}
@@ -21,26 +21,26 @@ class StylesheetsPanel(Component):
     implements(IAdminPanel)
     
     def getPanelId(self):
-        return ('packages', 'Packages', 'stylesheets', 'Stylesheets')
+        return ('packages', 'Packages', 'edit-stylesheets', 'Stylesheets')
     
     def renderPanel(self, request):
         data = {}
         return ('package_stylesheets.tmpl', data)
 
 
-class PackageOverviewPanel(Component):
-    """Lists all installed packages."""
+class PackageBrowserPanel(Component):
+    """Browse through all installed packages."""
     implements(IAdminPanel)
     
     def getPanelId(self):
-        return ('packages', 'Packages', '-overview', 'Overview')
+        return ('packages', 'Packages', 'browse-packages', 'Browse Packages')
     
     def renderPanel(self, request):
         packages = self.env.registry.getPackageIds()
         data = {}
         data['packages'] = packages
         data['resturl'] = self.env.getRestUrl()
-        return ('package_overview.tmpl', data)
+        return ('package_browser.tmpl', data)
 
 
 class IndexesPanel(Component):
@@ -48,7 +48,7 @@ class IndexesPanel(Component):
     implements(IAdminPanel)
     
     def getPanelId(self):
-        return ('packages', 'Packages', 'indexes', 'Indexes')
+        return ('packages', 'Packages', 'edit-indexes', 'Indexes')
     
     def renderPanel(self, request):
         packages = self.env.registry.getPackageIds()
@@ -119,7 +119,7 @@ class AliasesPanel(Component):
     implements(IAdminPanel)
     
     def getPanelId(self):
-        return ('packages', 'Packages', 'aliases', 'Aliases')
+        return ('packages', 'Packages', 'edit-aliases', 'Aliases')
     
     def renderPanel(self, request):
         packages = self.env.registry.getPackageIds()

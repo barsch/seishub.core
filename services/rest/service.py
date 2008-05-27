@@ -1,18 +1,14 @@
 # -*- coding: utf-8 -*-
 
-import os
-
 from twisted.web import http
 from twisted.application import internet
 from twisted.internet import threads
-from pkg_resources import resource_filename #@UnresolvedImport 
-from lxml import etree
 
 from seishub.defaults import REST_PORT
 from seishub import __version__ as SEISHUB_VERSION
 from seishub.config import IntOption
 from seishub.packages.processor import Processor, RequestError
-from seishub.util.http import parseAccept, qualityOf, validMediaType
+from seishub.util.http import parseAccept, validMediaType
 
 
 class RESTRequest(Processor, http.Request):
@@ -79,28 +75,9 @@ class RESTRequest(Processor, http.Request):
     def renderResourceList(self, **kwargs):
         # get pre-rendered resources list
         result = Processor.renderResourceList(self, **kwargs)
-        # look into accept header
-        accept_html = qualityOf('text/html','',self.accept)
-        accept_xhtml = qualityOf('application/xhtml+xml','',self.accept)
-        accept_xml = qualityOf('application/xml','',self.accept)
-        # test if XHTML or HTML format is requested
-        if (accept_html or accept_xhtml) > accept_xml:
-            # return a XHTML document by using a stylesheet
-            # XXX: Use stylesheet registry!!
-            try:
-                filename = resource_filename(self.__module__,"xml" + os.sep + 
-                                             "linklist_to_xhtml.xslt")
-                xslt = open(filename).read()
-                xslt_doc = etree.XML(xslt)
-                transform = etree.XSLT(xslt_doc)
-                doc = etree.XML(result)
-                result = transform(doc)
-                self.setHeader('content-type', 'text/html; charset=UTF-8')
-            except Exception, e:
-                self.env.log.debug(e)
-                raise RequestError(http.INTERNAL_SERVER_ERROR)
-        else:
-            self.setHeader('content-type', 'application/xml; charset=UTF-8')
+        # set header
+        self._setHeaders(result)
+        self.setHeader('content-type', 'application/xml; charset=UTF-8')
         self.setResponseCode(http.OK)
         return result 
 

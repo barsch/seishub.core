@@ -6,7 +6,7 @@
 <link rel="stylesheet" type="text/css" href="/yui/assets/treeview-sprite.css" />
 
 
-<h1>Package Overview</h1>
+<h1>Package Browser</h1>
 
 <div id="treediv"></div>
 
@@ -30,7 +30,7 @@
                 var value = items[i].firstChild.nodeValue;
                 var tmp = new YAHOO.widget.TextNode(value, node, false);
                 tmp.labelStyle = "icon-"+element;
-                tmp.href = "$resturl/" + nodeLabel + "/" + value + "?format=application/xml";
+                tmp.href = "$resturl/" + nodeLabel + "/" + value;
               }
             }
           }
@@ -57,7 +57,7 @@
       #for $p in $packages
       var tmp = new YAHOO.widget.TextNode("$p", root, false);
       tmp.labelStyle = "icon-package";
-      tmp.href = "$resturl/$p?format=application/xml";
+      tmp.href = "$resturl/$p";
       #end for
       tree.draw();
     }
