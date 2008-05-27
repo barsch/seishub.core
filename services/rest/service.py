@@ -67,20 +67,31 @@ class RESTRequest(Processor, http.Request):
         self.finish()
         return reason
     
-    def renderResource(self, content, base=''):
+    def renderResource(self, data):
         # handle output/format conversion here
         self.setResponseCode(http.OK)
-        return content
+        return data
     
     def renderResourceList(self, **kwargs):
-        # get pre-rendered resources list
-        result = Processor.renderResourceList(self, **kwargs)
+        """Resource list handler for the inheriting class."""
+        root = """<?xml version="1.0"?>
+            
+    <seishub xml:base="%s%s" xmlns:xlink="http://www.w3.org/1999/xlink">
+    %s
+    </seishub>"""
+        tmpl = """<%s xlink:type="simple" xlink:href="%s">%s</%s>\n"""
+        doc = ""
+        # generate a list of standard elements
+        for item in ['package','resourcetype','alias','mapping','resource']:
+            for uri in kwargs.get(item,[]):
+                doc += tmpl % (item, uri, uri, item)
+        # XXX: xml:base doesn't work!!!!
+        result = str(root % (self.env.getRestUrl(), self.path, doc))
         # set header
         self._setHeaders(result)
         self.setHeader('content-type', 'application/xml; charset=UTF-8')
         self.setResponseCode(http.OK)
         return result 
-
 
 
 class RESTHTTPChannel(http.HTTPChannel):

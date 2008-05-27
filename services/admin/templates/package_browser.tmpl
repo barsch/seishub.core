@@ -2,6 +2,7 @@
 <script type="text/javascript" src="/yui/build/event/event-min.js"></script>
 <script type="text/javascript" src="/yui/build/treeview/treeview-min.js"></script>
 <script type="text/javascript" src="/yui/build/connection/connection-min.js"></script>
+<script type="text/javascript" src="/yui/build/json/json-min.js"></script> 
 <link rel="stylesheet" type="text/css" href="/yui/assets/treeview-menu.css" />
 <link rel="stylesheet" type="text/css" href="/yui/assets/treeview-sprite.css" />
 
@@ -22,15 +23,15 @@
       //prepare our callback object
       var callback = {
         success: function(oResponse) {
-          if (oResponse.responseXML) {
-            var root = oResponse.responseXML.documentElement; 
+          if (oResponse.responseText) {
+            var data = []; 
+            data = YAHOO.lang.JSON.parse(oResponse.responseText);
             for each (var element in elements) {
-              var items = root.getElementsByTagName(element); 
-              for (var i=0; i<items.length; i++) {
-                var value = items[i].firstChild.nodeValue;
-                var tmp = new YAHOO.widget.TextNode(value, node, false);
+              var items = data[element];
+              for each (var item in items) {
+                var tmp = new YAHOO.widget.TextNode(item, node, false);
                 tmp.labelStyle = "icon-"+element;
-                tmp.href = "$resturl/" + nodeLabel + "/" + value;
+                tmp.href = "$resturl/" + nodeLabel + "/" + item;
               }
             }
           }

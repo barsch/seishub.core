@@ -13,9 +13,11 @@ class RequestError(SeisHubError):
     pass
 
 
-class Processor(object):
-    """General class for processing a request used by SFTP and REST."""
-    
+class Processor:
+    """
+    General class for processing a resource request used SeisHub services, like
+    REST or SFTP.
+    """
     resourcetypes = {}
     packages = []
     package_id = None
@@ -40,6 +42,8 @@ class Processor(object):
                 return self._processRoot()
             raise RequestError(http.NOT_ALLOWED)
         
+        # XXX: test if a property request
+            
         # test if valid package_id
         if self.postpath[0] not in self.package_ids:
             raise RequestError(http.NOT_FOUND)
@@ -100,8 +104,7 @@ class Processor(object):
         alias_ids = ['testalias']
         alias_ids.sort()
         return self.renderResourceList(alias=alias_ids,
-                                       resourcetype=resourcetype_ids,
-                                       base='/'+self.package_id)
+                                       resourcetype=resourcetype_ids)
     
     def _processResourceTypes(self):
         """
@@ -117,10 +120,8 @@ class Processor(object):
         mapping_ids.sort()
         # test if only package_id and resourcetype_id is given
         if len(self.postpath)==2:
-            return self.renderResourceList(alias=alias_ids,
-                                           mapping=mapping_ids,
-                                           base='/'+self.package_id+
-                                                '/'+self.resourcetype_id)
+            return self.renderResourceList(alias=alias_ids, 
+                                           mapping=mapping_ids)
         # now only aliases and mappings are left
         if len(self.postpath)==3:
             # test if mapping
@@ -210,25 +211,21 @@ class Processor(object):
             self.env.log.error(e)
             return
     
-    def renderResourceList(self, **kwargs):
-        """Resource list handler for the inheriting class."""
-        root = """<?xml version="1.0"?>
-            
-    <seishub xml:base="http://localhost:8080/"
-             xmlns:xlink="http://www.w3.org/1999/xlink"
-             query="%s">
-    %s
-    </seishub>"""
-        tmpl = """<%s xlink:type="simple" xlink:href="%s">%s</%s>\n"""
-        doc = ""
-        base = kwargs.get('base','')
-        # generate a list of standard elements
-        for item in ['package','resourcetype','alias','mapping','resource']:
-            for uri in kwargs.get(item,[]):
-                doc += tmpl % (item, base + '/' + uri, uri, item)
-        # XXX: xml:base doesn't work!!!!
-        return str(root % (self.path, doc))
+    def renderResource(self, data):
+        """
+        Resource handler. Returns a content of this resource as string.
+        
+        This method should be overwritten by the inheriting class in order to
+        further validate and format the output of this document.
+        """
+        return data
     
-    def renderResource(self, content, baseurl):
-        """Resource handler for the inheriting class."""
-        assert 0, 'renderResource must be defined'
+    def renderResourceList(self, **kwargs):
+        """
+        Resource list handler. Here we return a dict of objects. Each object
+        contains a list of string, e.g. {'package':['quakeml','seishub']}.
+        
+        This method should be overwritten by the inheriting class in order to
+        further validate and format the output of this resource list. 
+        """
+        return kwargs

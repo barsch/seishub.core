@@ -3,6 +3,7 @@
 import os
 import string
 import urllib
+import types
 
 from twisted.web import static, http, util as webutil
 from twisted.internet import threads, defer, ssl
@@ -16,6 +17,7 @@ from seishub.core import ExtensionPoint, SeisHubError
 from seishub.defaults import ADMIN_PORT, ADMIN_CERTIFICATE, ADMIN_PRIVATE_KEY
 from seishub.config import IntOption, Option
 from seishub.packages.processor import Processor, RequestError
+from seishub.util import json
 
 
 class AdminRequest(http.Request):
@@ -99,9 +101,14 @@ class AdminRequest(http.Request):
             self.env.log.info('RequestError:', e)
             self.finish()
             return
-        self.write(data)
+        if isinstance(data, type({})):
+            # format as json
+            data = json.write(data)
+            self.write(data)
+        else:
+            self.write('')
         self.finish()
-        self.setHeader('content-type', 'application/xml; charset=UTF-8')
+        self.setHeader('content-type', 'text/plain; charset=UTF-8')
         self.setResponseCode(http.OK)
         return
     
