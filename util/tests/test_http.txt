@@ -1,0 +1,25 @@
+    >>> from seishub.util.http import matchMediaType
+    >>> matchMediaType('text/css', {'level': '2'}, '*/*', {})
+    1
+    >>> matchMediaType('text/css', {'level': '2'}, 'text/*', {})
+    2
+    >>> matchMediaType('text/css', {'level': '2'}, 'text/css', {})
+    3
+    >>> matchMediaType('text/css', {'level': '2'}, 'text/css', {'level': '2'})
+    4
+    >>> matchMediaType('text/css', {'level': '2'}, 'text/css', {'level': '1'})
+    -1
+    >>> matchMediaType('text/plain', {}, '*/*', {})
+    1
+    >>> matchMediaType('text/plain', {}, 'text/*', {})
+    2
+    >>> matchMediaType('text/plain', {}, 'text/plain', {})
+    4
+    >>> matchMediaType('text/plain', {}, 'text/plain', {'level': '2'})
+    -1
+    >>> matchMediaType('text/plain', {}, 'text/html', {})
+    -1
+    >>> matchMediaType('text/plain', {}, 'image/png', {})
+    -1
+    >>> matchMediaType('text/plain', {}, 'image/*', {})
+    -1

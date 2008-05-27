@@ -2,14 +2,14 @@
     display: block;
     height: 22px;
     padding-left: 20px;
-    background: transparent url(/images/treeview/icons.png) 0 0px no-repeat;
+    background: transparent url(/yui/assets/treeview-sprite.png) 0 0px no-repeat;
 }
 
 .icon-resourcetype {
     display: block;
     height: 22px;
     padding-left: 20px;
-    background: transparent url(/images/treeview/icons.png) 0 -36px
+    background: transparent url(/yui/assets/treeview-sprite.png) 0 -36px
         no-repeat;
 }
 
@@ -17,7 +17,7 @@
     display: block;
     height: 22px;
     padding-left: 20px;
-    background: transparent url(/images/treeview/icons.png) 0 -72px
+    background: transparent url(/yui/assets/treeview-sprite.png) 0 -72px
         no-repeat;
 }
 
@@ -25,7 +25,7 @@
     display: block;
     height: 22px;
     padding-left: 20px;
-    background: transparent url(/images/treeview/icons.png) 0 -108px
+    background: transparent url(/yui/assets/treeview-sprite.png) 0 -108px
         no-repeat;
 }
 
@@ -33,7 +33,7 @@
     display: block;
     height: 22px;
     padding-left: 20px;
-    background: transparent url(/images/treeview/icons.png) 0 -144px
+    background: transparent url(/yui/assets/treeview-sprite.png) 0 -144px
         no-repeat;
 }
 
@@ -41,7 +41,7 @@
     display: block;
     height: 22px;
     padding-left: 20px;
-    background: transparent url(/images/treeview/icons.png) 0 -180px
+    background: transparent url(/yui/assets/treeview-sprite.png) 0 -180px
         no-repeat;
 }
 
@@ -49,6 +49,6 @@
     display: block;
     height: 22px;
     padding-left: 20px;
-    background: transparent url(/images/treeview/icons.png) 0 -216px
+    background: transparent url(/yui/assets/treeview-sprite.png) 0 -216px
         no-repeat;
 }

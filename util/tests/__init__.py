@@ -9,6 +9,7 @@ from seishub.util.tests import test_xml
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(test_xml.suite())
+    suite.addTest(doctest.DocFileSuite('test_http.txt'))
     return suite
 
 

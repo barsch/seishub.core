@@ -1,0 +1,49 @@
+/* accordion */
+.accordion {
+    background-color: white;
+    border-bottom: 1px solid rgb(231, 231, 231);
+    border-left: 1px solid rgb(231, 231, 231);
+    border-right: 1px solid rgb(231, 231, 231);
+}
+
+.accordion dt {
+    color: steelblue;
+    background-color: white;
+    text-decoration: none;
+    font-weight: bold;
+    padding: 3px 8px;
+    border-top: 1px solid rgb(231, 231, 231);
+}
+
+.accordion dt.selected {
+    color: white;
+    background-color: steelblue;
+}
+
+.accordion dt:hover, .accordion dt.over {
+    color: white;
+    background-color: orange;
+    text-decoration: none;
+    cursor: pointer;
+    cursor: hand;
+}
+
+.accordion dd {
+    display: none;
+    padding: 4px;
+    margin-left: 10px;
+    overflow: hidden;
+}
+
+.accordion dd.open {
+    display: block;
+}
+
+.accordion dd.getHeight {
+    display: block;
+}
+
+.check {
+    float: left;
+    margin-right: 10px;;
+}

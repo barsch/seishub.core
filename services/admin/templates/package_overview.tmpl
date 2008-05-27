@@ -1,10 +1,9 @@
-<link rel="stylesheet" type="text/css" href="http://yui.yahooapis.com/2.5.1/build/treeview/assets/skins/sam/treeview.css" />
-<script type="text/javascript" src="http://yui.yahooapis.com/2.5.1/build/yahoo/yahoo-min.js"></script>
-<script type="text/javascript" src="http://yui.yahooapis.com/2.5.1/build/event/event-min.js"></script>
-<script type="text/javascript" src="http://yui.yahooapis.com/2.5.1/build/treeview/treeview-min.js"></script>
-<script type="text/javascript" src="http://yui.yahooapis.com/2.5.1/build/connection/connection-min.js"></script>
-<link rel="stylesheet" type="text/css" href="/css/treeview/menu.css"></link>
-<link rel="stylesheet" type="text/css" href="/css/treeview/treeview.css"></link>
+<script type="text/javascript" src="/yui/build/yahoo/yahoo-min.js"></script>
+<script type="text/javascript" src="/yui/build/event/event-min.js"></script>
+<script type="text/javascript" src="/yui/build/treeview/treeview-min.js"></script>
+<script type="text/javascript" src="/yui/build/connection/connection-min.js"></script>
+<link rel="stylesheet" type="text/css" href="/yui/assets/treeview-menu.css" />
+<link rel="stylesheet" type="text/css" href="/yui/assets/treeview-sprite.css" />
 
 
 <h1>Package Overview</h1>
@@ -44,7 +43,7 @@
           "node": node,
           "fnLoadComplete": fnLoadComplete
         },
-        timeout: 7000
+        timeout: 3000
       };
       YAHOO.util.Connect.asyncRequest('GET', sUrl, callback);
     }
