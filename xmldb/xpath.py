@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 from zope.interface import implements
 
-from seishub.xmldb.errors import RestrictedXpathError
 from seishub.xmldb.interfaces import IXPathQuery, IXPathExpression
+from seishub.xmldb.errors import RestrictedXpathError, InvalidXpathQuery
+from seishub.xmldb.package import PackageSpecific
 
 # XXX: requires PyXML (_xmlplus.xpath)
 # from xml import xpath
@@ -91,7 +92,7 @@ class IndexDefiningXpathExpression(object):
     """
     implements(IXPathExpression)
     
-    __r_value_path = "^/[^/\[\]]+/[^/\[\]]+"
+    __r_value_path = "^/[^/\[\]]+/[^/\[\]]+/[^/\[\]]+"
     __r_key_path = "[^\[\]]*\Z"
     
     value_path = None
@@ -223,9 +224,9 @@ class PredicateExpression(object):
     def getOperator(self):
         return self._op
 
-class XPathQuery(RestrictedXpathExpression):
+class XPathQuery(RestrictedXpathExpression, PackageSpecific):
     """Query types supported by now:
-     - single key queries: /rootnode[.../key1 = value1]
+     - single key queries: /packageid/resourcetype/rootnode[.../key1 = value1]
      - multi key queries with logical operators ('and', 'or')
        but no nested logical operations like ( ... and ( ... or ...))
      - relational operators: =, !=, <, >, <=, >=
@@ -240,6 +241,16 @@ class XPathQuery(RestrictedXpathExpression):
     Size of resultsets may be limited via 'limit = ... ' 
     """
     implements(IXPathQuery)
+    
+    __r_prefix = r"""^/       # leading slash
+    (?P<pid>                  # package id
+    [^/\[\]]+         
+    )
+    /
+    (?P<rid>                  # resourcetype_id
+    [^/\[\]]+
+    )
+    """
     
     def __init__(self,query,order_by=None,limit=None):
         self.order_by = list()
@@ -258,21 +269,46 @@ class XPathQuery(RestrictedXpathExpression):
                 raise TypeError("Invalid limit, Integer expected.")
         self.limit = limit
         
-        super(XPathQuery, self).__init__(query)        
+        # cut off package and resource type from query
+        package, resourcetype, query = self._parsePrefix(query)
+        PackageSpecific.__init__(self, package, resourcetype)
+        try:
+            RestrictedXpathExpression.__init__(self, query)
+        except RestrictedXpathError, e:
+            raise InvalidXpathQuery(e)
         self.parsed_predicates = self._parsePredicates(self.predicates)
 
     def __str__(self):
         return "/" + self.node_test + "[%s]" % str(self.parsed_predicates)
+    
+    def _parsePrefix(self, expr):
+        re_pf = re.compile(self.__r_prefix, re.VERBOSE)
+        m = re_pf.match(expr)
+        if not m:
+            raise InvalidXpathQuery("Invalid query expression: %s" % expr)
+        pid = self._convertWildcards(m.group('pid'))
+        rid = self._convertWildcards(m.group('rid'))
+        query = expr[m.end():] 
+        return pid,rid,query
         
     def _parsePredicates(self, predicates):
         if len(predicates) > 0:
             return PredicateExpression(predicates)
         return None
     
+    def _convertWildcards(self, expr):
+        if expr == '*':
+            return None
+        return expr
+    
     # methods from IXPathQuery    
     def getValue_path(self):
         """@see: L{seishub.xmldb.interfaces.IXPathQuery}"""
-        return self.node_test
+        #XXX: maybe completely remove value path from indexes and replace by seperate
+        # packageid resourcetypeid fields; don't save rootnode name into db at all
+        # as this is redundant (rootnode is detemrined by any xml document)
+        return str(self.package_id) + '/' + str(self.resourcetype_id) + '/' +\
+               self.node_test
     
     def getPredicates(self):
         """@see: L{seishub.xmldb.interfaces.IXPathQuery}"""

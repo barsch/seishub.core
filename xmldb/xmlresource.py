@@ -71,6 +71,7 @@ class XmlResource(Resource, Serializable):
             raise DoesNotImplement(IXmlDoc)
         else:
             self.__xml_doc = xml_doc
+
             
 #    def getUri(self):
 ##         XXX: remove this method or handle non existing self._id properly

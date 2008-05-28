@@ -262,7 +262,7 @@ class XmlIndexCatalogTest(SeisHubTestCase):
         except:
             raise
             print "Error adding resource."
-        #import pdb;pdb.set_trace()
+
         catalog.indexResource(test_res._id, test_index.getValue_path(),
                               test_index.getKey_path())
         #flush index:
@@ -275,49 +275,50 @@ class XmlIndexCatalogTest(SeisHubTestCase):
         catalog.removeIndex(test_index.getValue_path(), test_index.getKey_path())
         dbmgr.deleteResource(test_res._id)
         
-#    def testQuery(self):
-#        # create test catalog
-#        self._setup_testdata()
-#        
-#        q0 = "/station[lon != 12.51200 and lat = 55.23200]"
-#        q1 = "/station[lat]"
-#        q2 = "/station[XY/paramXY or lon = 12.51200]"
-#        q3 = "/testml"
-#
-#        res0 = self.catalog.query(XPathQuery(q0))
-#        res1 = self.catalog.query(XPathQuery(q1))
-#        res2 = self.catalog.query(XPathQuery(q2))
-#        res3 = self.catalog.query(XPathQuery(q3))
-#        res0.sort(); res1.sort(); res2.sort(); res3.sort()
-#        self.assertEqual(res0, [self.res2.uid])
-#        self.assertEqual(res1, [self.res1.uid, self.res2.uid])
-#        self.assertEqual(res2, [self.res1.uid, self.res2.uid])
-#        self.assertEqual(res3, [self.res3.uid])
-#
-#        # sort order tests
-#        so1 = "/sotest[int1]"
-#        so2 = "/sotest"
-#        res1 = self.catalog.query(XPathQuery(so1, [["/sotest/int1","asc"]]))
-#        print res1
-##        res2 = self.catalog.query(XPathQuery(so1, [["/sortorder/int1","desc"]], 
-##                                             limit = 3))
-##        res3 = self.catalog.query(XPathQuery(so1, [["/sortorder/int2","asc"],
-##                                                   ["/sortorder/str2","desc"]], 
-##                                             limit = 5))
-##        res4 = self.catalog.query(XPathQuery(so2,[["/sortorder/int2","desc"]],
-##                                             limit = 3))
-##        
-##        sot_res = ['/so/'+st for st in so_tests]
-##        self.assertEqual(res1,sot_res)
-##        sot_res.reverse()
-##        self.assertEqual(res2,sot_res[:3])
-##        sot_res.reverse()
-##        self.assertEqual(res3,[sot_res[0],sot_res[3],sot_res[4],
-##                               sot_res[1],sot_res[2]])
-##        self.assertEqual(res4,[sot_res[1],sot_res[2],sot_res[0]])
-#        
-#        # remove test catalog
-#        self._cleanup_testdata()
+    def testQuery(self):
+        # create test catalog
+        self._setup_testdata()
+        
+        q0 = "/testpackage/station/station[lon != 12.51200 and lat = 55.23200]"
+        q1 = "/testpackage/station/station[lat]"
+        q2 = "/testpackage/station/station[XY/paramXY or lon = 12.51200]"
+        q3 = "/testpackage/testml/testml"
+
+        res0 = self.catalog.query(XPathQuery(q0))
+        res1 = self.catalog.query(XPathQuery(q1))
+        res2 = self.catalog.query(XPathQuery(q2))
+        res3 = self.catalog.query(XPathQuery(q3))
+        res0.sort(); res1.sort(); res2.sort(); res3.sort()
+        self.assertEqual(res0, [self.res2.uid])
+        self.assertEqual(res1, [self.res1.uid, self.res2.uid])
+        self.assertEqual(res2, [self.res1.uid, self.res2.uid])
+        self.assertEqual(res3, [self.res3.uid])
+
+        # sort order tests
+        so1 = "/sortordertests/sotest/sortorder[int1]"
+        so2 = "/sortordertests/sotest/sortorder"
+        res1 = self.catalog.query(
+            XPathQuery(so1, [["/sortordertests/sotest/sortorder/int1","asc"]])
+            )
+        res2 = self.catalog.query(XPathQuery(so1, [["/sortordertests/sotest/sortorder/int1","desc"]], 
+                                             limit = 3))
+        res3 = self.catalog.query(XPathQuery(so1, [["/sortordertests/sotest/sortorder/int2","asc"],
+                                                   ["/sortordertests/sotest/sortorder/str2","desc"]], 
+                                             limit = 5))
+        res4 = self.catalog.query(XPathQuery(so2,[["/sortordertests/sotest/sortorder/int2","desc"]],
+                                             limit = 3))
+        
+        sot_res = self.so_ids
+        self.assertEqual(res1,sot_res)
+        sot_res.reverse()
+        self.assertEqual(res2,sot_res[:3])
+        sot_res.reverse()
+        self.assertEqual(res3,[sot_res[0],sot_res[3],sot_res[4],
+                               sot_res[1],sot_res[2]])
+        self.assertEqual(res4,[sot_res[1],sot_res[2],sot_res[0]])
+        
+        # remove test catalog
+        self._cleanup_testdata()
 
         
 class QueryAliasesTest(SeisHubTestCase):

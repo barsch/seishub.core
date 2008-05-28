@@ -26,12 +26,12 @@ RAW_XML1="""<station rel_uri="bern">
 class XmlIndexTest(SeisHubTestCase):   
     def testEval(self):
         #index with single node key result:
-        test_index=XmlIndex(key_path = "/station/lon",
-                            value_path = "/station"
+        test_index=XmlIndex(key_path = "lon",
+                            value_path = "/testpackage/station/station"
                             )
         #index with multiple nodes key result:
         xy_index=XmlIndex(key_path="XY/paramXY",
-                          value_path = "/station"
+                          value_path = "/testpackage/station/station"
                           )
         
         empty_resource = XmlResource()

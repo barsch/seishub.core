@@ -226,7 +226,10 @@ class XmlIndexCatalog(DbStorage):
             # value path only: => resource type query
             value_col = resource_meta_tab.c.res_id
             q = select([value_col], 
-                       resource_meta_tab.c.resourcetype_id == query.getValue_path()
+                       and_( 
+                           resource_meta_tab.c.package_id == query.package_id,
+                           resource_meta_tab.c.resourcetype_id == query.resourcetype_id
+                       )
                 )
         q = q.group_by(value_col)
         
@@ -237,7 +240,7 @@ class XmlIndexCatalog(DbStorage):
             # find appropriate index
             idx = self.getIndex(ob[0].value_path, ob[0].key_path)
             if not idx:
-                raise XmlIndexCatalogError("No Index found for %s"%str(ob[0]))
+                raise XmlIndexCatalogError("No Index found for %s" % str(ob[0]))
             alias = index_tab.alias("idx_" + str(alias_id))
             alias_id += 1
             q = q.where(and_(alias.c.index_id == idx._getId(), 

@@ -80,7 +80,7 @@ class XmlCatalog(XmlDbManager):
         if value_path.startswith('/'):
             value_path = value_path[1:]
             
-        package, type = value_path.split('/')
+        package, type, rootnode  = value_path.split('/')
         reslist = self.getResourceList(package_id = package, 
                                        resourcetype_id = type)
         # reindex

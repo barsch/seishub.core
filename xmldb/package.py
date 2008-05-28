@@ -2,8 +2,17 @@ class PackageSpecific(object):
     """Mixin providing package specific information to the class"""
     def __init__(self, *args, **kwargs):
         super(PackageSpecific, self).__init__(*args, **kwargs)
-        self.package_id = kwargs.get('package_id')
-        self.resourcetype_id = kwargs.get('resourcetype_id')
+        if len(args) == 2:
+            package_id = args[0]
+            resourcetype_id = args[1]
+        elif len(kwargs) == 2:
+            package_id = kwargs.get('package_id')
+            resourcetype_id = kwargs.get('resourcetype_id')
+        else:
+            package_id = None
+            resourcetype_id = None
+        self.package_id = package_id
+        self.resourcetype_id = resourcetype_id
     
     def getPackage_id(self):
         return self._package_id

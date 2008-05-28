@@ -58,8 +58,8 @@ URI1 = "/real/bern"
 URI2 = "/fake/genf"
 URI3 = "/testml/res1"
 
-IDX1 = "/station/XY/paramXY"
-IDX2 = "/testml/blah1/@id"
+IDX1 = "/testpackage/station/station/XY/paramXY"
+IDX2 = "/testpackage/testml/testml/blah1/@id"
 
 class XmlCatalogTest(SeisHubTestCase):
     #TODO: a whole bunch of tests is still missing here
@@ -100,9 +100,9 @@ class XmlCatalogTest(SeisHubTestCase):
         
     def testQuery(self):
         self.env.catalog.reindex(IDX1)
-        res1 = self.env.catalog.query('/station',[['/station/XY/paramXY','asc']],limit = 2)
-        res2 = self.env.catalog.query({'query':'/station',
-                                       'order_by':[['/station/XY/paramXY','asc']],
+        res1 = self.env.catalog.query('/testpackage/station/station',[['/testpackage/station/station/XY/paramXY','asc']],limit = 2)
+        res2 = self.env.catalog.query({'query':'/testpackage/station/station',
+                                       'order_by':[['/testpackage/station/station/XY/paramXY','asc']],
                                        'limit':2})
         self.assertEqual(res1,res2)
 

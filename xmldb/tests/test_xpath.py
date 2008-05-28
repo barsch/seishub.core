@@ -4,7 +4,7 @@ import unittest
 
 from seishub.test import SeisHubTestCase
 from seishub.xmldb.xpath import RestrictedXpathExpression, \
-                                RestrictedXpathError, \
+                                RestrictedXpathError, InvalidXpathQuery, \
                                 XPathQuery
 
 
@@ -30,11 +30,17 @@ class XpathTest(SeisHubTestCase):
                               iv)
         
 class XPathQueryTest(SeisHubTestCase):
-    test_expr = "/rootnode[./element1/element2 = 'blub' and ./element1/@id <= 5]"
+    test_expr = "/testpackage/testtype/rootnode[./element1/element2 = 'blub' and ./element1/@id <= 5]"
+    wildcard_expr = "/*/*/rootnode[./element1/element2 = 'blub']"
+    invalid_expr = "/testtype/rootnode[./element1]"
+    invalid2_expr = "/rootnode[./element1]"
     
     def testXPathQuery(self):
+        # valid expression
         q = XPathQuery(self.test_expr)
-        self.assertEqual(q.getValue_path(), "rootnode")
+        self.assertEqual(q.package_id, "testpackage")
+        self.assertEqual(q.resourcetype_id, "testtype")
+        self.assertEqual(q.getValue_path(), "testpackage/testtype/rootnode")
         p = q.getPredicates()
         self.assertEqual(str(p['op']), "and")
         self.assertEqual(str(p['left']), "element1/element2 = blub")
@@ -45,8 +51,19 @@ class XPathQueryTest(SeisHubTestCase):
         self.assertEqual(str(p['right']['left']), "element1/@id")
         self.assertEqual(str(p['right']['op']), "<=")
         self.assertEqual(str(p['right']['right']), "5")
-
-
+        
+        # wildcard expression:
+        q1 = XPathQuery(self.wildcard_expr)
+        self.assertEqual(q1.package_id, None)
+        self.assertEqual(q1.resourcetype_id, None)
+        self.assertEqual(q1.getValue_path(), "None/None/rootnode")
+        
+        # invalid expression:
+        self.assertRaises(InvalidXpathQuery,
+                          XPathQuery, self.invalid_expr)
+        self.assertRaises(InvalidXpathQuery,
+                          XPathQuery, self.invalid2_expr)
+        
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(XpathTest, 'test'))

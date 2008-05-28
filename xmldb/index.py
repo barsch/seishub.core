@@ -85,10 +85,8 @@ class XmlIndex(IndexBase):
         if not xml_doc:
             raise SeisHubError('Invalid XML document')
         
-        #eval xpath expression:
-        xpr = self.getKey_path()
-        if not xpr.startswith("/"):
-            xpr = "/" + xpr
+        # build xpath expression to evaluate on xml document
+        xpr = '/' + xml_doc.getRootElementName() + '/' + self.getKey_path()
         nodes = xml_doc.evalXPath(xpr)
         
         node_size = len(nodes)
