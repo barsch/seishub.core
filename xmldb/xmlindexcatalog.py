@@ -11,8 +11,8 @@ from seishub.xmldb.interfaces import IXmlIndexCatalog, IIndexRegistry, \
                                      IXPathExpression
 from seishub.db.util import DbStorage, DbEnabled
 from seishub.xmldb.index import XmlIndex
-from seishub.xmldb.defaults import index_def_tab, index_tab, uri_tab, \
-                                   query_aliases_tab
+from seishub.xmldb.defaults import index_def_tab, index_tab, \
+                                   query_aliases_tab, resource_meta_tab
 from seishub.xmldb.errors import InvalidUriError, XmlIndexCatalogError, \
                                  InvalidIndexError, QueryAliasError, \
                                  InvalidQueryError
@@ -100,9 +100,9 @@ class XmlIndexCatalog(DbStorage):
         
         indexes = list()
         for res in results:
-                index=XmlIndex(key_path = res[1],
-                               value_path = res[2],
-                               type = res[3])
+                index=XmlIndex(key_path = res['key_path'],
+                               value_path = res['value_path'],
+                               type = res['data_type'])
                 # inject the internal id into obj:
                 index._setId(res[0])
                 indexes.append(index)
@@ -117,19 +117,17 @@ class XmlIndexCatalog(DbStorage):
     
     # methods from IResourceIndexing:
     
-    def indexResource(self, uri, value_path, key_path):
+    def indexResource(self, id, value_path, key_path):
         """@see: L{seishub.xmldb.xmlindexcatalog.interfaces.IResourceIndexing}"""
 #        #TODO: do this not index specific but resource type specific
 
-        if not isinstance(uri, basestring):
-            raise InvalidUriError("String expected.")
         if not (isinstance(key_path,basestring) and 
                 isinstance(value_path,basestring)):
                 raise XmlIndexCatalogError("Invalid key path or value path")
         
         #get objs and evaluate index on resource:
         try:
-            resource = self._storage.getResource(uri)
+            resource = self._storage.getResource(id)
         except AttributeError:
             raise XmlIndexCatalogError("No resource storage.")
         index = self.getIndex(value_path, key_path)
@@ -149,8 +147,8 @@ class XmlIndexCatalog(DbStorage):
             for keyval in keysvals:
                 conn.execute(index_tab.insert(),
                              index_id = index_id,
-                             key = keyval['key'],
-                             value = keyval['value'])
+                             key = str(keyval['key']),
+                             value = str(keyval['value']))
             txn.commit()
         except Exception, e:
             txn.rollback()
@@ -226,9 +224,9 @@ class XmlIndexCatalog(DbStorage):
             q = select([value_col],w)
         else:
             # value path only: => resource type query
-            value_col = uri_tab.c.uri
+            value_col = resource_meta_tab.c.res_id
             q = select([value_col], 
-                       uri_tab.c.res_type == query.getValue_path()
+                       resource_meta_tab.c.resourcetype_id == query.getValue_path()
                 )
         q = q.group_by(value_col)
         

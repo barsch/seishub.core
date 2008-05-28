@@ -21,10 +21,10 @@ class XmlCatalog(XmlDbManager):
         #self.stylesheet_registry = StylesheetRegistry(db)
     
     # methods from IXmlCatalog:
-    def newXmlResource(self,uri,xml_data):
+    def newXmlResource(self,package_id,resourcetype_id,xml_data):
         """
         @see: L{seishub.xmldb.interfaces.IXmlCatalog}"""
-        return XmlResource(uri,xml_data)
+        return XmlResource(package_id,resourcetype_id,xml_data)
     
     def newXmlIndex(self,xpath_expr,type="text"):
         """@see: L{seishub.xmldb.interfaces.IXmlCatalog}"""
@@ -71,21 +71,21 @@ class XmlCatalog(XmlDbManager):
         value_path = exp_obj.value_path
         
         # get index from db
-        self.index_catalog.getIndex(key_path, value_path)
+        self.index_catalog.getIndex(value_path, key_path)
         
         # flush index
         self.flushIndex(xpath_expr)
         
         # find all resources the index applies to by resource type
         if value_path.startswith('/'):
-            type = value_path[1:]
-        else:
-            type = value_path
-        uris = self.getUriList(type)
-        
+            value_path = value_path[1:]
+            
+        package, type = value_path.split('/')
+        reslist = self.getResourceList(package_id = package, 
+                                       resourcetype_id = type)
         # reindex
-        for uri in uris:
-            self.index_catalog.indexResource(uri, value_path, key_path)
+        for res in reslist:
+            self.index_catalog.indexResource(res[0], value_path, key_path)
         
         return True
     

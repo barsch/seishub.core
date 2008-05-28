@@ -6,7 +6,7 @@ from zope.interface.exceptions import DoesNotImplement
 from seishub.util.xml import IXmlDoc, IXmlSchema
 from seishub.xmldb.interfaces import IXmlResource
 from seishub.util.xml import XmlTreeDoc
-from seishub.xmldb.resource import Resource
+from seishub.xmldb.resource import Resource, ResourceInformation
 from seishub.xmldb.errors import XmlResourceError
 from seishub.db.util import Serializable
 
@@ -16,25 +16,31 @@ class XmlResource(Resource, Serializable):
     
     implements (IXmlResource)
     
-    def __init__(self,uri=None,xml_data=None):
+    def __init__(self,package_id = None, resourcetype_id = None, xml_data = None):
         self.__xml_doc = None
-        Resource.__init__(self, uri, xml_data)
+        info = ResourceInformation(None, package_id, resourcetype_id)
+        Resource.__init__(self, None, xml_data, info)
         Serializable.__init__(self)
         
-    # overloaded method from Serializable
+    # overloaded methods from Serializable
     def getFields(self):
-        return {'_id':self._id,
-                'uri':self.uri,
-                'data':self.data,
-                'resource_type':self.resource_type
+        return {'uid':self.uid,
+                'data':self.data
                 }
+        
+    # auto update resource uid when Serializable id is changed:
+    def _setId(self, id):
+        Serializable._setId(self, id)
+        self.uid = id
     
     # overloaded method setData from Resource
     # gets invoked by Resource's constructor
     def setData(self, xml_data):
-        xml_data = str(xml_data)
         # parse and validate xml_data
         # decode raw data to utf-8 unicode string
+        if xml_data is None or len(xml_data) == 0:
+            return Resource.setData(self, xml_data)
+        xml_data = str(xml_data)
         if not isinstance(xml_data, unicode) and xml_data:
             xml_data = unicode(xml_data,"utf-8")
             
@@ -43,8 +49,6 @@ class XmlResource(Resource, Serializable):
         except Exception, e:
             raise XmlResourceError(e)
         
-        # find resource type from xml data
-        self._resource_type = self.__xml_doc.getRootElementName()
         return Resource.setData(self,xml_data)
     
     def getData(self):
@@ -58,12 +62,6 @@ class XmlResource(Resource, Serializable):
     
     data = property(getData, setData, 'Raw xml data as a string')
     
-    def getResource_type(self):
-        if not hasattr(self,'_resource_type'):
-            return None
-        return self._resource_type
-    
-    resource_type = property(getResource_type, "Resource type")
     
     def getXml_doc(self):
         return self.__xml_doc
@@ -73,6 +71,11 @@ class XmlResource(Resource, Serializable):
             raise DoesNotImplement(IXmlDoc)
         else:
             self.__xml_doc = xml_doc
+            
+#    def getUri(self):
+##         XXX: remove this method or handle non existing self._id properly
+#        return '/' + self.info.package_id + '/' + self.info.resourcetype_id + '/' +\
+#               str(self._id)
     
     def _validateXml_data(self,value):
         return self._parseXml_data(value)
@@ -83,15 +86,15 @@ class XmlResource(Resource, Serializable):
         xml_data = xml_data.encode("utf-8")
         return XmlTreeDoc(xml_data=xml_data, blocking=True)
 
-class XmlSchemaResource(XmlResource):
-    """XmlResource providing validation against given XML Schema"""
-    
-    def __init__(self, uri=None, xml_data=None, xml_schema=None):
-        super(XmlSchemaResource,self).__init__(uri, xml_data)
-        if not IXmlSchema.providedBy(xml_schema):
-            raise DoesNotImplement(IXmlSchema)
-        self._schema = xml_schema
-        
-    def _validate(self):
-        self._schema.validate(self.__xml_doc)
+#class XmlSchemaResource(XmlResource):
+#    """XmlResource providing validation against given XML Schema"""
+#    
+#    def __init__(self, uri=None, xml_data=None, xml_schema=None):
+#        super(XmlSchemaResource,self).__init__(uri, xml_data)
+#        if not IXmlSchema.providedBy(xml_schema):
+#            raise DoesNotImplement(IXmlSchema)
+#        self._schema = xml_schema
+#        
+#    def _validate(self):
+#        self._schema.validate(self.__xml_doc)
 

@@ -4,7 +4,7 @@ from seishub.core import Component, implements
 from seishub.services.admin.interfaces import IAdminPanel
 from seishub.xmldb.defaults import DEFAULT_PREFIX, RESOURCE_TABLE, \
                                    INDEX_TABLE, INDEX_DEF_TABLE, \
-                                   URI_TABLE, QUERY_ALIASES_TABLE
+                                   QUERY_ALIASES_TABLE
 from seishub.xmldb.errors import UnknownUriError, AddResourceError
 
 
@@ -35,7 +35,7 @@ class DatabaseQueryPanel(Component):
     """Query the database via http form."""
     implements(IAdminPanel)
     
-    tables = [RESOURCE_TABLE, URI_TABLE, INDEX_TABLE, INDEX_DEF_TABLE, \
+    tables = [RESOURCE_TABLE, INDEX_TABLE, INDEX_DEF_TABLE, \
               QUERY_ALIASES_TABLE]
     
     def getPanelId(self):

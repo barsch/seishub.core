@@ -49,39 +49,57 @@ class DbStorage(DbEnabled):
     def _to_kwargs(self, fields, map):
         d = dict()
         for field in map:
+            if field not in fields.keys():
+                continue
             value = fields[field]
             if not value:
                 continue
-            d[map[field]] = value
+            d[map[field]] = str(value)
         return d
     
     def _to_where_clause(self, table, map, values):
         cl = ClauseList(operator = "AND")
         for key in values:
+            if key not in map.keys():
+                continue
             if values[key] != None:
                 cl.append(table.c[map[key]] == values[key])
         return cl
+    
+    def _simplify_list(self, l):
+        if len(l) <= 1:
+            try:
+                return l[0]
+            except IndexError:
+                return None
+        return l
        
     def getMapping(self, table):
         raise NotImplementedError("Implemented by subclasses")
         
-    def store(self, obj):
-        """store a Serializable object into database"""
-        if not ISerializable.providedBy(obj):
-            raise DoesNotImplement(ISerializable)
-        
+    def store(self, *objs):
+        """store a (list of) Serializable object(s) into database
+        if obj is a list, all objects in list will be stored within the same 
+        transaction"""
+        obj = list(objs)
         db = self.getDb()
         conn = db.connect()
         txn = conn.begin()
         
         try:
-            for table in self.db_tables:
-                fields = obj.getFields()
-                map = self.getMapping(table)
-                kwargs = self._to_kwargs(fields, map)
-                r = conn.execute(table.insert(),
-                                 **kwargs)
-                obj._setId(r.last_inserted_ids()[0])
+            for o in obj: # store all objects within same transaction
+                if not ISerializable.providedBy(o):
+                    raise DoesNotImplement(ISerializable)
+                
+                for table in self.db_tables:
+                    fields = o.getFields()
+                    map = self.getMapping(table)
+                    kwargs = self._to_kwargs(fields, map)
+                    if len(kwargs) == 0:
+                        continue
+                    r = conn.execute(table.insert(),
+                                     **kwargs)
+                    o._setId(r.last_inserted_ids()[0])
             txn.commit()
         except:
             txn.rollback()
@@ -91,32 +109,40 @@ class DbStorage(DbEnabled):
         
         return True
 
-    def pickup(self, obj, **keys):
-        """pickup Serializable object with given keys from database"""
-        if not ISerializable.providedBy(obj):
+    def pickup(self, cls, **keys):
+        """pickup Serializable objects with given keys from database"""
+        if not ISerializable.implementedBy(cls):
             raise DoesNotImplement(ISerializable)
-        
-        table = self.db_tables[0]
-        map = self.getMapping(table)
-        db = self.getDb()
-        c = list()
-        for col in map.values():
-            c.append(table.c[col])
-        w = self._to_where_clause(table, map, keys)
-        r = db.execute(select(c, w))
-        try:
-            res = r.fetchall()[0]
-        finally:
-            r.close()
-        for field in map:
-            obj.__setattr__(field, res[map[field]])
-        return True
+        cls_fields = cls().getFields()
+        for table in self.db_tables:
+            map = self.getMapping(table)
+            fields = [field for field in map.keys() if field in cls_fields.keys()]
+            if len(fields) == 0:
+                continue
+            db = self.getDb()
+            c = list()
+            for col in map.values():
+                c.append(table.c[col])
+            w = self._to_where_clause(table, map, keys)
+            r = db.execute(select(c, w))
+            try:
+                results = r.fetchall()
+            finally:
+                r.close()
+            objs = list()
+            for res in results:
+                obj = cls()
+                for field in map:
+                    if field in obj.getFields():
+                        obj.__setattr__(field, res[map[field]])
+                objs.append(obj)
+        return self._simplify_list(objs)
     
     def drop(self, **keys):
         """delete object with given keys from database"""
         # use list of tables in reverse order
         rtables = list(self.db_tables)
-        rtables.reverse()
+        #rtables.reverse()
         # begin transaction:
         db = self.getDb()
         conn = db.connect()
@@ -125,6 +151,8 @@ class DbStorage(DbEnabled):
             for table in rtables:
                 map = self.getMapping(table)
                 w = self._to_where_clause(table, map, keys)
+                if len(w) == 0:
+                    continue
                 conn.execute(table.delete(w))
             txn.commit()
         except:

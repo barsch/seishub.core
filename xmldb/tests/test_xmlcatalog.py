@@ -53,7 +53,7 @@ RAW_XML3 = """<?xml version="1.0"?>
 </testml>
 """
 
-URI = "/temp/1"
+URI = "/testpackage/station"
 URI1 = "/real/bern"
 URI2 = "/fake/genf"
 URI3 = "/testml/res1"
@@ -65,14 +65,14 @@ class XmlCatalogTest(SeisHubTestCase):
     #TODO: a whole bunch of tests is still missing here
     def setUp(self):
         # create us a small test catalog
-        res1=self.env.catalog.newXmlResource(URI1,RAW_XML1)
-        res2=self.env.catalog.newXmlResource(URI2,RAW_XML2)
-        res3=self.env.catalog.newXmlResource(URI3,RAW_XML3)
+        self.res1=self.env.catalog.newXmlResource("testpackage","station",RAW_XML1)
+        self.res2=self.env.catalog.newXmlResource("testpackage","station",RAW_XML2)
+        self.res3=self.env.catalog.newXmlResource("testpackage","testml",RAW_XML3)
         idx1=self.env.catalog.newXmlIndex(IDX1)
         idx2=self.env.catalog.newXmlIndex(IDX2)
-        self.env.catalog.addResource(res1)
-        self.env.catalog.addResource(res2)
-        self.env.catalog.addResource(res3)
+        self.env.catalog.addResource(self.res1)
+        self.env.catalog.addResource(self.res2)
+        self.env.catalog.addResource(self.res3)
         self.env.catalog.registerIndex(idx1)
         self.env.catalog.registerIndex(idx2)
     
@@ -80,18 +80,17 @@ class XmlCatalogTest(SeisHubTestCase):
         # clean up again
         self.env.catalog.removeIndex(IDX1)
         self.env.catalog.removeIndex(IDX2)
-        self.env.catalog.deleteResource(URI1)
-        self.env.catalog.deleteResource(URI2)
-        self.env.catalog.deleteResource(URI3)
+        self.env.catalog.deleteResource(self.res1._id)
+        self.env.catalog.deleteResource(self.res2._id)
+        self.env.catalog.deleteResource(self.res3._id)
         
     def testIResourceManager(self):
         catalog=self.env.catalog
-        res=catalog.newXmlResource(URI,RAW_XML)
+        res = catalog.newXmlResource("testpackage","station",RAW_XML)
         catalog.addResource(res)
-        catalog.getResource(URI)
-        self.assertEquals(RAW_XML,res.getData())
-        self.assertEquals(URI,res.getUri())
-        catalog.deleteResource(URI)
+        r = catalog.getResource(res._id)
+        self.assertEquals(RAW_XML,r.getData())
+        catalog.deleteResource(res._id)
     
     def testReindex(self):
         self.env.catalog.reindex(IDX1)

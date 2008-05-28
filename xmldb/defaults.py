@@ -13,7 +13,7 @@ INDEX_TABLE = 'index'
 INDEX_DEF_TABLE = 'index_def'
 QUERY_ALIASES_TABLE = 'query_aliases'
 METADATA_TABLE = 'meta'
-URI_TABLE = 'uri'
+RESOURCE_META_TABLE = 'resource_meta'
 XSD_TABLE = 'xsd'
 XSLT_TABLE = 'xslt'
 
@@ -30,13 +30,14 @@ resource_tab = Table(DEFAULT_PREFIX + RESOURCE_TABLE, metadata,
 #           primary_key = True),
 #    )
 
-uri_tab = Table(DEFAULT_PREFIX + URI_TABLE, metadata,
-    Column('uri', Text),
-    Column('revision', Integer),
+# XXX: normalize package_id and resource_type columns
+resource_meta_tab = Table(DEFAULT_PREFIX + RESOURCE_META_TABLE, metadata,
     Column('res_id', Integer, ForeignKey(DEFAULT_PREFIX + RESOURCE_TABLE +
                                          '.id')),
-    Column('res_type', Text),
-    PrimaryKeyConstraint('uri') #,'revision')
+    Column('package_id', Text),
+    Column('resourcetype_id', Text),
+    Column('revision', Integer),
+    PrimaryKeyConstraint('res_id')
     )
 
 metadata_tab = Table(DEFAULT_PREFIX + METADATA_TABLE, metadata,
@@ -49,10 +50,12 @@ metadata_tab = Table(DEFAULT_PREFIX + METADATA_TABLE, metadata,
 # xmlindexcatalog tables:
 index_def_tab = Table(DEFAULT_PREFIX + INDEX_DEF_TABLE, metadata,
     Column('id', Integer, primary_key = True, autoincrement = True),
-    Column('key_path', Text),
+#    Column('package_id', Text),
+#    Column('resourcetype_id', Text),
     Column('value_path', Text),
+    Column('key_path', Text),
     Column('data_type', String(20)),
-    UniqueConstraint('key_path', 'value_path')
+    UniqueConstraint('value_path','key_path')
 )
 
 index_tab = Table(DEFAULT_PREFIX + INDEX_TABLE, metadata,
@@ -60,7 +63,7 @@ index_tab = Table(DEFAULT_PREFIX + INDEX_TABLE, metadata,
     Column('index_id', Integer, ForeignKey(DEFAULT_PREFIX + INDEX_DEF_TABLE +
                                            '.id')),
     Column('key', Text),
-    Column('value', Text),
+    Column('value', Integer),
 )
 
 query_aliases_tab = Table(DEFAULT_PREFIX + QUERY_ALIASES_TABLE, metadata,

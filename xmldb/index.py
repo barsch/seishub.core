@@ -6,6 +6,7 @@ from seishub.core import SeisHubError
 from seishub.db.util import Serializable
 from seishub.xmldb.interfaces import IXmlIndex, IVirtualIndex, IXmlResource
 from seishub.xmldb.errors import XmlIndexError
+from seishub.xmldb.package import PackageSpecific
 
 __all__ = ['XmlIndex', 'VirtualIndex']
 
@@ -35,7 +36,7 @@ class IndexBase(Serializable):
     def setValueKeyPath(self,value_path,key_path):
         self.value_path = value_path
         self.key_path = key_path
-        self._xpath_expr = self._createXPath()
+        #self._xpath_expr = self._createXPath()
               
     def getValue_path(self):
         if hasattr(self,'_value_path'):
@@ -72,43 +73,32 @@ class XmlIndex(IndexBase):
     implements(IXmlIndex)
           
     def __str__(self):
-        return self.getXpath_expr()
-        
-    def _createXPath(self):
-        if not self._value_path.startswith("/"):
-            str="/"
-        else:
-            str=""
-        return str + self.getValue_path() + '/' + self.getKey_path()
-    
-    def getXpath_expr(self):
-        if hasattr(self,'_xpath_expr'):
-            return self._xpath_expr
+        return self.value_path + '/' + self.key_path
     
     # methods from IXmlIndex:
     
     def eval(self,xml_resource):
         if not IXmlResource.providedBy(xml_resource):
             raise DoesNotImplement(IXmlResource)
-            return None
         
-        xml_doc=xml_resource.getXml_doc()
+        xml_doc = xml_resource.getXml_doc()
         if not xml_doc:
-            raise SeisHubError('Xml resource does not contain data')
-            return None
+            raise SeisHubError('Invalid XML document')
         
         #eval xpath expression:
-        xpr=self.getXpath_expr()
+        xpr = self.getKey_path()
+        if not xpr.startswith("/"):
+            xpr = "/" + xpr
         nodes = xml_doc.evalXPath(xpr)
         
-        node_size=len(nodes)
+        node_size = len(nodes)
         if node_size == 0:
-            res=None
-        else:
-            idx_value=xml_resource.getUri()
-            res=[{'key':node.getStrContent(),
-                  'value':idx_value} for node in nodes]
-            self._values.append(idx_value)
+            return None
+        
+        idx_value = xml_resource.uid
+        res = [{'key':node.getStrContent(),
+                'value':idx_value} for node in nodes]
+        self._values.append(idx_value)
         
         return res
 

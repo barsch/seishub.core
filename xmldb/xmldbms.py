@@ -3,93 +3,102 @@
 from zope.interface import implements
 from sqlalchemy import select
 from sqlalchemy.sql import and_
+from sqlalchemy.sql.expression import ClauseList
 
-from seishub.xmldb.interfaces import IResourceStorage
+from seishub.util.text import isInteger
 from seishub.db.util import DbStorage
-from seishub.xmldb.xmlresource import XmlResource
+from seishub.xmldb.interfaces import IResourceStorage
+from seishub.xmldb.xmlresource import XmlResource, ResourceInformation
 from seishub.xmldb.errors import *
-from seishub.xmldb.defaults import resource_tab, uri_tab
+from seishub.xmldb.defaults import resource_tab, resource_meta_tab
 
 class XmlDbManager(DbStorage):
     """XmlResource layer, connects XmlResources to relational db storage"""
     implements(IResourceStorage)
     
     # XXX: order of tables is IMPORTANT here!
-    db_tables = [resource_tab, uri_tab]
-    
-    def _resolveUri(self,uri):
-        if not isinstance(uri,basestring):
-            raise InvalidUriError("string expected")
-        
-        query = select([uri_tab.c.res_id],
-                       uri_tab.c.uri == uri)
-        res = self._db.execute(query)
-        try:
-            id = res.fetchone()[0]
-            res.close()
-        except:
-            raise UnknownUriError(uri)
-        
-        return id
+    db_tables = [resource_tab, resource_meta_tab]
     
     # overloaded methods from DbStorage
     def getMapping(self, table):
         if table == resource_tab:
-            return {'_id':'id',
+            return {'uid':'id',
                     'data':'data'}
-        if table == uri_tab:
-            return {'_id':'res_id',
-                    'uri':'uri',
-                    'resource_type':'res_type'}
+        if table == resource_meta_tab:
+            return {'res_uid':'res_id',
+                    'package_id':'package_id',
+                    'resourcetype_id':'resourcetype_id',
+                    'revision':'revision'}
     
     # methods from IResourceStorage            
-    def addResource(self,xml_resource):
+    def addResource(self, xml_resource):
         """Add a new resource to the storage
         @return: True on success"""
         try:
-            self.store(xml_resource)
+            self.store(xml_resource, xml_resource.info)
         except Exception, e:
             raise AddResourceError(e)
         return True
     
-    def getResource(self, uri):
-        """Get a resource by it's uri from the database.
+    def getResource(self, uid):
+        """Get a resource by it's id from the database.
         @return: XmlResource or None
         """
         # XXX: bypass xml parsing on resource retrieval
-        id = self._resolveUri(uri)
-        xml_resource = XmlResource(uri = uri)
-        self.pickup(xml_resource, _id = id)
+        try:
+            xml_resource = self.pickup(XmlResource, uid = uid)
+            xml_resource.info = self.pickup(ResourceInformation, res_uid = uid)
+        except Exception, e:
+            raise GetResourceError("No resource with id %s" % uid, e)
         return xml_resource
     
-    def deleteResource(self,uri):
+    def deleteResource(self, uid):
         """Remove a resource from the storage.
         @return: True on success
         """
-        id = self._resolveUri(uri)
         try:
-            self.drop(_id = id)
+            long(uid)
+        except:
+            raise DeleteResourceError("Invalid uid: %s" % uid)
+        
+        try:
+            self.drop(res_uid = uid)
+            self.drop(uid = uid)
         except Exception, e:
-            raise DeleteResourceError(e)      
+            raise DeleteResourceError("Error deleting resource", e)      
         return True
     
-    def getUriList(self,type = None):
-        w = None
-        if type:
-            w = uri_tab.c.res_type == type
-        query = select([uri_tab.c.uri], w)
+    def getResourceList(self, package_id = None, resourcetype_id = None):
+        w = ClauseList(operator = "AND")
+        if package_id:
+            w.append(resource_meta_tab.c.package_id == package_id)
+        if resourcetype_id:
+            w.append(resource_meta_tab.c.resourcetype_id == resourcetype_id)
+        query = select([resource_meta_tab.c.res_id,
+                        resource_meta_tab.c.package_id,
+                        resource_meta_tab.c.resourcetype_id], 
+                        w)
         try:
             res = self._db.execute(query)
-            uris = res.fetchall()
+            reslist = res.fetchall()
         except:
             return list()
         finally:
             res.close()
-        return [uri[0] for uri in uris]
+        return [res.values() for res in reslist]
     
-    def uriExists(self, uri):
-        query = select([uri_tab.c.uri],
-                       (uri_tab.c.uri == uri))
+    def getUriList(self,package_id = None, resourcetype_id = None):
+        # XXX: to be removed
+        res = self.getResourceList(package_id, resourcetype_id)
+        return ['/'+r[1]+'/'+r[2]+'/'+r[0] for r in res]
+
+    
+    def resourceExists(self, package_id, resourcetype_id, uid):
+        # XXX: package_id and resourcetypeid senseless here?
+        query = select([resource_meta_tab.c.res_id],
+                       and_(resource_meta_tab.c.package_id == package_id,
+                            resource_meta_tab.c.resourcetype_id == resourcetype_id,
+                            resource_meta_tab.c.res_id == uid))
         try:
             res = self._db.execute(query)
             res.fetchall()[0]

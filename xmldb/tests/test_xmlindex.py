@@ -23,34 +23,20 @@ RAW_XML1="""<station rel_uri="bern">
     </XY>
 </station>"""
 
-class XmlIndexTest(SeisHubTestCase):
-    def testAttributes(self):
-        test_index=XmlIndex(key_path="xxx",
-                            value_path="yyy",
-                            type=TEXT_INDEX)
-        
-        test_index.setValueKeyPath("node1/node2/node3","/resourceBLAH")
-        self.assertEquals("node1/node2/node3",
-                          test_index.getValue_path())
-        self.assertEquals("/resourceBLAH",
-                          test_index.getKey_path())
-        self.assertEquals(TEXT_INDEX,
-                          test_index.getType())
-         
+class XmlIndexTest(SeisHubTestCase):   
     def testEval(self):
         #index with single node key result:
-        test_index=XmlIndex(#xpath_expr="/station[./chan_code]"
-                            key_path="lon",
-                            value_path="/station"
+        test_index=XmlIndex(key_path = "/station/lon",
+                            value_path = "/station"
                             )
         #index with multiple nodes key result:
         xy_index=XmlIndex(key_path="XY/paramXY",
-                          value_path="/station"
+                          value_path = "/station"
                           )
         
-        empty_resource=XmlResource()
-        test_resource=XmlResource(uri='/stations/bern',
-                                  xml_data=RAW_XML1)
+        empty_resource = XmlResource()
+        test_resource = XmlResource('testpackage','station',
+                                    xml_data = RAW_XML1)
         
         class Foo(object):
             pass
@@ -64,14 +50,17 @@ class XmlIndexTest(SeisHubTestCase):
                           test_index.eval,
                           empty_resource)
         
-        self.assertEquals({'value': '/stations/bern', 'key': '12.51200'},
+        self.assertEquals({'value': None, 
+                           'key': '12.51200'},
                           test_index.eval(test_resource)[0])
-        self.assertEquals([{'value': '/stations/bern', 'key': '20.5'}, 
-                           {'value': '/stations/bern', 'key': '11.5'}, 
-                           {'value': '/stations/bern', 'key': 'blah'}],
+        self.assertEquals([{'value': None, 
+                            'key': '20.5'}, 
+                           {'value': None, 
+                            'key': '11.5'}, 
+                           {'value': None, 
+                            'key': 'blah'}],
                           xy_index.eval(test_resource)
                           )
-        self.assertEquals(['/stations/bern'],xy_index.getValues())
 
 
 def suite():

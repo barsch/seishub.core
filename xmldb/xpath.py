@@ -87,11 +87,11 @@ class IndexDefiningXpathExpression(object):
     """XPath expression defining an XmlIndex.
     IndexDefiningXpathExpressions mustn't contain any predicate blocks,
     but are of the form:
-    "/resource_type/childnode1/childnode2/.../@attribute"
+    "/package_id/resource_type_id/rootnode/childnode1/childnode2/.../@attribute"
     """
     implements(IXPathExpression)
     
-    __r_value_path = "^/[^/\[\]]+"
+    __r_value_path = "^/[^/\[\]]+/[^/\[\]]+"
     __r_key_path = "[^\[\]]*\Z"
     
     value_path = None
@@ -106,8 +106,8 @@ class IndexDefiningXpathExpression(object):
             raise RestrictedXpathError("Invalid xpath expression: %s" % expr)
             
     def _parseXpathExpr(self,expr):
-        re_vp=re.compile(self.__r_value_path)
-        re_kp=re.compile(self.__r_key_path)
+        re_vp = re.compile(self.__r_value_path)
+        re_kp = re.compile(self.__r_key_path)
         
         m=re_vp.match(expr)
         if m:

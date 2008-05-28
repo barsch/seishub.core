@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from zope.interface import Interface
+from zope.interface import Interface, Attribute
+
 
 class IXmlCatalog(Interface):
     """This is the main interface to access all xmldb related classes"""
@@ -70,6 +71,38 @@ class IXmlCatalog(Interface):
         @return: list of URIs
         @rtype: python list"""
 
+
+class IResourceStorage(Interface):
+    """Basic XML storage manager description"""
+    
+    def addResource(xmlResource):
+        """Add a new resource to the storage"""
+        
+    def updateResource(xmlResource):
+        """Update an existing resource"""
+        
+    def deleteResource(uri):
+        """Delete an existing resource"""
+        
+    def getResource(uri):
+        """Retreive an existing resource from the storage"""
+        
+    def getResList(package_id = None, resourcetype_id = None):
+        """Return a list of resource informations"""
+
+
+class IResource(Interface):
+    uid = Attribute("unique resource id")
+    data = Attribute("any data")
+    info = Attribute("IResourceInformation for that resource")
+
+
+class IResourceInformation(Interface):
+    package_id = Attribute("Package id, that resource belongs to")
+    resourcetype_id = Attribute("Resourcetype id, that resource is type of")
+    revision = Attribute("Revision of that resource")
+        
+
 class IXmlResource(Interface):
     """XmlResource is a subclass of Resource providing some special xml 
     functionality such as xml validation and parsing
@@ -92,30 +125,8 @@ class IXmlResource(Interface):
         
     def getData(self):
         """@return: xml data (string)"""
-        
-    def getUri(self):
-        """@return: uri (string)"""
-        
-class IResourceStorage(Interface):
-    """Basic XML storage manager description"""
-    
-    def addResource(xmlResource):
-        """Add a new resource to the storage"""
-        
-    def updateResource(xmlResource):
-        """Update an existing resource"""
-        
-    def deleteResource(uri):
-        """Delete an existing resource"""
-        
-    def getResource(uri):
-        """Retreive an existing resource from the storage"""
-        
-    def getUriList(self,type):
-        """Return a list of all registered uris
-        or the subset of uris corresponding to resources of type 'type'
-        @return: a list of uris"""
-        
+
+
 class IIndex(Interface):
     def init(value_path=None, key_path=None, type="text"):
         pass

@@ -1,50 +1,81 @@
 # -*- coding: utf-8 -*-
 
-from seishub.xmldb.validator import Validator
-from seishub.xmldb.errors import InvalidUriError
+from zope.interface import implements
+
 from seishub.db.util import Serializable
+from seishub.xmldb.interfaces import IResource, IResourceInformation
+from seishub.xmldb.package import PackageSpecific
 
 class Resource(object):
     """Resource base class"""
-    def __init__(self,uri=None,data=None):
-        if uri is not None:
-            self.setUri(uri)
-        else: 
-            self.__uri=None
-        if data is not None:
-            self.setData(data)
-        else:
-            self.__data=None
+    implements(IResource)
+    
+    def __init__(self, uid = None, data = None, info = None):
+        self.uid = uid
+        self.data = data
+        self.info = info
             
     def getData(self):
         return self.__data
     
-    def setData(self,newdata):
+    def setData(self, newdata):
         self.__data = newdata
-        return True
     
     data = property(getData, setData, 'Raw data')
     
-    def getUri(self):
-        return self.__uri
+    def getUid(self):
+        return self._uid
     
-    def setUri(self,newuri):
-        if self._validateUri(newuri):
-            self.__uri=newuri
-        else:
-            raise InvalidUriError("%s is not a valid URI!" % newuri)
-        
-    uri = property(getUri, setUri, "Uri")
+    def setUid(self, data):
+        if self.info:
+            self.info.res_uid = data 
+        self._uid = data
     
-    def _validateUri(self,value):
-        #TODO: uri validation
-        uri_pattern = ""
-        if Validator(value).isString() and len(value) > 0:
-            return True
-        else: 
-            return False
-        
-class ResourceMetadata(Resource, Serializable):
-    """Resource metadata"""
+    uid = property(getUid, setUid, 'unique resource id')
     
+    def getInfo(self):
+        try:
+            return self._info
+        except:
+            return None
     
+    def setInfo(self, data):
+        if not IResourceInformation.providedBy(data):
+            raise TypeError("%s is not a ResourceInformation" % str(data))
+        self._info = data
+    
+    info = property(getInfo, setInfo, 'resource information')
+
+class ResourceInformation(Serializable, PackageSpecific):
+    implements(IResourceInformation)
+    
+    def __init__(self, res_uid = None, package_id = None, resourcetype_id = None, 
+                 revision = None):
+        self.res_uid = res_uid
+        self.package_id = package_id
+        self.resourcetype_id = resourcetype_id
+        self.revision = revision
+    
+    # overloaded method getFields from Serializable:
+    def getFields(self):
+        return {'res_uid':self.res_uid,
+                'resourcetype_id':self.resourcetype_id,
+                'package_id':self.package_id,
+                'revision':self.revision}
+    
+    #methods and attributes from IResourceInformation
+    def getRes_uid(self):
+        return self._res_uid
+    
+    def setRes_uid(self, data):
+        self._res_uid = data
+    
+    res_uid = property(getRes_uid,setRes_uid, "uid of according resource")
+    
+    def getRevision(self):
+        return self._revision
+    
+    def setRevision(self, data):
+        self._revision = data
+         
+    revision = property(getRevision,setRevision,"revision")
