@@ -8,7 +8,6 @@ from twisted.conch import recvline, avatar, interfaces as conchinterfaces
 from twisted.conch.ssh import factory, keys, common, session
 from twisted.conch.insults import insults
 from twisted.application import internet
-from twisted.internet import threads
 
 from seishub import __version__ as SEISHUB_VERSION
 from seishub.services.ssh.interfaces import ISSHCommand

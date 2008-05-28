@@ -192,14 +192,14 @@ class Processor:
     def _addResource(self):
         """Handles a PUT request on a direct resource."""
         try:
-            document_id = self.env.catalog.addResource(self.package_id,
-                                                       self.resourcetype_id,
-                                                       self.content)
+            res = self.env.catalog.newXmlResource(self.package_id,
+                                                  self.resourcetype_id,
+                                                  self.content)
         except Exception, e:
             self.env.log.error(e)
             return
-        # XXX: document ID should be returned in a standardized way
-        return document_id
+        # XXX: res ID should be returned in a standardized way
+        return res
     
     def _deleteResource(self):
         """Handles a DELETE request on a direct resource."""

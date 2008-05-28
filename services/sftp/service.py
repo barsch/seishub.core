@@ -5,7 +5,7 @@ import time
 
 from zope.interface import implements
 from twisted.python import components
-from twisted.cred import portal, checkers
+from twisted.cred import portal
 from twisted.conch.ssh import factory, keys, common, session, filetransfer
 from twisted.conch import avatar, interfaces as conchinterfaces
 from twisted.application import internet
@@ -129,23 +129,23 @@ components.registerAdapter(SFTPServiceProtocol, SFTPServiceAvatar,
                            filetransfer.ISFTPServer)
 
 
-class SFTPServiceSession:
-    implements(session.ISession)
-    
-    def __init__(self, avatar):
-        self.avatar = avatar
-    
-    def openShell(self, proto):
-            self.avatar.conn.transport.transport.loseConnection()
-    
-    def getPty(self, term, windowSize, modes):
-        pass
-    
-    def closed(self):
-        pass
-
-components.registerAdapter(SFTPServiceSession, SFTPServiceAvatar, 
-                           session.ISession)
+#class SFTPServiceSession:
+#    implements(session.ISession)
+#    
+#    def __init__(self, avatar):
+#        self.avatar = avatar
+#    
+#    def openShell(self, proto):
+#            self.avatar.conn.transport.transport.loseConnection()
+#    
+#    def getPty(self, term, windowSize, modes):
+#        pass
+#    
+#    def closed(self):
+#        pass
+#
+#components.registerAdapter(SFTPServiceSession, SFTPServiceAvatar, 
+#                           session.ISession)
 
 
 class SFTPServiceRealm:

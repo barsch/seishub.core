@@ -75,18 +75,29 @@ class ResourcesPanel(Component):
         return ('catalog', 'Catalog', 'resources', 'Resources')
     
     def renderPanel(self, request):
-        rest_port = self.config.getint('rest', 'port')
+        packages = self.env.registry.getPackageIds()
+        resourcetypes = dict([(p, self.env.registry.getResourceTypes(p).keys())
+                              for p in packages])
+        
         data = {
             'file': '', 
-            'uri': '',
-            'resturl': 'http://localhost:' + str(rest_port) + '/seishub',
+            'package_id': '',
+            'resourcetype_id': '',
+            'resturl': self.env.getRestUrl(),
+            'packages': packages,
+            'resourcetypes': resourcetypes,
         }
         if request.method=='POST':
             args = request.args
-            if 'file' in args.keys() and 'uri' in args.keys():
-                data['file'] = args['file'][0]
-                data['uri'] = args['uri'][0]
-                data = self._addResource(data)
+            if 'file' in args.keys():
+                data['file'] = args.get('file',[''])[0]
+                package_id = args.get('package_id',[''])[0]
+                if package_id in packages:
+                    resourcetype_id = args.get('resourcetype_id',[''])[0]
+                    if resourcetype_id in resourcetypes.get(package_id, []):
+                        data['package_id'] = package_id
+                        data['resourcetype_id'] = resourcetype_id
+                        data = self._addResource(data)
             elif 'delete' in args.keys() and 'resource[]' in args.keys():
                 data['resource[]'] = args['resource[]']
                 data = self._deleteResources(data)
@@ -96,7 +107,9 @@ class ResourcesPanel(Component):
     
     def _addResource(self, data):
         try:
-            res = self.catalog.newXmlResource(data['uri'], data['file'])
+            res = self.catalog.newXmlResource(data['package_id'], 
+                                              data['resourcetype_id'], 
+                                              data['file'])
         except Exception, e:
             self.log.error("Error creating resource", e)
             data['error'] = ("Error creating resource", e)
@@ -107,7 +120,6 @@ class ResourcesPanel(Component):
             self.log.error("Error adding resource", e)
             data['error'] = ("Error adding resource", e)
             return data
-        data['uri']=''
         data['file']=''
         return data
     
@@ -115,7 +127,7 @@ class ResourcesPanel(Component):
         for id in data.get('resource[]',[]):
             try:
                 self.catalog.deleteResource(id)
-            except UnknownUriError, e:
+            except Exception, e:
                 self.log.info("Error deleting resource: %s" % id, e)
                 data['error'] = ("Error deleting resource: %s" % id, e)
                 return data
