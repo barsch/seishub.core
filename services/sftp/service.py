@@ -167,11 +167,7 @@ class SFTPServiceFactory(factory.SSHFactory):
     
     def __init__(self, env):
         self.env = env
-        #set portal
-        users = {'admin': 'aaa', }
-        realm = SFTPServiceRealm(env)
-        check = [checkers.InMemoryUsernamePasswordDatabaseDontUse(**users)]
-        self.portal = portal.Portal(realm, check)
+        self.portal = portal.Portal(SFTPServiceRealm(env), env.auth)
         #set keys
         pub, priv = self._getCertificates()
         self.publicKeys = {'ssh-rsa': keys.Key.fromFile(pub)}

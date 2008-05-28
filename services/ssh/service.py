@@ -3,7 +3,7 @@
 import os
 
 from zope.interface import implements
-from twisted.cred import portal, checkers
+from twisted.cred import portal
 from twisted.conch import recvline, avatar, interfaces as conchinterfaces
 from twisted.conch.ssh import factory, keys, common, session
 from twisted.conch.insults import insults
@@ -28,6 +28,8 @@ class SSHServiceProtocol(recvline.HistoricRecvLine):
                                  for p in plugins 
                                  if hasattr(p, 'executeCommand')
                                  and hasattr(p, 'getCommandId')])
+        self.buildin_cmds = [f[4:].upper() for f in dir(self) \
+                             if f.startswith('cmd_')]
     
     def connectionMade(self):
         recvline.HistoricRecvLine.connectionMade(self)
@@ -54,25 +56,18 @@ class SSHServiceProtocol(recvline.HistoricRecvLine):
                 self.writeln("Error: %s" % e)
             self.showPrompt()
             return
-        # command not known
-        if cmd not in self.plugin_cmds.keys():
+        # check if its a user defined command
+        # XXX: Thread is not working here!!!!
+        if cmd in self.plugin_cmds.keys():
+            ssh_cmd = self.plugin_cmds.get(cmd)
+            for l in ssh_cmd.executeCommand(args):
+                self.writeln(l)    
+        else:
+            # command not known
             self.writeln("No such command: " + cmd)
             self.writeln("Use help to get all available commands.")
-            self.showPrompt()
-            return
-        # its a user defined command
-        d = threads.deferToThread(self._processThread, cmd, args)
-        d.addErrback(self._processingFailed)
-    
-    def _processThread(self, cmd, args):
-        ssh_cmd = self.plugin_cmds.get(cmd)
-        for l in ssh_cmd.executeCommand(args):
-            self.writeln(l)
         self.showPrompt()
-    
-    def _processingFailed(self, reason):
-        self.env.log.error(reason)
-        return reason
+        return
     
     def write(self, data):
         self.terminal.write(data)
@@ -117,6 +112,11 @@ class SSHServiceProtocol(recvline.HistoricRecvLine):
     def cmd_CLEAR(self):
         """Clears the screen."""
         self.terminal.reset()
+    
+    # XXX: this should be removed in a productive environment
+    def cmd_DEBUG(self):
+        """Starts debugger."""
+        import pdb;pdb.set_trace()
 
 
 class SSHServiceAvatar(avatar.ConchUser):
@@ -169,11 +169,7 @@ class SSHServiceFactory(factory.SSHFactory):
     
     def __init__(self, env):
         self.env = env
-        #set portal
-        users = {'admin': 'aaa', }
-        realm = SSHServiceRealm(env)
-        check = [checkers.InMemoryUsernamePasswordDatabaseDontUse(**users)]
-        self.portal = portal.Portal(realm, check)
+        self.portal = portal.Portal(SSHServiceRealm(env), env.auth)
         #set keys
         pub, priv = self._getCertificates()
         self.publicKeys = {'ssh-rsa': keys.Key.fromFile(pub)}

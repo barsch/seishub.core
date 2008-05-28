@@ -6,7 +6,7 @@ import sys
 from twisted.internet import defer
 from twisted.application import service
 
-from seishub.auth import Portal
+from seishub.auth import UserManager
 from seishub.core import ComponentManager
 from seishub.config import Configuration, Option
 from seishub.loader import ComponentLoader
@@ -55,7 +55,7 @@ class Environment(ComponentManager):
         # set XML catalog
         self.catalog = XmlCatalog(self.db)
         # User & group management
-        self.portal = Portal()
+        self.auth = UserManager(self)
         # Package manager
         self.registry = PackageRegistry(self)
         # load plugins
@@ -74,11 +74,15 @@ class Environment(ComponentManager):
     
     @defer.inlineCallbacks
     def enableService(self, srv_name):
-        """Enables a service."""
+        """Enable a service."""
         for srv in service.IServiceCollection(self.app):
             if srv.name.lower()==srv_name.lower():
+                # ensure not to start a service twice; may be fatal with timers
+                if srv.running:
+                    self.log.info('Service %s already started.' % srv.name)
+                    return
                 yield defer.maybeDeferred(srv.startService)
-                self.log.info('Starting service %s' % srv.name)
+                self.log.info('Starting service %s.' % srv.name)
     
     @defer.inlineCallbacks
     def disableService(self, srv_name):
@@ -86,7 +90,7 @@ class Environment(ComponentManager):
         for srv in service.IServiceCollection(self.app):
             if srv.name.lower()==srv_name.lower():
                 yield defer.maybeDeferred(srv.stopService)
-                self.log.info('Stopping service %s' % srv.name)
+                self.log.info('Stopping service %s.' % srv.name)
     
     def enableComponent(self, component):
         """Enables a component."""
