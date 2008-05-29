@@ -98,11 +98,11 @@ class IndexDefiningXpathExpression(object):
     value_path = None
     key_path = None
     
-    def __init__(self,expr):
-        if not isinstance(expr,basestring):
+    def __init__(self, expr):
+        if not isinstance(expr, basestring):
             raise TypeError("String expected")
         if self._parseXpathExpr(expr):
-            self._expr=expr
+            self._expr = expr
         else:
             raise RestrictedXpathError("Invalid xpath expression: %s" % expr)
             
@@ -116,8 +116,8 @@ class IndexDefiningXpathExpression(object):
             self.value_path = m.string[m.start() + 1 : m.end()]
         else:
             return False
-        m=re_kp.match(expr, m.end())
-        if m:
+        m = re_kp.match(expr, m.end())
+        if m and m.start() < m.end():
             # extract key path and remove leading slash:
             self.key_path = m.string[m.start() + 1 : m.end()]
         else:

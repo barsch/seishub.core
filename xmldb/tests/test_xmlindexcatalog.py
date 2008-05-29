@@ -143,14 +143,6 @@ class XmlIndexCatalogTest(SeisHubTestCase):
             self.assertEqual(first.__getattribute__(attr),
                              second.__getattribute__(attr))
     
-    def __cleanUp(self,res=None):
-        # manually remove some db entries created
-        query = index_def_tab.delete(and_(
-                                     index_def_tab.c.key_path==self._test_kp,
-                                     index_def_tab.c.value_path==self._test_vp)
-                )
-        self.db.engine.execute(query)
-    
     def testRegisterIndex(self):
         test_kp=self._test_kp
         test_vp=self._test_vp
@@ -162,20 +154,24 @@ class XmlIndexCatalogTest(SeisHubTestCase):
         str_map={'prefix':DEFAULT_PREFIX,
                  'table':INDEX_DEF_TABLE,
                  'key_path':test_kp,
-                 'value_path':test_vp}
+                 'value_path':test_vp[1:]}
         query=("SELECT key_path,value_path FROM %(prefix)s%(table)s " + \
                 "WHERE (key_path='%(key_path)s' AND value_path='%(value_path)s')") \
                 % (str_map)
                 
         res = self.db.engine.execute(query).fetchall()
         self.assertEquals(res[0][0],self._test_kp)
-        self.assertEquals(res[0][1],self._test_vp)
+        self.assertEquals('/'+res[0][1],self._test_vp)
         
         # try to add a duplicate:
         self.assertRaises(XmlIndexCatalogError,catalog.registerIndex,test_index)
         
         # clean up:
-        self.__cleanUp()
+        query = index_def_tab.delete(and_(
+                                index_def_tab.c.key_path == self._test_kp,
+                                index_def_tab.c.value_path == self._test_vp[1:])
+                                )
+        self.db.engine.execute(query)
     
     def testRemoveIndex(self):
         # first register an index to be removed:
@@ -191,8 +187,8 @@ class XmlIndexCatalogTest(SeisHubTestCase):
     
     def testGetIndex(self):
         # first register an index to grab, and retrieve it's id:
-        catalog=XmlIndexCatalog(db=self.db)
-        test_index=XmlIndex(key_path=self._test_kp,value_path=self._test_vp)
+        catalog = XmlIndexCatalog(db=self.db)
+        test_index = XmlIndex(key_path=self._test_kp,value_path=self._test_vp)
         catalog.registerIndex(test_index)
         
         #TODO: invalid index should raise exception
@@ -215,10 +211,7 @@ class XmlIndexCatalogTest(SeisHubTestCase):
         
         # register a test resource:
         test_res=XmlResource('testpackage','testtype', xml_data = RAW_XML1)
-        try:
-            dbmgr.addResource(test_res)
-        except:
-            print "Resource is already present in db."
+        dbmgr.addResource(test_res)
 
         # register a test index:
         test_index=XmlIndex(key_path = self._test_kp,
@@ -237,8 +230,8 @@ class XmlIndexCatalogTest(SeisHubTestCase):
         
         #TODO: check db entries made
                 
-        # pass invalid index args:
-        self.assertRaises(InvalidIndexError, catalog.indexResource,
+        # pass unknown index:
+        self.assertRaises(XmlIndexCatalogError, catalog.indexResource,
                           test_res._id, value_path="blub", key_path="blah")
         
         # clean up:

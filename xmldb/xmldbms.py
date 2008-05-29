@@ -90,9 +90,8 @@ class XmlDbManager(DbStorage):
     def getUriList(self,package_id = None, resourcetype_id = None):
         # XXX: to be removed
         res = self.getResourceList(package_id, resourcetype_id)
-        return ['/'+r[1]+'/'+r[2]+'/'+r[0] for r in res]
+        return ['/'+r[1]+'/'+r[2]+'/'+str(r[0]) for r in res]
 
-    
     def resourceExists(self, package_id, resourcetype_id, uid):
         # XXX: package_id and resourcetypeid senseless here?
         query = select([resource_meta_tab.c.res_id],

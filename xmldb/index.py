@@ -45,6 +45,8 @@ class IndexBase(Serializable):
             return None
         
     def setValue_path(self, value_path):
+        if value_path.startswith('/'):
+            value_path = value_path[1:]
         self._value_path = value_path
     
     value_path = property(getValue_path, setValue_path, "Value path")
@@ -73,7 +75,7 @@ class XmlIndex(IndexBase):
     implements(IXmlIndex)
           
     def __str__(self):
-        return self.value_path + '/' + self.key_path
+        return '/' + self.value_path + '/' + self.key_path
     
     # methods from IXmlIndex:
     

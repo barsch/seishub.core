@@ -5,17 +5,17 @@ from sqlalchemy import select
 from sqlalchemy.sql import and_, or_, not_
 from sqlalchemy.sql.expression import _BinaryExpression, ClauseList
 
+from seishub.db.util import DbStorage, DbEnabled
 from seishub.xmldb.interfaces import IXmlIndexCatalog, IIndexRegistry, \
                                      IResourceIndexing, IXmlIndex, \
-                                     IResourceStorage, IXPathQuery, \
-                                     IXPathExpression
-from seishub.db.util import DbStorage, DbEnabled
-from seishub.xmldb.index import XmlIndex
+                                     IResourceStorage, IXPathQuery
+from seishub.xmldb.errors import XmlIndexCatalogError, \
+                                 InvalidIndexError, QueryAliasError
 from seishub.xmldb.defaults import index_def_tab, index_tab, \
                                    query_aliases_tab, resource_meta_tab
-from seishub.xmldb.errors import InvalidUriError, XmlIndexCatalogError, \
-                                 InvalidIndexError, QueryAliasError, \
-                                 InvalidQueryError
+from seishub.xmldb.index import XmlIndex
+from seishub.xmldb.xpath import IndexDefiningXpathExpression
+
 
 class XmlIndexCatalog(DbStorage):
     implements(IIndexRegistry,
@@ -60,34 +60,50 @@ class XmlIndexCatalog(DbStorage):
         """@see: L{seishub.xmldb.xmlindexcatalog.interfaces.IIndexRegistry}"""
         if not (isinstance(key_path,basestring) and isinstance(value_path,basestring)):
             raise XmlIndexCatalogError("No key_path and value_path given.")
+        if value_path.startswith('/'):
+            value_path = value_path[1:]
         # flush index first:
         self.flushIndex(key_path = key_path, value_path = value_path)
         # then remove index definition:
         self.drop(key_path = key_path, value_path = value_path)
         return True
 
-    def getIndex(self,value_path, key_path):
+    def getIndex(self,value_path=None, key_path=None, expr=None):
         """@see: L{seishub.xmldb.xmlindexcatalog.interfaces.IIndexRegistry}"""
         if not (isinstance(key_path,basestring) and 
                 isinstance(value_path,basestring)):
-            raise XmlIndexCatalogError("No key_path and value_path given.")
+            try:
+                expr_o = IndexDefiningXpathExpression(expr)
+                value_path = expr_o.value_path
+                key_path = expr_o.key_path
+            except Exception, e:
+                raise XmlIndexCatalogError("Invalid index expression: "+\
+                                           "%s, %s, %s" %\
+                                           (value_path, key_path, expr), e )
         
         index = self.getIndexes(value_path, key_path)
         if len(index) > 1:
             raise XmlIndexCatalogError("Unexpected result set length.")
         elif len(index) == 0:
-            return None
+            raise XmlIndexCatalogError("No index found for: %s, %s" %\
+                                       (value_path, key_path))
         
         return index[0]
     
     def getIndexes(self,value_path = None, key_path = None, data_type = None):
         """@see: L{seishub.xmldb.xmlindexcatalog.interfaces.IIndexRegistry}"""
         w = ClauseList(operator = "AND")
-        if isinstance(value_path,basestring):
-            w.append(index_def_tab.c.value_path == value_path)
-        if isinstance(key_path,basestring):
+        if isinstance(value_path, basestring):
+            if value_path.startswith('/'):
+                value_path = value_path[1:]
+            like_value_path = self.to_sql_like(value_path)
+            if like_value_path == value_path:
+                w.append(index_def_tab.c.value_path == value_path)
+            else:
+                w.append(index_def_tab.c.value_path.like(like_value_path))
+        if isinstance(key_path, basestring):
             w.append(index_def_tab.c.key_path == key_path)
-        if isinstance(data_type,basestring):
+        if isinstance(data_type, basestring):
             w.append(index_def_tab.c.data_type == data_type)
         query = index_def_tab.select(w)
         
@@ -100,9 +116,9 @@ class XmlIndexCatalog(DbStorage):
         
         indexes = list()
         for res in results:
-                index=XmlIndex(key_path = res['key_path'],
-                               value_path = res['value_path'],
-                               type = res['data_type'])
+                index = XmlIndex(key_path = res['key_path'],
+                                 value_path = res['value_path'],
+                                 type = res['data_type'])
                 # inject the internal id into obj:
                 index._setId(res[0])
                 indexes.append(index)

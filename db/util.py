@@ -73,6 +73,9 @@ class DbStorage(DbEnabled):
             except IndexError:
                 return None
         return l
+    
+    def to_sql_like(self, expr):
+        return expr.replace('*', '%')
        
     def getMapping(self, table):
         raise NotImplementedError("Implemented by subclasses")
