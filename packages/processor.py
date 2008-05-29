@@ -161,15 +161,13 @@ class Processor:
     def _getResource(self):
         """Handles a GET request on a direct resource."""
         try:
-            result = self.env.catalog.getResource(self.package_id,
-                                                  self.resourcetype_id,
-                                                  self.postpath[2])
+            result = self.env.catalog.getResource(self.postpath[2]).getData()
         except Exception, e:
             self.env.log.error(e)
             raise RequestError(http.NOT_FOUND)
         try:
             # XXX: really necessary ?
-            result = result.encode("utf-8")
+            #result = result.encode("utf-8")
             return result
         except Exception, e:
             self.env.log.error(e)
