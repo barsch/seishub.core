@@ -3,7 +3,6 @@
 import os
 import string
 import urllib
-import types
 
 from twisted.web import static, http, util as webutil
 from twisted.internet import threads, defer, ssl
@@ -132,6 +131,10 @@ class AdminRequest(http.Request):
             node = node.getChild(p, self)
         if not node.isLeaf:
             self.setHeader('content-type', "text/html; charset=UTF-8")
+        # XXX: not very clean code!
+        if self.path.endswith('.ico'):
+            node.type = "image/x-icon"
+            node.encoding ="charset=UTF-8"
         node.render(self)
         self.finish()
         return

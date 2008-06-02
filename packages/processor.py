@@ -100,8 +100,9 @@ class Processor:
         resourcetypes = self.env.registry.getResourceTypes(self.package_id)
         resourcetype_ids = resourcetypes.keys()
         resourcetype_ids.sort()
-        # fetch package aliases XXX: missing
-        alias_ids = ['testalias']
+        # fetch package aliases
+        aliases = self.env.registry.aliases.get(package_id=self.package_id)
+        alias_ids = [alias.name for alias in aliases]
         alias_ids.sort()
         return self.renderResourceList(alias=alias_ids,
                                        resourcetype=resourcetype_ids)

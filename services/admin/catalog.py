@@ -4,8 +4,10 @@ from seishub.core import Component, implements
 from seishub.services.admin.interfaces import IAdminPanel
 from seishub.xmldb.defaults import DEFAULT_PREFIX, RESOURCE_TABLE, \
                                    INDEX_TABLE, INDEX_DEF_TABLE, \
-                                   QUERY_ALIASES_TABLE
-from seishub.xmldb.errors import UnknownUriError, AddResourceError
+                                   METADATA_TABLE, RESOURCE_META_TABLE
+from seishub.packages.defaults import SCHEMA_TABLE, STYLESHEET_TABLE, \
+                                      ALIAS_TABLE
+from seishub.xmldb.errors import AddResourceError
 
 
 class BasicPanel(Component):
@@ -36,7 +38,8 @@ class DatabaseQueryPanel(Component):
     implements(IAdminPanel)
     
     tables = [RESOURCE_TABLE, INDEX_TABLE, INDEX_DEF_TABLE, \
-              QUERY_ALIASES_TABLE]
+              METADATA_TABLE, RESOURCE_META_TABLE, ALIAS_TABLE, SCHEMA_TABLE, \
+              STYLESHEET_TABLE]
     
     def getPanelId(self):
         return ('catalog', 'Catalog', 'dbquery', 'Query DB')

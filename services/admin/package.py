@@ -139,30 +139,29 @@ class AliasesPanel(Component):
         }
         if request.method=='POST':
             args = request.args
-            if 'add' in args.keys() and 'xpath' in args.keys() and \
-               'alias' in args.keys():
-                data['alias'] = args['alias'][0]
-                data['xpath'] = args['xpath'][0]
-                data = self._addAlias(data)
+            package_id = args.get('package_id',[''])[0]
+            resourcetype_id = args.get('resourcetype_id',[''])[0]
+            alias = args.get('alias',[''])[0]
+            xpath = args.get('xpath',[''])[0]
+            if 'add' in args.keys() and xpath and alias:
+                data['error'] = self._addAlias(package_id, resourcetype_id, 
+                                               alias, xpath)
             elif 'delete' in args.keys() and 'alias[]' in args.keys():
-                data['alias[]'] = args['alias[]']
-                data = self._deleteAliases(data)
+                self._deleteAliases(args.get('alias[]',[])[0])
         # fetch all aliases
-        data['aliases'] = self.catalog.aliases
+        data['aliases'] = self.env.registry.aliases.get()
         return ('package_aliases.tmpl', data)
     
-    def _deleteAliases(self, data):
-        for alias in data.get('alias[]',[]):
-            del self.catalog.aliases[alias]
-        return data
+    def _deleteAliases(self, aliases=[]):
+        for alias in aliases:
+            self.env.registry.aliases.delete(alias)
     
-    def _addAlias(self, data):
+    def _addAlias(self, package_id, resourcetype_id, alias, xpath):
         try:
-            self.catalog.aliases[data['alias']]=data['xpath']
+            self.env.registry.aliases.register(package_id, 
+                                               resourcetype_id, 
+                                               alias, 
+                                               xpath)
         except Exception, e:
             self.log.error("Error generating an alias", e)
-            data['error'] = ("Error generating an alias", e)
-            return data
-        data['alias'] = ''
-        data['xpath'] = ''
-        return data
+            return ("Error generating an alias", e)
