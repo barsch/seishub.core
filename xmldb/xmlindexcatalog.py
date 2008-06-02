@@ -5,14 +5,14 @@ from sqlalchemy import select
 from sqlalchemy.sql import and_, or_, not_
 from sqlalchemy.sql.expression import _BinaryExpression, ClauseList
 
-from seishub.db.util import DbStorage, DbEnabled
+from seishub.db.util import DbStorage
 from seishub.xmldb.interfaces import IXmlIndexCatalog, IIndexRegistry, \
                                      IResourceIndexing, IXmlIndex, \
                                      IResourceStorage, IXPathQuery
 from seishub.xmldb.errors import XmlIndexCatalogError, \
-                                 InvalidIndexError, QueryAliasError
+                                 InvalidIndexError
 from seishub.xmldb.defaults import index_def_tab, index_tab, \
-                                   query_aliases_tab, resource_meta_tab
+                                   resource_meta_tab
 from seishub.xmldb.index import XmlIndex
 from seishub.xmldb.xpath import IndexDefiningXpathExpression
 
@@ -22,7 +22,6 @@ class XmlIndexCatalog(DbStorage):
                IResourceIndexing,
                IXmlIndexCatalog)
     
-    # XXX: order of tables is IMPORTANT here!
     db_tables = [index_def_tab]
     
     def __init__(self,db,resource_storage = None):
@@ -37,7 +36,7 @@ class XmlIndexCatalog(DbStorage):
         pass
     _parse_xpath_query=staticmethod(_parse_xpath_query)
     
-    # overloaded methods from DbStorage
+    # overloaded method from DbStorage
     def getMapping(self, table):
         if table == index_def_tab:
             return {'key_path':'key_path',
@@ -45,7 +44,6 @@ class XmlIndexCatalog(DbStorage):
                     'type':'data_type'}
             
     # methods from IIndexRegistry:
-
     def registerIndex(self, xml_index):
         """@see: L{seishub.xmldb.xmlindexcatalog.interfaces.IIndexRegistry}"""
         if not IXmlIndex.providedBy(xml_index):
@@ -130,9 +128,7 @@ class XmlIndexCatalog(DbStorage):
         #TODO: updateIndex implementation
         pass
     
-    
     # methods from IResourceIndexing:
-    
     def indexResource(self, id, value_path, key_path):
         """@see: L{seishub.xmldb.xmlindexcatalog.interfaces.IResourceIndexing}"""
 #        #TODO: do this not index specific but resource type specific
@@ -271,75 +267,3 @@ class XmlIndexCatalog(DbStorage):
         res = self._db.execute(q).fetchall()
         results = [result[0] for result in res]
         return results
-        
-class QueryAliases(DbEnabled):
-    """List of query aliases.
-    Query aliases are static, cacheable, stored querie expressions, used as
-    shortcut for more complex xpath expressions.
-    """
-    def __init__(self, *args, **kwargs):
-        DbEnabled.__init__(self,*args,**kwargs)
-        self.aliases = self.listAliases()
-        
-    def __getitem__(self, key):
-        return self.aliases[key]
-    
-    def __contains__(self, key):
-        return key in self.aliases
-    
-    def __setitem__(self, key, value):
-        try:
-            self.removeAlias(key)
-        except KeyError:
-            pass
-        self.addAlias(key, value)
-        
-    def __delitem__(self, key):
-        self.removeAlias(key)
-        
-    def __iter__(self):
-        return self.aliases.__iter__()
-    
-    def __str__(self):
-        return self.aliases.__str__()
-    
-    def get(self, *args, **kwargs):
-        return self.aliases.get(*args, **kwargs)
-    
-    def addAlias(self, name, expr):
-        self.aliases[name] = expr
-        ins = query_aliases_tab.insert()
-        try:
-            self._db.execute(ins, {'name':name, 'expr':expr})
-        except Exception, e:
-            raise QueryAliasError(e)
-    
-    def getAlias(self, name):
-        w = (query_aliases_tab.c.name == name)
-        query = query_aliases_tab.select(w)
-        results = self._db.execute(query)
-        try:
-            results = results.fetchall()[0]
-        except:
-            return None
-        finally:
-            results.close()
-        return str(results[1])
-    
-    def removeAlias(self, name):
-        del self.aliases[name]
-        w = (query_aliases_tab.c.name == name)
-        self._db.execute(query_aliases_tab.delete(w))
-    
-    def listAliases(self):
-        query = select([query_aliases_tab.c.name, query_aliases_tab.c.expr])
-        try:
-            res = self._db.execute(query)
-            aliases = res.fetchall()
-            #import pdb; pdb.set_trace()
-        except:
-            return dict()
-        finally:
-            res.close()
-        return dict(aliases)
-    

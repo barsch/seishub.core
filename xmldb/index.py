@@ -18,12 +18,16 @@ class IndexBase(Serializable):
         super(IndexBase, self).__init__()
         if not (value_path and key_path):
             raise XmlIndexError("No index definition given")
-        self.setValueKeyPath(value_path,key_path)
+        self.value_path = value_path
+        self.key_path = key_path
         if isinstance(type,basestring):
             self.type = type
         else:
             self.type = TEXT_INDEX
         self._values=list()
+        
+    def __str__(self):
+        return '/' + self.value_path + '/' + self.key_path
     
     # overloaded method from Serializable
     def getFields(self):
@@ -32,11 +36,6 @@ class IndexBase(Serializable):
                 'value_path':self.value_path,
                 'type':self.type
                 }
-        
-    def setValueKeyPath(self,value_path,key_path):
-        self.value_path = value_path
-        self.key_path = key_path
-        #self._xpath_expr = self._createXPath()
               
     def getValue_path(self):
         if hasattr(self,'_value_path'):

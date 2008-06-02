@@ -67,6 +67,12 @@ class IndexesPanel(Component):
             args = request.args
             if 'add' in args.keys() and 'xpath' in args.keys():
                 data['xpath'] = args['xpath'][0]
+                package_id = args.get('package',[''])[0]
+                if package_id in packages:
+                    resourcetype_id = args.get('resourcetype',[''])[0]
+                    if resourcetype_id in resourcetypes.get(package_id, []):
+                        data['package_id'] = package_id
+                        data['resourcetype_id'] = resourcetype_id
                 data = self._addIndex(data)
             elif 'delete' in args.keys() and 'index[]' in args.keys():
                 data['index[]'] = args['index[]']
@@ -100,13 +106,9 @@ class IndexesPanel(Component):
     
     def _addIndex(self, data):
         try:
-            xml_index = self.catalog.newXmlIndex(data['xpath'])
-        except Exception, e:
-            self.log.error("Error generating a xml_index", e)
-            data['error'] = ("Error generating a xml_index", e)
-            return data
-        try:
-            self.catalog.registerIndex(xml_index)
+            self.catalog.registerIndex(data['package_id'], 
+                                       data['resourcetype_id'],
+                                       data['xpath'])
         except Exception, e:
             self.log.error("Error registering xml_index", e)
             data['error'] = ("Error registering xml_index", e)

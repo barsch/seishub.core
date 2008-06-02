@@ -107,15 +107,9 @@ class ResourcesPanel(Component):
     
     def _addResource(self, data):
         try:
-            res = self.catalog.newXmlResource(data['package_id'], 
-                                              data['resourcetype_id'], 
-                                              data['file'])
-        except Exception, e:
-            self.log.error("Error creating resource", e)
-            data['error'] = ("Error creating resource", e)
-            return data
-        try:
-            self.catalog.addResource(res)
+            self.catalog.addResource(data['package_id'], 
+                                     data['resourcetype_id'], 
+                                     data['file'])
         except AddResourceError, e:
             self.log.error("Error adding resource", e)
             data['error'] = ("Error adding resource", e)

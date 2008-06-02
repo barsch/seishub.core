@@ -1,23 +1,33 @@
 # -*- coding: utf-8 -*-
-
 from zope.interface import Interface, Attribute
 
 
 class IXmlCatalog(Interface):
-    """This is the main interface to access all xmldb related classes"""
+    """This is the main interface to access the XML catalog"""
     
-    def newXmlResource(uri,xml_data):
-        """Resource factory; supposed to be used with addResource from 
-        IResourceStorage
-        @param xml_data: string containing xml data
-        @param uri: uri of the new resource
-        @return: XmlResource instance"""
+#    def newXmlResource(package_id, resourcetype_id, xml_data):
+#        """Resource factory; supposed to be used with addResource from 
+#        IResourceStorage
+#        @param xml_data: string containing xml data
+#        @param uri: uri of the new resource
+#        @return: XmlResource instance"""
         
-    def newXmlIndex(xpath_expr,type):
-        """Index factory; supposed to be used with registerIndex
-        @param xpath_expr: index defining xpath expression
-        @param type: index type (e.g. "text", "int")
-        @return: XmlIndex instance"""
+#    def newXmlIndex(package_id, resourcetype_id, xpath_expr, type="text"):
+#        """Index factory; supposed to be used with registerIndex
+#        @param package_id: package id
+#        @param resourcetype_id: resourcetype id
+#        @param xpath_expr: index defining xpath expression
+#        @param type: index type (e.g. "text", "int")
+#        @return: XmlIndex instance"""
+        
+    def registerIndex(xml_index):
+        """register a new index
+        """
+        
+    def removeIndex(self, xpath_expr):
+        """remove an index"""
+        
+    
         
     def listIndexes(res_type = None, data_type = None):
         """Return a list of registered indexes. 
@@ -130,10 +140,6 @@ class IXmlResource(Interface):
 class IIndex(Interface):
     def init(value_path=None, key_path=None, type="text"):
         pass
-    
-    def setValueKeyPath(value_path,key_path):
-        """@param value_path: new value path
-        @param key_path: new key_path"""
     
     def getKey_path():
         """@return: key path"""
