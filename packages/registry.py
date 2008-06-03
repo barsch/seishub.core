@@ -54,8 +54,7 @@ class Registry(DbStorage):
                 'uid':'uid'}
     
     def register(self, package_id, resourcetype_id, type, xml_data):
-        res = self.catalog.newXmlResource("seishub", "schema", xml_data)
-        self.catalog.addResource(res)
+        res = self.catalog.addResource("seishub", "schema", xml_data)
         o = self.cls(package_id, resourcetype_id, type, res.uid)
         self.store(o)
         return True
@@ -69,12 +68,11 @@ class Registry(DbStorage):
         objs = self.pickup(self.cls, **keys)
         if not objs:
             return list()
+        if not isinstance(objs, list):
+            objs = [objs]
         # inject catalog into objs for lazy resource retrieval
-        try:
-            for o in objs:
-                o._catalog = self.catalog
-        except:
-            objs._catalog = self.catalog
+        for o in objs:
+            o._catalog = self.catalog
         return objs
     
     def delete(self, uid):

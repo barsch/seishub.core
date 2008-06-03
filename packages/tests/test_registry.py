@@ -29,11 +29,11 @@ class PackageRegistryTest(SeisHubTestCase):
                                            TEST_SCHEMA)
         schema = self.env.registry.schemas.get(package_id = 'degenesis',
                                                resourcetype_id = 'weapon')
-        self.assertEqual(schema.package_id, 'degenesis')
-        self.assertEqual(schema.resourcetype_id, 'weapon')
-        self.assertEqual(schema.type, 'xsd')
+        self.assertEqual(schema[0].package_id, 'degenesis')
+        self.assertEqual(schema[0].resourcetype_id, 'weapon')
+        self.assertEqual(schema[0].type, 'xsd')
         # get schema resource
-        res = schema.resource
+        res = schema[0].resource
         self.assertEqual(res.data, TEST_SCHEMA)
         # add a second schema without resourcetype
         self.env.registry.schemas.register('degenesis', None, 'xsd', 
@@ -42,29 +42,29 @@ class PackageRegistryTest(SeisHubTestCase):
         schemas = self.env.registry.schemas.get(package_id = 'degenesis')
         self.assertEqual(len(schemas),2)
         # delete first added schema
-        self.env.registry.schemas.delete(schema.uid)
+        self.env.registry.schemas.delete(schema[0].uid)
         schema = self.env.registry.schemas.get(package_id = 'degenesis')
-        self.assertEqual(schema.package_id, 'degenesis')
-        self.assertEqual(schema.type, 'xsd')
-        self.env.registry.schemas.delete(schema.uid)
+        self.assertEqual(schema[0].package_id, 'degenesis')
+        self.assertEqual(schema[0].type, 'xsd')
+        self.env.registry.schemas.delete(schema[0].uid)
 
     def test_StylesheetRegistry(self):
         self.env.registry.stylesheets.register('degenesis', 'weapon', 'xhtml', 
                                                TEST_SCHEMA)
         stylesheet = self.env.registry.stylesheets.get(package_id='degenesis')
-        self.assertEqual(stylesheet.package_id, 'degenesis')
-        self.assertEqual(stylesheet.resourcetype_id, 'weapon')
-        self.assertEqual(stylesheet.type, 'xhtml')
-        self.env.registry.stylesheets.delete(stylesheet.uid)
+        self.assertEqual(stylesheet[0].package_id, 'degenesis')
+        self.assertEqual(stylesheet[0].resourcetype_id, 'weapon')
+        self.assertEqual(stylesheet[0].type, 'xhtml')
+        self.env.registry.stylesheets.delete(stylesheet[0].uid)
         
     def test_AliasRegistry(self):
         self.env.registry.aliases.register('degenesis', 'weapon', 
                                            'arch', 
                                            '/degenesis/weapon[./name = Bogen]')
         alias = self.env.registry.aliases.get(name = 'arch')
-        self.assertEqual(alias.package_id, 'degenesis')
-        self.assertEqual(alias.resourcetype_id, 'weapon')
-        self.assertEqual(alias.expr, '/degenesis/weapon[./name = Bogen]')
+        self.assertEqual(alias[0].package_id, 'degenesis')
+        self.assertEqual(alias[0].resourcetype_id, 'weapon')
+        self.assertEqual(alias[0].expr, '/degenesis/weapon[./name = Bogen]')
         self.env.registry.aliases.delete('degenesis', 'weapon', 'arch')
 
 
