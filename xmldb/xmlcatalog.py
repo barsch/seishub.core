@@ -51,30 +51,49 @@ class XmlCatalog(object):
         return self.xmldb.getUriList(package_id, resourcetype_id)
     
     # xmlindexcatalog methods
-    def registerIndex(self, package_id, resourcetype_id, 
-                      xpath, type="text"):
+    def registerIndex(self, package_id = None, resourcetype_id = None, 
+                      xpath = None, type = "text"):
         """@see: L{seishub.xmldb.interfaces.IXmlCatalog}"""
-        expr = self._to_xpath(package_id, resourcetype_id, xpath)
+        if package_id and resourcetype_id:
+            expr = self._to_xpath(package_id, resourcetype_id, xpath)
+        else:
+            # assume that xpath starts with '/package_id/resourcetype_id'
+            expr = xpath
         exp_obj = IndexDefiningXpathExpression(expr)
         index = XmlIndex(value_path = exp_obj.value_path, 
                          key_path = exp_obj.key_path)
         return self.index_catalog.registerIndex(index)
     
-    def removeIndex(self,package_id, resourcetype_id, xpath):
+    def removeIndex(self,package_id = None, resourcetype_id = None, 
+                    xpath = None):
         """@see: L{seishub.xmldb.interfaces.IXmlCatalog}"""
-        expr = self._to_xpath(package_id, resourcetype_id, xpath)
+        if package_id and resourcetype_id:
+            expr = self._to_xpath(package_id, resourcetype_id, xpath)
+        else:
+            # assume that xpath starts with '/package_id/resourcetype_id'
+            expr = xpath
         exp_obj = IndexDefiningXpathExpression(expr)
         return self.index_catalog.removeIndex(value_path = exp_obj.value_path,
                                               key_path = exp_obj.key_path)
         
-    def getIndex(self, package_id, resourcetype_id, xpath):
+    def getIndex(self, package_id = None, resourcetype_id = None, 
+                 xpath = None):
         """@see: L{seishub.xmldb.interfaces.IXmlCatalog}"""
-        expr = self._to_xpath(package_id, resourcetype_id, xpath)
+        if package_id and resourcetype_id:
+            expr = self._to_xpath(package_id, resourcetype_id, xpath)
+        else:
+            # assume that xpath starts with '/package_id/resourcetype_id'
+            expr = xpath
         return self.index_catalog.getIndex(expr = expr)
         
-    def flushIndex(self, package_id, resourcetype_id, xpath):
+    def flushIndex(self, package_id = None, resourcetype_id = None, 
+                   xpath = None):
         """@see: L{seishub.xmldb.interfaces.IXmlCatalog}"""
-        expr = self._to_xpath(package_id, resourcetype_id, xpath)
+        if package_id and resourcetype_id:
+            expr = self._to_xpath(package_id, resourcetype_id, xpath)
+        else:
+            # assume that xpath starts with '/package_id/resourcetype_id'
+            expr = xpath
         exp_obj = IndexDefiningXpathExpression(expr)
         return self.index_catalog.flushIndex(value_path = exp_obj.value_path,
                                              key_path = exp_obj.key_path)
@@ -100,14 +119,19 @@ class XmlCatalog(object):
         return self.index_catalog.getIndexes(value_path,
                                              data_type = data_type)
         
-    def reindex(self, package_id, resourcetype_id, xpath):
+    def reindex(self, package_id = None, resourcetype_id = None, xpath = None):
         """@see: L{seishub.xmldb.interfaces.IXmlCatalog}"""
-        expr = self._to_xpath(package_id, resourcetype_id, xpath)
+        if package_id and resourcetype_id:
+            expr = self._to_xpath(package_id, resourcetype_id, xpath)
+        else:
+            # assume that xpath starts with '/package_id/resourcetype_id'
+            expr = xpath
+            
         # get index
         index = self.index_catalog.getIndex(expr = expr)
         
         # flush index
-        self.flushIndex(package_id, resourcetype_id, xpath)
+        self.flushIndex(xpath = expr)
         
         # find all resources the index applies to by resource type
         value_path = index.value_path

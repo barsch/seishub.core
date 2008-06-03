@@ -68,7 +68,7 @@ class Registry(DbStorage):
                 'uid':uid}
         objs = self.pickup(self.cls, **keys)
         if not objs:
-            return None
+            return list()
         # inject catalog into objs for lazy resource retrieval
         try:
             for o in objs:
@@ -116,6 +116,10 @@ class AliasRegistry(DbStorage):
                 'name':name,
                 'expr':expr}
         objs = self.pickup(self.cls, **keys)
+        if not objs:
+            return list()
+        if not isinstance(objs, list):
+            objs = [objs]
         return objs
     
     def delete(self, package_id, resourcetype_id, name):

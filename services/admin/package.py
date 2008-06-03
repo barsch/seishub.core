@@ -87,7 +87,7 @@ class IndexesPanel(Component):
     def _reindex(self, data):
         for xpath in data.get('index[]',[]):
             try:
-                self.env.catalog.reindex(xpath)
+                self.env.catalog.reindex(xpath = xpath)
             except Exception, e:
                 self.log.error("Error reindexing xml_index %s" % xpath, e)
                 data['error'] = ("Error reindexing xml_index %s" % xpath, e)
@@ -97,7 +97,7 @@ class IndexesPanel(Component):
     def _deleteIndexes(self, data):
         for xpath in data.get('index[]',[]):
             try:
-                self.catalog.removeIndex(xpath)
+                self.catalog.removeIndex(xpath = xpath)
             except Exception, e:
                 self.log.error("Error removing xml_index %s" % xpath, e)
                 data['error'] = ("Error removing xml_index %s" % xpath, e)
