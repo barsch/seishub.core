@@ -1,3 +1,5 @@
+from seishub.util.text import encode_name
+
 class PackageSpecific(object):
     """Mixin providing package specific information to the class"""
     def __init__(self, *args, **kwargs):
@@ -18,7 +20,7 @@ class PackageSpecific(object):
         return self._package_id
     
     def setPackage_id(self, data):
-        self._package_id = data
+        self._package_id = encode_name(data)
         
     package_id = property(getPackage_id, setPackage_id, "package id")
     
@@ -26,7 +28,7 @@ class PackageSpecific(object):
         return self._resourcetype_id
     
     def setResourcetype_id(self, data):
-        self._resourcetype_id = data
+        self._resourcetype_id = encode_name(data)
         
     resourcetype_id = property(getResourcetype_id, setResourcetype_id, 
                                "resourcetype id")

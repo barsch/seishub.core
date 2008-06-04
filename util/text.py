@@ -141,3 +141,10 @@ def detectXMLEncoding(filename):
         return match.group("encstr")
     else :
         return None
+    
+def encode_name(str):
+    """Encode plain names (such as ids) to python bytestrings"""
+    try:
+        return str.encode("utf-8")
+    except AttributeError:
+        return str

@@ -7,9 +7,8 @@ import inspect
 from sqlalchemy.sql import and_
 
 from seishub.test import SeisHubTestCase
-from seishub.xmldb.xmlindexcatalog import XmlIndexCatalog, QueryAliases
-from seishub.xmldb.xmlindexcatalog import XmlIndexCatalogError, \
-                                          InvalidIndexError
+from seishub.xmldb.xmlindexcatalog import XmlIndexCatalog
+from seishub.xmldb.xmlindexcatalog import XmlIndexCatalogError
 from seishub.xmldb.xmldbms import XmlDbManager
 from seishub.xmldb.index import XmlIndex
 from seishub.xmldb.xmlresource import XmlResource
@@ -76,24 +75,17 @@ class XmlIndexCatalogTest(SeisHubTestCase):
     
     def _setup_testdata(self):
         # create us a small test catalog
-        self.res1=self.env.catalog.newXmlResource('testpackage','station',RAW_XML1)
-        self.res2=self.env.catalog.newXmlResource('testpackage','station',RAW_XML2)
-        self.res3=self.env.catalog.newXmlResource('testpackage','testml',RAW_XML3)
-        idx1=self.env.catalog.newXmlIndex(IDX1)
-        idx2=self.env.catalog.newXmlIndex(IDX2)
-        idx3=self.env.catalog.newXmlIndex(IDX3)
-        idx4=self.env.catalog.newXmlIndex(IDX4)
-        self.env.catalog.addResource(self.res1)
-        self.env.catalog.addResource(self.res2)
-        self.env.catalog.addResource(self.res3)
-        self.env.catalog.registerIndex(idx1)
-        self.env.catalog.registerIndex(idx2)
-        self.env.catalog.registerIndex(idx3)
-        self.env.catalog.registerIndex(idx4)
-        self.env.catalog.reindex(IDX1)
-        self.env.catalog.reindex(IDX2)
-        self.env.catalog.reindex(IDX3)
-        self.env.catalog.reindex(IDX4)
+        self.res1 = self.env.catalog.addResource('testpackage', 'station', RAW_XML1)
+        self.res2 = self.env.catalog.addResource('testpackage', 'station', RAW_XML2)
+        self.res3 = self.env.catalog.addResource('testpackage', 'testml', RAW_XML3)
+        self.env.catalog.registerIndex(xpath = IDX1)
+        self.env.catalog.registerIndex(xpath = IDX2)
+        self.env.catalog.registerIndex(xpath = IDX3)
+        self.env.catalog.registerIndex(xpath = IDX4)
+        self.env.catalog.reindex(xpath = IDX1)
+        self.env.catalog.reindex(xpath = IDX2)
+        self.env.catalog.reindex(xpath = IDX3)
+        self.env.catalog.reindex(xpath = IDX4)
         # add sort order test resources
         path = os.path.dirname(inspect.getsourcefile(self.__class__))
         test_path = os.path.join(path,'data')
@@ -101,25 +93,23 @@ class XmlIndexCatalogTest(SeisHubTestCase):
             fh = open(test_path+os.sep+f, 'r')
             data = fh.read()
             fh.close()
-            res = self.env.catalog.newXmlResource('sortordertests','sotest',
-                                                  data)
-            self.env.catalog.addResource(res)
+            res = self.env.catalog.addResource('sortordertests', 'sotest', 
+                                               data)
             self.so_ids.append(res.uid)
         for i in so_indexes:
-            idx = self.env.catalog.newXmlIndex(i)
-            self.env.catalog.registerIndex(idx)
-            self.env.catalog.reindex(i)
+            self.env.catalog.registerIndex(xpath = i)
+            self.env.catalog.reindex(xpath = i)
         
     def _cleanup_testdata(self):
-        self.env.catalog.removeIndex(IDX1)
-        self.env.catalog.removeIndex(IDX2)
-        self.env.catalog.removeIndex(IDX3)
-        self.env.catalog.removeIndex(IDX4)
+        self.env.catalog.removeIndex(xpath = IDX1)
+        self.env.catalog.removeIndex(xpath = IDX2)
+        self.env.catalog.removeIndex(xpath = IDX3)
+        self.env.catalog.removeIndex(xpath = IDX4)
         self.env.catalog.deleteResource(self.res1._id)
         self.env.catalog.deleteResource(self.res2._id)
         self.env.catalog.deleteResource(self.res3._id)
         for i in so_indexes:
-            self.env.catalog.removeIndex(i)
+            self.env.catalog.removeIndex(xpath = i)
         for id in self.so_ids:
             self.env.catalog.deleteResource(id)    
     
@@ -313,28 +303,10 @@ class XmlIndexCatalogTest(SeisHubTestCase):
         # remove test catalog
         self._cleanup_testdata()
 
-        
-class QueryAliasesTest(SeisHubTestCase):
-    def testQueryAliases(self):
-        aliases = QueryAliases(self.env.db)
-        aliases["blah"] = "/blah[/blah/blah]"
-        aliases["blah2"] = "/blah[popoppoo]"
-        aliases["blah3"] = "/blah[dududuuu]"
-        self.assertEquals(aliases["blah"],"/blah[/blah/blah]")
-        aliases["blah"] = "/andererpfad"
-        self.assertEquals(aliases.get("blah"),"/andererpfad")   
-        self.assertEquals(aliases["blah"],"/andererpfad")
-        self.assertEquals("blah" in aliases, True)
-        del aliases["blah"]
-        self.assertEquals("blah" in aliases, False)
-        del aliases["blah2"]
-        del aliases["blah3"]
-
 
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(XmlIndexCatalogTest, 'test'))
-    suite.addTest(unittest.makeSuite(QueryAliasesTest, 'test'))
     return suite
 
 if __name__ == '__main__':

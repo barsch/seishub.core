@@ -100,7 +100,7 @@ class IndexDefiningXpathExpression(object):
     
     def __init__(self, expr):
         if not isinstance(expr, basestring):
-            raise TypeError("String expected")
+            raise TypeError("Invalid expression; string expected: %s" % expr)
         if self._parseXpathExpr(expr):
             self._expr = expr
         else:

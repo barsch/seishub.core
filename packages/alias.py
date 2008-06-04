@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from seishub.util.text import encode_name
 from seishub.db.util import Serializable
 
 class Alias(Serializable):
@@ -21,7 +22,7 @@ class Alias(Serializable):
         return self._resourcetype_id
      
     def setResourceTypeId(self, data):
-        self._resourcetype_id = data
+        self._resourcetype_id = encode_name(data)
         
     resourcetype_id = property(getResourceTypeId, setResourceTypeId, 
                                "Resource type id")
@@ -30,7 +31,7 @@ class Alias(Serializable):
         return self._package_id
     
     def setPackageId(self, data):
-        self._package_id = data
+        self._package_id = encode_name(data)
         
     package_id = property(getPackageId, setPackageId, "Package id")
     
@@ -40,7 +41,7 @@ class Alias(Serializable):
     def setName(self, data):
         if data is not None and not isinstance(data, basestring):
             raise TypeError("Invalid alias name, String expected: %s" % data)
-        self._name = data
+        self._name = encode_name(data)
         
     name = property(getName, setName, "Name of the alias")
     
