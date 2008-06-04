@@ -55,8 +55,8 @@ class Processor:
                 return self._processPackage()
             raise RequestError(http.NOT_ALLOWED)
         
-        # fetch package aliases XXX: missing
-        alias_ids = []
+        # fetch package aliases
+        alias_ids = self.env.registry.aliases.get(self.package_id)
         # its may be an package alias
         if len(self.postpath)==2 and self.postpath[1] in alias_ids:
             return self._processAlias()
@@ -100,6 +100,7 @@ class Processor:
         resourcetype_ids = resourcetypes.keys()
         resourcetype_ids.sort()
         # fetch package aliases
+        # XXX: this shouldn't fetch aliases with resourcetype_ids !!!
         aliases = self.env.registry.aliases.get(self.package_id)
         alias_ids = [alias.name for alias in aliases]
         alias_ids.sort()
@@ -138,7 +139,7 @@ class Processor:
                                                        self.resourcetype_id)
                 # XXX: r[0] not clean r.id would be better
                 resource_ids = [r[0] for r in res]
-                # generate corrent base path
+                # generate current base path
                 base = '/'+'/'.join(self.postpath[:-1])
                 return self.renderResourceList(base=base, 
                                                resource=resource_ids)
@@ -171,7 +172,7 @@ class Processor:
         except Exception, e:
             self.env.log.error(e)
             return
-        # generate corrent base path
+        # generate current base path
         base = '/'+'/'.join(self.postpath[:-1])
         return self.renderResourceList(base=base, resource=uris)
     

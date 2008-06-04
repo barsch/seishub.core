@@ -36,6 +36,9 @@ class SFTPServiceProtocol:
     
     def openFile(self, filename, flags, attrs):
         print "openFile"
+        print filename
+        print flags
+        print attrs
         raise filetransfer.SFTPError(filetransfer.FX_OP_UNSUPPORTED, '')
 
     def removeFile(self, filename):
@@ -120,8 +123,8 @@ class SFTPServiceProtocol:
     
     def _attrify(self, path, file=False):
         if file:
-            attr = {'permissions': 33188, 'size': 0, 'uid': 0, 'gid': 0,
-                    'atime': time.time(), 'mtime': time.time(), 'nlink': 1}
+            attr = {'permissions': 33188, 'size': 10000, 'uid': 0, 'gid': 0,
+                    'atime': time.time(), 'mtime': time.time(), 'nlink': 0}
         else:
             attr = {'permissions': 16877, 'size': 0, 'uid': 0, 'gid': 0,
                     'atime': time.time(), 'mtime': time.time(), 'nlink': 1}
