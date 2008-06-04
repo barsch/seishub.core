@@ -15,9 +15,9 @@ resource type. The result of an alias is a list of unique resources. </i></p>
     <select name="resourcetype_id" id="resourcetype_id">
         <option value="">-</option>
     </select><br />
-    <label>Alias expression</label><br />
+    <label>Alias</label><br />
     <input type="text" size="80" name="alias" value="$alias" /><br />
-    <label>Xpath expression</label><br />
+    <label>XPath query</label><br />
     <input type="text" size="80" name="xpath" value="$xpath" /><br />
     <br />
     <input type="submit" name="add" value="Add" />
@@ -28,28 +28,17 @@ resource type. The result of an alias is a list of unique resources. </i></p>
 
 <h2>List of all aliases</h2>
 <form method="post" name="list">
-<table>
-    <tr>
-      <th> </th>
-      <th>Name</th>
-      <th>Package</th>
-      <th>Resource Type</th>
-      <th>Expr</th>
-      <th> </th>
-    </tr>
-    #for $alias in $aliases
-    <tr>
-        <td><input type="checkbox" name="alias[]" value="$alias" />
-        </td>
-        <td>$alias.name</td>
-        <td>$alias.package_id</td>
-        <td>$alias.resourcetype_id</td>
-        <td>$alias.expr</td>
-        <td>[<a href="$resturl$alias.package_id">XML</a>] [<a
-            href="$resturl$alias?output=xhtml">XHTML</a>]</td>
-    </tr>
-    #end for
-</table>
+  #for $alias in $aliases
+    <input type="checkbox" 
+           value="$alias.package_id/$alias.resourcetype_id/$alias.name"
+           name="alias[]"/>
+    #if $alias.resourcetype_id
+      <a href="$resturl/$alias.package_id/$alias.resourcetype_id/$alias.name">/$alias.package_id/$alias.resourcetype_id/$alias.name</a>
+    #else
+      <a href="$resturl/$alias.package_id/$alias.name">/$alias.package_id/$alias.name</a>
+    #end if
+    ($alias.expr)<br />
+  #end for
 <br />
 <input type="submit" name="delete" value="Delete" /></form>
 

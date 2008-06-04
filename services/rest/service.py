@@ -86,7 +86,8 @@ class RESTRequest(Processor, http.Request):
             for uri in kwargs.get(item,[]):
                 doc += tmpl % (item, uri, uri, item)
         # XXX: xml:base doesn't work!!!!
-        result = str(root % (self.env.getRestUrl(), self.path, doc))
+        result = str(root % (self.env.getRestUrl(), 
+                             kwargs.get('base',self.path), doc))
         # set header
         self._setHeaders(result)
         self.setHeader('content-type', 'application/xml; charset=UTF-8')

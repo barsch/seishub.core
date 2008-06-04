@@ -15,6 +15,7 @@ from twisted.conch.ls import lsLine
 from seishub.defaults import SFTP_PORT, SFTP_PRIVATE_KEY, SFTP_PUBLIC_KEY
 from seishub.config import IntOption, Option
 from seishub.packages.processor import Processor, RequestError
+from seishub.util.path import absPath
 
 
 class SFTPServiceProtocol:
@@ -25,15 +26,20 @@ class SFTPServiceProtocol:
         self.env = avatar.env
     
     def gotVersion(self, otherVersion, extData):
+        print "gotVersion"
+        print otherVersion
+        print extData
         return {}
     
     def realPath(self, path):
-        return '/'
+        return absPath(path)
     
     def openFile(self, filename, flags, attrs):
+        print "openFile"
         raise filetransfer.SFTPError(filetransfer.FX_OP_UNSUPPORTED, '')
 
     def removeFile(self, filename):
+        print "removeFile"
         raise filetransfer.SFTPError(filetransfer.FX_OP_UNSUPPORTED, '')
     
     def openDirectory(self, path):
@@ -54,14 +60,10 @@ class SFTPServiceProtocol:
         # packages, resource types, aliases and mappings are directories
         for r in ['package','resourcetype','alias','mapping']:
             for d in data.get(r,[]):
-                attr = {'permissions': 16877, 'size': 0, 'uid': 0, 'gid': 0,
-                        'atime': time.time(), 'mtime': time.time(), 'nlink': 1}
-                filelist.append((d, attr))
+                filelist.append((d, self._attrify(d, False)))
         # direct resources will be documents
         for d in data.get('resource',[]):
-            attr = {'permissions': 33188, 'size': 0, 'uid': 0, 'gid': 0,
-                    'atime': time.time(), 'mtime': time.time(), 'nlink': 1}
-            filelist.append((d, attr))
+            filelist.append((str(d), self._attrify(d, True)))
         
         class DirList:
             def __init__(self, iter):
@@ -90,25 +92,40 @@ class SFTPServiceProtocol:
         return DirList(iter(filelist))
     
     def getAttrs(self, path, followLinks):
-        raise filetransfer.SFTPError(filetransfer.FX_OP_UNSUPPORTED, '')
+        return self._attrify(path)
     
     def setAttrs(self, path, attrs):
+        print "setAttrs"
         raise filetransfer.SFTPError(filetransfer.FX_OP_UNSUPPORTED, '')
     
     def makeDirectory(self, path, attrs):
+        print "makeDirectory"
         raise filetransfer.SFTPError(filetransfer.FX_OP_UNSUPPORTED, '')
     
     def removeDirectory(self, path):
+        print "removeDirectory"
         raise filetransfer.SFTPError(filetransfer.FX_OP_UNSUPPORTED, '')
     
     def readLink(self, path):
+        print "readLink"
         raise filetransfer.SFTPError(filetransfer.FX_OP_UNSUPPORTED, '')
     
     def makeLink(self, linkPath, targetPath):
+        print "makeLink"
         raise filetransfer.SFTPError(filetransfer.FX_OP_UNSUPPORTED, '')
     
     def renameFile(self, oldpath, newpath):
+        print "renameFile"
         raise filetransfer.SFTPError(filetransfer.FX_OP_UNSUPPORTED, '')
+    
+    def _attrify(self, path, file=False):
+        if file:
+            attr = {'permissions': 33188, 'size': 0, 'uid': 0, 'gid': 0,
+                    'atime': time.time(), 'mtime': time.time(), 'nlink': 1}
+        else:
+            attr = {'permissions': 16877, 'size': 0, 'uid': 0, 'gid': 0,
+                    'atime': time.time(), 'mtime': time.time(), 'nlink': 1}
+        return attr
 
 
 class SFTPServiceAvatar(avatar.ConchUser):

@@ -43,7 +43,7 @@ class Processor:
             raise RequestError(http.NOT_ALLOWED)
         
         # XXX: test if a property request
-            
+        
         # test if valid package_id
         if self.postpath[0] not in self.package_ids:
             raise RequestError(http.NOT_FOUND)
@@ -59,7 +59,7 @@ class Processor:
         alias_ids = []
         # its may be an package alias
         if len(self.postpath)==2 and self.postpath[1] in alias_ids:
-            return self.processAlias()
+            return self._processAlias()
         
         # fetch resource types
         resourcetypes = self.env.registry.getResourceTypes(self.package_id)
@@ -70,7 +70,6 @@ class Processor:
             raise RequestError(http.NOT_FOUND)
         else:
             self.resourcetype_id = self.postpath[1]
-        
         # check if a PUT request were called in a resourcetype directory 
         if len(self.postpath)==2 and self.method=='PUT':
             return self._addResource()
@@ -81,7 +80,7 @@ class Processor:
         if len(self.postpath)==2 and self.method!='GET':
             raise RequestError(http.NOT_ALLOWED)
         # now only mappings and aliases are left ...
-        return self._processResourcetype()
+        return self._processResourceType()
     
     def _processRoot(self):
         """
@@ -101,20 +100,22 @@ class Processor:
         resourcetype_ids = resourcetypes.keys()
         resourcetype_ids.sort()
         # fetch package aliases
-        aliases = self.env.registry.aliases.get(package_id=self.package_id)
+        aliases = self.env.registry.aliases.get(self.package_id)
         alias_ids = [alias.name for alias in aliases]
         alias_ids.sort()
         return self.renderResourceList(alias=alias_ids,
                                        resourcetype=resourcetype_ids)
     
-    def _processResourceTypes(self):
+    def _processResourceType(self):
         """
         Request on a certain resource type of a package. Now we try to solve 
         for resource type aliases or package mappings defined by the user. Also
         we add a few special hardcoded aliases.
         """
-        # fetch resourcetype aliases XXX: missing
-        alias_ids = []
+        # fetch resourcetype aliases
+        aliases = self.env.registry.aliases.get(self.package_id,
+                                                self.resourcetype_id)
+        alias_ids = [alias.name for alias in aliases]
         alias_ids.sort()
         # fetch resourcetype mappings XXX: missing
         mapping_ids = []
@@ -127,10 +128,20 @@ class Processor:
         if len(self.postpath)==3:
             # test if mapping
             if self.postpath[2] in mapping_ids:
-                return self.processMapping()
+                return self._processMapping()
             # test if alias
             if self.postpath[2] in alias_ids:
-                return self.processAlias()
+                return self._processAlias()
+            # test if special function
+            if self.postpath[2]=='.all':
+                res = self.env.catalog.getResourceList(self.package_id,
+                                                       self.resourcetype_id)
+                # XXX: r[0] not clean r.id would be better
+                resource_ids = [r[0] for r in res]
+                # generate corrent base path
+                base = '/'+'/'.join(self.postpath[:-1])
+                return self.renderResourceList(base=base, 
+                                               resource=resource_ids)
         raise RequestError(http.NOT_FOUND)
     
     def _processResource(self):
@@ -152,12 +163,17 @@ class Processor:
     def _processAlias(self):
         """Generates a list of resources from an alias query."""
         # fetch list of uris via catalog
+        aliases = self.env.registry.aliases.get(self.package_id, 
+                                                self.resourcetype_id,
+                                                self.postpath[-1:][0])
         try:
-            uris = self.env.catalog.query(self.env.catalog.aliases[self.path])
+            uris = self.env.catalog.query(aliases[0].expr)
         except Exception, e:
             self.env.log.error(e)
             return
-        return self.renderResourceList(resource=uris)
+        # generate corrent base path
+        base = '/'+'/'.join(self.postpath[:-1])
+        return self.renderResourceList(base=base, resource=uris)
     
     def _getResource(self):
         """Handles a GET request on a direct resource."""
@@ -166,13 +182,7 @@ class Processor:
         except Exception, e:
             self.env.log.error(e)
             raise RequestError(http.NOT_FOUND)
-        try:
-            # XXX: really necessary ?
-            #result = result.encode("utf-8")
-            return result
-        except Exception, e:
-            self.env.log.error(e)
-            raise RequestError(http.INTERNAL_SERVER_ERROR)
+        return result
     
     def _modifyResource(self):
         """Handles a POST request on a direct resource."""

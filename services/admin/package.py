@@ -147,14 +147,17 @@ class AliasesPanel(Component):
                 data['error'] = self._addAlias(package_id, resourcetype_id, 
                                                alias, xpath)
             elif 'delete' in args.keys() and 'alias[]' in args.keys():
-                self._deleteAliases(args.get('alias[]',[])[0])
+                self._deleteAliases(args.get('alias[]',[]))
         # fetch all aliases
         data['aliases'] = self.env.registry.aliases.get()
         return ('package_aliases.tmpl', data)
     
     def _deleteAliases(self, aliases=[]):
         for alias in aliases:
-            self.env.registry.aliases.delete(alias)
+            items = alias.split('/')
+            if len(items)!=3:
+                continue
+            self.env.registry.aliases.delete(items[0],items[1],items[2])
     
     def _addAlias(self, package_id, resourcetype_id, alias, xpath):
         try:

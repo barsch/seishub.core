@@ -18,4 +18,41 @@ def rglob(base_path=sys.path[0],search_path=sys.path[0],ext=""):
     
     os.path.walk(search_path,ls,"")
     return ext_files
+
+def getAbsoluteSegments(path, cwd='/'):
+    """
+    @param path: either a string or a list of string segments
+    which specifys the desired path.  may be relative to the cwd
     
+    @param cwd: optional string specifying the current working directory
+    
+    returns a list of string segments which most succinctly
+    describe how to get to path from root
+    """
+    if not isinstance(path, list): paths = path.split("/")
+    else: paths = path
+    
+    if len(paths) and paths[0] == "":
+        paths = paths[1:]
+    else:
+        paths = cwd.split("/") + paths
+    
+    result = []
+    
+    for path in paths:
+        if path == "..":
+            if len(result) > 1:
+                result = result[:-1]
+            else:
+                result = []
+        
+        elif path not in ("", "."):
+            result.append(path)
+    
+    return result
+
+def absPath(path):
+    return "/" + "/".join(splitPath(path))
+
+def splitPath(path):
+    return getAbsoluteSegments(path)
