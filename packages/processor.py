@@ -100,7 +100,6 @@ class Processor:
         resourcetype_ids = resourcetypes.keys()
         resourcetype_ids.sort()
         # fetch package aliases
-        # XXX: this shouldn't fetch aliases with resourcetype_ids !!!
         aliases = self.env.registry.aliases.get(self.package_id)
         alias_ids = [alias.name for alias in aliases]
         alias_ids.sort()
@@ -121,10 +120,16 @@ class Processor:
         # fetch resourcetype mappings XXX: missing
         mapping_ids = []
         mapping_ids.sort()
+        # fetch indexes
+        indexes = self.env.catalog.listIndexes(self.package_id,
+                                               self.resourcetype_id)
+        index_ids = [str(i) for i in indexes]
+        index_ids.sort()
         # test if only package_id and resourcetype_id is given
         if len(self.postpath)==2:
             return self.renderResourceList(alias=alias_ids, 
-                                           mapping=mapping_ids)
+                                           mapping=mapping_ids,
+                                           index=index_ids)
         # now only aliases and mappings are left
         if len(self.postpath)==3:
             # test if mapping
@@ -171,9 +176,8 @@ class Processor:
         except Exception, e:
             self.env.log.error(e)
             return
-        # generate current base path
-        base = '/'+'/'.join(self.postpath[:-1])
-        return self.renderResourceList(base=base, resource=uris)
+        uris = ['/'+self.package_id+'/'+self.resourcetype_id+'/'+str(u) for u in uris]
+        return self.renderResourceList(base='/', resource=uris)
     
     def _getResource(self):
         """Handles a GET request on a direct resource."""

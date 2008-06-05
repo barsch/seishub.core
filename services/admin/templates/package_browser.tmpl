@@ -18,7 +18,7 @@
     function loadNodeData(node, fnLoadComplete) {
       var nodeTitle = encodeURI(node.title);
       var sUrl = "/rest/" + nodeTitle;
-      var elements = ['resourcetype','alias','mapper','resource'];
+      var elements = ['resourcetype','alias','mapper','resource','index'];
       
       //prepare our callback object
       var callback = {
@@ -31,8 +31,19 @@
               for each (var item in items) {
                 var tmp = new YAHOO.widget.TextNode(item, node, false);
                 tmp.labelStyle = "icon-"+element;
-                tmp.href = "$resturl/" + nodeTitle + "/" + item;
-                tmp.title = nodeTitle + "/" + item;
+                if (element=='resource') {
+                  tmp.href = "$resturl" + item;
+                  tmp.title = item;
+                  tmp.isLeaf = 1;
+                } else if (element=='index') {
+                  tmp.href= "";
+                  tmp.isLeaf = 1;
+                  tmp.title = item;
+                } else {
+                  tmp.href = "$resturl/" + nodeTitle + "/" + item;
+                  tmp.title = nodeTitle + "/" + item;
+                }
+                
               }
             }
           }
@@ -60,7 +71,7 @@
       var tmp = new YAHOO.widget.TextNode("$p", root, false);
       tmp.labelStyle = "icon-package";
       tmp.href = "$resturl/$p";
-      tmp.title = "$p";
+      tmp.title = "/$p";
       #end for
       tree.draw();
     }
