@@ -74,7 +74,11 @@ class XmlIndex(IndexBase):
     implements(IXmlIndex)
           
     def __str__(self):
-        return '/' + self.value_path + '/' + self.key_path
+        return '/' + self._getRootElementName() + '/' + self.key_path
+    
+    def _getRootElementName(self):
+        root = self.value_path.split('/')[0]
+        return root
     
     # methods from IXmlIndex:
     
@@ -87,7 +91,7 @@ class XmlIndex(IndexBase):
             raise SeisHubError('Invalid XML document')
         
         # build xpath expression to evaluate on xml document
-        xpr = '/' + xml_doc.getRootElementName() + '/' + self.getKey_path()
+        xpr = '/' + self._getRootElementName() + '/' + self.getKey_path()
         nodes = xml_doc.evalXPath(xpr)
         
         node_size = len(nodes)

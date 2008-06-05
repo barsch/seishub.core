@@ -154,10 +154,7 @@ class AliasesPanel(Component):
     
     def _deleteAliases(self, aliases=[]):
         for alias in aliases:
-            items = alias.split('/')
-            if len(items)!=3:
-                continue
-            self.env.registry.aliases.delete(items[0],items[1],items[2])
+            self.env.registry.aliases.delete(uri = alias)
     
     def _addAlias(self, package_id, resourcetype_id, alias, xpath):
         try:

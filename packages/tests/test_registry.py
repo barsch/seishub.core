@@ -77,6 +77,11 @@ class PackageRegistryTest(SeisHubTestCase):
         self.assertEqual(alias[0].resourcetype_id, None)
         self.assertEqual(alias[0].expr, '/degenesis/*/*[./name = Bogen]')
         
+        # get all
+        all = self.env.registry.aliases.get()
+        self.assertEqual(len(all),2)
+        
+        # delete
         self.env.registry.aliases.delete('degenesis', 'weapon', 'arch1')
         alias = self.env.registry.aliases.get(package_id = 'degenesis',
                                               resourcetype_id = 'weapon',

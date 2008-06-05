@@ -158,3 +158,20 @@ def validate_id(str):
     if not m:
         raise ValueError('Invalid id: %s' % str)
     return str
+
+def to_uri(package_id, resourcetype_id):
+    uri = '/' + package_id
+    if resourcetype_id:
+        uri += '/' + resourcetype_id
+    return uri
+            
+def from_uri(uri):
+    elements = uri.split('/')
+    pid = elements[1]
+    if len(elements) == 3: #no resourcetype
+        rid = None
+        args = elements[2]
+    else:
+        rid = elements[2]
+        args = elements[3]
+    return pid, rid, args

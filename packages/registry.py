@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from seishub.core import PackageManager
+from seishub.util.text import from_uri
 from seishub.db.util import DbStorage
 from seishub.packages.interfaces import IPackage, IResourceType
 from seishub.packages.defaults import schema_tab, stylesheet_tab, alias_tab
@@ -121,14 +122,21 @@ class AliasRegistry(DbStorage):
                 'resourcetype_id':resourcetype_id,
                 'name':name,
                 'expr':expr}
-        objs = self.pickup(self.cls, null = ['resourcetype_id'], **keys)
+        if package_id:
+            null = ['resourcetype_id']
+        else:
+            null = list()
+        objs = self.pickup(self.cls, null = null, **keys)
         if not objs:
             return list()
         if not isinstance(objs, list):
             objs = [objs]
         return objs
     
-    def delete(self, package_id, resourcetype_id, name):
+    def delete(self, package_id = None, resourcetype_id = None, name = None, 
+               uri = None):
+        if uri:
+            package_id, resourcetype_id, name = from_uri(uri)
         if package_id == '':
             package_id = None
         if resourcetype_id == '':

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from seishub.util.text import validate_id
+from seishub.util.text import validate_id, to_uri
 from seishub.db.util import Serializable
 
 class Schema(Serializable):
@@ -10,6 +10,9 @@ class Schema(Serializable):
         self.resourcetype_id = resourcetype_id
         self.type = type
         self.uid = uid
+        
+    def __str__(self):
+        return to_uri(self.package_id, self.resourcetype_id) + '/' + self.uid
     
     def getFields(self):
         return {'resourcetype_id':self.resourcetype_id,

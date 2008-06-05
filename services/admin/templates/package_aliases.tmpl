@@ -30,13 +30,9 @@ resource type. The result of an alias is a list of unique resources. </i></p>
 <form method="post" name="list">
   #for $alias in $aliases
     <input type="checkbox" 
-           value="$alias.package_id/$alias.resourcetype_id/$alias.name"
+           value="$alias"
            name="alias[]"/>
-    #if $alias.resourcetype_id
-      <a href="$resturl/$alias.package_id/$alias.resourcetype_id/$alias.name">/$alias.package_id/$alias.resourcetype_id/$alias.name</a>
-    #else
-      <a href="$resturl/$alias.package_id/$alias.name">/$alias.package_id/$alias.name</a>
-    #end if
+        <a href="$resturl$alias">$alias</a>
     ($alias.expr)<br />
   #end for
 <br />
