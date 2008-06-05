@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import locale
-
+import re
 
 CRLF = '\r\n'
 
@@ -142,9 +142,19 @@ def detectXMLEncoding(filename):
     else :
         return None
     
-def encode_name(str):
-    """Encode plain names (such as ids) to python bytestrings"""
-    try:
-        return str.encode("utf-8")
-    except AttributeError:
+def validate_id(str):
+    """ids have to be alphanumeric, start with a character"""
+    id_pt = """^[a-zA-Z]    # leading character
+    \w*                     # alphanumeric or '_'
+    """
+    # XXX: not here!
+    if str is None:
         return str
+    # ecnode to bytestring first
+    str = str.encode("utf-8")
+    # match regex
+    re_id = re.compile(id_pt, re.VERBOSE)
+    m = re_id.match(str)
+    if not m:
+        raise ValueError('Invalid id: %s' % str)
+    return str

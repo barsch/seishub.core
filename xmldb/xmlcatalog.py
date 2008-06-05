@@ -144,7 +144,7 @@ class XmlCatalog(object):
                                        resourcetype_id = type)
         # reindex
         for res in reslist:
-            self.index_catalog.indexResource(res[0], value_path, key_path)
+            self.index_catalog.indexResource(res.id, value_path, key_path)
         
         return True
         

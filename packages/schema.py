@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from seishub.util.text import encode_name
+from seishub.util.text import validate_id
 from seishub.db.util import Serializable
 
 class Schema(Serializable):
@@ -22,7 +22,7 @@ class Schema(Serializable):
         return self._resourcetype_id
      
     def setResourceTypeId(self, data):
-        self._resourcetype_id = encode_name(data)
+        self._resourcetype_id = validate_id(data)
         
     resourcetype_id = property(getResourceTypeId, setResourceTypeId, 
                                "Resource type id")
@@ -31,7 +31,7 @@ class Schema(Serializable):
         return self._package_id
     
     def setPackageId(self, data):
-        self._package_id = encode_name(data)
+        self._package_id = validate_id(data)
         
     package_id = property(getPackageId, setPackageId, "Package id")
     
@@ -47,7 +47,7 @@ class Schema(Serializable):
         return self._type
     
     def setType(self, data):
-        self._type = encode_name(data)
+        self._type = validate_id(data)
     
     type = property(getType, setType, "Type")
     

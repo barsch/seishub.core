@@ -1,4 +1,4 @@
-from seishub.util.text import encode_name
+from seishub.util.text import validate_id
 
 class PackageSpecific(object):
     """Mixin providing package specific information to the class"""
@@ -20,7 +20,7 @@ class PackageSpecific(object):
         return self._package_id
     
     def setPackage_id(self, data):
-        self._package_id = encode_name(data)
+        self._package_id = validate_id(data)
         
     package_id = property(getPackage_id, setPackage_id, "package id")
     
@@ -28,7 +28,7 @@ class PackageSpecific(object):
         return self._resourcetype_id
     
     def setResourcetype_id(self, data):
-        self._resourcetype_id = encode_name(data)
+        self._resourcetype_id = validate_id(data)
         
     resourcetype_id = property(getResourcetype_id, setResourcetype_id, 
                                "resourcetype id")

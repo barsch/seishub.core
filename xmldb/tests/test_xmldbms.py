@@ -5,8 +5,6 @@ import unittest
 from seishub.test import SeisHubTestCase
 from seishub.xmldb.xmldbms import XmlDbManager
 from seishub.xmldb.xmlresource import XmlResource, XmlResourceError
-from seishub.xmldb.defaults import DEFAULT_PREFIX, RESOURCE_TABLE, \
-                                   RESOURCE_META_TABLE
 
 
 TEST_XML="""<?xml version="1.0"?>
@@ -73,8 +71,11 @@ class XmlDbManagerTest(SeisHubTestCase):
         self.xmldbm.addResource(testres1)
         self.xmldbm.addResource(testres2)
         
-        #print self.xmldbm.getUriList()
-        #TODO: check results
+        l = self.xmldbm.getResourceList(TEST_PACKAGE)
+        for res in l:
+            self.assertEqual(res.package_id, TEST_PACKAGE)
+            self.assertEqual(res.resourcetype_id, TEST_RESOURCETYPE)
+            
         # delete test resource:
         self.xmldbm.deleteResource(testres1._id)
         self.xmldbm.deleteResource(testres2._id)

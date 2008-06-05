@@ -105,7 +105,8 @@ class ResourcesPanel(Component):
                 data['resource[]'] = args['resource[]']
                 data = self._deleteResources(data)
         # fetch all uris
-        data['resources'] = self.catalog.getUriList()
+        
+        data['resources'] = self.catalog.getResourceList()
         return ('catalog_resources.tmpl', data)
     
     def _addResource(self, data):

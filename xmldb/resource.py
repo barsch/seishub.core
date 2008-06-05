@@ -51,14 +51,17 @@ class ResourceInformation(Serializable, PackageSpecific):
     
     def __init__(self, res_uid = None, package_id = None, resourcetype_id = None, 
                  revision = None):
-        self.res_uid = res_uid
+        self.id = res_uid
         self.package_id = package_id
         self.resourcetype_id = resourcetype_id
         self.revision = revision
+        
+    def __str__(self):
+        return '/'+self.package_id+'/'+self.resourcetype_id+'/'+str(self.id)
     
     # overloaded method getFields from Serializable:
     def getFields(self):
-        return {'res_uid':self.res_uid,
+        return {'res_uid':self.id,
                 'resourcetype_id':self.resourcetype_id,
                 'package_id':self.package_id,
                 'revision':self.revision}
@@ -70,7 +73,7 @@ class ResourceInformation(Serializable, PackageSpecific):
     def setRes_uid(self, data):
         self._res_uid = data
     
-    res_uid = property(getRes_uid,setRes_uid, "uid of according resource")
+    id = property(getRes_uid, setRes_uid, "uid of according resource")
     
     def getRevision(self):
         return self._revision

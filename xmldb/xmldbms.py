@@ -7,9 +7,9 @@ from sqlalchemy.sql.expression import ClauseList
 
 from seishub.db.util import DbStorage
 from seishub.xmldb.interfaces import IResourceStorage
-from seishub.xmldb.xmlresource import XmlResource, ResourceInformation
 from seishub.xmldb.errors import AddResourceError, GetResourceError, \
                                  DeleteResourceError
+from seishub.xmldb.xmlresource import XmlResource, ResourceInformation
 from seishub.xmldb.defaults import resource_tab, resource_meta_tab
 
 class XmlDbManager(DbStorage):
@@ -69,6 +69,7 @@ class XmlDbManager(DbStorage):
         return True
     
     def getResourceList(self, package_id = None, resourcetype_id = None):
+        # XXX: return dictionary
         w = ClauseList(operator = "AND")
         if package_id:
             w.append(resource_meta_tab.c.package_id == package_id)
@@ -85,7 +86,9 @@ class XmlDbManager(DbStorage):
             return list()
         finally:
             res.close()
-        return [res.values() for res in reslist]
+        return [ResourceInformation(res['res_id'], 
+                                    res['package_id'], 
+                                    res['resourcetype_id']) for res in reslist]
     
     def getUriList(self,package_id = None, resourcetype_id = None):
         # XXX: to be removed

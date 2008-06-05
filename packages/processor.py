@@ -137,8 +137,7 @@ class Processor:
             if self.postpath[2]=='.all':
                 res = self.env.catalog.getResourceList(self.package_id,
                                                        self.resourcetype_id)
-                # XXX: r[0] not clean r.id would be better
-                resource_ids = [r[0] for r in res]
+                resource_ids = [r.id for r in res]
                 # generate current base path
                 base = '/'+'/'.join(self.postpath[:-1])
                 return self.renderResourceList(base=base, 

@@ -103,17 +103,25 @@ class AliasRegistry(DbStorage):
                 'expr':'expr'}
     
     def register(self, package_id, resourcetype_id, name, expr):
+        if package_id == '':
+            package_id = None
+        if resourcetype_id == '':
+            resourcetype_id = None
         o = self.cls(package_id, resourcetype_id, name, expr)
         self.store(o)
         return True
     
     def get(self, package_id = None, resourcetype_id = None, 
                   name = None, expr = None):
+        if package_id == '':
+            package_id = None
+        if resourcetype_id == '':
+            resourcetype_id = None
         keys = {'package_id':package_id,
                 'resourcetype_id':resourcetype_id,
                 'name':name,
                 'expr':expr}
-        objs = self.pickup(self.cls, **keys)
+        objs = self.pickup(self.cls, null = ['resourcetype_id'], **keys)
         if not objs:
             return list()
         if not isinstance(objs, list):
@@ -121,6 +129,10 @@ class AliasRegistry(DbStorage):
         return objs
     
     def delete(self, package_id, resourcetype_id, name):
+        if package_id == '':
+            package_id = None
+        if resourcetype_id == '':
+            resourcetype_id = None
         self.drop(package_id = package_id,
                   resourcetype_id = resourcetype_id,
                   name = name)

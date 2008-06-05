@@ -59,13 +59,32 @@ class PackageRegistryTest(SeisHubTestCase):
         
     def test_AliasRegistry(self):
         self.env.registry.aliases.register('degenesis', 'weapon', 
-                                           'arch', 
+                                           'arch1', 
                                            '/degenesis/weapon[./name = Bogen]')
-        alias = self.env.registry.aliases.get(name = 'arch')
+        alias = self.env.registry.aliases.get(package_id = 'degenesis',
+                                              resourcetype_id = 'weapon',
+                                              name = 'arch1')
         self.assertEqual(alias[0].package_id, 'degenesis')
         self.assertEqual(alias[0].resourcetype_id, 'weapon')
         self.assertEqual(alias[0].expr, '/degenesis/weapon[./name = Bogen]')
-        self.env.registry.aliases.delete('degenesis', 'weapon', 'arch')
+        
+        self.env.registry.aliases.register('degenesis', None, 
+                                           'arch2', 
+                                           '/degenesis/*/*[./name = Bogen]')
+        alias = self.env.registry.aliases.get(package_id = 'degenesis')
+        self.assertEqual(len(alias),1)
+        self.assertEqual(alias[0].package_id, 'degenesis')
+        self.assertEqual(alias[0].resourcetype_id, None)
+        self.assertEqual(alias[0].expr, '/degenesis/*/*[./name = Bogen]')
+        
+        self.env.registry.aliases.delete('degenesis', 'weapon', 'arch1')
+        alias = self.env.registry.aliases.get(package_id = 'degenesis',
+                                              resourcetype_id = 'weapon',
+                                              name = 'arch1')
+        self.assertEquals(len(alias),0)
+        self.env.registry.aliases.delete('degenesis', '', 'arch2')
+        alias = self.env.registry.aliases.get(package_id = 'degenesis')
+        self.assertEquals(len(alias),0)
 
 
 def suite():

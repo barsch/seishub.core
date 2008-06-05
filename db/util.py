@@ -57,13 +57,14 @@ class DbStorage(DbEnabled):
             d[map[field]] = str(value)
         return d
     
-    def _to_where_clause(self, table, map, values):
+    def _to_where_clause(self, table, map, values, null = list()):
         cl = ClauseList(operator = "AND")
         for key in values:
             if key not in map.keys():
                 continue
-            if values[key] != None:
-                cl.append(table.c[map[key]] == values[key])
+            if values[key] == None and key not in null:
+                continue
+            cl.append(table.c[map[key]] == values[key])
         return cl
     
     def _simplify_list(self, l):
@@ -117,6 +118,8 @@ class DbStorage(DbEnabled):
         if not ISerializable.implementedBy(cls):
             raise DoesNotImplement(ISerializable)
         cls_fields = cls().getFields()
+        null = keys.get('null', list())
+
         for table in self.db_tables:
             map = self.getMapping(table)
             fields = [field for field in map.keys() if field in cls_fields.keys()]
@@ -126,7 +129,7 @@ class DbStorage(DbEnabled):
             c = list()
             for col in map.values():
                 c.append(table.c[col])
-            w = self._to_where_clause(table, map, keys)
+            w = self._to_where_clause(table, map, keys, null)
             r = db.execute(select(c, w))
             try:
                 results = r.fetchall()
