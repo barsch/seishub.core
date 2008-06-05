@@ -52,3 +52,8 @@
     background: transparent url(/yui/assets/treeview-sprite.png) 0 -216px
         no-repeat;
 }
+
+.htmlnodelabel {
+    padding-left: 20px;
+    color: gray;
+}

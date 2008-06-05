@@ -29,21 +29,23 @@
             for each (var element in elements) {
               var items = data[element];
               for each (var item in items) {
-                var tmp = new YAHOO.widget.TextNode(item, node, false);
-                tmp.labelStyle = "icon-"+element;
                 if (element=='resource') {
+                  var tmp = new YAHOO.widget.TextNode(item, node, false);
                   tmp.href = "$resturl" + item;
                   tmp.title = item;
                   tmp.isLeaf = 1;
+                  tmp.labelStyle = "icon-resource";
                 } else if (element=='index') {
-                  tmp.href= "";
+                  var tmp = new YAHOO.widget.HTMLNode('<span class="htmlnodelabel">'+item+'</span>', node, false, true);
                   tmp.isLeaf = 1;
                   tmp.title = item;
+                  tmp.contentStyle = "icon-index";
                 } else {
+                  var tmp = new YAHOO.widget.TextNode(item, node, false);
                   tmp.href = "$resturl/" + nodeTitle + "/" + item;
                   tmp.title = nodeTitle + "/" + item;
+                  tmp.labelStyle = "icon-"+element;
                 }
-                
               }
             }
           }
