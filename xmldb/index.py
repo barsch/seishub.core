@@ -13,8 +13,7 @@ __all__ = ['XmlIndex', 'VirtualIndex']
 TEXT_INDEX = "text"
 
 class IndexBase(Serializable):
-    def __init__(self,value_path=None, key_path=None,
-                 type=TEXT_INDEX):
+    def __init__(self,value_path=None, key_path=None, type=TEXT_INDEX):
         super(IndexBase, self).__init__()
         if not (value_path and key_path):
             raise XmlIndexError("No index definition given")
@@ -74,11 +73,13 @@ class XmlIndex(IndexBase):
     implements(IXmlIndex)
           
     def __str__(self):
-        return '/' + self._getRootElementName() + '/' + self.key_path
+        return '/' + self.value_path + '/' + self.key_path
     
     def _getRootElementName(self):
-        root = self.value_path.split('/')[0]
-        return root
+        elements = self.value_path.split('/')
+        # last element is root element
+        return elements[len(elements)-1]
+        
     
     # methods from IXmlIndex:
     
