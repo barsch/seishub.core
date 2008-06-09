@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from twisted.application import service
-from twisted.internet import reactor
+from twisted.internet import reactor 
 
 from seishub.env import Environment
 from seishub.services.admin import AdminServiceFactory
@@ -22,21 +22,21 @@ def main():
     
     ## Admin
     port = env.config.getint('admin', 'port') or ADMIN_PORT
-    reactor.listenTCP(port, AdminServiceFactory(env))
+    reactor.listenTCP(port, AdminServiceFactory(env)) #@UndefinedVariable
     
     ## REST
     port = env.config.getint('rest', 'port') or REST_PORT
-    reactor.listenTCP(port, RESTServiceFactory(env))
+    reactor.listenTCP(port, RESTServiceFactory(env)) #@UndefinedVariable
     
     ## SSH
     port = env.config.getint('ssh', 'port') or SSH_PORT
-    reactor.listenTCP(port, SSHServiceFactory(env))
+    reactor.listenTCP(port, SSHServiceFactory(env)) #@UndefinedVariable
     
     ## SSH
     port = env.config.getint('sftp', 'port') or SFTP_PORT
-    reactor.listenTCP(port, SFTPServiceFactory(env))
+    reactor.listenTCP(port, SFTPServiceFactory(env)) #@UndefinedVariable
     
-    reactor.run()
+    reactor.run() #@UndefinedVariable
 
 
 if __name__ == '__main__':

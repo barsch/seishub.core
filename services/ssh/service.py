@@ -204,7 +204,7 @@ class SSHServiceFactory(factory.SSHFactory):
         file(priv, 'w+b').write(privateKeyString)
 
 
-class SSHService(internet.TCPServer):
+class SSHService(internet.TCPServer): #@UndefinedVariable
     """Service for SSH server."""
     IntOption('ssh', 'port', SSH_PORT, "SSH port number.")
     Option('ssh', 'public_key_file', SSH_PUBLIC_KEY, 'Public RSA key file.')
@@ -213,6 +213,7 @@ class SSHService(internet.TCPServer):
     def __init__(self, env):
         self.env = env
         port = env.config.getint('ssh', 'port')
-        internet.TCPServer.__init__(self, port, SSHServiceFactory(env))
+        internet.TCPServer.__init__(self, #@UndefinedVariable
+                                    port, SSHServiceFactory(env))
         self.setName("SSH")
         self.setServiceParent(env.app)

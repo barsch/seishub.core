@@ -114,13 +114,14 @@ class RESTServiceFactory(http.HTTPFactory):
         self.protocol.env = env
 
 
-class RESTService(internet.TCPServer):
+class RESTService(internet.TCPServer): #@UndefinedVariable
     """Service for the REST HTTP Server."""
     
     IntOption('rest', 'port', REST_PORT, "REST port number.")
     
     def __init__(self, env):
         port = env.config.getint('rest', 'port')
-        internet.TCPServer.__init__(self, port, RESTServiceFactory(env))
+        internet.TCPServer.__init__(self, #@UndefinedVariable
+                                    port, RESTServiceFactory(env))
         self.setName("REST")
         self.setServiceParent(env.app)

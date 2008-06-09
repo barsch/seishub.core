@@ -183,7 +183,7 @@ class ServicesPanel(Component):
         return ('general_services.tmpl', data)
     
     def _shutdownSeisHub(self):
-        reactor.stop()
+        reactor.stop() #@UndefinedVariable
     
     def _restartSeisHub(self):
         pass

@@ -176,7 +176,7 @@ def qualityOf(media_type, params, accept_list):
         return 1
     best_qv = 0
     best_precedence = 0
-    for qv, pattern, mparams, aparams in accept_list:
+    for qv, pattern, mparams, _ in accept_list:
         precedence = matchMediaType(media_type, params, pattern, mparams)
         if precedence > best_precedence:
             best_precedence = precedence

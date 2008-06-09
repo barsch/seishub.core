@@ -306,7 +306,7 @@ class AdminServiceFactory(http.HTTPFactory):
         self.protocol.env = env
 
 
-class AdminService(internet.SSLServer):
+class AdminService(internet.SSLServer): #@UndefinedVariable
     """Service for WebAdmin HTTP Server."""
     IntOption('admin', 'port', ADMIN_PORT, "WebAdmin port number.")
     Option('admin', 'private_key_file', ADMIN_PRIVATE_KEY, 'Private key file.')
@@ -320,11 +320,13 @@ class AdminService(internet.SSLServer):
         priv, cert = self._getCertificates()
         if secured:
             ssl_context = ssl.DefaultOpenSSLContextFactory(priv, cert)
-            internet.SSLServer.__init__(self, port, AdminServiceFactory(env),\
-                                        ssl_context)
+            internet.SSLServer.__init__(self, #@UndefinedVariable
+                                        port, AdminServiceFactory(env),
+                                        ssl_context) 
         else:
             self.method = 'TCP'
-            internet.SSLServer.__init__(self, port, AdminServiceFactory(env),1)
+            internet.SSLServer.__init__(self, #@UndefinedVariable
+                                        port, AdminServiceFactory(env),1)
         self.setName("WebAdmin")
         self.setServiceParent(env.app)
     

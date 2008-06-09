@@ -6,8 +6,18 @@ import time
 from zope.interface import implements
 from twisted.python import components
 from twisted.cred import portal
-from twisted.conch.ssh import factory, keys, common, session, filetransfer
-from twisted.conch import avatar, interfaces as conchinterfaces
+from twisted.conch.ssh import factory, keys, common, session
+from twisted.conch.ssh.filetransfer import ISFTPServer, FileTransferServer
+from twisted.conch.ssh.filetransfer import FXF_READ, FXF_WRITE, FXF_APPEND, \
+                                           FXF_CREAT, FXF_TRUNC, FXF_EXCL
+from twisted.conch.ssh.filetransfer import SFTPError
+from twisted.conch.ssh.filetransfer import FX_PERMISSION_DENIED, FX_FAILURE
+from twisted.conch.ssh.filetransfer import FX_NO_SUCH_FILE, FX_OP_UNSUPPORTED
+from twisted.conch.ssh.filetransfer import FX_NOT_A_DIRECTORY
+from twisted.conch.ssh.filetransfer import FX_FILE_IS_A_DIRECTORY
+from twisted.conch.ssh.filetransfer import FX_FILE_ALREADY_EXISTS
+from twisted.conch import avatar
+from twisted.conch.interfaces import IConchUser
 from twisted.application import internet
 from twisted.conch.ls import lsLine
 
@@ -19,7 +29,7 @@ from seishub.util.path import absPath
 
 
 class SFTPServiceProtocol:
-    implements(filetransfer.ISFTPServer)
+    implements(ISFTPServer)
     
     def __init__(self, avatar):
         self.avatar = avatar
@@ -35,15 +45,51 @@ class SFTPServiceProtocol:
         return absPath(path)
     
     def openFile(self, filename, flags, attrs):
-        print "openFile"
-        print filename
-        print flags
-        print attrs
-        raise filetransfer.SFTPError(filetransfer.FX_OP_UNSUPPORTED, '')
-
+        createPlease = False
+        exclusive = False
+        openFlags = 0
+        if flags & FXF_READ == FXF_READ and flags & FXF_WRITE == 0:
+            openFlags = os.O_RDONLY
+        if flags & FXF_WRITE == FXF_WRITE and flags & FXF_READ == 0:
+            createPlease = True
+            openFlags = os.O_WRONLY
+        if flags & FXF_WRITE == FXF_WRITE and flags & FXF_READ == FXF_READ:
+            createPlease = True
+            openFlags = os.O_RDWR
+        if flags & FXF_APPEND == FXF_APPEND:
+            createPlease = True
+            openFlags |= os.O_APPEND
+        if flags & FXF_CREAT == FXF_CREAT:
+            createPlease = True
+            openFlags |= os.O_CREAT
+        if flags & FXF_TRUNC == FXF_TRUNC:
+            openFlags |= os.O_TRUNC
+        if flags & FXF_EXCL == FXF_EXCL:
+            exclusive = True
+        
+        print createPlease, exclusive, openFlags
+        print filename, flags, attrs
+        
+        # XXX Once we change readChunk/writeChunk we'll have to wrap
+        # child in something that implements those.
+        
+#        pathSegments = self.filesystem.splitPath(filename)
+#        dirname, basename = pathSegments[:-1], pathSegments[-1]
+#        parentNode = self.filesystem.fetch('/'.join(dirname))
+#        if createPlease:
+#            child = parentNode.createFile(basename, exclusive)
+#        elif parentNode.exists(basename):
+#            child = parentNode.child(basename)
+#            if not ivfs.IFileSystemLeaf.providedBy(child):
+#                raise SFTPError(FX_FILE_IS_A_DIRECTORY, filename)
+#        else:
+#            raise SFTPError(FX_NO_SUCH_FILE, filename)
+#        child.open(openFlags)
+#        return AdaptFileSystemLeafToISFTPFile(child)
+    
     def removeFile(self, filename):
         print "removeFile"
-        raise filetransfer.SFTPError(filetransfer.FX_OP_UNSUPPORTED, '')
+        raise SFTPError(FX_OP_UNSUPPORTED, '')
     
     def openDirectory(self, path):
         request = Processor(self.env)
@@ -53,7 +99,7 @@ class SFTPServiceProtocol:
             data = request.process()
         except RequestError, e:
             self.env.log.error('RequestError:', str(e))
-            raise filetransfer.SFTPError(filetransfer.FX_FAILURE, str(e))
+            raise SFTPError(FX_FAILURE, str(e))
         
         filelist = []
         attr = {'permissions': 16877, 'size': 0, 'uid': 0, 'gid': 0,
@@ -91,7 +137,6 @@ class SFTPServiceProtocol:
             
             def close(self):
                 return
-        
         return DirList(iter(filelist))
     
     def getAttrs(self, path, followLinks):
@@ -99,32 +144,32 @@ class SFTPServiceProtocol:
     
     def setAttrs(self, path, attrs):
         print "setAttrs"
-        raise filetransfer.SFTPError(filetransfer.FX_OP_UNSUPPORTED, '')
+        raise SFTPError(FX_OP_UNSUPPORTED, '')
     
     def makeDirectory(self, path, attrs):
         print "makeDirectory"
-        raise filetransfer.SFTPError(filetransfer.FX_OP_UNSUPPORTED, '')
+        raise SFTPError(FX_OP_UNSUPPORTED, '')
     
     def removeDirectory(self, path):
         print "removeDirectory"
-        raise filetransfer.SFTPError(filetransfer.FX_OP_UNSUPPORTED, '')
+        raise SFTPError(FX_OP_UNSUPPORTED, '')
     
     def readLink(self, path):
         print "readLink"
-        raise filetransfer.SFTPError(filetransfer.FX_OP_UNSUPPORTED, '')
+        raise SFTPError(FX_OP_UNSUPPORTED, '')
     
     def makeLink(self, linkPath, targetPath):
         print "makeLink"
-        raise filetransfer.SFTPError(filetransfer.FX_OP_UNSUPPORTED, '')
+        raise SFTPError(FX_OP_UNSUPPORTED, '')
     
     def renameFile(self, oldpath, newpath):
         print "renameFile"
-        raise filetransfer.SFTPError(filetransfer.FX_OP_UNSUPPORTED, '')
+        raise SFTPError(FX_OP_UNSUPPORTED, '')
     
     def _attrify(self, path, file=False):
         if file:
-            attr = {'permissions': 33188, 'size': 10000, 'uid': 0, 'gid': 0,
-                    'atime': time.time(), 'mtime': time.time(), 'nlink': 0}
+            attr = {'permissions': 33188, 'size': 0, 'uid': 0, 'gid': 0,
+                    'atime': time.time(), 'mtime': time.time(), 'nlink': 1}
         else:
             attr = {'permissions': 16877, 'size': 0, 'uid': 0, 'gid': 0,
                     'atime': time.time(), 'mtime': time.time(), 'nlink': 1}
@@ -139,33 +184,13 @@ class SFTPServiceAvatar(avatar.ConchUser):
         self.env = env
         self.listeners = {}
         self.channelLookup.update({"session": session.SSHSession})
-        self.subsystemLookup.update({"sftp": filetransfer.FileTransferServer})
+        self.subsystemLookup.update({"sftp": FileTransferServer})
     
     def logout(self):
         self.env.log.info('avatar %s logging out (%i)' % (self.username, 
                                                           len(self.listeners)))
 
-components.registerAdapter(SFTPServiceProtocol, SFTPServiceAvatar, 
-                           filetransfer.ISFTPServer)
-
-
-#class SFTPServiceSession:
-#    implements(session.ISession)
-#    
-#    def __init__(self, avatar):
-#        self.avatar = avatar
-#    
-#    def openShell(self, proto):
-#            self.avatar.conn.transport.transport.loseConnection()
-#    
-#    def getPty(self, term, windowSize, modes):
-#        pass
-#    
-#    def closed(self):
-#        pass
-#
-#components.registerAdapter(SFTPServiceSession, SFTPServiceAvatar, 
-#                           session.ISession)
+components.registerAdapter(SFTPServiceProtocol, SFTPServiceAvatar, ISFTPServer)
 
 
 class SFTPServiceRealm:
@@ -175,7 +200,7 @@ class SFTPServiceRealm:
         self.env = env
     
     def requestAvatar(self, avatarId, mind, *interfaces):
-        if conchinterfaces.IConchUser in interfaces:
+        if IConchUser in interfaces:
             return interfaces[0], SFTPServiceAvatar(avatarId, self.env), \
                    lambda: None
         else:
@@ -223,7 +248,7 @@ class SFTPServiceFactory(factory.SSHFactory):
         file(priv, 'w+b').write(privateKeyString)
 
 
-class SFTPService(internet.TCPServer):
+class SFTPService(internet.TCPServer): #@UndefinedVariable
     """Service for SFTP server."""
     IntOption('sftp', 'port', SFTP_PORT, "SFTP port number.")
     Option('sftp', 'public_key_file', SFTP_PUBLIC_KEY, 'Public RSA key file.')
@@ -232,6 +257,7 @@ class SFTPService(internet.TCPServer):
     def __init__(self, env):
         self.env = env
         port = env.config.getint('sftp', 'port')
-        internet.TCPServer.__init__(self, port, SFTPServiceFactory(env))
+        internet.TCPServer.__init__(self, #@UndefinedVariable
+                                    port, SFTPServiceFactory(env))
         self.setName("SFTP")
         self.setServiceParent(env.app)

@@ -68,11 +68,12 @@ class HeartbeatTransmitter(internet.TimerService):
             pass
 
 
-class HeartbeatReceiver(internet.UDPServer):
+class HeartbeatReceiver(internet.UDPServer): #@UndefinedVariable
     
     def __init__(self, env):
         self.env = env
-        internet.UDPServer.__init__(self, HEARTBEAT_UDP_PORT, 
+        internet.UDPServer.__init__(self, #@UndefinedVariable
+                                    HEARTBEAT_UDP_PORT,  
                                     HeartbeatProtocol(env))
 
 
