@@ -28,7 +28,8 @@ class Environment(ComponentManager):
         * a XML catalog handler env.catalog
         * a database handler env.db
         * a logging handler env.log
-        * a package handler
+        * a package handler env.registry
+        * a user management handler env.auth
     """
     
     Option('seishub', 'host', 'localhost', 'Default host of this server.')
@@ -135,15 +136,18 @@ class Environment(ComponentManager):
     def initComponent(self, component):
         """Initialize additional member variables for components.
         
-        Every component activated through the `Environment` object gets five
+        Every component activated through the `Environment` object gets a few
         member variables: `env` (the environment object), `config` (the
         environment configuration), `log` (a logger object), `db` (the 
-        database handler) and `catalog` (a XML catalog object)."""
+        database handler), `catalog` (a XML catalog object), `registry` (a 
+        package registry handler) and `auth` (a user management object)."""
         component.env = self
         component.config = self.config
         component.log = self.log
         component.db = self.db
         component.catalog = self.catalog
+        component.registry = self.registry
+        component.auth = self.auth
     
     def isComponentEnabled(self, cls):
         """Implemented to only allow activation of components that are not

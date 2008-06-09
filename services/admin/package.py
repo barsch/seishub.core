@@ -12,8 +12,47 @@ class SchemasPanel(Component):
         return ('packages', 'Packages', 'edit-schemas', 'Schemas')
     
     def renderPanel(self, request):
-        data = {}
+        packages = self.env.registry.getPackageIds()
+        resourcetypes = dict([(p, self.env.registry.getResourceTypes(p).keys())
+                              for p in packages])
+        data  = {
+            'packages': packages,
+            'resourcetypes': resourcetypes,
+            'resturl': self.env.getRestUrl(),
+        }
+        if request.method=='POST':
+            args = request.args
+            if 'file' in args.keys():
+                file = args.get('file',[''])[0]
+                type = args.get('type',[''])[0]
+                package_id = args.get('package_id',[''])[0]
+                resourcetype_id = args.get('resourcetype_id',[''])[0]
+                if file and type and package_id in packages:
+                    if resourcetype_id in resourcetypes.get(package_id, []):
+                        data['error'] = self._addSchema(package_id,
+                                                        resourcetype_id,
+                                                        type, file)
+            elif 'delete' in args.keys() and 'schema[]' in args.keys():
+                data['error'] = self._deleteSchema(args['schema[]'])
+        # fetch all uris
+        data['schemas'] = self.registry.schemas.get()
         return ('package_schemas.tmpl', data)
+    
+    def _addSchema(self, package_id, resourcetype_id, type, file):
+        try:
+            self.registry.schemas.register(package_id, resourcetype_id,
+                                           type, file)
+        except Exception, e:
+            self.log.error("Error adding schemas", e)
+            return ("Error adding schemas", e)
+    
+    def _deleteSchema(self, data=[]):
+        for uid in data:
+            try:
+                self.registry.schemas.delete(uid)
+            except Exception, e:
+                self.log.info("Error deleting schemas: %s" % uid, e)
+                return ("Error deleting schemas: %s" % uid, e)
 
 
 class StylesheetsPanel(Component):
@@ -24,8 +63,47 @@ class StylesheetsPanel(Component):
         return ('packages', 'Packages', 'edit-stylesheets', 'Stylesheets')
     
     def renderPanel(self, request):
-        data = {}
+        packages = self.env.registry.getPackageIds()
+        resourcetypes = dict([(p, self.env.registry.getResourceTypes(p).keys())
+                              for p in packages])
+        data  = {
+            'packages': packages,
+            'resourcetypes': resourcetypes,
+            'resturl': self.env.getRestUrl(),
+        }
+        if request.method=='POST':
+            args = request.args
+            if 'file' in args.keys():
+                file = args.get('file',[''])[0]
+                type = args.get('type',[''])[0]
+                package_id = args.get('package_id',[''])[0]
+                resourcetype_id = args.get('resourcetype_id',[''])[0]
+                if file and type and package_id in packages:
+                    if resourcetype_id in resourcetypes.get(package_id, []):
+                        data['error'] = self._addStylesheet(package_id,
+                                                            resourcetype_id,
+                                                            type, file)
+            elif 'delete' in args.keys() and 'stylesheet[]' in args.keys():
+                data['error'] = self._deleteStylesheet(args['stylesheet[]'])
+        # fetch all uris
+        data['stylesheets'] = self.registry.stylesheets.get()
         return ('package_stylesheets.tmpl', data)
+    
+    def _addStylesheet(self, package_id, resourcetype_id, type, file):
+        try:
+            self.registry.stylesheets.register(package_id, resourcetype_id,
+                                               type, file)
+        except Exception, e:
+            self.log.error("Error adding stylesheet", e)
+            return ("Error adding stylesheet", e)
+    
+    def _deleteStylesheet(self, data=[]):
+        for uid in data:
+            try:
+                self.registry.stylesheets.delete(uid)
+            except Exception, e:
+                self.log.info("Error deleting stylesheet: %s" % uid, e)
+                return ("Error deleting stylesheet: %s" % uid, e)
 
 
 class PackageBrowserPanel(Component):
@@ -54,7 +132,6 @@ class IndexesPanel(Component):
         packages = self.env.registry.getPackageIds()
         resourcetypes = dict([(p, self.env.registry.getResourceTypes(p).keys())
                               for p in packages])
-        
         data  = {
             'indexes': [],
             'error': '',
@@ -66,54 +143,44 @@ class IndexesPanel(Component):
         if request.method=='POST':
             args = request.args
             if 'add' in args.keys() and 'xpath' in args.keys():
-                data['xpath'] = args['xpath'][0]
-                package_id = args.get('package',[''])[0]
+                xpath = args.get('xpath',[''])[0]
+                package_id = args.get('package_id',[''])[0]
+                resourcetype_id = args.get('resourcetype_id',[''])[0]
                 if package_id in packages:
-                    resourcetype_id = args.get('resourcetype',[''])[0]
                     if resourcetype_id in resourcetypes.get(package_id, []):
-                        data['package_id'] = package_id
-                        data['resourcetype_id'] = resourcetype_id
-                data = self._addIndex(data)
+                        data['error'] = self._addIndex(package_id, 
+                                                       resourcetype_id, 
+                                                       xpath)
             elif 'delete' in args.keys() and 'index[]' in args.keys():
-                data['index[]'] = args['index[]']
-                data = self._deleteIndexes(data)
+                data['error'] = self._deleteIndexes(args.get('index[]',[]))
             elif 'reindex' in args.keys() and 'index[]' in args.keys():
-                data['index[]'] = args['index[]']
-                data = self._reindex(data)
+                data['error'] = self._reindex(args.get('index[]',[]))
         # fetch all indexes
         data['indexes'] = self.catalog.listIndexes()
         return ('package_indexes.tmpl', data)
     
-    def _reindex(self, data):
-        for xpath in data.get('index[]',[]):
+    def _reindex(self, data=[]):
+        for xpath in data:
             try:
                 self.env.catalog.reindex(xpath = xpath)
             except Exception, e:
                 self.log.error("Error reindexing xml_index %s" % xpath, e)
-                data['error'] = ("Error reindexing xml_index %s" % xpath, e)
-                return data
-        return data
+                return ("Error reindexing xml_index %s" % xpath, e)
     
-    def _deleteIndexes(self, data):
-        for xpath in data.get('index[]',[]):
+    def _deleteIndexes(self, data=[]):
+        for xpath in data:
             try:
                 self.catalog.removeIndex(xpath = xpath)
             except Exception, e:
                 self.log.error("Error removing xml_index %s" % xpath, e)
-                data['error'] = ("Error removing xml_index %s" % xpath, e)
-                return data
-        return data
+                return ("Error removing xml_index %s" % xpath, e)
     
-    def _addIndex(self, data):
+    def _addIndex(self, package_id, resourcetype_id, xpath):
         try:
-            self.catalog.registerIndex(data['package_id'], 
-                                       data['resourcetype_id'],
-                                       data['xpath'])
+            self.catalog.registerIndex(package_id, resourcetype_id, xpath)
         except Exception, e:
             self.log.error("Error registering xml_index", e)
-            data['error'] = ("Error registering xml_index", e)
-        data['xpath'] = ''
-        return data
+            return ("Error registering xml_index", e)
 
 
 class AliasesPanel(Component):
@@ -127,7 +194,6 @@ class AliasesPanel(Component):
         packages = self.env.registry.getPackageIds()
         resourcetypes = dict([(p, self.env.registry.getResourceTypes(p).keys())
                               for p in packages])
-        
         data  = {
             'aliases': {},
             'error': '',
@@ -147,14 +213,18 @@ class AliasesPanel(Component):
                 data['error'] = self._addAlias(package_id, resourcetype_id, 
                                                alias, xpath)
             elif 'delete' in args.keys() and 'alias[]' in args.keys():
-                self._deleteAliases(args.get('alias[]',[]))
+                data['error'] = self._deleteAliases(args.get('alias[]',[]))
         # fetch all aliases
         data['aliases'] = self.env.registry.aliases.get()
         return ('package_aliases.tmpl', data)
     
     def _deleteAliases(self, aliases=[]):
         for alias in aliases:
-            self.env.registry.aliases.delete(uri = alias)
+            try:
+                self.env.registry.aliases.delete(uri = alias)
+            except Exception, e:
+                self.log.error("Error deleting an alias", e)
+                return ("Error deleting an alias", e)
     
     def _addAlias(self, package_id, resourcetype_id, alias, xpath):
         try:

@@ -2,7 +2,7 @@
 
 <h2>Add new index</h2>
 <form method="post" name="add"><label>Package</label><br />
-    <select name="package" id="package">
+    <select name="package_id" id="package_id">
         #for $p in $packages
         #if $resourcetypes[$p]
         <option value="$p" onclick="changePackage('$p');">$p</option>
@@ -10,7 +10,7 @@
         #end for
     </select><br />
     <label>Resource type</label><br />
-    <select name="resourcetype" id="resourcetype"></select><br />
+    <select name="resourcetype_id" id="resourcetype_id"></select><br />
     <label>Type</label><br />
     <select>
         <option>Text</option>
@@ -43,7 +43,7 @@
 
     function changePackage(package_id)
     {
-      var selectbox = document.getElementById('resourcetype');
+      var selectbox = document.getElementById('resourcetype_id');
       selectbox.options.length = 0;
       for (var i=0;i<resourcetypes[package_id].length;i++)
       {

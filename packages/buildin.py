@@ -24,4 +24,4 @@ class SchemaResource(Component):
     implements(IResourceType)
     
     package_id = 'seishub'
-    resourcetype_id = 'xsd'
+    resourcetype_id = 'schema'

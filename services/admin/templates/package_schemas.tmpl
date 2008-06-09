@@ -1,44 +1,57 @@
 <h1>Schemas</h1>
 
-<script type="text/javascript" src="http://yui.yahooapis.com/2.5.1/build/yahoo/yahoo-min.js"></script>
-<script type="text/javascript" src="http://yui.yahooapis.com/2.5.1/build/event/event-min.js"></script>
-<script type="text/javascript" src="http://yui.yahooapis.com/2.5.1/build/connection/connection-min.js"></script>
+<h2>Add new schema</h2>
+<form method="post" enctype="multipart/form-data" name="add">
+    <label>Package</label><br />
+    <select name="package_id" id="package_id">
+        #for $p in $packages
+        #if $resourcetypes[$p]
+        <option value="$p" onclick="changePackage('$p');">$p</option>
+        #end if
+        #end for
+    </select><br />
+    <label>Resource type</label><br />
+    <select name="resourcetype_id" id="resourcetype_id"></select><br />
+    <label>Type</label><br />
+    <input type="text" size="20" name="type" /><br />
+    <label>XSD File</label><br />
+    <input name="file" type="file" size="50" maxlength="100000" 
+           accept="application/xsd+xml" /><br/>
+    <br />
+    <input type="submit" value="Add" />
+</form>
 
-<div id="container"></div>
+<br />
+<br />
 
-<script>
-  var div = document.getElementById('container');
+<h2>List of all schemas</h2>
+<form method="post" name="list">
+    #for $schema in $schemas 
+    <input type="checkbox" name="schema[]" value="$schema.uid" /> 
+    $schema.package_id
+    $schema.resourcetype_id
+    $schema.type
+    #end for
+    <br />
+    <input type="submit" name="delete" value="Delete" />
+</form>
 
-  var handleSuccess = function(o){
-    if(o.responseText !== undefined){
-        div.innerHTML = "<li>Transaction id: " + o.tId + "</li>";
-        div.innerHTML += "<li>HTTP status: " + o.status + "</li>";
-        div.innerHTML += "<li>Status code message: " + o.statusText + "</li>";
-        div.innerHTML += "<li>HTTP headers: <ul>" + o.getAllResponseHeaders + "</ul></li>";
-        div.innerHTML += "<li>Server response: " + o.responseText + "</li>";
-        div.innerHTML += "<li>Argument object: Object ( [foo] => " + o.argument.foo +
-                         " [bar] => " + o.argument.bar +" )</li>";
+<script type="text/javascript">
+    var resourcetypes = new Array();
+    #for $p in $packages
+    resourcetypes['$p'] = $resourcetypes[$p];
+    #end for
+
+    function changePackage(package_id)
+    {
+      var selectbox = document.getElementById('resourcetype_id');
+      selectbox.options.length = 0;
+      for (var i=0;i<resourcetypes[package_id].length;i++)
+      {
+        var link = resourcetypes[package_id][i];
+        var addme = new Option(link, link);
+        selectbox.options[i] = addme;
+      }
     }
-  }
-  
-  var handleFailure = function(o){
-    if(o.responseText !== undefined){
-        div.innerHTML = "<ul><li>Transaction id: " + o.tId + "</li>";
-        div.innerHTML += "<li>HTTP status: " + o.status + "</li>";
-        div.innerHTML += "<li>Status code message: " + o.statusText + "</li></ul>";
-    }
-  }
-  
-  var callback =
-  {
-    success:handleSuccess,
-    failure:handleFailure,
-    argument: { foo:"foo", bar:"bar" }
-  };
-  
-  var sUrl = "/rest";
-  function makeRequest(){
-    var request = YAHOO.util.Connect.asyncRequest('GET', sUrl, callback);
-  }
+    changePackage('$packages[0]');
 </script>
-<form><input type="button" value="Send a GET Request" onClick="makeRequest();"></form>
