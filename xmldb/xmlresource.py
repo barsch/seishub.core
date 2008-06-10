@@ -3,7 +3,7 @@
 from zope.interface import implements
 from zope.interface.exceptions import DoesNotImplement
 
-from seishub.util.xml import IXmlDoc, IXmlSchema
+from seishub.util.xml import IXmlDoc
 from seishub.xmldb.interfaces import IXmlResource
 from seishub.util.xml import XmlTreeDoc
 from seishub.xmldb.resource import Resource, ResourceInformation
@@ -16,10 +16,10 @@ class XmlResource(Resource, Serializable):
     
     implements (IXmlResource)
     
-    def __init__(self,package_id = None, resourcetype_id = None, xml_data = None):
+    def __init__(self, package_id = None, resourcetype_id = None, data = None):
         self.__xml_doc = None
         info = ResourceInformation(None, package_id, resourcetype_id)
-        Resource.__init__(self, None, xml_data, info)
+        Resource.__init__(self, None, data, info)
         Serializable.__init__(self)
         
     # overloaded methods from Serializable
@@ -39,7 +39,8 @@ class XmlResource(Resource, Serializable):
         # parse and validate xml_data
         # decode raw data to utf-8 unicode string
         if xml_data is None or len(xml_data) == 0:
-            return Resource.setData(self, xml_data)
+            return Resource.setData(self,xml_data)
+            #raise XmlResourceError("No xml data given")
         xml_data = str(xml_data)
         if not isinstance(xml_data, unicode) and xml_data:
             xml_data = unicode(xml_data,"utf-8")

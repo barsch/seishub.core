@@ -142,6 +142,13 @@ class DbStorage(DbEnabled):
                     if field in obj.getFields():
                         obj.__setattr__(field, res[map[field]])
                 objs.append(obj)
+#                attrs = dict()
+#                for field in map:
+#                    if field in cls_fields:
+#                        attrs[field] = res[map[field]]
+#                obj = cls(**attrs)
+#                objs.append(obj)
+                    
         return self._simplify_list(objs)
     
     def drop(self, **keys):

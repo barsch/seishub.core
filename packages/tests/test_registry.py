@@ -35,6 +35,8 @@ class PackageRegistryTest(SeisHubTestCase):
         # get schema resource
         res = schema[0].resource
         self.assertEqual(res.data, TEST_SCHEMA)
+        self.assertEqual(res.info.package_id, 'seishub')
+        self.assertEqual(res.info.resourcetype_id, 'schema')
         # add a second schema without resourcetype
         self.env.registry.schemas.register('degenesis', None, 'xsd', 
                                            TEST_SCHEMA)
@@ -55,6 +57,11 @@ class PackageRegistryTest(SeisHubTestCase):
         self.assertEqual(stylesheet[0].package_id, 'degenesis')
         self.assertEqual(stylesheet[0].resourcetype_id, 'weapon')
         self.assertEqual(stylesheet[0].type, 'xhtml')
+        # get stylesheet resource
+        res = stylesheet[0].resource
+        self.assertEqual(res.data, TEST_SCHEMA)
+        self.assertEqual(res.info.package_id, 'seishub')
+        self.assertEqual(res.info.resourcetype_id, 'stylesheet')
         self.env.registry.stylesheets.delete(stylesheet[0].uid)
         
     def test_AliasRegistry(self):
@@ -92,9 +99,51 @@ class PackageRegistryTest(SeisHubTestCase):
         self.assertEquals(len(alias),0)
 
 
+class FromFilesystemTest(SeisHubTestCase):
+    def testRegisterStylesheet(self):
+        # note: schema registry uses the same functionality and is therefore
+        # not tested seperately
+        from seishub.packages.registry import StylesheetRegistry
+        from seishub.packages.registry import registerStylesheet
+        # invalid class (no package id/resourcetype id)
+        try:
+            class Foo():
+                registerStylesheet('blah','blah')
+        except Exception, e:
+            assert isinstance(e, AssertionError)
+        
+        class AResourceType():
+            package_id = 'testpackage'
+            resourcetype_id = 'aresourcetype'
+            registerStylesheet('path/to/file','xhtml')
+            
+        assert ['testpackage', 'aresourcetype', 'path/to/file', 'xhtml']\
+               in StylesheetRegistry._registry
+        
+    def testRegisterAlias(self):
+        from seishub.packages.registry import AliasRegistry
+        from seishub.packages.registry import registerAlias
+        # invalid class (no package id/resourcetype id)
+        try:
+            class Foo():
+                registerAlias('blah','blah')
+        except Exception, e:
+            assert isinstance(e, AssertionError)
+        
+        class AResourceType():
+            package_id = 'testpackage'
+            resourcetype_id = 'aresourcetype'
+            registerAlias('analias','/resourceroot[./a/predicate/expression]',
+                          limit = 10, order_by = {'/path/to/element':'ASC'})
+
+        assert ['testpackage', 'aresourcetype', 'analias', 
+                '/resourceroot[./a/predicate/expression]', 
+                10, {'/path/to/element': 'ASC'}] in AliasRegistry._registry
+
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(PackageRegistryTest, 'test'))
+    suite.addTest(unittest.makeSuite(FromFilesystemTest, 'test'))
     return suite
 
 if __name__ == '__main__':

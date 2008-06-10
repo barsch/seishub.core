@@ -143,7 +143,7 @@ class PackageManager(object):
     
     def getComponents(interface, package_id, component):
         """get classes implementing interface within specified package,
-        if package_id == None, this is the same as a call to 
+        if package_id is None, this is the same as a call to 
         seishub.core.ExtensionPoint(interface).etensions(component)
         """
         registry = PackageManager._registry

@@ -27,8 +27,9 @@ class Resource(object):
         return self._uid
     
     def setUid(self, data):
+        # also set id attribute in ResourceInformation
         if self.info:
-            self.info.res_uid = data 
+            self.info.id = data 
         self._uid = data
     
     uid = property(getUid, setUid, 'unique resource id')
@@ -61,7 +62,7 @@ class ResourceInformation(Serializable, PackageSpecific):
     
     # overloaded method getFields from Serializable:
     def getFields(self):
-        return {'res_uid':self.id,
+        return {'id':self.id,
                 'resourcetype_id':self.resourcetype_id,
                 'package_id':self.package_id,
                 'revision':self.revision}
@@ -73,7 +74,7 @@ class ResourceInformation(Serializable, PackageSpecific):
     def setRes_uid(self, data):
         self._res_uid = data
     
-    id = property(getRes_uid, setRes_uid, "uid of according resource")
+    id = property(getRes_uid, setRes_uid, "id of resource")
     
     def getRevision(self):
         return self._revision

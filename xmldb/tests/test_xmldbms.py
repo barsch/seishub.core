@@ -3,8 +3,9 @@
 import unittest
 
 from seishub.test import SeisHubTestCase
+from seishub.xmldb.errors import AddResourceError, XmlResourceError
 from seishub.xmldb.xmldbms import XmlDbManager
-from seishub.xmldb.xmlresource import XmlResource, XmlResourceError
+from seishub.xmldb.xmlresource import XmlResource
 
 
 TEST_XML="""<?xml version="1.0"?>
@@ -44,10 +45,16 @@ class XmlDbManagerTest(SeisHubTestCase):
     
 
     def testAddGetDeleteResource(self):
+        # add empty resource
+        empty = XmlResource(TEST_PACKAGE, TEST_RESOURCETYPE,
+                            data = "")
+        self.assertRaises(AddResourceError, self.xmldbm.addResource, empty)
+        
+        
         testres = XmlResource(TEST_PACKAGE, TEST_RESOURCETYPE, 
-                              xml_data = self.test_data)
-        testres2=XmlResource("otherpackage", TEST_RESOURCETYPE,
-                             xml_data = self.test_data)
+                              data = self.test_data)
+        testres2 = XmlResource("otherpackage", TEST_RESOURCETYPE,
+                               data = self.test_data)
         self.xmldbm.addResource(testres)
         self.xmldbm.addResource(testres2)
         result = self.xmldbm.getResource(testres.uid)
@@ -65,9 +72,9 @@ class XmlDbManagerTest(SeisHubTestCase):
     def testGetResourceList(self):
         # add some test resources first:
         testres1=XmlResource(TEST_PACKAGE, TEST_RESOURCETYPE, 
-                             xml_data=self.test_data)
+                             data = self.test_data)
         testres2=XmlResource(TEST_PACKAGE, TEST_RESOURCETYPE,
-                             xml_data=self.test_data)
+                             data = self.test_data)
         self.xmldbm.addResource(testres1)
         self.xmldbm.addResource(testres2)
         
@@ -82,7 +89,7 @@ class XmlDbManagerTest(SeisHubTestCase):
         
     def testResourceExists(self):
         testres1=XmlResource(TEST_PACKAGE, TEST_RESOURCETYPE,
-                             xml_data=self.test_data)
+                             data=self.test_data)
         self.xmldbm.addResource(testres1)
         self.assertEquals(self.xmldbm.resourceExists(TEST_PACKAGE, TEST_RESOURCETYPE,
                                                      testres1._id), True)

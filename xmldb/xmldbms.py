@@ -25,7 +25,7 @@ class XmlDbManager(DbStorage):
             return {'uid':'id',
                     'data':'data'}
         if table == resource_meta_tab:
-            return {'res_uid':'res_id',
+            return {'id':'res_id',
                     'package_id':'package_id',
                     'resourcetype_id':'resourcetype_id',
                     'revision':'revision'}
@@ -34,6 +34,8 @@ class XmlDbManager(DbStorage):
     def addResource(self, xml_resource):
         """Add a new resource to the storage
         @return: True on success"""
+        if (not xml_resource.data) or len(xml_resource.data) == 0:
+            raise AddResourceError('No xml data')
         try:
             self.store(xml_resource, xml_resource.info)
         except Exception, e:
@@ -47,7 +49,7 @@ class XmlDbManager(DbStorage):
         # XXX: bypass xml parsing on resource retrieval
         try:
             xml_resource = self.pickup(XmlResource, uid = uid)
-            xml_resource.info = self.pickup(ResourceInformation, res_uid = uid)
+            xml_resource.info = self.pickup(ResourceInformation, id = uid)
         except Exception, e:
             raise GetResourceError("No resource with id %s" % uid, e)
         return xml_resource
@@ -62,7 +64,7 @@ class XmlDbManager(DbStorage):
             raise DeleteResourceError("Invalid uid: %s" % uid)
         
         try:
-            self.drop(res_uid = uid)
+            self.drop(id = uid)
             self.drop(uid = uid)
         except Exception, e:
             raise DeleteResourceError("Error deleting resource", e)      
