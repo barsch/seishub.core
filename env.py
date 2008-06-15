@@ -61,6 +61,8 @@ class Environment(ComponentManager):
         self.registry = PackageRegistry(self)
         # load plugins
         ComponentLoader(self)
+        # initiate class based package registration
+        self.registry.init_registration()
     
     def getSeisHubPath(self):
         """Returns the absolute path to the SeisHub directory."""

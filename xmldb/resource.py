@@ -60,13 +60,6 @@ class ResourceInformation(Serializable, PackageSpecific):
     def __str__(self):
         return '/'+self.package_id+'/'+self.resourcetype_id+'/'+str(self.id)
     
-    # overloaded method getFields from Serializable:
-    def getFields(self):
-        return {'id':self.id,
-                'resourcetype_id':self.resourcetype_id,
-                'package_id':self.package_id,
-                'revision':self.revision}
-    
     #methods and attributes from IResourceInformation
     def getRes_uid(self):
         return self._res_uid

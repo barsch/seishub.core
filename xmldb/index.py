@@ -27,14 +27,6 @@ class IndexBase(Serializable):
         
     def __str__(self):
         return '/' + self.value_path + '/' + self.key_path
-    
-    # overloaded method from Serializable
-    def getFields(self):
-        return {'_id':self._id,
-                'key_path':self.key_path,
-                'value_path':self.value_path,
-                'type':self.type
-                }
               
     def getValue_path(self):
         if hasattr(self,'_value_path'):

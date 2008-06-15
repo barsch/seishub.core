@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 import sys
+import os
 
 from seishub.core import PackageManager
 from seishub.util.text import from_uri
-from seishub.db.util import DbStorage
+from seishub.db.util import DbStorage, IntegrityError
 from seishub.packages.interfaces import IPackage, IResourceType
 from seishub.packages.defaults import schema_tab, stylesheet_tab, alias_tab
 from seishub.packages.alias import Alias
@@ -59,25 +60,41 @@ class Registry(DbStorage):
     def __init__(self, env):
         super(DbStorage, self).__init__(env.db)
         self.catalog = env.catalog
+        self.log = env.log
         
     def init_registration(self):
-        """register pre-registered schemas/stylesheets"""
-        # check if registration
-        
-    
-    # overloaded method from DbStorage
-    def getMapping(self, table):
-        return {'resourcetype_id':'resourcetype_id',
-                'package_id':'package_id',
-                'type':'type',
-                'uid':'uid'}
-    
+        """add pre-registered items to the registry"""
+        for item in self._registry:
+            package = item[0]
+            resourcetype = item[1]
+            type = item[3]
+            try:
+                data = file(item[2], 'r').read()
+                self.register(package, resourcetype, type, data)
+            except IntegrityError, e:
+                pass
+                # XXX: check if already registered
+#                o = self.get(package, resourcetype, type)[0]
+#                if not o.resource.data == data:
+#                    # XXX: perform update
+#                    pass 
+            except Exception, e:
+                self.log.warn('Registration failed for: %s (%s)' % (item[2],e))
+                continue
+            
     def register(self, package_id, resourcetype_id, type, xml_data):
         res = self.catalog.addResource(self.package_id, self.resourcetype_id, 
                                        xml_data)
-        o = self.cls(package_id, resourcetype_id, type, res.uid)
-        self.store(o)
+        try:
+            o = self.cls(package_id, resourcetype_id, type, res.uid)
+            self.store(o)
+        except:
+            self.catalog.deleteResource(res.uid)
+            raise
         return True
+    
+    def update(self, package_id, resourcetype_id, type, xml_data):
+        pass
     
     def get(self, package_id = None, resourcetype_id = None, 
                   type = None, uid = None):
@@ -97,20 +114,26 @@ class Registry(DbStorage):
     
     def delete(self, uid):
         self.catalog.deleteResource(uid)
-        self.drop(uid = uid)
+        self.drop(self.cls, uid = uid)
         return True
     
 
 class SchemaRegistry(Registry):
     _registry = list()
     
-    db_tables = [schema_tab]
+    db_tables = {Schema: schema_tab}
+    db_mapping = {Schema:
+                 {'resourcetype_id':'resourcetype_id',
+                  'package_id':'package_id',
+                  'type':'type',
+                  'uid':'uid'}
+                  }
     cls = Schema
     package_id = "seishub"
     resourcetype_id = "schema"
     
     @staticmethod
-    def _pre_register(filename, type):
+    def _pre_register(type, filename):
         """pre-register a schema from filesystem during startup, 
         the schema will be read and registered as soon as the 
         package gets activated"""
@@ -124,9 +147,9 @@ class SchemaRegistry(Registry):
         resourcetype_id = locals_.get('resourcetype_id')
         assert package_id and resourcetype_id, 'class must provide package_id'+\
                ' and resourcetype_id attributes'
-        
+        path = os.path.join(os.path.dirname(frame.f_code.co_filename),filename)
         SchemaRegistry._registry.append([package_id, resourcetype_id, 
-                                   filename, type])
+                                         path, type])
 
 registerSchema = SchemaRegistry._pre_register
 
@@ -134,13 +157,19 @@ registerSchema = SchemaRegistry._pre_register
 class StylesheetRegistry(Registry):
     _registry = list()
     
-    db_tables = [stylesheet_tab]
+    db_tables = {Stylesheet:stylesheet_tab}
+    db_mapping = {Stylesheet:
+              {'resourcetype_id':'resourcetype_id',
+               'package_id':'package_id',
+               'type':'type',
+               'uid':'uid'}
+               }
     cls = Stylesheet
     package_id = "seishub"
     resourcetype_id = "stylesheet"
 
     @staticmethod
-    def _pre_register(filename, type):
+    def _pre_register(type, filename):
         """pre-register a schema/stylesheet from filesystem during startup, 
         the schema/stylesheet will be read and registered as soon as the 
         package gets activated"""
@@ -154,9 +183,9 @@ class StylesheetRegistry(Registry):
         resourcetype_id = locals_.get('resourcetype_id')
         assert package_id and resourcetype_id, 'class must provide package_id'+\
                ' and resourcetype_id attributes'
-        
+        path = os.path.join(os.path.dirname(frame.f_code.co_filename),filename)
         StylesheetRegistry._registry.append([package_id, resourcetype_id, 
-                                             filename, type])
+                                             path, type])
         
 registerStylesheet = StylesheetRegistry._pre_register
 
@@ -164,16 +193,15 @@ registerStylesheet = StylesheetRegistry._pre_register
 class AliasRegistry(DbStorage):
     _registry = list()
     
-    db_tables = [alias_tab]
+    db_tables = {Alias:alias_tab}
+    db_mapping = {Alias:
+             {'resourcetype_id':'resourcetype_id',
+              'package_id':'package_id',
+              'name':'name',
+              'expr':'expr'}
+             }
     cls = Alias
-    
-    # overloaded method from DbStorage
-    def getMapping(self, table):
-        return {'resourcetype_id':'resourcetype_id',
-                'package_id':'package_id',
-                'name':'name',
-                'expr':'expr'}
-    
+
     def register(self, package_id, resourcetype_id, name, expr):
         if package_id == '':
             package_id = None
@@ -212,7 +240,8 @@ class AliasRegistry(DbStorage):
             package_id = None
         if resourcetype_id == '':
             resourcetype_id = None
-        self.drop(package_id = package_id,
+        self.drop(self.cls,
+                  package_id = package_id,
                   resourcetype_id = resourcetype_id,
                   name = name)
         return True
@@ -231,11 +260,26 @@ class AliasRegistry(DbStorage):
         resourcetype_id = locals_.get('resourcetype_id')
         assert package_id and resourcetype_id, 'class must provide package_id'+\
                ' and resourcetype_id attributes'
-               
+
         AliasRegistry._registry.append([package_id, resourcetype_id, 
                                         name, query, limit, order_by])
         
     def init_registration(self):
-        pass
+        """add pre-registered items to the registry"""
+        for item in self._registry:
+            package = item[0]
+            resourcetype = item[1]
+            name = item[2]
+            query = item[3]
+#            limit = item[4]
+#            order_by = item[5]
+            try:
+                self.register(package, resourcetype, name, query)
+            except IntegrityError, e:
+                pass
+                # XXX: check if already registered 
+            except Exception, e:
+                self.log.warn('Registration failed for: %s (%s)' % (item[2],e))
+                continue
 
 registerAlias = AliasRegistry._pre_register

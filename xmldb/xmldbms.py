@@ -16,26 +16,25 @@ class XmlDbManager(DbStorage):
     """XmlResource layer, connects XmlResources to relational db storage"""
     implements(IResourceStorage)
     
-    # XXX: order of tables is IMPORTANT here!
-    db_tables = [resource_tab, resource_meta_tab]
+    db_tables = {XmlResource: resource_tab, 
+                 ResourceInformation: resource_meta_tab}
     
-    # overloaded methods from DbStorage
-    def getMapping(self, table):
-        if table == resource_tab:
-            return {'uid':'id',
-                    'data':'data'}
-        if table == resource_meta_tab:
-            return {'id':'res_id',
-                    'package_id':'package_id',
-                    'resourcetype_id':'resourcetype_id',
-                    'revision':'revision'}
-    
+    db_mapping = {XmlResource:
+                      {'uid':'id',
+                       'data':'data'},
+                  ResourceInformation:
+                      {'id':'res_id',
+                       'package_id':'package_id',
+                       'resourcetype_id':'resourcetype_id',
+                       'revision':'revision'}
+                  }
+
     # methods from IResourceStorage            
     def addResource(self, xml_resource):
         """Add a new resource to the storage
         @return: True on success"""
         if (not xml_resource.data) or len(xml_resource.data) == 0:
-            raise AddResourceError('No xml data')
+            raise AddResourceError('Empty document!')
         try:
             self.store(xml_resource, xml_resource.info)
         except Exception, e:
@@ -62,10 +61,9 @@ class XmlDbManager(DbStorage):
             long(uid)
         except:
             raise DeleteResourceError("Invalid uid: %s" % uid)
-        
         try:
-            self.drop(id = uid)
-            self.drop(uid = uid)
+            self.drop(ResourceInformation, id = uid)
+            self.drop(XmlResource, uid = uid)
         except Exception, e:
             raise DeleteResourceError("Error deleting resource", e)      
         return True

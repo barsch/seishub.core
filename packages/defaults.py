@@ -15,7 +15,7 @@ schema_tab = Table(DEFAULT_PREFIX + SCHEMA_TABLE, metadata,
     Column('package_id', Text, nullable = False),
     Column('resourcetype_id', Text),
     Column('type', Text),
-    UniqueConstraint('uid')
+    UniqueConstraint('package_id', 'resourcetype_id', 'type')
 )
 
 stylesheet_tab = Table(DEFAULT_PREFIX + STYLESHEET_TABLE, metadata,
@@ -24,7 +24,7 @@ stylesheet_tab = Table(DEFAULT_PREFIX + STYLESHEET_TABLE, metadata,
     Column('package_id', Text, nullable = False),
     Column('resourcetype_id', Text),
     Column('type', Text),
-    UniqueConstraint('uid')
+    UniqueConstraint('package_id', 'resourcetype_id', 'type')
 )
 
 alias_tab = Table(DEFAULT_PREFIX + ALIAS_TABLE, metadata,

@@ -14,13 +14,6 @@ class Alias(Serializable):
     def __str__(self):
         return to_uri(self.package_id, self.resourcetype_id) + '/' + self.name
     
-    def getFields(self):
-        return {'resourcetype_id':self.resourcetype_id,
-                'package_id':self.package_id,
-                'name':self.name,
-                'expr':self.expr
-                }
-    
     def getResourceTypeId(self):
         return self._resourcetype_id
      

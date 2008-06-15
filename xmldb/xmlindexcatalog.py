@@ -22,7 +22,12 @@ class XmlIndexCatalog(DbStorage):
                IResourceIndexing,
                IXmlIndexCatalog)
     
-    db_tables = [index_def_tab]
+    db_tables = {XmlIndex:index_def_tab}
+    db_mapping = {XmlIndex:
+                  {'key_path':'key_path',
+                   'value_path':'value_path',
+                   'type':'data_type'}
+                  }
     
     def __init__(self,db,resource_storage = None):
         super(XmlIndexCatalog, self).__init__(db)
@@ -35,13 +40,6 @@ class XmlIndexCatalog(DbStorage):
     def _parse_xpath_query(expr):
         pass
     _parse_xpath_query=staticmethod(_parse_xpath_query)
-    
-    # overloaded method from DbStorage
-    def getMapping(self, table):
-        if table == index_def_tab:
-            return {'key_path':'key_path',
-                    'value_path':'value_path',
-                    'type':'data_type'}
             
     # methods from IIndexRegistry:
     def registerIndex(self, xml_index):
@@ -63,7 +61,7 @@ class XmlIndexCatalog(DbStorage):
         # flush index first:
         self.flushIndex(key_path = key_path, value_path = value_path)
         # then remove index definition:
-        self.drop(key_path = key_path, value_path = value_path)
+        self.drop(XmlIndex, key_path = key_path, value_path = value_path)
         return True
 
     def getIndex(self,value_path=None, key_path=None, expr=None):

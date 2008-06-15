@@ -14,13 +14,6 @@ class Schema(Serializable):
     def __str__(self):
         return to_uri(self.package_id, self.resourcetype_id) + '/' + self.uid
     
-    def getFields(self):
-        return {'resourcetype_id':self.resourcetype_id,
-                'package_id':self.package_id,
-                'type':self.type,
-                'uid':self.uid
-                }
-    
     def getResourceTypeId(self):
         return self._resourcetype_id
      

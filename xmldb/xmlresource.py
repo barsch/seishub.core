@@ -22,12 +22,6 @@ class XmlResource(Resource, Serializable):
         Resource.__init__(self, None, data, info)
         Serializable.__init__(self)
         
-    # overloaded methods from Serializable
-    def getFields(self):
-        return {'uid':self.uid,
-                'data':self.data
-                }
-        
     # auto update resource uid when Serializable id is changed:
     def _setId(self, id):
         Serializable._setId(self, id)

@@ -36,7 +36,7 @@ class XmlIndexTest(SeisHubTestCase):
         
         empty_resource = XmlResource()
         test_resource = XmlResource('testpackage','station',
-                                    xml_data = RAW_XML1)
+                                    data = RAW_XML1)
         
         class Foo(object):
             pass

@@ -200,7 +200,7 @@ class XmlIndexCatalogTest(SeisHubTestCase):
         bad_catalog = XmlIndexCatalog(db = self.db)
         
         # register a test resource:
-        test_res=XmlResource('testpackage','testtype', xml_data = RAW_XML1)
+        test_res=XmlResource('testpackage','testtype', data = RAW_XML1)
         dbmgr.addResource(test_res)
 
         # register a test index:
@@ -239,7 +239,7 @@ class XmlIndexCatalogTest(SeisHubTestCase):
         except:
             print "Error registering index."
         
-        test_res = XmlResource('testpackage', 'testtype', xml_data = RAW_XML1)
+        test_res = XmlResource('testpackage', 'testtype', data = RAW_XML1)
         try:
             dbmgr.addResource(test_res)
         except:
