@@ -3,29 +3,78 @@
 import os
 import time
 
+from cStringIO import StringIO
 from zope.interface import implements
-from twisted.python import components
-from twisted.cred import portal
-from twisted.conch.ssh import factory, keys, common, session
-from twisted.conch.ssh.filetransfer import ISFTPServer, FileTransferServer
-from twisted.conch.ssh.filetransfer import FXF_READ, FXF_WRITE, FXF_APPEND, \
-                                           FXF_CREAT, FXF_TRUNC, FXF_EXCL
-from twisted.conch.ssh.filetransfer import SFTPError
-from twisted.conch.ssh.filetransfer import FX_PERMISSION_DENIED, FX_FAILURE
-from twisted.conch.ssh.filetransfer import FX_NO_SUCH_FILE, FX_OP_UNSUPPORTED
-from twisted.conch.ssh.filetransfer import FX_NOT_A_DIRECTORY
-from twisted.conch.ssh.filetransfer import FX_FILE_IS_A_DIRECTORY
-from twisted.conch.ssh.filetransfer import FX_FILE_ALREADY_EXISTS
-from twisted.conch import avatar
-from twisted.conch.interfaces import IConchUser
+
 from twisted.application import internet
+from twisted.conch.ssh import factory, keys, common, session
+from twisted.conch.ssh.filetransfer import FileTransferServer, SFTPError, \
+                                           FX_OP_UNSUPPORTED, FX_FAILURE
+from twisted.conch.interfaces import ISFTPFile, ISFTPServer, IConchUser
+from twisted.conch import avatar
 from twisted.conch.ls import lsLine
+from twisted.cred import portal
+from twisted.python import components
 
 #from seishub import __version__ as SEISHUB_VERSION
 from seishub.defaults import SFTP_PORT, SFTP_PRIVATE_KEY, SFTP_PUBLIC_KEY
 from seishub.config import IntOption, Option
 from seishub.packages.processor import Processor, RequestError
 from seishub.util.path import absPath
+
+
+class DirList:
+    def __init__(self, iter):
+        self.iter = iter
+    def __iter__(self):
+        return self
+    
+    def next(self):
+        (name, attrs) = self.iter.next()
+        
+        class st:
+            pass
+        
+        s = st()
+        attrs['permissions'] = s.st_mode = attrs.get('permissions', 040755)
+        attrs['uid'] = s.st_uid = attrs.get('uid', 0)
+        attrs['gid'] = s.st_gid = attrs.get('gid', 0)
+        attrs['size'] = s.st_size = attrs.get('size', 0)
+        attrs['atime'] = s.st_atime = attrs.get('atime', time.time())
+        attrs['mtime'] = s.st_mtime = attrs.get('mtime', time.time())
+        attrs['nlink'] = s.st_nlink = 1
+        return ( name, lsLine(name, s), attrs )
+    
+    def close(self):
+        return
+
+
+class InMemoryFile:
+    implements(ISFTPFile)
+    
+    def __init__(self, data=''):
+        self.data = StringIO()
+        self.data.write(data)
+    
+    def readChunk(self, offset, length):
+        self.data.seek(offset)
+        return self.data.read(length)
+    
+    def writeChunk(self, offset, data):
+        self.data.seek(offset)
+        self.data.write(data)
+    
+    def close(self):
+        pass
+    
+    def getAttrs(self):
+        print "-------------file.getAttrs"
+        return {'permissions': 020755, 'size': 0, 'uid': 0, 'gid': 0,
+                'atime': time.time(), 'mtime': time.time()}
+    
+    def setAttrs(self, attrs):
+        print "-------------file.setAttrs"
+        raise SFTPError(FX_OP_UNSUPPORTED, '')
 
 
 class SFTPServiceProtocol:
@@ -36,62 +85,27 @@ class SFTPServiceProtocol:
         self.env = avatar.env
     
     def gotVersion(self, otherVersion, extData):
-        print "gotVersion"
-        print otherVersion
-        print extData
         return {}
     
     def realPath(self, path):
         return absPath(path)
     
     def openFile(self, filename, flags, attrs):
-        createPlease = False
-        exclusive = False
-        openFlags = 0
-        if flags & FXF_READ == FXF_READ and flags & FXF_WRITE == 0:
-            openFlags = os.O_RDONLY
-        if flags & FXF_WRITE == FXF_WRITE and flags & FXF_READ == 0:
-            createPlease = True
-            openFlags = os.O_WRONLY
-        if flags & FXF_WRITE == FXF_WRITE and flags & FXF_READ == FXF_READ:
-            createPlease = True
-            openFlags = os.O_RDWR
-        if flags & FXF_APPEND == FXF_APPEND:
-            createPlease = True
-            openFlags |= os.O_APPEND
-        if flags & FXF_CREAT == FXF_CREAT:
-            createPlease = True
-            openFlags |= os.O_CREAT
-        if flags & FXF_TRUNC == FXF_TRUNC:
-            openFlags |= os.O_TRUNC
-        if flags & FXF_EXCL == FXF_EXCL:
-            exclusive = True
-        
-        print createPlease, exclusive, openFlags
-        print filename, flags, attrs
-        
-        # XXX Once we change readChunk/writeChunk we'll have to wrap
-        # child in something that implements those.
-        
-#        pathSegments = self.filesystem.splitPath(filename)
-#        dirname, basename = pathSegments[:-1], pathSegments[-1]
-#        parentNode = self.filesystem.fetch('/'.join(dirname))
-#        if createPlease:
-#            child = parentNode.createFile(basename, exclusive)
-#        elif parentNode.exists(basename):
-#            child = parentNode.child(basename)
-#            if not ivfs.IFileSystemLeaf.providedBy(child):
-#                raise SFTPError(FX_FILE_IS_A_DIRECTORY, filename)
-#        else:
-#            raise SFTPError(FX_NO_SUCH_FILE, filename)
-#        child.open(openFlags)
-#        return AdaptFileSystemLeafToISFTPFile(child)
-    
-    def removeFile(self, filename):
-        print "removeFile"
-        raise SFTPError(FX_OP_UNSUPPORTED, '')
+        # fetch the symbolic link path
+        path = self.readLink(filename[:-4])
+        # process resource
+        request = Processor(self.env)
+        request.method = 'GET'
+        request.path = path
+        try:
+            data = request.process()
+        except RequestError, e:
+            self.env.log.error('RequestError:', str(e))
+            raise SFTPError(FX_FAILURE, str(e))
+        return InMemoryFile(data)
     
     def openDirectory(self, path):
+        print "-------------openDirectory"
         request = Processor(self.env)
         request.method = 'GET'
         request.path = path
@@ -102,78 +116,51 @@ class SFTPServiceProtocol:
             raise SFTPError(FX_FAILURE, str(e))
         
         filelist = []
-        attr = {'permissions': 16877, 'size': 0, 'uid': 0, 'gid': 0,
-                'atime': time.time(), 'mtime': time.time(), 'nlink': 1}
-        filelist.append(('.', attr))
-        filelist.append(('..', attr))
+        filelist.append(('.', {}))
+        filelist.append(('..', {}))
         # packages, resource types, aliases and mappings are directories
         for r in ['package','resourcetype','alias','mapping']:
             for d in data.get(r,[]):
-                filelist.append((d, self._attrify(d, False)))
-        # direct resources will be documents
+                filelist.append((d, {}))
+        # direct resource will be a symbolic link to a document
         for d in data.get('resource',[]):
-            filelist.append((str(d), self._attrify(d, True)))
-        
-        class DirList:
-            def __init__(self, iter):
-                self.iter = iter
-            def __iter__(self):
-                return self
-            
-            def next(self):
-                (name, attrs) = self.iter.next()
-                
-                class st:
-                    pass
-                
-                s = st()
-                s.st_mode   = attrs["permissions"]
-                s.st_uid    = attrs["uid"]
-                s.st_gid    = attrs["gid"]
-                s.st_size   = attrs["size"]
-                s.st_mtime  = attrs["mtime"]
-                s.st_nlink  = attrs["nlink"]
-                return ( name, lsLine(name, s), attrs )
-            
-            def close(self):
-                return
+            name = d.split('/')[-1:][0]
+            filelist.append((name+'.xml', {'permissions': 0120777, 
+                                           'size': len(d)}))
         return DirList(iter(filelist))
     
     def getAttrs(self, path, followLinks):
-        return self._attrify(path)
-    
-    def setAttrs(self, path, attrs):
-        print "setAttrs"
-        raise SFTPError(FX_OP_UNSUPPORTED, '')
-    
-    def makeDirectory(self, path, attrs):
-        print "makeDirectory"
-        raise SFTPError(FX_OP_UNSUPPORTED, '')
-    
-    def removeDirectory(self, path):
-        print "removeDirectory"
-        raise SFTPError(FX_OP_UNSUPPORTED, '')
+        print "-------------getAttrs"
+        print path
+        print followLinks
+        return {'permissions': 020755, 'size': 0, 'uid': 0, 'gid': 0,
+                'atime': time.time(), 'mtime': time.time()}
     
     def readLink(self, path):
-        print "readLink"
+        """Find the root of a set of symbolic links."""
+        print "-------------readLink"
+        print path
+        name = path.split('/')[-1:][0]
+        #raise SFTPError(FX_OP_UNSUPPORTED, '')
+        return '/degenesis/weapon/'+name
+    
+    def setAttrs(self, path, attrs):
         raise SFTPError(FX_OP_UNSUPPORTED, '')
     
-    def makeLink(self, linkPath, targetPath):
-        print "makeLink"
+    def removeFile(self, filename):
         raise SFTPError(FX_OP_UNSUPPORTED, '')
     
     def renameFile(self, oldpath, newpath):
-        print "renameFile"
         raise SFTPError(FX_OP_UNSUPPORTED, '')
     
-    def _attrify(self, path, file=False):
-        if file:
-            attr = {'permissions': 33188, 'size': 0, 'uid': 0, 'gid': 0,
-                    'atime': time.time(), 'mtime': time.time(), 'nlink': 1}
-        else:
-            attr = {'permissions': 16877, 'size': 0, 'uid': 0, 'gid': 0,
-                    'atime': time.time(), 'mtime': time.time(), 'nlink': 1}
-        return attr
+    def makeDirectory(self, path, attrs):
+        raise SFTPError(FX_OP_UNSUPPORTED, '')
+    
+    def removeDirectory(self, path):
+        raise SFTPError(FX_OP_UNSUPPORTED, '')
+    
+    def makeLink(self, linkPath, targetPath):
+        raise SFTPError(FX_OP_UNSUPPORTED, '')
 
 
 class SFTPServiceAvatar(avatar.ConchUser):

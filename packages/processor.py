@@ -36,16 +36,22 @@ class Processor:
         # post process self.path
         self.postpath = filter(len, 
                                map(unquote, string.split(self.path[1:], '/')))
-        # test if root element
+        # test if root node
         if len(self.postpath)==0:
             if self.method=='GET':
                 return self._processRoot()
             raise RequestError(http.NOT_ALLOWED)
-        
-        # XXX: test if a property request
-        
+        # test if info request on root node
+        if len(self.postpath)==1 and self.postpath[0][0]=='.':
+            if self.method=='GET':
+                if self.postpath[0]=='.info':
+                    return self._processRootInfo()
+            raise RequestError(http.NOT_ALLOWED)
         # test if valid package_id
         if self.postpath[0] not in self.package_ids:
+            # XXX: it may be a mapping
+            #if self.postpath[0] in self.env.registry.mappings():
+            #    return self._processMapping()
             raise RequestError(http.NOT_FOUND)
         else:
             self.package_id = self.postpath[0]
@@ -57,7 +63,7 @@ class Processor:
         
         # fetch package aliases
         alias_ids = self.env.registry.aliases.get(self.package_id)
-        # its may be an package alias
+        # it may be an package alias
         if len(self.postpath)==2 and self.postpath[1] in alias_ids:
             return self._processAlias()
         
@@ -88,6 +94,14 @@ class Processor:
         a list of all packages.
         """
         return self.renderResourceList(package=self.package_ids)
+    
+    def _processRootInfo(self):
+        """
+        Generates a XML document containing all kind of meta information about 
+        this SeisHub server..
+        """
+        data = """<muh />"""
+        return self.renderResource(data)
     
     def _processPackage(self):
         """
