@@ -27,7 +27,7 @@ class SchemasPanel(Component):
                 type = args.get('type',[''])[0]
                 package_id = args.get('package_id',[''])[0]
                 resourcetype_id = args.get('resourcetype_id',[''])[0]
-                if file and type and package_id in packages:
+                if type and package_id in packages:
                     if resourcetype_id in resourcetypes.get(package_id, []):
                         data['error'] = self._addSchema(package_id,
                                                         resourcetype_id,
@@ -78,8 +78,7 @@ class StylesheetsPanel(Component):
                 type = args.get('type',[''])[0]
                 package_id = args.get('package_id',[''])[0]
                 resourcetype_id = args.get('resourcetype_id',[''])[0]
-                # XXX: "file and type" is None when passing an empty file
-                if file and type and package_id in packages:
+                if type and package_id in packages:
                     if resourcetype_id in resourcetypes.get(package_id, []):
                         data['error'] = self._addStylesheet(package_id,
                                                             resourcetype_id,

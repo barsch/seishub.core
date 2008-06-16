@@ -20,27 +20,6 @@ class IResourceType(IPackage):
     resourcetype_id = Attribute("Defines the ID of this resource type.")
 
 
-class IAliases(IPackage):
-    """Interface of aliases for a package or resource type."""
-
-    def getAliases():
-        """Return dict of aliases in form of {'URL': 'XPath Query',}."""
-
-
-class IStylesheets(IPackage):
-    """Interface of XML stylesheets for a package or resource type."""
-    
-    def getStylesheets():
-        """Return dict of stylesheets in form of {'output_id': 'URI',}."""
-
-
-class ISchemas(IPackage):
-    """Interface of XML validation schemas for a package or resource type."""
-    
-    def getSchemas():
-        """Return URI list of validation schemas (dtd or xsd)."""
-
-
 class IResourceMapper(IResourceType):
     """Interface definition for a resource mapper for SFTP and REST."""
     

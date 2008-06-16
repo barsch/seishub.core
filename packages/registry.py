@@ -258,8 +258,7 @@ class AliasRegistry(DbStorage):
                'registerStylesheet() can only be used in a class definition'
         package_id = locals_.get('package_id')
         resourcetype_id = locals_.get('resourcetype_id')
-        assert package_id and resourcetype_id, 'class must provide package_id'+\
-               ' and resourcetype_id attributes'
+        assert package_id, 'class must provide package_id attributes'
 
         AliasRegistry._registry.append([package_id, resourcetype_id, 
                                         name, query, limit, order_by])
