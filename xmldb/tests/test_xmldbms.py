@@ -2,7 +2,7 @@
 
 import unittest
 
-from seishub.test import SeisHubTestCase
+from seishub.test import SeisHubEnvironmentTestCase
 from seishub.xmldb.errors import AddResourceError, XmlResourceError
 from seishub.xmldb.xmldbms import XmlDbManager
 from seishub.xmldb.xmlresource import XmlResource
@@ -22,7 +22,7 @@ TEST_PACKAGE = 'testpackage'
 TEST_RESOURCETYPE = 'testml'
 
 
-class XmlResourceTest(SeisHubTestCase):
+class XmlResourceTest(SeisHubEnvironmentTestCase):
     def testXml_data(self):
         test_res = XmlResource('test','testml', TEST_XML)
         xml_data = test_res.getData()
@@ -34,7 +34,7 @@ class XmlResourceTest(SeisHubTestCase):
                           TEST_BAD_XML)
 
 
-class XmlDbManagerTest(SeisHubTestCase):
+class XmlDbManagerTest(SeisHubEnvironmentTestCase):
     def setUp(self):
         super(XmlDbManagerTest,self).setUp()
         # set up test env:

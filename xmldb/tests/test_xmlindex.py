@@ -3,7 +3,7 @@
 import unittest
 from zope.interface.exceptions import DoesNotImplement
 
-from seishub.test import SeisHubTestCase
+from seishub.test import SeisHubEnvironmentTestCase
 from seishub.core import SeisHubError
 from seishub.xmldb.xmlresource import XmlResource
 from seishub.xmldb.index import XmlIndex, TEXT_INDEX
@@ -23,7 +23,7 @@ RAW_XML1="""<station rel_uri="bern">
     </XY>
 </station>"""
 
-class XmlIndexTest(SeisHubTestCase):   
+class XmlIndexTest(SeisHubEnvironmentTestCase):   
     def testEval(self):
         #index with single node key result:
         test_index=XmlIndex(key_path = "lon",

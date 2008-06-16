@@ -3,21 +3,25 @@
 
 import unittest
 import sys, doctest, os, tempfile
+
+from twisted.internet import reactor
+
+from seishub.services.rest import RESTServiceFactory
 from seishub.env import Environment
 from seishub.config import Configuration
 
 
-class SeisHubTestCase(unittest.TestCase):
+class SeisHubEnvironmentTestCase(unittest.TestCase):
     """Base class used for SeisHub test cases"""
-    def __init__(self,methodName):
+    def __init__(self, methodName):
         unittest.TestCase.__init__(self, methodName)
         self.filename = os.path.join(tempfile.gettempdir(), 'seishub-test.ini')
         self.config = Configuration(self.filename)
         #set a few standard settings
         self.config.set('logging', 'log_level', 'OFF')
-        self.config.set('db', 'uri', 
-                        'postgres://seishub:seishub@localhost:5432/seishub')
-#        self.config.set('db', 'uri', 'sqlite://')
+#        self.config.set('db', 'uri', 
+#                        'postgres://seishub:seishub@localhost:5432/seishub')
+        self.config.set('db', 'uri', 'sqlite://')
         self._config()
         self._start()
     
@@ -29,12 +33,39 @@ class SeisHubTestCase(unittest.TestCase):
         self.config.save()
         self.env=Environment(self.filename)
         self.env.initComponent(self)
+
+
+class SeisHubServerTestCase(unittest.TestCase):
+    """Base test class using a temporary REST service"""
+    def __init__(self, methodName):
+        unittest.TestCase.__init__(self, methodName)
+        self.filename = os.path.join(tempfile.gettempdir(), 'seishub-test.ini')
+        self.config = Configuration(self.filename)
+        #set a few standard settings
+        self.config.set('logging', 'log_level', 'OFF')
+#        self.config.set('db', 'uri', 
+#                        'postgres://seishub:seishub@localhost:5432/seishub')
+        self.config.set('db', 'uri', 'sqlite://')
+        self._config()
+        self._start()
     
-#    def _printRes(self,res):
-#        """little helper for debugging callbacks"""
-#        print res
-#        
+    def __del__(self):
+        self._stop()
     
+    def _config(self):
+        """Method to write into temporary config file."""
+    
+    def _start(self):
+        """Method to set the Environment."""
+        self.config.save()
+        self.env=Environment(self.filename)
+        self.env.initComponent(self)
+        ## REST
+        reactor.listenTCP(8888, RESTServiceFactory(self.env)) #@UndefinedVariable
+        reactor.run() #@UndefinedVariable
+        
+    def _stop(self):
+        reactor.stop() #@UndefinedVariable
 
 
 def suite():

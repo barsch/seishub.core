@@ -2,13 +2,13 @@
 
 import unittest
 
-from seishub.test import SeisHubTestCase
+from seishub.test import SeisHubEnvironmentTestCase
 from seishub.xmldb.xpath import RestrictedXpathExpression, \
                                 RestrictedXpathError, InvalidXpathQuery, \
                                 XPathQuery
 
 
-class XpathTest(SeisHubTestCase):
+class XpathTest(SeisHubEnvironmentTestCase):
     #TODO: testIndexDefiningXpathExpression
     
     def testRestrictedXpathExpression(self):
@@ -29,7 +29,7 @@ class XpathTest(SeisHubTestCase):
                               RestrictedXpathExpression,
                               iv)
         
-class XPathQueryTest(SeisHubTestCase):
+class XPathQueryTest(SeisHubEnvironmentTestCase):
     test_expr = "/testpackage/testtype/rootnode[./element1/element2 = 'blub' and ./element1/@id <= 5]"
     wildcard_expr = "/*/*/rootnode[./element1/element2 = 'blub']"
     invalid_expr = "/testtype/rootnode[./element1]"

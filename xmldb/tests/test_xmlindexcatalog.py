@@ -6,7 +6,7 @@ import inspect
 
 from sqlalchemy.sql import and_
 
-from seishub.test import SeisHubTestCase
+from seishub.test import SeisHubEnvironmentTestCase
 from seishub.xmldb.xmlindexcatalog import XmlIndexCatalog
 from seishub.xmldb.xmlindexcatalog import XmlIndexCatalogError
 from seishub.xmldb.xmldbms import XmlDbManager
@@ -61,7 +61,7 @@ so_indexes = ['/sortordertests/sotest/sortorder/int1',
               '/sortordertests/sotest/sortorder/str1', 
               '/sortordertests/sotest/sortorder/str2']
 
-class XmlIndexCatalogTest(SeisHubTestCase):
+class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
     #TODO: testGetIndexes
     _last_id=0
     _test_kp="station/XY/paramXY"

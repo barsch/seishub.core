@@ -6,10 +6,10 @@ import inspect
 
 from lxml import etree
 
-from seishub.test import SeisHubTestCase
+from seishub.test import SeisHubEnvironmentTestCase
 
 
-class XMLConformanceTestCase(SeisHubTestCase):
+class XMLConformanceTestCase(SeisHubEnvironmentTestCase):
     """Wrapper class for the XML Conformance Test Suite 20080205 provided by 
     W3C (see http://www.w3.org/XML/Test/)."""
     

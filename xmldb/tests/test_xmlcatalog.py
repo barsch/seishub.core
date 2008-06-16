@@ -2,7 +2,7 @@
 
 import unittest
 
-from seishub.test import SeisHubTestCase
+from seishub.test import SeisHubEnvironmentTestCase
 
 
 RAW_XML = """<station rel_uri="bern">
@@ -67,7 +67,7 @@ IDX1 = "/station/XY/paramXY"
 IDX2 = "/testml/blah1/@id"
 IDX3 = "/weapon/damage"
 
-class XmlCatalogTest(SeisHubTestCase):
+class XmlCatalogTest(SeisHubEnvironmentTestCase):
     def setUp(self):
         # create a small test catalog
         self.res1 = self.env.catalog.addResource("testpackage", "station", 

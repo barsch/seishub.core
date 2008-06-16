@@ -2,11 +2,11 @@
 
 import unittest
 
-from seishub.test import SeisHubTestCase
+from seishub.test import SeisHubEnvironmentTestCase
 from seishub.xmldb.validator import XmlSchemaValidator
 
 
-class XmlValidatorTest(SeisHubTestCase):
+class XmlValidatorTest(SeisHubEnvironmentTestCase):
     
     def setUp(self):
         self.test_schema="""<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">

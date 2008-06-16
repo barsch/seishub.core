@@ -1,7 +1,7 @@
 import unittest
 import os
 
-from seishub.test import SeisHubTestCase
+from seishub.test import SeisHubEnvironmentTestCase
 
 TEST_SCHEMA="""<?xml version="1.0"?>
 <xs:schema elementFormDefault="qualified"
@@ -24,7 +24,7 @@ TEST_SCHEMA="""<?xml version="1.0"?>
 </xs:schema>
 """
 
-class PackageRegistryTest(SeisHubTestCase):
+class PackageRegistryTest(SeisHubEnvironmentTestCase):
     def test_SchemaRegistry(self):
         self.env.registry.schemas.register('testpackage0', 'weapon', 'xsd', 
                                            TEST_SCHEMA)
@@ -109,7 +109,7 @@ class AResourceType():
     registerAlias('analias','/resourceroot[./a/predicate/expression]',
                   limit = 10, order_by = {'/path/to/element':'ASC'})
 
-class FromFilesystemTest(SeisHubTestCase):
+class FromFilesystemTest(SeisHubEnvironmentTestCase):
     def testRegisterStylesheet(self):
         # note: schema registry uses the same functionality and is therefore
         # not tested seperately
