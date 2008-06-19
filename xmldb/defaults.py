@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-from sqlalchemy import MetaData, Table, Column, Integer, String, \
-                       UniqueConstraint, ForeignKey, Text, Binary, \
-                       PrimaryKeyConstraint, DateTime
+from sqlalchemy import Table, Column, ForeignKey  #@UnresolvedImport
+from sqlalchemy import Integer, String, DateTime, Text, Binary #@UnresolvedImport
+from sqlalchemy import UniqueConstraint, PrimaryKeyConstraint #@UnresolvedImport
                        
 from seishub.db.dbmanager import meta as metadata
                        

@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 from zope.interface import implements
 from zope.interface.exceptions import DoesNotImplement
-from sqlalchemy import select
-from sqlalchemy.sql import and_, or_, not_
-from sqlalchemy.sql.expression import _BinaryExpression, ClauseList
+from sqlalchemy import select #@UnresolvedImport
+from sqlalchemy.sql import and_, or_ #@UnresolvedImport
+from sqlalchemy.sql.expression import _BinaryExpression, ClauseList #@UnresolvedImport
 
 from seishub.db.util import DbStorage
 from seishub.xmldb.interfaces import IXmlIndexCatalog, IIndexRegistry, \

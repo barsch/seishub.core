@@ -4,7 +4,8 @@ import os
 
 from seishub.core import PackageManager
 from seishub.util.text import from_uri
-from seishub.db.util import DbStorage, IntegrityError
+from seishub.db.util import DbStorage
+from sqlalchemy.exceptions import IntegrityError #@UnresolvedImport
 from seishub.packages.interfaces import IPackage, IResourceType
 from seishub.packages.defaults import schema_tab, stylesheet_tab, alias_tab
 from seishub.packages.alias import Alias
@@ -48,12 +49,7 @@ class PackageRegistry(object):
             id = c.resourcetype_id
             resourcetypes[id] = c
         return resourcetypes
-    
-    @staticmethod
-    def registerIndex(xpath, type = "text"):
-        pass
 
-registerIndex = PackageRegistry.registerIndex
 
 class Registry(DbStorage):
     """base class for StylesheetRegistry and SchemaRegistry"""
@@ -61,6 +57,25 @@ class Registry(DbStorage):
         super(DbStorage, self).__init__(env.db)
         self.catalog = env.catalog
         self.log = env.log
+        
+    @staticmethod
+    def _pre_register(reg, type, filename):
+        """pre-register a schema from filesystem during startup, 
+        the schema will be read and registered as soon as the 
+        package gets activated"""
+        # get package id and reosurcetype_id from calling class
+        frame = sys._getframe(2)
+        locals_ = frame.f_locals
+        # Some sanity checks
+        assert locals_ is not frame.f_globals and '__module__' in locals_, \
+               'registerStylesheet() can only be used in a class definition'
+        package_id = locals_.get('package_id')
+        resourcetype_id = locals_.get('resourcetype_id')
+        assert package_id and resourcetype_id, 'class must provide package_id'+\
+               ' and resourcetype_id attributes'
+        path = os.path.join(os.path.dirname(frame.f_code.co_filename),filename)
+        reg._registry.append([package_id, resourcetype_id, 
+                                         path, type])
         
     def init_registration(self):
         """add pre-registered items to the registry"""
@@ -131,27 +146,9 @@ class SchemaRegistry(Registry):
     cls = Schema
     package_id = "seishub"
     resourcetype_id = "schema"
-    
-    @staticmethod
-    def _pre_register(type, filename):
-        """pre-register a schema from filesystem during startup, 
-        the schema will be read and registered as soon as the 
-        package gets activated"""
-        # get package id and reosurcetype_id from calling class
-        frame = sys._getframe(1)
-        locals_ = frame.f_locals
-        # Some sanity checks
-        assert locals_ is not frame.f_globals and '__module__' in locals_, \
-               'registerStylesheet() can only be used in a class definition'
-        package_id = locals_.get('package_id')
-        resourcetype_id = locals_.get('resourcetype_id')
-        assert package_id and resourcetype_id, 'class must provide package_id'+\
-               ' and resourcetype_id attributes'
-        path = os.path.join(os.path.dirname(frame.f_code.co_filename),filename)
-        SchemaRegistry._registry.append([package_id, resourcetype_id, 
-                                         path, type])
 
-registerSchema = SchemaRegistry._pre_register
+registerSchema = lambda *args, **kwargs: SchemaRegistry._pre_register\
+                                              (SchemaRegistry, *args, **kwargs)
 
 
 class StylesheetRegistry(Registry):
@@ -167,27 +164,9 @@ class StylesheetRegistry(Registry):
     cls = Stylesheet
     package_id = "seishub"
     resourcetype_id = "stylesheet"
-
-    @staticmethod
-    def _pre_register(type, filename):
-        """pre-register a schema/stylesheet from filesystem during startup, 
-        the schema/stylesheet will be read and registered as soon as the 
-        package gets activated"""
-        # get package id and reosurcetype_id from calling class
-        frame = sys._getframe(1)
-        locals_ = frame.f_locals
-        # Some sanity checks
-        assert locals_ is not frame.f_globals and '__module__' in locals_, \
-               'registerStylesheet() can only be used in a class definition'
-        package_id = locals_.get('package_id')
-        resourcetype_id = locals_.get('resourcetype_id')
-        assert package_id and resourcetype_id, 'class must provide package_id'+\
-               ' and resourcetype_id attributes'
-        path = os.path.join(os.path.dirname(frame.f_code.co_filename),filename)
-        StylesheetRegistry._registry.append([package_id, resourcetype_id, 
-                                             path, type])
         
-registerStylesheet = StylesheetRegistry._pre_register
+registerStylesheet = lambda *args, **kwargs: StylesheetRegistry._pre_register\
+                                          (StylesheetRegistry, *args, **kwargs)
 
 
 class AliasRegistry(DbStorage):

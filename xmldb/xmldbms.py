@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
 
 from zope.interface import implements
-from sqlalchemy import select
-from sqlalchemy.sql import and_
-from sqlalchemy.sql.expression import ClauseList
+from sqlalchemy import select #@UnresolvedImport 
+from sqlalchemy.sql import and_ #@UnresolvedImport 
+from sqlalchemy.sql.expression import ClauseList #@UnresolvedImport 
 
 from seishub.db.util import DbStorage
 from seishub.xmldb.interfaces import IResourceStorage
 from seishub.xmldb.errors import AddResourceError, GetResourceError, \
                                  DeleteResourceError
 from seishub.xmldb.xmlresource import XmlResource, ResourceInformation
-from seishub.xmldb.defaults import resource_tab, resource_meta_tab
+from seishub.xmldb.defaults import resource_tab, resource_meta_tab 
 
 class XmlDbManager(DbStorage):
     """XmlResource layer, connects XmlResources to relational db storage"""

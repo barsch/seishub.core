@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<xs:schema elementFormDefault="qualified"
+    xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+    <xs:element name="weapon">
+        <xs:complexType>
+            <xs:attribute name="lang" type="xs:string"/>
+            <xs:sequence>
+                <xs:element name="name" type="xs:string" use="required" />
+                <xs:element name="inertia" type="xs:string" />
+                <xs:element name="range" type="xs:string" />
+                <xs:element name="damage" type="xs:string" />
+                <xs:element name="ammunition" type="xs:string" />
+                <xs:element name="properties" type="xs:string" />
+                <xs:element name="load" type="xs:string" />
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+</xs:schema>

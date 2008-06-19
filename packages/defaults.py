@@ -1,6 +1,5 @@
-from sqlalchemy import MetaData, Table, Column, Integer, String, \
-                       UniqueConstraint, ForeignKey, Text, Binary, \
-                       PrimaryKeyConstraint, DateTime
+from sqlalchemy import Table, Column, UniqueConstraint  #@UnresolvedImport 
+from sqlalchemy import Integer, Text #@UnresolvedImport 
                        
 from seishub.db.dbmanager import meta as metadata
 

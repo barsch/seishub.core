@@ -4,7 +4,7 @@ import unittest
 import os
 import inspect
 
-from sqlalchemy.sql import and_
+from sqlalchemy.sql import and_ #@UnresolvedImport
 
 from seishub.test import SeisHubEnvironmentTestCase
 from seishub.xmldb.xmlindexcatalog import XmlIndexCatalog

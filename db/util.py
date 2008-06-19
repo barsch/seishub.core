@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
 from zope.interface import implements, Interface
 from zope.interface.exceptions import DoesNotImplement
-from sqlalchemy import select
-from sqlalchemy.sql import and_
-from sqlalchemy.sql.expression import ClauseList
-from sqlalchemy.exceptions import IntegrityError
+from sqlalchemy import select #@UnresolvedImport
+from sqlalchemy.sql.expression import ClauseList #@UnresolvedImport
 
 class IDbEnabled(Interface):
     """Object provides access to db manager"""
