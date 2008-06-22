@@ -10,8 +10,8 @@ class Resource(object):
     """Resource base class"""
     implements(IResource)
     
-    def __init__(self, uid = None, data = None, info = None):
-        self.uid = uid
+    def __init__(self, resource_id = None, data = None, info = None):
+        self.resource_id = resource_id
         self.data = data
         self.info = info
             
@@ -23,16 +23,16 @@ class Resource(object):
     
     data = property(getData, setData, 'Raw data')
     
-    def getUid(self):
-        return self._uid
+    def __getId(self):
+        return self.__id
     
-    def setUid(self, data):
+    def __setId(self, data):
         # also set id attribute in ResourceInformation
         if self.info:
-            self.info.id = data 
-        self._uid = data
+            self.info.resource_id = data 
+        self.__id = data
     
-    uid = property(getUid, setUid, 'unique resource id')
+    resource_id = property(__getId, __setId, 'unique resource id')
     
     def getInfo(self):
         try:
@@ -50,29 +50,48 @@ class Resource(object):
 class ResourceInformation(Serializable, PackageSpecific):
     implements(IResourceInformation)
     
-    def __init__(self, res_uid = None, package_id = None, resourcetype_id = None, 
-                 revision = None):
-        self.id = res_uid
+    def __init__(self, package_id = None, resourcetype_id = None, id = None, 
+                 revision = None, resource_id = None, version_control = False):
+        self.version_control = version_control
+        self.id = id
+        self.revision = revision
+        self.resource_id = resource_id
         self.package_id = package_id
         self.resourcetype_id = resourcetype_id
-        self.revision = revision
         
     def __str__(self):
         return '/'+self.package_id+'/'+self.resourcetype_id+'/'+str(self.id)
     
+    # auto update id when _Serializable__id is changed:
+    def _setId(self, id):
+        Serializable._setId(self, id)
+        self.id = id
+    
     #methods and attributes from IResourceInformation
-    def getRes_uid(self):
-        return self._res_uid
+    def getRes_id(self):
+        return self._resource_id
     
-    def setRes_uid(self, data):
-        self._res_uid = data
+    def setRes_id(self, data):
+        self._resource_id = data
     
-    id = property(getRes_uid, setRes_uid, "id of resource")
+    resource_id = property(getRes_id, setRes_id, "id of related document "+\
+                                                 "(internal id)")
     
     def getRevision(self):
         return self._revision
     
     def setRevision(self, data):
-        self._revision = data
+        if not self.version_control:
+            self._revision = 1
+        else:
+            self._revision = data
          
-    revision = property(getRevision,setRevision,"revision")
+    revision = property(getRevision, setRevision, "revision")
+    
+    def getId(self):
+        return self.__id
+    
+    def setId(self, data):
+        self.__id = data
+        
+    id = property(getId, setId, "Integer identification number (external id)")

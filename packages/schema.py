@@ -4,12 +4,12 @@ from seishub.db.util import Serializable
 
 class Schema(Serializable):
     def __init__(self, package_id = None, resourcetype_id = None, 
-                 type = None, uid = None):
+                 type = None, resource_id = None):
         super(Serializable, self).__init__()
         self.package_id = package_id
         self.resourcetype_id = resourcetype_id
         self.type = type
-        self.uid = uid
+        self.resource_id = resource_id
         
     def __str__(self):
         return to_uri(self.package_id, self.resourcetype_id) + '/' + self.uid
@@ -31,13 +31,14 @@ class Schema(Serializable):
         
     package_id = property(getPackageId, setPackageId, "Package id")
     
-    def getUid(self):
-        return self._uid
+    def getResource_id(self):
+        return self._resource_id
     
-    def setUid(self, data):
-        self._uid = data
+    def setResource_id(self, data):
+        self._resource_id = data
         
-    uid = property(getUid, setUid, "Unique resource identifier")
+    resource_id = property(getResource_id, setResource_id, 
+                           "Unique resource identifier (integer)")
     
     def getType(self):
         return self._type
@@ -55,8 +56,8 @@ class Schema(Serializable):
             return self._resource
         if not hasattr(self, '_catalog'):
             return None
-        r = self._catalog.getResource(self.uid)
-        self._resource = r        
+        r = self._catalog.xmldb.getResource(resource_id = self.resource_id)
+        self._resource = r
         return r
 
     resource = property(getResource, doc = "XmlResource (read only)")

@@ -27,7 +27,7 @@
 <h2>List of all schemas</h2>
 <form method="post" name="list">
     #for $schema in $schemas 
-    <input type="checkbox" name="schema[]" value="$schema.uid" /> 
+    <input type="checkbox" name="schema[]" value="$schema.resource_id" /> 
     $schema.package_id
     $schema.resourcetype_id
     $schema.type

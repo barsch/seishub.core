@@ -27,7 +27,7 @@
 <h2>List of all stylesheets</h2>
 <form method="post" name="list">
     #for $stylesheet in $stylesheets 
-    <input type="checkbox" name="stylesheet[]" value="$stylesheet.uid" /> 
+    <input type="checkbox" name="stylesheet[]" value="$stylesheet.resource_id" /> 
     $stylesheet.package_id
     $stylesheet.resourcetype_id
     $stylesheet.type

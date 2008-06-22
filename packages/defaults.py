@@ -10,7 +10,7 @@ ALIAS_TABLE = 'aliases'
 
 schema_tab = Table(DEFAULT_PREFIX + SCHEMA_TABLE, metadata,
     Column('id', Integer, primary_key = True, autoincrement = True),
-    Column('uid', Text, nullable = False),
+    Column('resource_id', Text, nullable = False),
     Column('package_id', Text, nullable = False),
     Column('resourcetype_id', Text),
     Column('type', Text),
@@ -19,7 +19,7 @@ schema_tab = Table(DEFAULT_PREFIX + SCHEMA_TABLE, metadata,
 
 stylesheet_tab = Table(DEFAULT_PREFIX + STYLESHEET_TABLE, metadata,
     Column('id', Integer, primary_key = True, autoincrement = True),
-    Column('uid', Text, nullable = False),
+    Column('resource_id', Text, nullable = False),
     Column('package_id', Text, nullable = False),
     Column('resourcetype_id', Text),
     Column('type', Text),

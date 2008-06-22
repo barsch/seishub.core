@@ -127,7 +127,7 @@ class XmlIndexCatalog(DbStorage):
         pass
     
     # methods from IResourceIndexing:
-    def indexResource(self, id, value_path, key_path):
+    def indexResource(self, resource_id, value_path, key_path):
         """@see: L{seishub.xmldb.xmlindexcatalog.interfaces.IResourceIndexing}"""
 #        #TODO: do this not index specific but resource type specific
 
@@ -137,7 +137,7 @@ class XmlIndexCatalog(DbStorage):
         
         #get objs and evaluate index on resource:
         try:
-            resource = self._storage.getResource(id)
+            resource = self._storage.getResource(resource_id = resource_id)
         except AttributeError:
             raise XmlIndexCatalogError("No resource storage.")
         index = self.getIndex(value_path, key_path)
@@ -224,6 +224,7 @@ class XmlIndexCatalog(DbStorage):
         
     def query(self, query):
         """@see: L{seishub.xmldb.interfaces.IXmlIndexCatalog}"""
+        # XXX: query should return ResourceInformation objects
         if not IXPathQuery.providedBy(query):
             raise DoesNotImplement(IXPathQuery)
         
@@ -234,7 +235,7 @@ class XmlIndexCatalog(DbStorage):
             q = select([value_col],w)
         else:
             # value path only: => resource type query
-            value_col = resource_meta_tab.c.res_id
+            value_col = resource_meta_tab.c.resource_id
             q = select([value_col], 
                        and_( 
                            resource_meta_tab.c.package_id == query.package_id,

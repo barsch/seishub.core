@@ -2,6 +2,7 @@
 from zope.interface import implements, Interface
 from zope.interface.exceptions import DoesNotImplement
 from sqlalchemy import select #@UnresolvedImport
+from sqlalchemy.sql import func 
 from sqlalchemy.sql.expression import ClauseList #@UnresolvedImport
 
 class IDbEnabled(Interface):
@@ -27,10 +28,10 @@ class DbEnabled(object):
     implements(IDbEnabled)
     
     def __init__(self, db):
-        self.setDb(db)
+        self.setDb(db.engine)
 
     def setDb(self, db):
-        self._db = db.engine
+        self._db = db
         
     def getDb(self):
         return self._db
@@ -56,13 +57,17 @@ class DbStorage(DbEnabled):
     db_tables = dict()
     db_mapping = dict()
     
-    def _to_kwargs(self, o, map):
+    def _to_kwargs(self, table, o, map):
         d = dict()
         for field in map:
             value = o.__getattribute__(field)
-            if not value:
+            if value is None:
                 continue
-            d[map[field]] = str(value)
+            if isinstance(value, unicode):
+                value = value.encode("utf-8")
+#            if not isinstance(value, bool) or isinstance(value, unicode):
+#                value = str(value)
+            d[map[field]] = value
         return d
     
     def _to_where_clause(self, table, map, values, null = list()):
@@ -75,12 +80,15 @@ class DbStorage(DbEnabled):
             cl.append(table.c[map[key]] == values[key])
         return cl
     
-    def _simplify_list(self, l):
-        if len(l) <= 1:
-            try:
-                return l[0]
-            except IndexError:
-                return None
+    def _to_order_by(self, table, order_by = dict()):
+        cl = ClauseList()
+        for ob in order_by:
+            cl.append(table.c[ob].desc())
+        return cl
+    
+    def _to_list(self, l):
+        if l is None:
+            return list()
         return l
     
     def to_sql_like(self, expr):
@@ -101,7 +109,7 @@ class DbStorage(DbEnabled):
                 cls = o.__class__
                 table = self.db_tables[cls]
                 map = self.db_mapping[cls]
-                kwargs = self._to_kwargs(o, map)
+                kwargs = self._to_kwargs(table, o, map)
                 r = conn.execute(table.insert(),
                                  **kwargs)
                 o._setId(r.last_inserted_ids()[0])
@@ -117,7 +125,8 @@ class DbStorage(DbEnabled):
         """pickup Serializable objects with given keys from database"""
         if not ISerializable.implementedBy(cls):
             raise DoesNotImplement(ISerializable)
-        null = keys.get('null', list())
+        null = keys.get('_null', list())
+        order_by = keys.get('_order_by', list())
         table = self.db_tables[cls]
         map = self.db_mapping[cls]
         db = self.getDb()
@@ -125,7 +134,9 @@ class DbStorage(DbEnabled):
         for col in map.values():
             c.append(table.c[col])
         w = self._to_where_clause(table, map, keys, null)
-        r = db.execute(select(c, w))
+        ob = self._to_order_by(table, order_by)
+        q = select(c, w, order_by = ob)
+        r = db.execute(q)
         try:
             results = r.fetchall()
         finally:
@@ -137,7 +148,7 @@ class DbStorage(DbEnabled):
                 obj.__setattr__(field, res[map[field]])
             objs.append(obj)
                     
-        return self._simplify_list(objs)
+        return self._to_list(objs)
     
     def drop(self, cls, **keys):
         """delete object with given keys from database"""

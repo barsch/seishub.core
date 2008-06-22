@@ -30,13 +30,14 @@ class XmlCatalog(object):
         self.xmldb.addResource(res)
         return res
         
-    def deleteResource(self, uid):
+    def deleteResource(self, package_id, resourcetype_id, id):
         """@see: L{seishub.xmldb.interfaces.IXmlCatalog}"""
-        return self.xmldb.deleteResource(uid)
+        return self.xmldb.deleteResource(package_id, resourcetype_id, id)
     
-    def getResource(self, uid):
+    def getResource(self, package_id, resourcetype_id, id, revision = None):
         """@see: L{seishub.xmldb.interfaces.IXmlCatalog}"""
-        return self.xmldb.getResource(uid)
+        return self.xmldb.getResource(package_id, resourcetype_id, id, 
+                                      revision)
         
     def getResourceList(self, package_id = None, resourcetype_id = None):
         """@see: L{seishub.xmldb.interfaces.IXmlCatalog}"""
@@ -144,7 +145,8 @@ class XmlCatalog(object):
                                        resourcetype_id = type)
         # reindex
         for res in reslist:
-            self.index_catalog.indexResource(res.id, value_path, key_path)
+            self.index_catalog.indexResource(res.resource_id, 
+                                             value_path, key_path)
         
         return True
         

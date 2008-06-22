@@ -47,6 +47,7 @@ class SchemasPanel(Component):
             return ("Error adding schemas", e)
     
     def _deleteSchema(self, data=[]):
+        # XXX: delete by package_id, resourcetype_id and label/type
         for uid in data:
             try:
                 self.registry.schemas.delete(uid)
@@ -98,6 +99,7 @@ class StylesheetsPanel(Component):
             return ("Error adding stylesheet", e)
     
     def _deleteStylesheet(self, data=[]):
+        # XXX: delete by package_id, resourcetype_id and label/type
         for uid in data:
             try:
                 self.registry.stylesheets.delete(uid)

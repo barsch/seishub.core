@@ -45,11 +45,15 @@ class PackageRegistryTest(SeisHubEnvironmentTestCase):
         schemas = self.env.registry.schemas.get(package_id = 'testpackage0')
         self.assertEqual(len(schemas),2)
         # delete first added schema
-        self.env.registry.schemas.delete(schema[0].uid)
+        self.env.registry.schemas.delete(schema[0].package_id,
+                                         schema[0].resourcetype_id,
+                                         schema[0].type)
         schema = self.env.registry.schemas.get(package_id = 'testpackage0')
         self.assertEqual(schema[0].package_id, 'testpackage0')
         self.assertEqual(schema[0].type, 'xsd')
-        self.env.registry.schemas.delete(schema[0].uid)
+        self.env.registry.schemas.delete(schema[0].package_id,
+                                         schema[0].resourcetype_id,
+                                         schema[0].type)
 
     def test_StylesheetRegistry(self):
         self.env.registry.stylesheets.register('testpackage0', 'weapon', 'xhtml', 
@@ -63,7 +67,9 @@ class PackageRegistryTest(SeisHubEnvironmentTestCase):
         self.assertEqual(res.data, TEST_SCHEMA)
         self.assertEqual(res.info.package_id, 'seishub')
         self.assertEqual(res.info.resourcetype_id, 'stylesheet')
-        self.env.registry.stylesheets.delete(stylesheet[0].uid)
+        self.env.registry.stylesheets.delete(stylesheet[0].package_id,
+                                             stylesheet[0].resourcetype_id,
+                                             stylesheet[0].type)
         
     def test_AliasRegistry(self):
         self.env.registry.aliases.register('testpackage0', 'weapon', 
@@ -137,7 +143,9 @@ class FromFilesystemTest(SeisHubEnvironmentTestCase):
         self.assertEqual(res[0].resource.data, file('data/weapon.xsd').read())
         
         # clean up
-        self.registry.stylesheets.delete(res[0].uid)
+        self.registry.stylesheets.delete(res[0].package_id,
+                                         res[0].resourcetype_id,
+                                         res[0].type)
         
         
     def testRegisterAlias(self):

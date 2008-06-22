@@ -95,7 +95,8 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
             fh.close()
             res = self.env.catalog.addResource('sortordertests', 'sotest', 
                                                data)
-            self.so_ids.append(res.uid)
+            self.so_ids.append([res.info.package_id, res.info.resourcetype_id, 
+                                res.info.id, res.resource_id])
         for i in so_indexes:
             self.env.catalog.registerIndex(xpath = i)
             self.env.catalog.reindex(xpath = i)
@@ -105,13 +106,19 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         self.env.catalog.removeIndex(xpath = IDX2)
         self.env.catalog.removeIndex(xpath = IDX3)
         self.env.catalog.removeIndex(xpath = IDX4)
-        self.env.catalog.deleteResource(self.res1._id)
-        self.env.catalog.deleteResource(self.res2._id)
-        self.env.catalog.deleteResource(self.res3._id)
+        self.env.catalog.deleteResource(self.res1.info.package_id,
+                                        self.res1.info.resourcetype_id,
+                                        self.res1.info.id)
+        self.env.catalog.deleteResource(self.res2.info.package_id,
+                                        self.res2.info.resourcetype_id,
+                                        self.res2.info.id)
+        self.env.catalog.deleteResource(self.res3.info.package_id,
+                                        self.res3.info.resourcetype_id,
+                                        self.res3.info.id)
         for i in so_indexes:
             self.env.catalog.removeIndex(xpath = i)
-        for id in self.so_ids:
-            self.env.catalog.deleteResource(id)    
+        for res in self.so_ids:
+            self.env.catalog.deleteResource(res[0],res[1],res[2])    
     
     def _assertClassAttributesEqual(self,first,second):
         return self.assertEquals(first.__dict__,second.__dict__)
@@ -209,7 +216,7 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         catalog.registerIndex(test_index)
         
         # index test resource:
-        catalog.indexResource(test_res._id, 
+        catalog.indexResource(test_res.resource_id, 
                               test_index.getValue_path(), 
                               test_index.getKey_path())
         
@@ -226,7 +233,7 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         
         # clean up:
         catalog.removeIndex(key_path=self._test_kp, value_path=self._test_vp)
-        dbmgr.deleteResource(test_res._id)
+        dbmgr.deleteResource('testpackage','testtype', test_res.info.id)
     
     def testFlushIndex(self):
         dbmgr=XmlDbManager(self.db)
@@ -246,7 +253,8 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
             raise
             print "Error adding resource."
 
-        catalog.indexResource(test_res._id, test_index.getValue_path(),
+        catalog.indexResource(test_res.resource_id, 
+                              test_index.getValue_path(),
                               test_index.getKey_path())
         #flush index:
         catalog.flushIndex(value_path=self._test_vp, 
@@ -256,7 +264,7 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         
         # clean up:
         catalog.removeIndex(test_index.getValue_path(), test_index.getKey_path())
-        dbmgr.deleteResource(test_res._id)
+        dbmgr.deleteResource('testpackage', 'testtype', test_res.info.id)
         
     def testQuery(self):
         # create test catalog
@@ -272,10 +280,10 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         res2 = self.catalog.query(XPathQuery(q2))
         res3 = self.catalog.query(XPathQuery(q3))
         res0.sort(); res1.sort(); res2.sort(); res3.sort()
-        self.assertEqual(res0, [self.res2.uid])
-        self.assertEqual(res1, [self.res1.uid, self.res2.uid])
-        self.assertEqual(res2, [self.res1.uid, self.res2.uid])
-        self.assertEqual(res3, [self.res3.uid])
+        self.assertEqual(res0, [self.res2.resource_id])
+        self.assertEqual(res1, [self.res1.resource_id, self.res2.resource_id])
+        self.assertEqual(res2, [self.res1.resource_id, self.res2.resource_id])
+        self.assertEqual(res3, [self.res3.resource_id])
 
         # sort order tests
         so1 = "/sortordertests/sotest/sortorder[int1]"
@@ -291,7 +299,7 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         res4 = self.catalog.query(XPathQuery(so2,[["/sortordertests/sotest/sortorder/int2","desc"]],
                                              limit = 3))
         
-        sot_res = self.so_ids
+        sot_res = [res[3] for res in self.so_ids]
         self.assertEqual(res1,sot_res)
         sot_res.reverse()
         self.assertEqual(res2,sot_res[:3])

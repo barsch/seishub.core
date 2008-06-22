@@ -16,16 +16,24 @@ class XmlResource(Resource, Serializable):
     
     implements (IXmlResource)
     
-    def __init__(self, package_id = None, resourcetype_id = None, data = None):
+    def __init__(self, package_id = None, resourcetype_id = None, data = None,
+                 id = None, version_control = False):
         self.__xml_doc = None
-        info = ResourceInformation(None, package_id, resourcetype_id)
+        info = ResourceInformation(package_id, resourcetype_id, id,
+                                   version_control = version_control)
         Resource.__init__(self, None, data, info)
         Serializable.__init__(self)
         
-    # auto update resource uid when Serializable id is changed:
+    # auto update resource id when Serializable id is changed:
     def _setId(self, id):
         Serializable._setId(self, id)
-        self.uid = id
+        self.resource_id = id
+    
+    # pass ResourceInformation.id to XmlResource.id for easy access (read-only)
+    def getId(self):
+        return self.info.id
+    
+    id = property(getId, "Integer identification number (external id)")
     
     # overloaded method setData from Resource
     # gets invoked by Resource's constructor
@@ -33,27 +41,26 @@ class XmlResource(Resource, Serializable):
         # parse and validate xml_data
         # decode raw data to utf-8 unicode string
         if xml_data is None or len(xml_data) == 0:
-            return Resource.setData(self,xml_data)
+            return Resource.setData(self, xml_data)
             #raise XmlResourceError("No xml data given")
         xml_data = str(xml_data)
         if not isinstance(xml_data, unicode) and xml_data:
-            xml_data = unicode(xml_data,"utf-8")
+            xml_data = unicode(xml_data, "utf-8")
             
         try:
             self.__xml_doc = self._validateXml_data(xml_data)
         except Exception, e:
             raise XmlResourceError(e)
         
-        return Resource.setData(self,xml_data)
+        return Resource.setData(self, xml_data)
     
     def getData(self):
-        # utf-8 encode data
         data = super(XmlResource,self).getData()
         if not data:
             return None
         # XXX: use encoded byte strings or unicode strings internally?
-        #return data.encode("utf-8")
-        return data
+        return data.encode("utf-8")
+        #return data
     
     data = property(getData, setData, 'Raw xml data as a string')
     

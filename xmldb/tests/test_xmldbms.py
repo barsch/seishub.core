@@ -3,7 +3,8 @@
 import unittest
 
 from seishub.test import SeisHubEnvironmentTestCase
-from seishub.xmldb.errors import AddResourceError, XmlResourceError
+from seishub.xmldb.errors import AddResourceError, XmlResourceError,\
+                                 GetResourceError, ResourceDeletedError
 from seishub.xmldb.xmldbms import XmlDbManager
 from seishub.xmldb.xmlresource import XmlResource
 
@@ -43,13 +44,11 @@ class XmlDbManagerTest(SeisHubEnvironmentTestCase):
         self.xmldbm=XmlDbManager(self.db)
         self.test_data = TEST_XML
     
-
-    def testAddGetDeleteResource(self):
+    def testUnversionedResource(self):
         # add empty resource
         empty = XmlResource(TEST_PACKAGE, TEST_RESOURCETYPE,
                             data = "")
         self.assertRaises(AddResourceError, self.xmldbm.addResource, empty)
-        
         
         testres = XmlResource(TEST_PACKAGE, TEST_RESOURCETYPE, 
                               data = self.test_data)
@@ -57,24 +56,95 @@ class XmlDbManagerTest(SeisHubEnvironmentTestCase):
                                data = self.test_data)
         self.xmldbm.addResource(testres)
         self.xmldbm.addResource(testres2)
-        result = self.xmldbm.getResource(testres.uid)
+        #import pdb;pdb.set_trace()
+        result = self.xmldbm.getResource(testres.info.package_id, 
+                                         testres.info.resourcetype_id, 
+                                         testres.info.id)
         self.assertEquals(result.data, self.test_data)
         self.assertEquals(result.info.package_id, TEST_PACKAGE)
         self.assertEquals(result.info.resourcetype_id, TEST_RESOURCETYPE)
-        self.xmldbm.deleteResource(testres.uid)
+        self.assertEquals(result.info.version_control, False)
+        self.xmldbm.deleteResource(testres.info.package_id, 
+                                   testres.info.resourcetype_id, 
+                                   testres.info.id)
+        self.assertRaises(GetResourceError, self.xmldbm.getResource, 
+                          testres.info.package_id, 
+                          testres.info.resourcetype_id, 
+                          testres.info.id)
         
-        result = self.xmldbm.getResource(testres2.uid)
+        result = self.xmldbm.getResource(testres2.info.package_id, 
+                                         testres2.info.resourcetype_id, 
+                                         testres2.info.id)
         self.assertEquals(result.data, self.test_data)
         self.assertEquals(result.info.package_id, "otherpackage")
         self.assertEquals(result.info.resourcetype_id, TEST_RESOURCETYPE)
-        self.xmldbm.deleteResource(testres2.uid)
+        self.assertEquals(result.info.version_control, False)
+        self.xmldbm.deleteResource(testres2.info.package_id, 
+                                   testres2.info.resourcetype_id, 
+                                   testres2.info.id)
+        
+    def testVersionControlledResource(self):
+        testres = XmlResource(TEST_PACKAGE, TEST_RESOURCETYPE, 
+                              data = self.test_data, version_control = True)
+        self.xmldbm.addResource(testres)
+        result = self.xmldbm.getResource(testres.info.package_id, 
+                                         testres.info.resourcetype_id, 
+                                         testres.info.id)
+        self.assertEquals(result.data, self.test_data)
+        self.assertEquals(result.info.package_id, TEST_PACKAGE)
+        self.assertEquals(result.info.resourcetype_id, TEST_RESOURCETYPE)
+        self.assertEquals(result.info.version_control, True)
+        self.assertEquals(result.info.revision, 1)
+        # add a new resource with same id
+        testres_v2 = XmlResource(TEST_PACKAGE, TEST_RESOURCETYPE, 
+                                 data = self.test_data, id = result.info.id, 
+                                 version_control = True)
+        self.xmldbm.addResource(testres_v2)
+        # try to add a resource with same id, inactive version control        
+        testres_v0 = XmlResource(TEST_PACKAGE, TEST_RESOURCETYPE, 
+                                 data = self.test_data, id = result.info.id, 
+                                 version_control = False)
+        self.assertRaises(AddResourceError, self.xmldbm.addResource, 
+                          testres_v0)
+        # get latest revision
+        result = self.xmldbm.getResource(testres.info.package_id, 
+                                         testres.info.resourcetype_id, 
+                                         testres.info.id)
+        self.assertEquals(result.info.revision, 2)
+        self.assertEquals(result.resource_id, testres_v2.resource_id)
+        # get previous revision
+        result = self.xmldbm.getResource(testres.info.package_id, 
+                                         testres.info.resourcetype_id, 
+                                         testres.info.id,
+                                         revision = 1)
+        self.assertEquals(result.info.revision, 1)
+        self.assertEquals(result.resource_id, testres.resource_id)
+        # delete resource
+        self.xmldbm.deleteResource(testres.info.package_id, 
+                                   testres.info.resourcetype_id, 
+                                   testres.info.id)
+        # try to get latest revision (deleted)
+        self.assertRaises(ResourceDeletedError, self.xmldbm.getResource,
+                          testres.info.package_id, 
+                          testres.info.resourcetype_id, 
+                          testres.info.id)
+        # get previous revision
+        result = self.xmldbm.getResource(testres.info.package_id, 
+                                         testres.info.resourcetype_id, 
+                                         testres.info.id,
+                                         revision = 2)
+        self.assertEquals(result.info.revision, 2)
+        self.assertEquals(result.resource_id, testres_v2.resource_id)
+        
+        # XXX: remove made db entries
+        
     
     def testGetResourceList(self):
         # add some test resources first:
-        testres1=XmlResource(TEST_PACKAGE, TEST_RESOURCETYPE, 
-                             data = self.test_data)
-        testres2=XmlResource(TEST_PACKAGE, TEST_RESOURCETYPE,
-                             data = self.test_data)
+        testres1 = XmlResource(TEST_PACKAGE, TEST_RESOURCETYPE, 
+                               data = self.test_data)
+        testres2 = XmlResource(TEST_PACKAGE, TEST_RESOURCETYPE,
+                               data = self.test_data)
         self.xmldbm.addResource(testres1)
         self.xmldbm.addResource(testres2)
         
@@ -82,20 +152,25 @@ class XmlDbManagerTest(SeisHubEnvironmentTestCase):
         for res in l:
             self.assertEqual(res.package_id, TEST_PACKAGE)
             self.assertEqual(res.resourcetype_id, TEST_RESOURCETYPE)
-            
         # delete test resource:
-        self.xmldbm.deleteResource(testres1._id)
-        self.xmldbm.deleteResource(testres2._id)
-        
+        self.xmldbm.deleteResource(testres1.info.package_id, 
+                                   testres1.info.resourcetype_id, 
+                                   testres1.info.id)
+        self.xmldbm.deleteResource(testres2.info.package_id, 
+                                   testres2.info.resourcetype_id, 
+                                   testres2.info.id)
+       
     def testResourceExists(self):
-        testres1=XmlResource(TEST_PACKAGE, TEST_RESOURCETYPE,
-                             data=self.test_data)
+        testres1 = XmlResource(TEST_PACKAGE, TEST_RESOURCETYPE,
+                               data=self.test_data)
         self.xmldbm.addResource(testres1)
         self.assertEquals(self.xmldbm.resourceExists(TEST_PACKAGE, TEST_RESOURCETYPE,
-                                                     testres1._id), True)
+                                                     testres1.info.id), True)
         self.assertEquals(self.xmldbm.resourceExists('not', 'there',
-                                                     testres1._id), False)
-        self.xmldbm.deleteResource(testres1._id)
+                                                     testres1.info.id), False)
+        self.xmldbm.deleteResource(testres1.info.package_id, 
+                                   testres1.info.resourcetype_id, 
+                                   testres1.info.id)
 
 
 def suite():

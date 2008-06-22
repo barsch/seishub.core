@@ -3,32 +3,14 @@ from zope.interface import Interface, Attribute
 
 
 class IXmlCatalog(Interface):
-    """This is the main interface to access the XML catalog"""
-    
-#    def newXmlResource(package_id, resourcetype_id, xml_data):
-#        """Resource factory; supposed to be used with addResource from 
-#        IResourceStorage
-#        @param xml_data: string containing xml data
-#        @param uri: uri of the new resource
-#        @return: XmlResource instance"""
-        
-#    def newXmlIndex(package_id, resourcetype_id, xpath_expr, type="text"):
-#        """Index factory; supposed to be used with registerIndex
-#        @param package_id: package id
-#        @param resourcetype_id: resourcetype id
-#        @param xpath_expr: index defining xpath expression
-#        @param type: index type (e.g. "text", "int")
-#        @return: XmlIndex instance"""
-        
+    """This is the main interface to access the XML catalog""" 
     def registerIndex(xml_index):
         """register a new index
         """
         
     def removeIndex(self, xpath_expr):
         """remove an index"""
-        
     
-        
     def listIndexes(res_type = None, data_type = None):
         """Return a list of registered indexes. 
         (Optionally) indexes with the given parameters only: 
@@ -104,13 +86,18 @@ class IResourceStorage(Interface):
 class IResource(Interface):
     uid = Attribute("unique resource id")
     data = Attribute("any data")
-    info = Attribute("IResourceInformation for that resource")
+    info = Attribute("ResourceInformation for that resource")
 
 
 class IResourceInformation(Interface):
+    id = Attribute("Id of resource (Integer)")
+    revision = Attribute("Revision of that resource")
+    resource_id = Attribute("Unique id of related XML resource")
     package_id = Attribute("Package id, that resource belongs to")
     resourcetype_id = Attribute("Resourcetype id, that resource is type of")
-    revision = Attribute("Revision of that resource")
+    version_control = Attribute("Boolean, specifies if version control is"+\
+                                "enabled or disabled for related resource")
+    
         
 
 class IXmlResource(Interface):

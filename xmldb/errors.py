@@ -20,6 +20,9 @@ class DeleteResourceError(SeisHubError):
     
 class GetResourceError(SeisHubError):
     """retrieving resource failed"""
+
+class ResourceDeletedError(SeisHubError):
+    """Resource has been deleted"""
     
 class RestrictedXpathError(SeisHubError):
     """invalid restricted xpath expression, 

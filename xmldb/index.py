@@ -91,7 +91,7 @@ class XmlIndex(IndexBase):
         if node_size == 0:
             return None
         
-        idx_value = xml_resource.uid
+        idx_value = xml_resource.resource_id
         res = [{'key':node.getStrContent(),
                 'value':idx_value} for node in nodes]
         self._values.append(idx_value)

@@ -101,10 +101,12 @@ class Registry(DbStorage):
         res = self.catalog.addResource(self.package_id, self.resourcetype_id, 
                                        xml_data)
         try:
-            o = self.cls(package_id, resourcetype_id, type, res.uid)
+            o = self.cls(package_id, resourcetype_id, type, res.resource_id)
             self.store(o)
         except:
-            self.catalog.deleteResource(res.uid)
+            self.catalog.deleteResource(res.info.package_id, 
+                                        res.info.resourcetype_id, 
+                                        res.info.id)
             raise
         return True
     
@@ -127,9 +129,10 @@ class Registry(DbStorage):
             o._catalog = self.catalog
         return objs
     
-    def delete(self, uid):
-        self.catalog.deleteResource(uid)
-        self.drop(self.cls, uid = uid)
+    def delete(self, package_id, resourcetype_id, type):
+        o = self.get(package_id, resourcetype_id, type)[0]
+        self.catalog.xmldb.deleteResource(resource_id = o.resource_id)
+        self.drop(self.cls, resource_id = o.resource_id)
         return True
     
 
@@ -141,7 +144,7 @@ class SchemaRegistry(Registry):
                  {'resourcetype_id':'resourcetype_id',
                   'package_id':'package_id',
                   'type':'type',
-                  'uid':'uid'}
+                  'resource_id':'resource_id'}
                   }
     cls = Schema
     package_id = "seishub"
@@ -159,7 +162,7 @@ class StylesheetRegistry(Registry):
               {'resourcetype_id':'resourcetype_id',
                'package_id':'package_id',
                'type':'type',
-               'uid':'uid'}
+               'resource_id':'resource_id'}
                }
     cls = Stylesheet
     package_id = "seishub"
@@ -204,7 +207,7 @@ class AliasRegistry(DbStorage):
             null = ['resourcetype_id']
         else:
             null = list()
-        objs = self.pickup(self.cls, null = null, **keys)
+        objs = self.pickup(self.cls, _null = null, **keys)
         if not objs:
             return list()
         if not isinstance(objs, list):

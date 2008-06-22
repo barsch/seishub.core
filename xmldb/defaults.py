@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 
-from sqlalchemy import Table, Column, ForeignKey  #@UnresolvedImport
-from sqlalchemy import Integer, String, DateTime, Text, Binary #@UnresolvedImport
+from sqlalchemy import Table, Column, ForeignKey, Sequence  #@UnresolvedImport
+from sqlalchemy import Integer, String, Text, Binary, Boolean #@UnresolvedImport
 from sqlalchemy import UniqueConstraint, PrimaryKeyConstraint #@UnresolvedImport
+from sqlalchemy.sql import func, text #@UnresolvedImport
                        
 from seishub.db.dbmanager import meta as metadata
                        
@@ -13,6 +14,7 @@ INDEX_TABLE = 'index'
 INDEX_DEF_TABLE = 'index_def'
 QUERY_ALIASES_TABLE = 'query_aliases'
 METADATA_TABLE = 'meta'
+METADATA_DEF_TABLE = 'meta_def'
 RESOURCE_META_TABLE = 'resource_meta'
 XSD_TABLE = 'xsd'
 XSLT_TABLE = 'xslt'
@@ -23,29 +25,34 @@ resource_tab = Table(DEFAULT_PREFIX + RESOURCE_TABLE, metadata,
     Column('data', Binary),
     )
 
-#resource_types_tab = Table(DEFAULT_PREFIX + RESOURCE_TYPE_TABLE, metadata,
-#    Column('name', Text),
-#    Column('type', Text),
-#    Column('uri', Text, ForeignKey(DEFAULT_PREFIX + URI_TABLE +'.uri'),
-#           primary_key = True),
-#    )
-
-# XXX: normalize package_id and resource_type columns
+# XXX: sqlite does not support autoincrement on combined primary keys
 resource_meta_tab = Table(DEFAULT_PREFIX + RESOURCE_META_TABLE, metadata,
-    Column('res_id', Integer, ForeignKey(DEFAULT_PREFIX + RESOURCE_TABLE +
-                                         '.id')),
+    Column('id', Integer, autoincrement = True,
+           default = text('(SELECT coalesce(max(id), 0) + 1 FROM '+\
+                          DEFAULT_PREFIX + RESOURCE_META_TABLE +')')),
+    Column('revision', Integer, autoincrement = True),
+    Column('resource_id', Integer, 
+           ForeignKey(DEFAULT_PREFIX + RESOURCE_TABLE + '.id'),
+           ),
     Column('package_id', Text),
     Column('resourcetype_id', Text),
-    Column('revision', Integer),
-    PrimaryKeyConstraint('res_id')
+    Column('version_control', Boolean), 
+    # Column('hash', Integer),
+    PrimaryKeyConstraint('id', 'revision')
+    )
+
+metadata_def_tab = Table(DEFAULT_PREFIX + METADATA_DEF_TABLE, metadata,
+    Column('id', Integer, primary_key = True, autoincrement = True),
+    Column('name', Text),
+    Column('type', Text)
     )
 
 metadata_tab = Table(DEFAULT_PREFIX + METADATA_TABLE, metadata,
-                Column('res_id', Integer, 
-                       ForeignKey(DEFAULT_PREFIX + RESOURCE_TABLE + '.id')),
-                Column('user', Text),
-                Column('timestamp', DateTime)
-                )
+    Column('resource_id', Integer, ForeignKey(DEFAULT_PREFIX + RESOURCE_TABLE +
+                                              '.id')),
+    Column('metadata_id', Integer),
+    Column('value', Text)
+    )
 
 # xmlindexcatalog tables:
 index_def_tab = Table(DEFAULT_PREFIX + INDEX_DEF_TABLE, metadata,
@@ -69,16 +76,4 @@ index_tab = Table(DEFAULT_PREFIX + INDEX_TABLE, metadata,
 query_aliases_tab = Table(DEFAULT_PREFIX + QUERY_ALIASES_TABLE, metadata,
     Column('name', Text, primary_key = True),
     Column('expr', Text)
-) 
-
-## resourcetypes tables
-#xsd_tab = Table(DEFAULT_PREFIX + XSD_TABLE, metadata,
-#    Column('uri', Text, primary_key = True),
-#    Column('package_id', Text)
-#)
-#
-#xslt_tab = Table(DEFAULT_PREFIX + XSLT_TABLE, metadata,
-#    Column('uri', Text, primary_key = True),
-#    Column('package_id', Text),
-#    Column('format', Text)
-#)
+)

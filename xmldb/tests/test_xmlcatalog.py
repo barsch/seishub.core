@@ -85,16 +85,22 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         self.env.catalog.removeIndex("testpackage", "station", IDX1)
         self.env.catalog.removeIndex("testpackage", "testml", IDX2)
         self.env.catalog.removeIndex("degenesis", "weapon", IDX3)
-        self.env.catalog.deleteResource(self.res1._id)
-        self.env.catalog.deleteResource(self.res2._id)
-        self.env.catalog.deleteResource(self.res3._id)
+        self.env.catalog.deleteResource(self.res1.info.package_id,
+                                        self.res1.info.resourcetype_id,
+                                        self.res1.info.id)
+        self.env.catalog.deleteResource(self.res2.info.package_id,
+                                        self.res2.info.resourcetype_id,
+                                        self.res2.info.id)
+        self.env.catalog.deleteResource(self.res3.info.package_id,
+                                        self.res3.info.resourcetype_id,
+                                        self.res3.info.id)
         
     def testIResourceManager(self):
         catalog = self.env.catalog
         res = catalog.addResource("testpackage", "station", RAW_XML)
-        r = catalog.getResource(res._id)
+        r = catalog.getResource("testpackage", "station", res.info.id)
         self.assertEquals(RAW_XML, r.getData())
-        catalog.deleteResource(res._id)
+        catalog.deleteResource("testpackage", "station", res.info.id)
     
     def testReindex(self):
         # TODO: testReindex
