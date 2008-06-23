@@ -119,6 +119,7 @@ class PluginsPanel(Component):
     def _refreshPlugins(self):
         from seishub.loader import ComponentLoader
         ComponentLoader(self.env)
+        #XXX: run autoinstaller here 
     
     def _updatePlugins(self, request):
         """Update components."""
