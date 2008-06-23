@@ -32,6 +32,8 @@ class ComponentLoader(object):
         """Enable the given plugin module by adding an entry to the 
         configuration.
         """
+        if module.startswith('seishub.'):
+            return
         if module + '.*' not in self.env.config['components']:
             self.env.config['components'].set(module + '.*', 'enabled')
 
