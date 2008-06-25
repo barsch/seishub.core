@@ -11,7 +11,7 @@ from twisted.internet import threads, defer, ssl
 from twisted.web import static, http, util as webutil
 
 from seishub import __version__ as SEISHUB_VERSION
-from seishub.config import IntOption, Option
+from seishub.config import IntOption, Option, BoolOption
 from seishub.core import ExtensionPoint, SeisHubError
 from seishub.defaults import ADMIN_PORT, ADMIN_CERTIFICATE, ADMIN_PRIVATE_KEY
 from seishub.packages.processor import Processor, RequestError
@@ -156,7 +156,7 @@ class AdminRequest(http.Request):
         temp = Template(file=resource_filename(self.__module__,
                                                "templates"+os.sep+ \
                                                "index.tmpl"))
-        temp.css = self.env.config.get('admin', 'css')
+        temp.css = self.env.config.get('webadmin', 'css')
         temp.navigation = self._renderNavigation()
         temp.submenu = self._renderSubMenu()
         temp.version = SEISHUB_VERSION
@@ -317,16 +317,19 @@ class AdminServiceFactory(http.HTTPFactory):
 
 class AdminService(internet.SSLServer): #@UndefinedVariable
     """Service for WebAdmin HTTP Server."""
-    IntOption('admin', 'port', ADMIN_PORT, "WebAdmin port number.")
-    Option('admin', 'private_key_file', ADMIN_PRIVATE_KEY, 'Private key file.')
-    Option('admin', 'certificate_file', ADMIN_CERTIFICATE, 'Certificate file.')
-    Option('admin', 'secured', 'True', "Enable HTTPS connection.")
-    Option('admin', 'css', '/css/default.css', "WebAdmin Theme.")
+    BoolOption('webadmin', 'autostart', 'True', "Enable service on start-up.")
+    IntOption('webadmin', 'port', ADMIN_PORT, "WebAdmin port number.")
+    Option('webadmin', 'private_key_file', ADMIN_PRIVATE_KEY, 
+           'Private key file.')
+    Option('webadmin', 'certificate_file', ADMIN_CERTIFICATE, 
+           'Certificate file.')
+    Option('webadmin', 'secured', 'True', "Enable HTTPS connection.")
+    Option('webadmin', 'css', '/css/default.css', "WebAdmin Theme.")
     
     def __init__(self, env):
         self.env = env
-        port = env.config.getint('admin', 'port')
-        secured = env.config.getbool('admin', 'secured')
+        port = env.config.getint('webadmin', 'port')
+        secured = env.config.getbool('webadmin', 'secured')
         priv, cert = self._getCertificates()
         if secured:
             ssl_context = ssl.DefaultOpenSSLContextFactory(priv, cert)
@@ -340,10 +343,18 @@ class AdminService(internet.SSLServer): #@UndefinedVariable
         self.setName("WebAdmin")
         self.setServiceParent(env.app)
     
+    def privilegedStartService(self):
+        if self.env.config.getbool('webadmin', 'autostart'):
+            internet.SSLServer.privilegedStartService(self) #@UndefinedVariable
+    
+    def startService(self):
+        if self.env.config.getbool('webadmin', 'autostart'):
+            internet.SSLServer.startService(self) #@UndefinedVariable
+    
     def _getCertificates(self):
         """Fetching certificate files from configuration."""
-        priv = self.env.config.get('admin', 'private_key_file')
-        cert = self.env.config.get('admin', 'certificate_file')
+        priv = self.env.config.get('webadmin', 'private_key_file')
+        cert = self.env.config.get('webadmin', 'certificate_file')
         if not os.path.isfile(priv):
             priv = os.path.join(self.env.config.path, 'conf', priv)
             if not os.path.isfile(priv):

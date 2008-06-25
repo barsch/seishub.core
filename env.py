@@ -84,6 +84,8 @@ class Environment(ComponentManager):
                 if srv.running:
                     self.log.info('Service %s already started.' % srv.name)
                     return
+                self.config.set(srv.name.lower(), 'autostart', True)
+                self.config.save()
                 yield defer.maybeDeferred(srv.startService)
                 self.log.info('Starting service %s.' % srv.name)
     
@@ -92,6 +94,8 @@ class Environment(ComponentManager):
         """Disable a service."""
         for srv in service.IServiceCollection(self.app):
             if srv.name.lower()==srv_name.lower():
+                self.config.set(srv.name.lower(), 'autostart', False)
+                self.config.save()
                 yield defer.maybeDeferred(srv.stopService)
                 self.log.info('Stopping service %s.' % srv.name)
     

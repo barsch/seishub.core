@@ -13,7 +13,7 @@ from seishub import __version__ as SEISHUB_VERSION
 from seishub.services.ssh.interfaces import ISSHCommand
 from seishub.core import ExtensionPoint
 from seishub.defaults import SSH_PORT, SSH_PRIVATE_KEY, SSH_PUBLIC_KEY
-from seishub.config import IntOption, Option
+from seishub.config import IntOption, Option, BoolOption
 
 
 class SSHServiceProtocol(recvline.HistoricRecvLine):
@@ -206,6 +206,7 @@ class SSHServiceFactory(factory.SSHFactory):
 
 class SSHService(internet.TCPServer): #@UndefinedVariable
     """Service for SSH server."""
+    BoolOption('ssh', 'autostart', 'True', "Enable service on start-up.")
     IntOption('ssh', 'port', SSH_PORT, "SSH port number.")
     Option('ssh', 'public_key_file', SSH_PUBLIC_KEY, 'Public RSA key file.')
     Option('ssh', 'private_key_file', SSH_PRIVATE_KEY, 'Private RSA key file.')
@@ -217,3 +218,11 @@ class SSHService(internet.TCPServer): #@UndefinedVariable
                                     port, SSHServiceFactory(env))
         self.setName("SSH")
         self.setServiceParent(env.app)
+    
+    def privilegedStartService(self):
+        if self.env.config.getbool('ssh', 'autostart'):
+            internet.TCPServer.privilegedStartService(self) #@UndefinedVariable
+    
+    def startService(self):
+        if self.env.config.getbool('ssh', 'autostart'):
+            internet.TCPServer.startService(self) #@UndefinedVariable

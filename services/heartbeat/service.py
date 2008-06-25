@@ -79,7 +79,7 @@ class HeartbeatReceiver(internet.UDPServer): #@UndefinedVariable
 
 class HeartbeatService(service.MultiService):
     """A asynchronous events-based heartbeat server for SeisHub."""
-    
+    BoolOption('heartbeat', 'autostart', 'True', "Enable service on start-up.")
     IntOption('heartbeat', 'port', HEARTBEAT_UDP_PORT, 
               'Heartbeat port number.')
     ListOption('heartbeat', 'default_hubs', ','.join(HEARTBEAT_HUBS), 
@@ -87,6 +87,7 @@ class HeartbeatService(service.MultiService):
     BoolOption('heartbeat', 'active_node', 'on', 'Heartbeat status')
     
     def __init__(self, env):
+        self.env = env
         service.MultiService.__init__(self)
         self.setName('Heartbeat')
         self.setServiceParent(env.app)
@@ -102,3 +103,11 @@ class HeartbeatService(service.MultiService):
         receiver_service = HeartbeatReceiver(env)
         receiver_service.setName("Heartbeat Receiver")
         self.addService(receiver_service)
+    
+    def privilegedStartService(self):
+        if self.env.config.getbool('heartbeat', 'autostart'):
+            service.MultiService.privilegedStartService(self)
+    
+    def startService(self):
+        if self.env.config.getbool('heartbeat', 'autostart'):
+            service.MultiService.startService(self)

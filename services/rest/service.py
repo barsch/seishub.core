@@ -6,7 +6,7 @@ from twisted.internet import threads
 
 from seishub.defaults import REST_PORT
 from seishub import __version__ as SEISHUB_VERSION
-from seishub.config import IntOption
+from seishub.config import IntOption, BoolOption
 from seishub.packages.processor import Processor, RequestError
 from seishub.util.http import parseAccept, validMediaType
 
@@ -41,7 +41,9 @@ class RESTRequest(Processor, http.Request):
         try:
             content = Processor.process(self)
         except RequestError, e:
-            content = self._renderRequestError(int(e.message))
+            self.response_code = int(e.message)
+            content = ''
+            self.env.log.error(http.responses.get(self.response_code))
         content=str(content)
         self._setHeaders(content)
         self.write(content)
@@ -49,17 +51,16 @@ class RESTRequest(Processor, http.Request):
     
     def _setHeaders(self, content=None):
         """Sets standard HTTP headers."""
-        self.setHeader('server', 'SeisHub '+ SEISHUB_VERSION)
+        self.setHeader('server', 'SeisHub ' + SEISHUB_VERSION)
         self.setHeader('date', http.datetimeToString())
+        # content length
         if content:
             self.setHeader('content-length', str(len(str(content))))
-    
-    def _renderRequestError(self, http_status_code):
-        http_status_code = int(http_status_code)
-        self.setResponseCode(http_status_code)
-        response_text = http.responses.get(http_status_code)
-        self.env.log.error(response_text)
-        return response_text
+        # set response code
+        self.setResponseCode(int(self.response_code))
+        # set additional headers
+        for k, v in self.response_header.iteritems():
+            self.setHeader(k, v)
     
     def _processingFailed(self, reason):
         self.env.log.error(reason)
@@ -87,7 +88,6 @@ class RESTRequest(Processor, http.Request):
             for uri in kwargs.get(tag,[]):
                 content = uri.split('/')[-1]
                 doc += tmpl % (tag, uri, content, tag)
-        # XXX: xml:base doesn't work!!!!
         result = str(root % (self.env.getRestUrl(), doc))
         # set header
         self._setHeaders(result)
@@ -117,12 +117,21 @@ class RESTServiceFactory(http.HTTPFactory):
 
 class RESTService(internet.TCPServer): #@UndefinedVariable
     """Service for the REST HTTP Server."""
-    
+    BoolOption('rest', 'autostart', 'True', "Enable service on start-up.")
     IntOption('rest', 'port', REST_PORT, "REST port number.")
     
     def __init__(self, env):
+        self.env = env
         port = env.config.getint('rest', 'port')
         internet.TCPServer.__init__(self, #@UndefinedVariable
                                     port, RESTServiceFactory(env))
         self.setName("REST")
         self.setServiceParent(env.app)
+    
+    def privilegedStartService(self):
+        if self.env.config.getbool('rest', 'autostart'):
+            internet.TCPServer.privilegedStartService(self) #@UndefinedVariable
+    
+    def startService(self):
+        if self.env.config.getbool('rest', 'autostart'):
+            internet.TCPServer.startService(self) #@UndefinedVariable

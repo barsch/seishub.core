@@ -127,10 +127,10 @@ class ResourcesPanel(Component):
             if len(id)!=4:
                 continue
             try:
-                self.catalog.deleteResource(id[3])
+                self.catalog.deleteResource(id[1],id[2],id[3])
             except Exception, e:
-                self.log.info("Error deleting resource: %s" % id, e)
-                data['error'] = ("Error deleting resource: %s" % id, e)
+                self.log.info("Error deleting resource: %s" % res, e)
+                data['error'] = ("Error deleting resource: %s" % res, e)
                 return data
         return data
 

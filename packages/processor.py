@@ -6,6 +6,7 @@ from twisted.web import http
 from urllib import unquote
 
 from seishub.core import SeisHubError
+from seishub.xmldb.errors import InvalidIndexError
 from seishub.util.text import isInteger
 
 
@@ -23,7 +24,7 @@ class Processor:
         self.package_ids = self.env.registry.getPackageIds()
         self.package_ids.sort()
         # response code and header for a request
-        self.response_code = http.NOT_FOUND
+        self.response_code = http.OK
         self.response_header = {}
     
     def process(self):
@@ -149,11 +150,10 @@ class Processor:
         # test if the request was called in a resource type directory 
         if len(self.postpath)==2:
             if self._checkResourceType(self.postpath[0], self.postpath[1]):
-                uid = self._addResource(self.postpath[0], self.postpath[1])
+                res = self._addResource(self.postpath[0], self.postpath[1])
                 self.response_code = http.CREATED
-                url = "/".join([self.env.getRestUrl()]+self.postpath[0:1]+uid)
-                self.response_header['Location'] = url
-                return
+                self.response_header['Location'] = str(res.getInfo())
+                return ''
         raise RequestError(http.NOT_FOUND)
     
     def _processPOST(self):
@@ -184,7 +184,7 @@ class Processor:
                                      self.postpath[1],
                                      self.postpath[2])
                 self.response_code = http.NO_CONTENT
-                return
+                return ''
         raise RequestError(http.NOT_FOUND)
     
     def _processDELETE(self):
@@ -212,7 +212,7 @@ class Processor:
                                      self.postpath[1],
                                      self.postpath[2])
                 self.response_code = http.NO_CONTENT
-                return
+                return ''
         raise RequestError(http.NOT_FOUND)
     
     def _checkResourceType(self, package_id, resourcetype_id):
@@ -303,7 +303,8 @@ class Processor:
             resource_ids = [str(r) for r in res]
             resource_ids.sort()
             return self.renderResourceList(resource=resource_ids)
-        raise RequestError(http.NOT_FOUND)
+        else:
+            raise RequestError(http.NOT_FOUND)
     
     def _processMapping(self):
         # XXX: missing yet
@@ -326,9 +327,10 @@ class Processor:
             self.env.log.error(e)
             raise RequestError(http.INTERNAL_SERVER_ERROR)
             return
-        resource_ids = [str(r) for r in res]
-        resource_ids.sort()
-        return self.renderResourceList(resource=resource_ids)
+        else:
+            resource_ids = [str(r) for r in res]
+            resource_ids.sort()
+            return self.renderResourceList(resource=resource_ids)
     
     def _processResourceProperty(self, package_id, resourcetype_id, 
                                  document_id, version_id, property_id):
@@ -343,11 +345,15 @@ class Processor:
                                                   resourcetype_id,
                                                   document_id,
                                                   version_id)
+        # XXX: 401 Unauthorized
+        # XXX: 404 Not Found
+        # XXX: 409 Conflict -> XSD not valid - here we need additional info why
         except Exception, e:
             self.env.log.error(e)
             raise RequestError(http.INTERNAL_SERVER_ERROR)
-        # return resource content
-        return result.data
+        else:
+            # return resource content
+            return result.data
     
     def _modifyResource(self, package_id, resourcetype_id, document_id):
         """Modifies the content of an existing resource."""
@@ -356,6 +362,7 @@ class Processor:
                                             resourcetype_id,
                                             document_id,
                                             self.content)
+        # XXX: fetch all kind of exception types and return to clients
         except Exception, e:
             self.env.log.error(e)
             raise RequestError(http.INTERNAL_SERVER_ERROR)
@@ -363,14 +370,14 @@ class Processor:
     def _addResource(self, package_id, resourcetype_id):
         """Adds a new resource."""
         try:
-            res = self.env.catalog.newXmlResource(package_id,
-                                                  resourcetype_id,
-                                                  self.content)
+            res = self.env.catalog.addResource(package_id, resourcetype_id,
+                                               self.content.read())
+        # XXX: fetch all kind of exception types and return to clients
         except Exception, e:
             self.env.log.error(e)
             raise RequestError(http.INTERNAL_SERVER_ERROR)
-        # returns created document id
-        return res.uid
+        else:
+            return res
     
     def _deleteResource(self, package_id, resourcetype_id, document_id):
         """Deletes a resource."""
@@ -378,6 +385,7 @@ class Processor:
             self.env.catalog.deleteResource(package_id,
                                             resourcetype_id,
                                             document_id)
+        # XXX: fetch all kind of exception types and return to clients
         except Exception, e:
             self.env.log.error(e)
             raise RequestError(http.INTERNAL_SERVER_ERROR)

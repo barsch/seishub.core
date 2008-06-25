@@ -18,7 +18,7 @@ from twisted.python import components
 
 #from seishub import __version__ as SEISHUB_VERSION
 from seishub.defaults import SFTP_PORT, SFTP_PRIVATE_KEY, SFTP_PUBLIC_KEY
-from seishub.config import IntOption, Option
+from seishub.config import IntOption, Option, BoolOption
 from seishub.packages.processor import Processor, RequestError
 from seishub.util.path import absPath
 
@@ -237,6 +237,7 @@ class SFTPServiceFactory(factory.SSHFactory):
 
 class SFTPService(internet.TCPServer): #@UndefinedVariable
     """Service for SFTP server."""
+    BoolOption('sftp', 'autostart', 'True', "Enable service on start-up.")
     IntOption('sftp', 'port', SFTP_PORT, "SFTP port number.")
     Option('sftp', 'public_key_file', SFTP_PUBLIC_KEY, 'Public RSA key file.')
     Option('sftp', 'private_key_file', SFTP_PRIVATE_KEY, 'Private RSA key file.')
@@ -248,3 +249,11 @@ class SFTPService(internet.TCPServer): #@UndefinedVariable
                                     port, SFTPServiceFactory(env))
         self.setName("SFTP")
         self.setServiceParent(env.app)
+    
+    def privilegedStartService(self):
+        if self.env.config.getbool('sftp', 'autostart'):
+            internet.TCPServer.privilegedStartService(self) #@UndefinedVariable
+    
+    def startService(self):
+        if self.env.config.getbool('sftp', 'autostart'):
+            internet.TCPServer.startService(self) #@UndefinedVariable
