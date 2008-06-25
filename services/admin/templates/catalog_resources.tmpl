@@ -2,20 +2,29 @@
 
 <h2>Upload XML Documents</h2>
 <form method="post" enctype="multipart/form-data" name="add">
+  <div class="field">
+    <label>Package</label><br />
     <select name="package_id" id="package_id">
         #for $p in $packages
         #if $resourcetypes[$p]
         <option value="$p" onclick="changePackage('$p');">$p</option>
         #end if
         #end for
-    </select><br />
+    </select>
+  </div>
+  
+  <div class="field">
     <label>Resource type</label><br />
-    <select name="resourcetype_id" id="resourcetype_id"></select><br />
+    <select name="resourcetype_id" id="resourcetype_id"></select>
+  </div>
+
+  <div class="field">
     <label>XML File</label><br />
     <input name="file" type="file" size="50" maxlength="100000" 
-           accept="text/xml" /><br/>
-    <br />
-    <input type="submit" value="Submit" />
+           accept="text/xml" />
+  </div>
+
+  <input type="submit" value="Submit" />
 </form>
 
 <br />
@@ -23,12 +32,14 @@
 
 <h2>List of all resources</h2>
 <form method="post" name="list">
+  <div class="field">
     #for $resource in $resources
     <input type="checkbox" name="resource[]" value="$resource" /> 
     <a href="$resturl$resource">$resource</a><br />
     #end for
-    <br />
-    <input type="submit" name="delete" value="Delete" />
+  </div>
+
+  <input type="submit" name="delete" value="Delete" />
 </form>
 
 <script type="text/javascript">

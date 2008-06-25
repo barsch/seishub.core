@@ -4,18 +4,19 @@ import os
 import string
 import urllib
 
-from twisted.web import static, http, util as webutil
-from twisted.internet import threads, defer, ssl
-from twisted.application import internet
 from Cheetah.Template import Template
-from pkg_resources import resource_filename #@UnresolvedImport 
+from pkg_resources import resource_filename #@UnresolvedImport
+from twisted.application import internet
+from twisted.internet import threads, defer, ssl
+from twisted.web import static, http, util as webutil
 
 from seishub import __version__ as SEISHUB_VERSION
-from seishub.services.admin.interfaces import IAdminPanel
+from seishub.config import IntOption, Option
 from seishub.core import ExtensionPoint, SeisHubError
 from seishub.defaults import ADMIN_PORT, ADMIN_CERTIFICATE, ADMIN_PRIVATE_KEY
-from seishub.config import IntOption, Option
 from seishub.packages.processor import Processor, RequestError
+from seishub.services.admin.interfaces import IAdminPanel, IAdminTheme, \
+                                              IAdminStaticContent
 from seishub.util import json
 
 
@@ -28,11 +29,9 @@ class AdminRequest(http.Request):
         self._initStaticContent()
     
     def process(self):
-        """
-        Running through the process chain. First we look for default and user 
+        """Running through the process chain. First we look for default and user 
         defined static content. If this doesn't solve the request, we will try
-        to fit in a admin panel.
-        """
+        to fit in a admin panel."""
         # post process self.path
         self.postpath = map(urllib.unquote, string.split(self.path[1:], '/'))
         
@@ -53,7 +52,7 @@ class AdminRequest(http.Request):
             categories = [p[0] for p in self.panel_ids]
             if self.postpath[0] in categories:
                 # ok there is a category - redirect to first sub panel
-                pages = filter(lambda p: p[0] == self.postpath[0], 
+                pages = filter(lambda p: p[0] == self.postpath[0],
                                self.panel_ids)
                 menuitems = [p[2] for p in pages]
                 menuitems.sort()
@@ -83,14 +82,12 @@ class AdminRequest(http.Request):
         return
     
     def _renderRESTContent(self):
-        """
-        Sends a request to the local REST service and returns the resulting XML
-        document.
-        
-        Asynchronous calls from JavaScript are only allowed from the same 
+        """Asynchronous calls from JavaScript are only allowed from the same 
         server (ip and port). So in order to fetch a REST request via the admin
-        service, we need to provide a REST fetcher on server side.
-        """ 
+        service, we need to provide a REST fetcher on the server side.
+        
+        Uses therefore the package.processor.Processor directly to serve any
+        resource request and returns the resulting XML document.""" 
         request = Processor(self.env)
         request.method = 'GET'
         request.path = self.path[5:]
@@ -112,9 +109,8 @@ class AdminRequest(http.Request):
         return
     
     def _renderUserDefinedStatics(self):
-        """
-        Render user defined static files, like CSS, JavaScript and Images.
-        """ 
+        """Render user defined static files, like CSS, JavaScript and 
+        Images.""" 
         filename = self.static_content.get(self.path)
         node = static.File(filename)
         node.render(self)
@@ -122,10 +118,8 @@ class AdminRequest(http.Request):
         return
     
     def _renderDefaultStatics(self):
-        """
-        Render default static files, like CSS, JavaScript and Images.
-        """ 
-        node = static.File(resource_filename(self.__module__, 'htdocs' + 
+        """Render default static files, like CSS, JavaScript and Images.""" 
+        node = static.File(resource_filename(self.__module__, 'statics' + 
                                              os.sep + self.postpath[0]))
         for p in self.postpath[1:]:
             node = node.getChild(p, self)
@@ -140,9 +134,7 @@ class AdminRequest(http.Request):
         return
     
     def _renderPanel(self, result):
-        """
-        Render the selected panel.
-        """ 
+        """Render the selected panel.""" 
         if not result or isinstance(result, defer.Deferred):
             return
         template, data = result
@@ -164,6 +156,7 @@ class AdminRequest(http.Request):
         temp = Template(file=resource_filename(self.__module__,
                                                "templates"+os.sep+ \
                                                "index.tmpl"))
+        temp.css = self.env.config.get('admin', 'css')
         temp.navigation = self._renderNavigation()
         temp.submenu = self._renderSubMenu()
         temp.version = SEISHUB_VERSION
@@ -205,7 +198,7 @@ class AdminRequest(http.Request):
         temp = Template(file=resource_filename(self.__module__,
                                                "templates"+os.sep+ \
                                                "navigation.tmpl"))
-        menuitems = [(i[0],i[1]) for i in self.panel_ids]
+        menuitems = [(i[0], i[1]) for i in self.panel_ids]
         menuitems = dict(menuitems).items()
         menuitems.sort()
         temp.navigation = menuitems
@@ -217,7 +210,7 @@ class AdminRequest(http.Request):
         temp = Template(file=resource_filename(self.__module__,
                                                "templates"+os.sep+ \
                                                "submenu.tmpl"))
-        menuitems = map((lambda p: (p[2],p[3])),
+        menuitems = map((lambda p: (p[2], p[3])),
                          filter(lambda p: p[0]==self.cat_id, self.panel_ids))
         menuitems = dict(menuitems).items()
         menuitems.sort()
@@ -233,7 +226,7 @@ class AdminRequest(http.Request):
                 "recent call last):</b>\n\n%s\n\n</body></html>\n"
                 % webutil.formatFailure(reason))
         self.setResponseCode(http.INTERNAL_SERVER_ERROR)
-        self.setHeader('content-type',"text/html")
+        self.setHeader('content-type', "text/html")
         self.setHeader('content-length', str(len(body)))
         self.write(body)
         self.finish()
@@ -245,6 +238,21 @@ class AdminRequest(http.Request):
         if hasattr(self.panel, 'getTemplateDirs'):
             dirs+=self.panel.getTemplateDirs()
         return dirs[::-1]
+    
+    def getAdminThemes(self):
+        """Return a list of available admin themes."""
+        theme_list = ExtensionPoint(IAdminTheme).extensions(self.env)
+        themes={}
+        for theme in theme_list:
+            # skip theme without proper interfaces
+            if not hasattr(theme, 'getThemeId'):
+                continue;
+            options = theme.getThemeId()
+            # getThemeId has exact 2 values in a tuple
+            if not isinstance(options, tuple) or len(options)!=2:
+                continue
+            themes[options[0]] = options[1]
+        return themes
     
     def _initAdminPanels(self):
         """Return a list of available admin panels."""
@@ -278,11 +286,12 @@ class AdminRequest(http.Request):
     
     def _initStaticContent(self):
         """Returns a dictionary of static web resources."""
+        statics_list = ExtensionPoint(IAdminStaticContent).extensions(self.env)
         self.static_content = {}
         # add panel specific static files
-        for panel in self.panels.values():
-            if hasattr(panel, 'getHtdocsDirs'):
-                items = panel.getHtdocsDirs()
+        for panel in statics_list:
+            if hasattr(panel, 'getStaticContent'):
+                items = panel.getStaticContent()
                 if isinstance(items, dict):
                     self.static_content.update(items)
 
@@ -312,6 +321,7 @@ class AdminService(internet.SSLServer): #@UndefinedVariable
     Option('admin', 'private_key_file', ADMIN_PRIVATE_KEY, 'Private key file.')
     Option('admin', 'certificate_file', ADMIN_CERTIFICATE, 'Certificate file.')
     Option('admin', 'secured', 'True', "Enable HTTPS connection.")
+    Option('admin', 'css', '/css/default.css', "WebAdmin Theme.")
     
     def __init__(self, env):
         self.env = env
@@ -326,7 +336,7 @@ class AdminService(internet.SSLServer): #@UndefinedVariable
         else:
             self.method = 'TCP'
             internet.SSLServer.__init__(self, #@UndefinedVariable
-                                        port, AdminServiceFactory(env),1)
+                                        port, AdminServiceFactory(env), 1)
         self.setName("WebAdmin")
         self.setServiceParent(env.app)
     

@@ -7,17 +7,24 @@ body {
     padding: 0;
 }
 
-/* Logo */
+/* logo */
 #logo {
     color: rgb(175, 175, 175);
     background-color: transparent;
     font-family: "trebuchet ms", verdana, helvetica, arial, sans-serif;
     font-size: 350%;
-    margin: 0 0 0 5mm;
-    padding: 15px 0 0 0;
+    margin: 0 0 0 15px;
+    padding: 10px 0 0 0;
 }
 
-/* Version string */
+/* caption */
+#caption {
+    color: rgb(175, 175, 175);
+    margin: 0 0 0 15px;
+    padding-bottom: 10px;
+}
+
+/* version */
 #version {
     position: absolute;
     right: 5px;
@@ -91,6 +98,7 @@ body {
     margin: 1em;
     margin-left: 17em;
     background-color: rgb(240, 240, 240);
+    min-height: 400px;
 }
 
 #content p {
@@ -203,4 +211,14 @@ div.field {
     background-color: white;
     color: #934249;
     border: 2px solid #934249;
+}
+
+
+/* Infobox */
+#infobox {
+   float: right;
+   background-color: #f5f5f5;
+   border: 1px solid #dadada;
+   width: 200px;
+   padding: 10px;
 }

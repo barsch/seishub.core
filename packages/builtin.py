@@ -16,7 +16,7 @@ class StylesheetResource(Component):
     implements(IResourceType)
     
     package_id = 'seishub'
-    resourcetype_id = 'xslt'
+    resourcetype_id = 'stylesheet'
 
 
 class SchemaResource(Component):

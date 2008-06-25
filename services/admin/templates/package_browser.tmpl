@@ -7,6 +7,17 @@
 <link rel="stylesheet" type="text/css" href="/yui/assets/treeview-sprite.css" />
 
 
+<div id="infobox">
+  <h2>Legend</h2>
+  <span class="icon icon-package">Package</span>
+  <span class="icon icon-resourcetype">Resource Type</span>
+  <span class="icon icon-property">Property</span>
+  <span class="icon icon-alias">Alias</span>
+  <span class="icon icon-mapping">Mapping</span>
+  <span class="icon icon-index">Index</span>
+  <span class="icon icon-resource">Resource</span>
+</div>
+
 <h1>Package Browser</h1>
 
 <div id="treediv"></div>
@@ -18,7 +29,8 @@
     function loadNodeData(node, fnLoadComplete) {
       var nodeTitle = encodeURI(node.title);
       var sUrl = "/rest/" + nodeTitle;
-      var elements = ['resourcetype','alias','mapper','resource','index'];
+      var elements = ['resourcetype', 'property', 'alias', 'mapper', 
+                      'resource','index'];
       
       //prepare our callback object
       var callback = {
@@ -29,22 +41,23 @@
             for each (var element in elements) {
               var items = data[element];
               for each (var item in items) {
+                var text = item.substr(item.lastIndexOf('/')+1);
                 if (element=='resource') {
-                  var tmp = new YAHOO.widget.TextNode(item, node, false);
+                  var tmp = new YAHOO.widget.TextNode(text, node, false);
                   tmp.href = "$resturl" + item;
                   tmp.title = item;
                   tmp.isLeaf = 1;
-                  tmp.labelStyle = "icon-resource";
+                  tmp.labelStyle = "icon icon-resource";
                 } else if (element=='index') {
                   var tmp = new YAHOO.widget.HTMLNode('<span class="htmlnodelabel">'+item+'</span>', node, false, true);
                   tmp.isLeaf = 1;
                   tmp.title = item;
-                  tmp.contentStyle = "icon-index";
+                  tmp.contentStyle = "icon icon-index";
                 } else {
-                  var tmp = new YAHOO.widget.TextNode(item, node, false);
-                  tmp.href = "$resturl/" + nodeTitle + "/" + item;
-                  tmp.title = nodeTitle + "/" + item;
-                  tmp.labelStyle = "icon-"+element;
+                  var tmp = new YAHOO.widget.TextNode(text, node, false);
+                  tmp.href = "$resturl" + item;
+                  tmp.title = item;
+                  tmp.labelStyle = "icon icon-"+element;
                 }
               }
             }
@@ -71,7 +84,7 @@
       // cycle trough all packages
       #for $p in $packages
       var tmp = new YAHOO.widget.TextNode("$p", root, false);
-      tmp.labelStyle = "icon-package";
+      tmp.labelStyle = "icon icon-package";
       tmp.href = "$resturl/$p";
       tmp.title = "/$p";
       #end for

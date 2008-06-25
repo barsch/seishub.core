@@ -2,8 +2,8 @@
 from zope.interface import implements, Interface
 from zope.interface.exceptions import DoesNotImplement
 from sqlalchemy import select #@UnresolvedImport
-from sqlalchemy.sql import func 
 from sqlalchemy.sql.expression import ClauseList #@UnresolvedImport
+
 
 class IDbEnabled(Interface):
     """Object provides access to db manager"""
@@ -12,8 +12,8 @@ class IDbEnabled(Interface):
         
     def getDb():
         """@return: database engine"""
-        
-        
+
+
 class ISerializable(Interface):
     """Object providing functionality for serialization"""
     def _getId():
@@ -21,7 +21,7 @@ class ISerializable(Interface):
     
     def _setId(self, id):
         """set internal storage id"""
-        
+
 
 class DbEnabled(object):
     """Mixin providing access to a sqlite database manager"""
@@ -35,8 +35,8 @@ class DbEnabled(object):
         
     def getDb(self):
         return self._db
-        
-        
+
+
 class DbStorage(DbEnabled):
     """Mixin providing object serialization to a sqlite SQL database.
     db_tables and db_mapping must be defined by subclasses.
@@ -170,7 +170,7 @@ class DbStorage(DbEnabled):
         finally:
             conn.close()
         return True
-    
+
 
 class Serializable(object):
     """Subclasses may be serialized into a DbStorage

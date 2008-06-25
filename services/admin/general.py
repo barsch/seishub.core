@@ -3,6 +3,7 @@
 import inspect
 import sys
 import os
+
 from twisted.internet import reactor
 from twisted.application import service
 
@@ -23,12 +24,17 @@ class BasicPanel(Component):
             for option in ('host', 'default_charset', 'description'):
                 self.config.set('seishub', option, 
                                 request.args.get(option,[])[0])
+            for option in ('css',):
+                self.config.set('admin', option, 
+                                request.args.get(option,[])[0])
             self.config.save()
             request.redirect(request.path)
         data = {
           'host': self.config.get('seishub', 'host'),
           'default_charset': self.config.get('seishub', 'default_charset'),
           'description': self.config.get('seishub', 'description'),
+          'css': self.config.get('admin', 'css'),
+          'themes': request.getAdminThemes(),
         }
         return ('general_basic.tmpl', data)
 

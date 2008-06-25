@@ -15,6 +15,19 @@
     <label>Description</label><br />
     <textarea name="description" cols="80" rows="5">$description</textarea>
   </div>
-  
+
+  <div class="field">
+    <label>Theme</label><br />
+    <select name="css">
+      #for $i in $themes.keys()
+      <option value="$themes.get($i)"
+            #if $themes.get($i)==$css
+                 selected="selected" 
+            #end if 
+            >$i</option>
+      #end for
+    </select>
+  </div>
+
   <input type="submit" value="Save" />
 </form>

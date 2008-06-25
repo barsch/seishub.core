@@ -17,15 +17,19 @@ Verbose: $db.echo<br />
 <h2>Settings</h2>
 
 <form method="post">
-  <label>Database URI</label><br />
-  <input name="uri" size="80" type="text" value="$uri" /><br />
-  <br />
-  <label>Verbose</label><br />
-  <input name="verbose" type="checkbox" 
-  #if $verbose
-    checked="checked" 
-  #end if 
-  /><br />
-  <br />
+  <div class="field">
+    <label>Database URI</label><br />
+    <input name="uri" size="80" type="text" value="$uri" />
+  </div>
+
+  <div class="field">
+    <label>Verbose</label><br />
+    <input name="verbose" type="checkbox" 
+      #if $verbose
+           checked="checked" 
+      #end if 
+      />
+  </div>
+
   <input type="submit" value="Save" />
 </form>

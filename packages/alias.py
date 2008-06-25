@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
-from seishub.util.text import validate_id, to_uri, from_uri
+
+from seishub.util.text import validate_id, to_uri
 from seishub.db.util import Serializable
+
 
 class Alias(Serializable):
     def __init__(self, package_id = None, resourcetype_id = None,
@@ -10,9 +12,9 @@ class Alias(Serializable):
         self.resourcetype_id = resourcetype_id
         self.name = name
         self.expr = expr
-        
+    
     def __str__(self):
-        return to_uri(self.package_id, self.resourcetype_id) + '/' + self.name
+        return to_uri(self.package_id, self.resourcetype_id) + '/@' + self.name
     
     def getResourceTypeId(self):
         return self._resourcetype_id
@@ -49,5 +51,8 @@ class Alias(Serializable):
             raise TypeError("Invalid alias expression, String expected: %s" %\
                              data)
         self._expr = data
-        
+    
     expr = property(getExpr, setExpr, "Alias expression (XPath query)")
+    
+    def getQuery(self):
+        return to_uri(self.package_id, self.resourcetype_id) + self._expr

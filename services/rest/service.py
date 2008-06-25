@@ -76,18 +76,19 @@ class RESTRequest(Processor, http.Request):
         """Resource list handler for the inheriting class."""
         root = """<?xml version="1.0"?>
             
-    <seishub xml:base="%s%s" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <seishub xml:base="%s" xmlns:xlink="http://www.w3.org/1999/xlink">
     %s
     </seishub>"""
         tmpl = """<%s xlink:type="simple" xlink:href="%s">%s</%s>\n"""
         doc = ""
         # generate a list of standard elements
-        for item in ['package','resourcetype','alias','mapping','resource']:
-            for uri in kwargs.get(item,[]):
-                doc += tmpl % (item, uri, uri, item)
+        for tag in ['package', 'resourcetype', 'property', 'alias', 'mapping',
+                    'resource']:
+            for uri in kwargs.get(tag,[]):
+                content = uri.split('/')[-1]
+                doc += tmpl % (tag, uri, content, tag)
         # XXX: xml:base doesn't work!!!!
-        result = str(root % (self.env.getRestUrl(), 
-                             kwargs.get('base',self.path), doc))
+        result = str(root % (self.env.getRestUrl(), doc))
         # set header
         self._setHeaders(result)
         self.setHeader('content-type', 'application/xml; charset=UTF-8')

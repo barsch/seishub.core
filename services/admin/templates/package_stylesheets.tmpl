@@ -2,6 +2,7 @@
 
 <h2>Add new stylesheet</h2>
 <form method="post" enctype="multipart/form-data" name="add">
+  <div class="field">
     <label>Package</label><br />
     <select name="package_id" id="package_id">
         #for $p in $packages
@@ -9,16 +10,23 @@
         <option value="$p" onclick="changePackage('$p');">$p</option>
         #end if
         #end for
-    </select><br />
+    </select>
+  </div>
+  <div class="field">
     <label>Resource type</label><br />
-    <select name="resourcetype_id" id="resourcetype_id"></select><br />
+    <select name="resourcetype_id" id="resourcetype_id"></select>
+  </div>
+  <div class="field">
     <label>Type</label><br />
-    <input type="text" size="20" name="type" /><br />
+    <input type="text" size="20" name="type" />
+  </div>
+  <div class="field">
     <label>XSLT File</label><br />
     <input name="file" type="file" size="50" maxlength="100000" 
-           accept="text/xml" /><br/>
-    <br />
-    <input type="submit" value="Add" />
+           accept="text/xml" />
+  </div>
+
+  <input type="submit" value="Add" />
 </form>
 
 <br />
@@ -26,6 +34,7 @@
 
 <h2>List of all stylesheets</h2>
 <form method="post" name="list">
+  <div class="field">
     #for $stylesheet in $stylesheets 
     <input type="checkbox" name="stylesheet[]" value="$stylesheet.resource_id" /> 
     $stylesheet.package_id
@@ -33,7 +42,9 @@
     $stylesheet.type
     #end for
     <br />
-    <input type="submit" name="delete" value="Delete" />
+  </div>
+
+  <input type="submit" name="delete" value="Delete" />
 </form>
 
 <script type="text/javascript">

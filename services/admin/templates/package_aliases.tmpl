@@ -6,21 +6,29 @@ resource type. The result of an alias is a list of unique resources. </i></p>
 
 <h2>Add new alias</h2>
 <form method="post" name="add"><label>Package</label><br />
+  <div class="field">
     <select name="package_id" id="package_id">
-        #for $p in $packages
-        <option value="$p" onclick="changePackage('$p');">$p</option>
-        #end for
-    </select><br />
+       #for $p in $packages
+         <option value="$p" onclick="changePackage('$p');">$p</option>
+       #end for
+    </select>
+  </div>
+  <div class="field">
     <label>Resource type (optional)</label><br />
     <select name="resourcetype_id" id="resourcetype_id">
-        <option value="">-</option>
-    </select><br />
-    <label>Alias</label><br />
-    <input type="text" size="80" name="alias" value="$alias" /><br />
+      <option value="">-</option>
+    </select>
+  </div>
+  <div class="field">
+    <label>Alias name (without a leading @)</label><br />
+    <input type="text" size="80" name="alias" value="$alias" />
+  </div>
+  <div class="field">
     <label>XPath query</label><br />
-    <input type="text" size="80" name="xpath" value="$xpath" /><br />
-    <br />
-    <input type="submit" name="add" value="Add" />
+    <input type="text" size="80" name="xpath" value="$xpath" />
+  </div>
+  
+  <input type="submit" name="add" value="Add" />
 </form>
 
 <br />
@@ -28,15 +36,18 @@ resource type. The result of an alias is a list of unique resources. </i></p>
 
 <h2>List of all aliases</h2>
 <form method="post" name="list">
+  <div class="field">
   #for $alias in $aliases
     <input type="checkbox" 
            value="$alias"
            name="alias[]"/>
+           $alias.__dict__
         <a href="$resturl$alias">$alias</a>
     ($alias.expr)<br />
   #end for
-<br />
-<input type="submit" name="delete" value="Delete" /></form>
+  </div>
+  <input type="submit" name="delete" value="Delete" />
+</form>
 
 <script type="text/javascript">
     var resourcetypes = new Array();

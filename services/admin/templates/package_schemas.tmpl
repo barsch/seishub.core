@@ -2,6 +2,7 @@
 
 <h2>Add new schema</h2>
 <form method="post" enctype="multipart/form-data" name="add">
+  <div class="field">
     <label>Package</label><br />
     <select name="package_id" id="package_id">
         #for $p in $packages
@@ -9,16 +10,23 @@
         <option value="$p" onclick="changePackage('$p');">$p</option>
         #end if
         #end for
-    </select><br />
+    </select>
+  </div>
+  <div class="field">
     <label>Resource type</label><br />
-    <select name="resourcetype_id" id="resourcetype_id"></select><br />
+    <select name="resourcetype_id" id="resourcetype_id"></select>
+  </div>
+  <div class="field">
     <label>Label</label><br />
-    <input type="text" size="20" name="type" /><br />
+    <input type="text" size="20" name="type" />
+  </div>
+  <div class="field">
     <label>XSD File</label><br />
     <input name="file" type="file" size="50" maxlength="100000" 
-           accept="application/xsd+xml" /><br/>
-    <br />
-    <input type="submit" value="Add" />
+           accept="application/xsd+xml" />
+  </div>
+
+  <input type="submit" value="Add" />
 </form>
 
 <br />
@@ -26,14 +34,17 @@
 
 <h2>List of all schemas</h2>
 <form method="post" name="list">
-    #for $schema in $schemas 
+  <div class="field">
+    #for $schema in $schemas
     <input type="checkbox" name="schema[]" value="$schema.resource_id" /> 
     $schema.package_id
     $schema.resourcetype_id
     $schema.type
-    #end for
     <br />
-    <input type="submit" name="delete" value="Delete" />
+    #end for
+  </div>
+
+  <input type="submit" name="delete" value="Delete" />
 </form>
 
 <script type="text/javascript">

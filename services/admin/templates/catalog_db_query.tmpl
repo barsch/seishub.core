@@ -2,8 +2,10 @@
 
 <h2>Query</h2>
 <form method="post">
-  <textarea name="query" rows="3" cols="80">$query</textarea><br />
-  <br />
+  <div class="field">
+    <textarea name="query" rows="3" cols="80">$query</textarea>
+  </div>
+  
   <input type="submit" name="send" value="Query" />
   #for $table in $tables
   <input type="submit" name="$table" value="$table" />
