@@ -94,12 +94,7 @@ class XMLConformanceTestCase(SeisHubEnvironmentTestCase):
         # try to add resources
         data = file(test_file, 'r').read()
         try:
-            res = self.env.catalog.newXmlResource('/test/'+props['uri'], data)
-        except Exception, e:
-            print 'CREATE RESOURCE:', test_id, '-', e
-            return
-        try:
-            self.env.catalog.addResource(res)
+            res = self.env.catalog.addResource('test', 'xml', data)
         except Exception, e:
             print 'ADD RESOURCE:', test_id, '-', e
             return

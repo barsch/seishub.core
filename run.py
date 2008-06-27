@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import hotshot
+
 from twisted.application import service
 from twisted.internet import reactor 
 
@@ -39,5 +41,8 @@ def main():
     reactor.run() #@UndefinedVariable
 
 
-if __name__ == '__main__':
-    main()
+#if __name__ == '__main__':
+#    main()
+prof = hotshot.Profile('seishub.prof')
+benchtime, stones = prof.runcall(main)
+prof.close()

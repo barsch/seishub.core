@@ -13,6 +13,10 @@ input, option, select, textarea {
     font-size: 12px;
 }
 
+textarea {
+    min-width: 500px;
+}
+
 a {
     color: #0066cc;
     text-decoration: none;
@@ -48,6 +52,8 @@ a:hover {
     color: #999;
     font-size: 12px;
     text-transform: uppercase;
+    width: 400px;
+    text-align: right;
 }
 
 /* version string */
@@ -64,6 +70,7 @@ a:hover {
     left: 220px;
     height: 36px;
     position: absolute;
+    width: 800px;
 }
 
 #menu {

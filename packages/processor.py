@@ -301,7 +301,6 @@ class Processor:
         if property_id[0]=='.all':
             res = self.env.catalog.getResourceList(package_id, resourcetype_id)
             resource_ids = [str(r) for r in res]
-            resource_ids.sort()
             return self.renderResourceList(resource=resource_ids)
         else:
             raise RequestError(http.NOT_FOUND)

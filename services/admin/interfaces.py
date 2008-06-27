@@ -42,7 +42,7 @@ class IAdminTheme(Interface):
     """Marker interface for an additional css theme."""
     
     def getThemeId():
-        """Provides a theme specific id and a link to the relevant CSS file.
+        """Provides a theme specific id and a link to the linked CSS file.
         
-        The items returned by this function must be tuples of the form
+        The items returned by this function must be a tuple of the form
         `(theme_id, path_to_css_file)`."""

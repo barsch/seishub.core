@@ -21,33 +21,30 @@ from seishub.util import json
 
 
 class AdminRequest(http.Request):
-    """A HTTP request."""
-    
-    def __init__(self, *args, **kw):
-        http.Request.__init__(self, *args, **kw)
-        self._initAdminPanels()
-        self._initStaticContent()
+    """A HTTP request on the web-based administration interface."""
     
     def process(self):
-        """Running through the process chain. First we look for default and user 
-        defined static content. If this doesn't solve the request, we will try
-        to fit in a admin panel."""
+        """Running through the process chain. First we look for default and 
+        user defined static content. If this doesn't solve the request, we will
+        try to fit in an admin panel."""
         # post process self.path
         self.postpath = map(urllib.unquote, string.split(self.path[1:], '/'))
         
-        # process REST redirects
+        # process REST requests
         if self.postpath[0]=='rest':
             return self._renderRESTContent()
         
         # process user defined static content
-        if self.path in self.static_content.keys():
-            return self._renderUserDefinedStatics()
+        static_content = self._getAdminStaticContent()
+        if static_content.has_key(self.path):
+            return self._renderStaticFile(static_content.get(self.path))
         
         # process system wide default static content
         if self.postpath[0] in ['images', 'css', 'js', 'yui', 'favicon.ico']:
             return self._renderDefaultStatics()
         
         # redirect if only category given or web root
+        self._initAdminPanels()
         if len(self.postpath)<2:
             categories = [p[0] for p in self.panel_ids]
             if self.postpath[0] in categories:
@@ -79,7 +76,6 @@ class AdminRequest(http.Request):
         d = threads.deferToThread(self.panel.renderPanel, self) 
         d.addCallback(self._renderPanel)
         d.addErrback(self._processingFailed) 
-        return
     
     def _renderRESTContent(self):
         """Asynchronous calls from JavaScript are only allowed from the same 
@@ -95,43 +91,42 @@ class AdminRequest(http.Request):
             data = request.process()
         except RequestError, e:
             self.env.log.info('RequestError:', e)
-            self.finish()
-            return
-        if isinstance(data, type({})):
-            # format as json
-            data = json.write(data)
-            self.write(data)
         else:
-            self.write('')
+            if isinstance(data, type({})):
+                # format as json
+                data = json.write(data)
+                self.write(data)
+                self.setHeader('content-type', 'text/plain; charset=UTF-8')
+                self.setResponseCode(http.OK)
         self.finish()
-        self.setHeader('content-type', 'text/plain; charset=UTF-8')
-        self.setResponseCode(http.OK)
-        return
     
-    def _renderUserDefinedStatics(self):
-        """Render user defined static files, like CSS, JavaScript and 
-        Images.""" 
-        filename = self.static_content.get(self.path)
-        node = static.File(filename)
-        node.render(self)
+    def _renderStaticFile(self, filename):
+        """Renders static files, like CSS, JavaScript and Images.""" 
+        try:
+            node = static.File(filename)
+            node.render(self)
+        except Exception, e:
+            self.env.log.error('Error:', e)
         self.finish()
-        return
     
     def _renderDefaultStatics(self):
         """Render default static files, like CSS, JavaScript and Images.""" 
-        node = static.File(resource_filename(self.__module__, 'statics' + 
-                                             os.sep + self.postpath[0]))
-        for p in self.postpath[1:]:
-            node = node.getChild(p, self)
-        if not node.isLeaf:
-            self.setHeader('content-type', "text/html; charset=UTF-8")
-        # XXX: not very clean code!
-        if self.path.endswith('.ico'):
-            node.type = "image/x-icon"
-            node.encoding ="charset=UTF-8"
-        node.render(self)
+        try:
+            res = resource_filename(__name__, os.path.join('statics', 
+                                                           self.postpath[0]))
+            node = static.File(res)
+            for p in self.postpath[1:]:
+                node = node.getChild(p, self)
+            if not node.isLeaf:
+                self.setHeader('content-type', "text/html; charset=UTF-8")
+            # XXX: not very clean code!
+            if self.path.endswith('.ico'):
+                node.type = "image/x-icon"
+                node.encoding ="charset=UTF-8"
+            node.render(self)
+        except Exception, e:
+            self.env.log.debug('Error:', e)
         self.finish()
-        return
     
     def _renderPanel(self, result):
         """Render the selected panel.""" 
@@ -153,9 +148,10 @@ class AdminRequest(http.Request):
             body = Template(file=filename, searchList=[data]) 
         
         # process template
-        temp = Template(file=resource_filename(self.__module__,
-                                               "templates"+os.sep+ \
-                                               "index.tmpl"))
+        res = resource_filename(__name__, os.path.join('templates',
+                                                       'index.tmpl'))
+        temp = Template(file=res)
+        # use the theme specific CSS file
         temp.css = self.env.config.get('webadmin', 'css')
         temp.navigation = self._renderNavigation()
         temp.submenu = self._renderSubMenu()
@@ -178,9 +174,9 @@ class AdminRequest(http.Request):
         """Render an error message."""
         if not data.get('error', None) and not data.get('exception', None):
             return
-        temp = Template(file=resource_filename(self.__module__,
-                                               "templates"+os.sep+ \
-                                               "error.tmpl"))
+        res = resource_filename(__name__, os.path.join('templates',
+                                                       'error.tmpl'))
+        temp = Template(file=res)
         msg = data.get('error', '')
         if isinstance(msg, basestring):
             temp.message = msg
@@ -195,9 +191,9 @@ class AdminRequest(http.Request):
     
     def _renderNavigation(self):
         """Generate the main navigation bar."""
-        temp = Template(file=resource_filename(self.__module__,
-                                               "templates"+os.sep+ \
-                                               "navigation.tmpl"))
+        res = resource_filename(__name__, os.path.join('templates',
+                                                       'navigation.tmpl'))
+        temp = Template(file=res)
         menuitems = [(i[0], i[1]) for i in self.panel_ids]
         menuitems = dict(menuitems).items()
         menuitems.sort()
@@ -207,9 +203,9 @@ class AdminRequest(http.Request):
     
     def _renderSubMenu(self):
         """Generate the sub menu box."""
-        temp = Template(file=resource_filename(self.__module__,
-                                               "templates"+os.sep+ \
-                                               "submenu.tmpl"))
+        res = resource_filename(__name__, os.path.join('templates',
+                                                       'submenu.tmpl'))
+        temp = Template(file=res)
         menuitems = map((lambda p: (p[2], p[3])),
                          filter(lambda p: p[0]==self.cat_id, self.panel_ids))
         menuitems = dict(menuitems).items()
@@ -234,7 +230,7 @@ class AdminRequest(http.Request):
     
     def _getTemplateDirs(self):
         """Returns a list of searchable template directories."""
-        dirs = [resource_filename(self.__module__, "templates")]
+        dirs = [resource_filename(self.__module__, 'templates')]
         if hasattr(self.panel, 'getTemplateDirs'):
             dirs+=self.panel.getTemplateDirs()
         return dirs[::-1]
@@ -284,16 +280,17 @@ class AdminRequest(http.Request):
             return cmp(p1, p2)
         self.panel_ids.sort(_orderPanelIds)
     
-    def _initStaticContent(self):
+    def _getAdminStaticContent(self):
         """Returns a dictionary of static web resources."""
         statics_list = ExtensionPoint(IAdminStaticContent).extensions(self.env)
-        self.static_content = {}
+        static_content = {}
         # add panel specific static files
-        for panel in statics_list:
-            if hasattr(panel, 'getStaticContent'):
-                items = panel.getStaticContent()
+        for comp in statics_list:
+            if hasattr(comp, 'getStaticContent'):
+                items = comp.getStaticContent()
                 if isinstance(items, dict):
-                    self.static_content.update(items)
+                    static_content.update(items)
+        return static_content
 
 
 class AdminHTTPChannel(http.HTTPChannel):

@@ -112,7 +112,6 @@ class Environment(ComponentManager):
     
     def disableComponent(self, component):
         """Disables a component."""
-        import pdb;pdb.set_trace()
         module = sys.modules[component.__module__]
         fullname = module.__name__+'.'+component.__name__
         
