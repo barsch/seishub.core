@@ -35,7 +35,9 @@ class IAdminPanel(Interface):
         data to be passed to the template in form of a dictionary."""
     
     def getTemplatesDirs():
-        """Return a list of directories containing template files."""
+        """Return a list of directories containing template files. Template 
+        directories are only bound to one admin panel and can't overwrite 
+        system wide templates defined in seishub.services.admin.templates."""
 
 
 class IAdminTheme(Interface):

@@ -18,10 +18,10 @@
 
   <div class="field">
     <label>Theme</label><br />
-    <select name="css">
+    <select name="theme">
       #for $i in $themes.keys()
-      <option value="$themes.get($i)"
-            #if $themes.get($i)==$css
+      <option value="$i"
+            #if $i==$theme
                  selected="selected" 
             #end if 
             >$i</option>

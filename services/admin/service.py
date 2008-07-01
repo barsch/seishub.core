@@ -119,7 +119,7 @@ class AdminRequest(http.Request):
                 node = node.getChild(p, self)
             if not node.isLeaf:
                 self.setHeader('content-type', "text/html; charset=UTF-8")
-            # XXX: not very clean code!
+            # favicon.ico needs extra content type and encoding settings
             if self.path.endswith('.ico'):
                 node.type = "image/x-icon"
                 node.encoding ="charset=UTF-8"
@@ -152,7 +152,7 @@ class AdminRequest(http.Request):
                                                        'index.tmpl'))
         temp = Template(file=res)
         # use the theme specific CSS file
-        temp.css = self.env.config.get('webadmin', 'css')
+        temp.css = self.getActiveAdminThemeCSS()
         temp.navigation = self._renderNavigation()
         temp.submenu = self._renderSubMenu()
         temp.version = SEISHUB_VERSION
@@ -230,13 +230,22 @@ class AdminRequest(http.Request):
     
     def _getTemplateDirs(self):
         """Returns a list of searchable template directories."""
-        dirs = [resource_filename(self.__module__, 'templates')]
+        dirs = [resource_filename(__name__, 'templates')]
         if hasattr(self.panel, 'getTemplateDirs'):
             dirs+=self.panel.getTemplateDirs()
         return dirs[::-1]
     
-    def getAdminThemes(self):
-        """Return a list of available admin themes."""
+    def getActiveAdminThemeCSS(self):
+        """Return CSS request URL of the activated admin theme."""
+        theme_id = self.env.config.get('webadmin', 'theme')
+        themes = self.getAllAdminThemes()
+        if themes.has_key(theme_id):
+            return themes.get(theme_id).getThemeId()[1]
+        else:
+            return '/css/default.css'
+    
+    def getAllAdminThemes(self):
+        """Return a list of all available admin themes."""
         theme_list = ExtensionPoint(IAdminTheme).extensions(self.env)
         themes={}
         for theme in theme_list:
@@ -247,7 +256,7 @@ class AdminRequest(http.Request):
             # getThemeId has exact 2 values in a tuple
             if not isinstance(options, tuple) or len(options)!=2:
                 continue
-            themes[options[0]] = options[1]
+            themes[options[0]] = theme
         return themes
     
     def _initAdminPanels(self):
@@ -265,6 +274,7 @@ class AdminRequest(http.Request):
             # getPanelId has exact 4 values in a tuple
             if not isinstance(options, tuple) or len(options)!=4:
                 continue
+            # XXX: check here for permissions
             self.panels[(options[0], options[2])] = panel
             self.panel_ids.append(options)
         
@@ -321,7 +331,7 @@ class AdminService(internet.SSLServer): #@UndefinedVariable
     Option('webadmin', 'certificate_file', ADMIN_CERTIFICATE, 
            'Certificate file.')
     Option('webadmin', 'secured', 'True', "Enable HTTPS connection.")
-    Option('webadmin', 'css', '/css/default.css', "WebAdmin Theme.")
+    Option('webadmin', 'theme', 'default', "WebAdmin Theme.")
     
     def __init__(self, env):
         self.env = env

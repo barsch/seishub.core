@@ -24,7 +24,7 @@ class BasicPanel(Component):
             for option in ('host', 'default_charset', 'description'):
                 self.config.set('seishub', option, 
                                 request.args.get(option,[])[0])
-            for option in ('css',):
+            for option in ('theme',):
                 self.config.set('webadmin', option, 
                                 request.args.get(option,[])[0])
             self.config.save()
@@ -33,8 +33,8 @@ class BasicPanel(Component):
           'host': self.config.get('seishub', 'host'),
           'default_charset': self.config.get('seishub', 'default_charset'),
           'description': self.config.get('seishub', 'description'),
-          'css': self.config.get('webadmin', 'css'),
-          'themes': request.getAdminThemes(),
+          'theme': self.config.get('webadmin', 'theme'),
+          'themes': request.getAllAdminThemes(),
         }
         return ('general_basic.tmpl', data)
 

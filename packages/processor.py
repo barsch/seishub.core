@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
 
-import string
+import string, StringIO
 
 from twisted.web import http
 from urllib import unquote
 
 from seishub.core import SeisHubError
-from seishub.xmldb.errors import InvalidIndexError
 from seishub.util.text import isInteger
 
 
@@ -26,6 +25,8 @@ class Processor:
         # response code and header for a request
         self.response_code = http.OK
         self.response_header = {}
+        # set content
+        self.content = StringIO.StringIO()
     
     def process(self):
         """Working through the process chain."""
@@ -33,6 +34,7 @@ class Processor:
         self.postpath = filter(len, map(unquote,
                                         string.split(self.path[1:], '/')))
         # check if correct method
+        self.method = self.method.upper()
         if self.method == 'GET':
             return self._processGET()
         elif self.method == 'POST':
@@ -154,7 +156,7 @@ class Processor:
                 self.response_code = http.CREATED
                 self.response_header['Location'] = str(res.getInfo())
                 return ''
-        raise RequestError(http.NOT_FOUND)
+        raise RequestError(http.FORBIDDEN)
     
     def _processPOST(self):
         """Processes a resource modification request.
@@ -185,7 +187,7 @@ class Processor:
                                      self.postpath[2])
                 self.response_code = http.NO_CONTENT
                 return ''
-        raise RequestError(http.NOT_FOUND)
+        raise RequestError(http.FORBIDDEN)
     
     def _processDELETE(self):
         """Processes a resource deletion request.
@@ -213,7 +215,7 @@ class Processor:
                                      self.postpath[2])
                 self.response_code = http.NO_CONTENT
                 return ''
-        raise RequestError(http.NOT_FOUND)
+        raise RequestError(http.FORBIDDEN)
     
     def _checkResourceType(self, package_id, resourcetype_id):
         """Returns True if the given resource type exists in the package."""
@@ -234,9 +236,12 @@ class Processor:
     
     def _processRoot(self):
         """The root element can be only accessed via the GET method and shows 
-        only a list of all available packages."""
+        only a list of all available packages and properties."""
         package_ids = self._formatResourceList([], self.package_ids)
-        return self.renderResourceList(package=package_ids)
+        # XXX: missing yet
+        property_ids = []
+        return self.renderResourceList(package=package_ids, 
+                                       property=property_ids)
     
     def _processRootProperty(self, property_id=[]):
         # XXX: missing yet
@@ -260,9 +265,14 @@ class Processor:
         # XXX: missing yet!
         mapping_ids = []
         mapping_ids.sort()
+        # special properties
+        # XXX: missing yet
+        property_ids = []
+        property_ids.sort()
         return self.renderResourceList(alias=alias_ids,
                                        resourcetype=resourcetype_ids,
-                                       mapping=mapping_ids)
+                                       mapping=mapping_ids,
+                                       property=property_ids)
     
     def _processPackageProperty(self, package_id, property_id):
         # XXX: missing yet
@@ -360,7 +370,7 @@ class Processor:
             self.env.catalog.modifyResource(package_id,
                                             resourcetype_id,
                                             document_id,
-                                            self.content)
+                                            self.content.read())
         # XXX: fetch all kind of exception types and return to clients
         except Exception, e:
             self.env.log.error(e)
