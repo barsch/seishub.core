@@ -2,45 +2,81 @@
 import sys
 import os
 
-from seishub.core import PackageManager
+from seishub.core import PackageManager, SeisHubError
 from seishub.util.text import from_uri
 from seishub.db.util import DbStorage
 from sqlalchemy.exceptions import IntegrityError #@UnresolvedImport
 from seishub.packages.interfaces import IPackage, IResourceType
-from seishub.packages.defaults import schema_tab, stylesheet_tab, alias_tab
-from seishub.packages.alias import Alias
-from seishub.packages.schema import Schema
-from seishub.packages.stylesheet import Stylesheet 
+from seishub.packages.defaults import schema_tab, stylesheet_tab, alias_tab, \
+                                      packages_tab, resourcetypes_tab
+from seishub.packages.package import PackageWrapper, ResourceTypeWrapper, \
+                                     Alias, Schema, Stylesheet
 
-class PackageRegistry(object):
+class PackageDesc(object):
+    # provide registry.packages with an updated package list on every access
+    def __get__(self, obj, objtype):
+        return PackageList(obj.getEnabledPackageIds(), obj)
+    
+    
+class PackageList(list):
+    def __init__(self, values, registry):
+        list.__init__(self, values)
+        self._registry = registry
+        
+    def get(self, package_id):
+        return self._registry.getComponents(IPackage, package_id)[0]
+        
+
+class PackageRegistry(DbStorage):
+    db_tables = {PackageWrapper: packages_tab,
+                 ResourceTypeWrapper: resourcetypes_tab}
+    db_mapping = {PackageWrapper: {
+                      'package_id':'name',
+                      'version':'version',
+                      '_id':'id'
+                  },
+                  ResourceTypeWrapper: {
+                      'resourcetype_id':'name',
+                      'package._id':'package_id',
+                      'version':'version',
+                      'version_control':'version_control',
+                  }}
+    
+    packages = PackageDesc()
+    
     def __init__(self, env):
+        DbStorage.__init__(self, env.db)
         self.env = env
         self.stylesheets = StylesheetRegistry(self.env)
         self.schemas = SchemaRegistry(self.env)
         self.aliases = AliasRegistry(self.env.db)
         
-    def init_registration(self):
-        """initiate registration of pre registered schemas, stylesheets and 
-        aliases"""
-        self.stylesheets.init_registration()
-        self.schemas.init_registration()
-        self.aliases.init_registration()
-        
     def getComponents(self, interface, package_id = None):
+        """Returns components implementing a certain interface with given 
+        package id"""
         components = PackageManager.getComponents(interface, package_id, 
                                                   self.env)
         return components
     
-    def getPackageIds(self):
-        """Returns sorted dict of all packages."""
-        packages = self.getComponents(IPackage)
-        packages = [str(p.package_id) for p in packages]
-        packages.sort()
-        return packages
+#    def getPackageIds(self):
+#        """Returns sorted list of all packages."""
+#        # XXX: to be removed
+#        packages = self.getComponents(IPackage)
+#        packages = [str(p.package_id) for p in packages]
+#        packages.sort()
+#        return packages
+
+    def getEnabledPackageIds(self):
+        """Returns sorted list of all enabled packages"""
+        all = PackageManager.getPackageIds()
+        enabled = [id for id in all if self.env.isComponentEnabled \
+                                  (PackageManager.getClasses(IPackage, id)[0])]
+        enabled.sort()
+        return enabled
     
     def getResourceTypes(self, package_id = None):
         """
-        Returns sorted dict of all resource types, optional filtered by a 
+        Returns sorted list of all resource types, optionally filtered by a 
         package id.
         """
         components = self.getComponents(IResourceType, package_id)
@@ -49,53 +85,76 @@ class PackageRegistry(object):
             id = c.resourcetype_id
             resourcetypes[id] = c
         return resourcetypes
+    
+    # methods for database registration of packages
+    def registerPackage(self, package_id, version):
+        o = PackageWrapper(package_id, version)
+        self.store(o)
+        
+    def getPackage(self, package_id):
+        try:
+            return self.pickup(PackageWrapper, package_id = package_id)[0]
+        except IndexError:
+            return None
+        
+    def deletePackage(self, package_id):
+        # XXX: check if any object with package id is present
+        # or do this via ForeignKey
+        try:
+            self.drop(PackageWrapper, package_id = package_id)
+        except IntegrityError:
+            raise SeisHubError(("Package with id '%s' cannot be deleted due "+\
+                               "to other objects depending on it.") %\
+                                (str(package_id)))
+        
+    def registerResourcetype(self, resourcetype_id, package_id, version, 
+                             version_control = False):
+        package = self.getPackage(package_id)
+        if not package:
+            raise SeisHubError('Package not present in database: %s', 
+                               str(package_id))
+        o = ResourceTypeWrapper(resourcetype_id, package, 
+                                version, version_control)
+        self.store(o)
+        
+    def getResourcetype(self, package_id, resourcetype_id):
+        package = self.getPackage(package_id)
+        if not package:
+            raise SeisHubError('Package not present in database: %s', 
+                               str(package_id))
+        try:
+            rt = self.pickup(ResourceTypeWrapper, 
+                             package_id = package._id,
+                             resourcetype_id = resourcetype_id)[0]
+        except IndexError:
+            return None
+        rt.package = package
+        return rt
+        
+    def deleteResourcetype(self, package_id, resourcetype_id):
+        # XXX: only delete if no object is present anymore => ForeignKey
+        package = self.getPackage(package_id)
+        if not package:
+            raise SeisHubError('Package not present in database: %s', 
+                               str(package_id))
+        self.drop(ResourceTypeWrapper, package_id = package._id,
+                  resourcetype_id = resourcetype_id)
+    
 
-
-class Registry(DbStorage):
+class RegistryBase(DbStorage):
     """base class for StylesheetRegistry and SchemaRegistry"""
     def __init__(self, env):
         super(DbStorage, self).__init__(env.db)
         self.catalog = env.catalog
         self.log = env.log
-        
-    @staticmethod
-    def _pre_register(reg, type, filename):
-        """pre-register a schema from filesystem during startup, 
-        the schema will be read and registered as soon as the 
-        package gets activated"""
-        # get package id and reosurcetype_id from calling class
-        frame = sys._getframe(2)
-        locals_ = frame.f_locals
-        # Some sanity checks
-        assert locals_ is not frame.f_globals and '__module__' in locals_, \
-               'registerStylesheet() can only be used in a class definition'
-        package_id = locals_.get('package_id')
-        resourcetype_id = locals_.get('resourcetype_id')
-        assert package_id and resourcetype_id, 'class must provide package_id'+\
-               ' and resourcetype_id attributes'
-        path = os.path.join(os.path.dirname(frame.f_code.co_filename),filename)
-        reg._registry.append([package_id, resourcetype_id, 
-                                         path, type])
-        
-    def init_registration(self):
-        """add pre-registered items to the registry"""
-        for item in self._registry:
-            package = item[0]
-            resourcetype = item[1]
-            type = item[3]
-            try:
-                data = file(item[2], 'r').read()
-                self.register(package, resourcetype, type, data)
-            except IntegrityError, e:
-                pass
-                # XXX: check if already registered
-#                o = self.get(package, resourcetype, type)[0]
-#                if not o.resource.data == data:
-#                    # XXX: perform update
-#                    pass 
-            except Exception, e:
-                self.log.warn('Registration failed for: %s (%s)' % (item[2],e))
-                continue
+    
+    db_tables = {Schema: schema_tab}
+    db_mapping = {Schema:
+                 {'resourcetype_id':'resourcetype_id',
+                  'package_id':'package_id',
+                  'type':'type',
+                  'resource_id':'resource_id'}
+                  }
             
     def register(self, package_id, resourcetype_id, type, xml_data):
         res = self.catalog.addResource(self.package_id, self.resourcetype_id, 
@@ -136,7 +195,7 @@ class Registry(DbStorage):
         return True
     
 
-class SchemaRegistry(Registry):
+class SchemaRegistry(RegistryBase):
     _registry = list()
     
     db_tables = {Schema: schema_tab}
@@ -150,11 +209,8 @@ class SchemaRegistry(Registry):
     package_id = "seishub"
     resourcetype_id = "schema"
 
-registerSchema = lambda *args, **kwargs: SchemaRegistry._pre_register\
-                                              (SchemaRegistry, *args, **kwargs)
 
-
-class StylesheetRegistry(Registry):
+class StylesheetRegistry(RegistryBase):
     _registry = list()
     
     db_tables = {Stylesheet:stylesheet_tab}
@@ -167,9 +223,6 @@ class StylesheetRegistry(Registry):
     cls = Stylesheet
     package_id = "seishub"
     resourcetype_id = "stylesheet"
-        
-registerStylesheet = lambda *args, **kwargs: StylesheetRegistry._pre_register\
-                                          (StylesheetRegistry, *args, **kwargs)
 
 
 class AliasRegistry(DbStorage):
@@ -183,30 +236,32 @@ class AliasRegistry(DbStorage):
               'expr':'expr'}
              }
     cls = Alias
-
-    def register(self, package_id, resourcetype_id, name, expr):
-        if package_id == '':
-            package_id = None
-        if resourcetype_id == '':
-            resourcetype_id = None
+    
+    def _split_uri(self, uri):
+        args = list(from_uri(uri))
+        if args[2].startswith('@'):
+            args[2] = args[2][1:]
+        return args
+        
+    def register(self, package_id, resourcetype_id, name, expr, limit = None,
+                 order_by = None):
+        package_id = package_id or None
+        resourcetype_id = resourcetype_id or None
         o = self.cls(package_id, resourcetype_id, name, expr)
         self.store(o)
         return True
     
     def get(self, package_id = None, resourcetype_id = None, 
                   name = None, expr = None):
-        if package_id == '':
-            package_id = None
-        if resourcetype_id == '':
-            resourcetype_id = None
+        package_id = package_id or None
+        resourcetype_id = resourcetype_id or None
         keys = {'package_id':package_id,
                 'resourcetype_id':resourcetype_id,
                 'name':name,
                 'expr':expr}
+        null = list()
         if package_id:
             null = ['resourcetype_id']
-        else:
-            null = list()
         objs = self.pickup(self.cls, _null = null, **keys)
         if not objs:
             return list()
@@ -217,50 +272,16 @@ class AliasRegistry(DbStorage):
     def delete(self, package_id = None, resourcetype_id = None, name = None, 
                uri = None):
         if uri:
-            package_id, resourcetype_id, name = from_uri(uri)
-        if package_id == '':
-            package_id = None
-        if resourcetype_id == '':
-            resourcetype_id = None
+            package_id, resourcetype_id, name = self._split_uri(uri)
+        package_id = package_id or None
+        resourcetype_id = resourcetype_id or None
+        null = list()
+        if package_id:
+            null = ['resourcetype_id']
         self.drop(self.cls,
                   package_id = package_id,
                   resourcetype_id = resourcetype_id,
-                  name = name)
+                  name = name,
+                  _null = null)
         return True
-    
-    @staticmethod
-    def _pre_register(name, query, limit = None, order_by = None):
-        """pre-register an alias filesystem based during startup, 
-        the alias will be registered as soon as the package gets activated"""
-        # get package id and reosurcetype_id from calling class
-        frame = sys._getframe(1)
-        locals_ = frame.f_locals
-        # Some sanity checks
-        assert locals_ is not frame.f_globals and '__module__' in locals_, \
-               'registerStylesheet() can only be used in a class definition'
-        package_id = locals_.get('package_id')
-        resourcetype_id = locals_.get('resourcetype_id')
-        assert package_id, 'class must provide package_id attributes'
-
-        AliasRegistry._registry.append([package_id, resourcetype_id, 
-                                        name, query, limit, order_by])
         
-    def init_registration(self):
-        """add pre-registered items to the registry"""
-        for item in self._registry:
-            package = item[0]
-            resourcetype = item[1]
-            name = item[2]
-            query = item[3]
-#            limit = item[4]
-#            order_by = item[5]
-            try:
-                self.register(package, resourcetype, name, query)
-            except IntegrityError, e:
-                pass
-                # XXX: check if already registered 
-            except Exception, e:
-                self.log.warn('Registration failed for: %s (%s)' % (item[2],e))
-                continue
-
-registerAlias = AliasRegistry._pre_register

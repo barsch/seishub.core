@@ -131,38 +131,43 @@ class PackageManager(object):
     
     Takes care of package registration."""
     
+    # from seishub.packages.interfaces import IPackage
+    
     _registry = {}
     
+    @staticmethod
     def _addClass(cls):
-        if not hasattr(cls,'package_id'):
+        if not hasattr(cls, 'package_id'):
             return
         registry = PackageManager._registry
         registry.setdefault(cls.package_id, []).append(cls)
-        
-    _addClass = staticmethod(_addClass)
     
-    def getComponents(interface, package_id, component):
-        """get classes implementing interface within specified package,
-        if package_id is None, this is the same as a call to 
-        seishub.core.ExtensionPoint(interface).etensions(component)
-        """
+    @staticmethod
+    def getClasses(interface, package_id = None):
+        """get classes implementing interface within specified package"""
         registry = PackageManager._registry
         # get all classes that declare to implement interface
         classes = ComponentMeta._registry.get(interface, [])
         # filter for classes with correct package id
         if package_id:
             classes = [cls for cls in classes if cls in registry[package_id]]
+        return classes
+    
+    @staticmethod
+    def getComponents(interface, package_id, component):
+        """get objects providing interface within specified package,
+        if package_id is None, this is the same as a call to 
+        seishub.core.ExtensionPoint(interface).etensions(component)
+        """
+        classes = PackageManager.getClasses(interface, package_id)
         # get, activate and return objects 
         return filter(None, [component.compmgr[cls] for cls in classes])
-        
-    getComponents = staticmethod(getComponents)
     
-    def getPackageIds(component):
-        """get a list of id's of all enabled packages (enabled and disabled ones) 
+    @staticmethod
+    def getPackageIds():
+        """get a list of id's of all packages (enabled and disabled ones) 
         without activating any components"""
         return PackageManager._registry.keys()
-        
-    getPackageIds = staticmethod(getPackageIds)
     
 
 class Component(object):

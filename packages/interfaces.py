@@ -8,10 +8,23 @@ class IPackage(Interface):
     """This is the main interface for a unique seishub package."""
     
     package_id = Attribute("""
-        Defines the package ID of this resource.
-        
-        This items should return a single string with an unique package id.
+        Defines the package ID of this package.
+ 
+        Single string representing a unique package id.
         """)
+    
+    version = Attribute("""
+        Sets the version of this package.
+        
+        Version may be any string.
+    """)
+    
+    
+class IPackageWrapper(IPackage):
+    """Interface definition for a PackageWrapper class.
+    
+    A PackageWrapper is returned by the registry whenever a Package isn't present
+    in the file system anymore but only in the database."""
     
 
 class IResourceType(IPackage):
@@ -59,4 +72,3 @@ class IResourceMapper(IResourceType):
         This function should return True if the resource could be deleted 
         otherwise a SeisHubError instance.
         """
-    

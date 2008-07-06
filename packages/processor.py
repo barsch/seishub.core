@@ -20,7 +20,7 @@ class Processor:
     def __init__(self, env):
         self.env = env
         # fetch all package ids in alphabetical order
-        self.package_ids = self.env.registry.getPackageIds()
+        self.package_ids = self.env.registry.packages
         self.package_ids.sort()
         # response code and header for a request
         self.response_code = http.OK

@@ -1,6 +1,7 @@
 import unittest
 import os
 
+from seishub.core import SeisHubError
 from seishub.test import SeisHubEnvironmentTestCase
 
 TEST_SCHEMA="""<?xml version="1.0"?>
@@ -25,6 +26,48 @@ TEST_SCHEMA="""<?xml version="1.0"?>
 """
 
 class PackageRegistryTest(SeisHubEnvironmentTestCase):
+    def test_InMemoryRegistry(self):
+        packages = self.env.registry.packages
+        for p in packages:
+            assert self.env.registry.packages.get(p).package_id == p
+            
+    def test_DatabaseRegistry(self):
+        # regsiter a package
+        self.env.registry.registerPackage('db_registered_package', '1.0')
+        package = self.env.registry.getPackage('db_registered_package')
+        self.assertEqual(package.package_id, 'db_registered_package')
+        self.assertEqual(package.version, '1.0')
+        self.env.registry.deletePackage('db_registered_package')
+        package = self.env.registry.getPackage('db_registered_package')
+        assert package is None
+        
+        # regsiter a resourcetype
+        self.env.registry.registerPackage('db_registered_package', '1.0')
+        self.env.registry.registerResourcetype('db_regsitered_resourcetype', 
+                                               'db_registered_package', 
+                                               '1.0', True)
+        restype = self.env.registry.getResourcetype('db_registered_package',
+                                                    'db_regsitered_resourcetype')
+        self.assertEqual(restype.package.package_id, 'db_registered_package')
+        self.assertEqual(restype.resourcetype_id, 'db_regsitered_resourcetype')
+        self.assertEqual(restype.version, '1.0')
+        self.assertEqual(restype.version_control, True)
+        
+        # try to delete package although resourcetype belonging to package is
+        # still there
+        # XXX: fails with sqlite
+        self.assertRaises(SeisHubError, 
+                          self.env.registry.deletePackage, 
+                          'db_registered_package')
+        
+        self.env.registry.deleteResourcetype('db_registered_package',
+                                             'db_regsitered_resourcetype')
+        restype = self.env.registry.getResourcetype('db_registered_package',
+                                                    'db_regsitered_resourcetype')
+        assert restype is None
+        self.env.registry.deletePackage('db_registered_package')
+        
+
     def test_SchemaRegistry(self):
         self.env.registry.schemas.register('testpackage0', 'weapon', 'xsd', 
                                            TEST_SCHEMA)
@@ -74,22 +117,26 @@ class PackageRegistryTest(SeisHubEnvironmentTestCase):
     def test_AliasRegistry(self):
         self.env.registry.aliases.register('testpackage0', 'weapon', 
                                            'arch1', 
-                                           '/testpackage0/weapon[./name = Bogen]')
+                                           '/weapon[./name = Bogen]')
         alias = self.env.registry.aliases.get(package_id = 'testpackage0',
                                               resourcetype_id = 'weapon',
                                               name = 'arch1')
         self.assertEqual(alias[0].package_id, 'testpackage0')
         self.assertEqual(alias[0].resourcetype_id, 'weapon')
-        self.assertEqual(alias[0].expr, '/testpackage0/weapon[./name = Bogen]')
+        self.assertEqual(alias[0].expr, '/weapon[./name = Bogen]')
+        self.assertEqual(alias[0].getQuery(), 
+                         '/testpackage0/weapon/weapon[./name = Bogen]')
         
         self.env.registry.aliases.register('testpackage0', None, 
                                            'arch2', 
-                                           '/testpackage0/*/*[./name = Bogen]')
+                                           '/*[./name = Bogen]')
         alias = self.env.registry.aliases.get(package_id = 'testpackage0')
         self.assertEqual(len(alias),1)
         self.assertEqual(alias[0].package_id, 'testpackage0')
         self.assertEqual(alias[0].resourcetype_id, None)
-        self.assertEqual(alias[0].expr, '/testpackage0/*/*[./name = Bogen]')
+        self.assertEqual(alias[0].expr, '/*[./name = Bogen]')
+        self.assertEqual(alias[0].getQuery(), 
+                         '/testpackage0/*/*[./name = Bogen]')
         
         # get all
         all = self.env.registry.aliases.get()
@@ -105,10 +152,12 @@ class PackageRegistryTest(SeisHubEnvironmentTestCase):
         alias = self.env.registry.aliases.get(package_id = 'testpackage0')
         self.assertEquals(len(alias), 0)
 
-from seishub.packages.registry import registerStylesheet
-from seishub.packages.registry import registerAlias
+from seishub.core import Component, implements
+from seishub.packages.builtin import IResourceType, IPackage
+from seishub.packages.installer import registerStylesheet, registerAlias
 
-class AResourceType():
+class AResourceType(Component):
+    implements(IResourceType, IPackage)
     package_id = 'testpackage'
     resourcetype_id = 'aresourcetype'
     registerStylesheet('aformat','data/weapon.xsd')
@@ -116,6 +165,10 @@ class AResourceType():
                   limit = 10, order_by = {'/path/to/element':'ASC'})
 
 class FromFilesystemTest(SeisHubEnvironmentTestCase):
+    def __init__(self, *args, **kwargs):
+        SeisHubEnvironmentTestCase.__init__(self, *args, **kwargs)
+        self.env.enableComponent(AResourceType)
+        
     def testRegisterStylesheet(self):
         # note: schema registry uses the same functionality and is therefore
         # not tested seperately
@@ -134,8 +187,7 @@ class FromFilesystemTest(SeisHubEnvironmentTestCase):
             registerStylesheet('xhtml','path/to/file')
         p = os.path.join(self.env.config.path,'seishub','packages','tests',
                          'path/to/file')
-        assert ['testpackage', 'aresourcetype', p, 'xhtml']\
-               in StylesheetRegistry._registry
+        assert {'filename': p, 'type': 'xhtml'} in Bar._registry_stylesheets
         
         res = self.registry.stylesheets.get('testpackage', 'aresourcetype',
                                             'aformat')
@@ -148,8 +200,7 @@ class FromFilesystemTest(SeisHubEnvironmentTestCase):
                                          res[0].type)
         
         
-    def testRegisterAlias(self):
-        from seishub.packages.registry import AliasRegistry        
+    def testRegisterAlias(self):       
         # no package id/resourcetype id
         try:
             class Foo():
@@ -163,9 +214,11 @@ class FromFilesystemTest(SeisHubEnvironmentTestCase):
             registerAlias('analias','/resourceroot[./a/predicate/expression]',
                           limit = 10, order_by = {'/path/to/element':'ASC'})
 
-        assert ['testpackage', 'aresourcetype', 'analias', 
-                '/resourceroot[./a/predicate/expression]', 
-                10, {'/path/to/element': 'ASC'}] in AliasRegistry._registry
+        assert {'name': 'analias', 
+                'expr': '/resourceroot[./a/predicate/expression]', 
+                'limit': 10, 
+                'order_by': {'/path/to/element': 'ASC'}
+                } in Bar._registry_aliases
         
         res = self.registry.aliases.get('testpackage', 'aresourcetype', 
                                         'analias')

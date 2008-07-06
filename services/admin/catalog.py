@@ -78,7 +78,7 @@ class ResourcesPanel(Component):
         return ('catalog', 'Catalog', 'resources', 'Resources')
     
     def renderPanel(self, request):
-        packages = self.env.registry.getPackageIds()
+        packages = self.env.registry.packages
         resourcetypes = dict([(p, self.env.registry.getResourceTypes(p).keys())
                               for p in packages])
         

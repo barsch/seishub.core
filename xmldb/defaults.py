@@ -9,15 +9,11 @@ from seishub.db.dbmanager import meta as metadata
                        
 DEFAULT_PREFIX = 'default_'
 RESOURCE_TABLE = 'data'
-RESOURCE_TYPE_TABLE = 'resource_types'
 INDEX_TABLE = 'index'
 INDEX_DEF_TABLE = 'index_def'
-QUERY_ALIASES_TABLE = 'query_aliases'
 METADATA_TABLE = 'meta'
 METADATA_DEF_TABLE = 'meta_def'
 RESOURCE_META_TABLE = 'resource_meta'
-XSD_TABLE = 'xsd'
-XSLT_TABLE = 'xslt'
 
 # xmldbms tables:
 resource_tab = Table(DEFAULT_PREFIX + RESOURCE_TABLE, metadata,
@@ -71,9 +67,4 @@ index_tab = Table(DEFAULT_PREFIX + INDEX_TABLE, metadata,
                                            '.id')),
     Column('key', Text),
     Column('value', Integer),
-)
-
-query_aliases_tab = Table(DEFAULT_PREFIX + QUERY_ALIASES_TABLE, metadata,
-    Column('name', Text, primary_key = True),
-    Column('expr', Text)
 )

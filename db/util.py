@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from zope.interface import implements, Interface
 from zope.interface.exceptions import DoesNotImplement
-from sqlalchemy import select #@UnresolvedImport
+from sqlalchemy import select, text, Text #@UnresolvedImport
 from sqlalchemy.sql.expression import ClauseList #@UnresolvedImport
 
 
@@ -24,7 +24,7 @@ class ISerializable(Interface):
 
 
 class DbEnabled(object):
-    """Mixin providing access to a sqlite database manager"""
+    """Mixin providing access to a sqlalchemy database manager"""
     implements(IDbEnabled)
     
     def __init__(self, db):
@@ -36,9 +36,8 @@ class DbEnabled(object):
     def getDb(self):
         return self._db
 
-
 class DbStorage(DbEnabled):
-    """Mixin providing object serialization to a sqlite SQL database.
+    """Mixin providing object serialization to a sqlalchemy SQL database.
     db_tables and db_mapping must be defined by subclasses.
     where db_tables is of the form: 
             {Class1:table1, 
@@ -52,22 +51,58 @@ class DbStorage(DbEnabled):
                      'property2':'column2',
                      ...}
             }
+            
+    Internal integer ids are stored into the _id attribute of Serializable 
+    objects.
+    
+    #XXX: TODO Foreign keys defined in the table definition get automatically resolved
+    via inline SELECT, if the according property names in the classes match.
+    E.g.: class Package has a property 'name' and is stored into 'packages',
+    class ResourceType has a property 'name' and is stored into 'resourcetypes',
+    packages.c.name is a Foreign Key of resourcetypes.c.name.
     """
     
     db_tables = dict()
     db_mapping = dict()
     
-    def _to_kwargs(self, table, o, map):
+    def _to_kwargs(self, tables, o, map):
         d = dict()
-        for field in map:
-            value = o.__getattribute__(field)
+        cls = o.__class__
+        table = tables[cls]
+        for field, col in map[cls].iteritems():
+            # allow multiple fields separated by '.'
+            fields = field.split('.')
+#            # check if attribute is already 
+#            if not hasattr(o, fields[0]):
+#                continue
+            value = o.__getattribute__(fields[0])
+            for f in fields[1:]:
+                value = value.__getattribute__(f)
+            # convert None to '' on Text columns
             if value is None:
-                continue
+                if isinstance(table.c[col].type, Text):
+                    value = ''
+                else:
+                    continue
+            # store byte strings
             if isinstance(value, unicode):
                 value = value.encode("utf-8")
-#            if not isinstance(value, bool) or isinstance(value, unicode):
-#                value = str(value)
-            d[map[field]] = value
+            # handle foreign keys
+#            if hasattr(table.c[col], 'foreign_keys'):
+#                fk = table.c[col].foreign_keys
+#                # there's only one Foreign Key supported by now
+#                if len(fk) == 1:
+#                    fk_col = fk[0].column
+#                    fk_table = fk_col.table
+#                    # find class belonging to foreign key table
+#                    fk_cls = [c for c, t in tables.iteritems() if t is fk_table][0]
+#                    fk_q = 'SELECT %s FROM %s WHERE (%s = %s)' %\
+#                        (str(fk_col), str(fk_table), str(map[fk_cls][col]), value)
+#                    #fk_q = select([fk_col], fk_table.c[map[fk_cls][col]] == value)
+#                    value = text(fk_q)
+#                    #import pdb;pdb.set_trace()
+                    
+            d[col] = value
         return d
     
     def _to_where_clause(self, table, map, values, null = list()):
@@ -75,8 +110,11 @@ class DbStorage(DbEnabled):
         for key in values:
             if key not in map.keys():
                 continue
-            if values[key] == None and key not in null:
-                continue
+            if values[key] == None:
+                if key not in null:
+                    continue
+                elif isinstance(table.c[map[key]].type, Text):
+                    values[key] = ''
             cl.append(table.c[map[key]] == values[key])
         return cl
     
@@ -107,10 +145,10 @@ class DbStorage(DbEnabled):
                 if not ISerializable.providedBy(o):
                     raise DoesNotImplement(ISerializable)
                 cls = o.__class__
-                table = self.db_tables[cls]
-                map = self.db_mapping[cls]
-                kwargs = self._to_kwargs(table, o, map)
-                r = conn.execute(table.insert(),
+                tables = self.db_tables
+                map = self.db_mapping
+                kwargs = self._to_kwargs(tables, o, map)
+                r = conn.execute(tables[cls].insert(),
                                  **kwargs)
                 o._setId(r.last_inserted_ids()[0])
             txn.commit()
@@ -145,13 +183,20 @@ class DbStorage(DbEnabled):
         for res in results:
             obj = cls()
             for field in map:
-                obj.__setattr__(field, res[map[field]])
+                val = res[map[field]]
+                if isinstance(val, basestring) and len(val) == 0:
+                    val = None
+                obj.__setattr__(field, val)
+                #import pdb;pdb.set_trace()
+#                if 'id' in res:
+#                    obj._id = res['id']
             objs.append(obj)
                     
         return self._to_list(objs)
     
     def drop(self, cls, **keys):
         """delete object with given keys from database"""
+        null = keys.get('_null', list())
         # begin transaction:
         db = self.getDb()
         conn = db.connect()
@@ -159,7 +204,8 @@ class DbStorage(DbEnabled):
         table = self.db_tables[cls]
         try:
             map = self.db_mapping[cls]
-            w = self._to_where_clause(table, map, keys)
+            w = self._to_where_clause(table, map, keys, null)
+            #import pdb;pdb.set_trace()
 #            if len(w) == 0:
 #                continue
             conn.execute(table.delete(w))
@@ -180,13 +226,18 @@ class Serializable(object):
     implements(ISerializable)
     
     def __init__(self, *args, **kwargs):
-        super(Serializable, self).__init__(*args, **kwargs)
-        self.__id = None
+        #super(Serializable, self).__init__(*args, **kwargs)
+        
+        # TODO: remove?
+        self._id = None
         
     def _getId(self):
-        return self.__id
-    
-    def _setId(self, id):
-        self.__id = id
+        try:
+            return self._serializable_id
+        except:
+            return None
         
-    _id = property(_getId, _setId, 'Internal id')
+    def _setId(self, id):
+        self._serializable_id = id
+        
+    _id = property(_getId, _setId, 'Internal id (integer)')

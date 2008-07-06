@@ -9,7 +9,7 @@ class SeisHubPackage(Component):
     implements(IPackage)
     
     package_id = 'seishub'
-
+    version = '0.1'
 
 class StylesheetResource(Component):
     """A stylesheet resource type for SeisHub."""

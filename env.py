@@ -10,6 +10,7 @@ from seishub.auth import UserManager
 from seishub.core import ComponentManager
 from seishub.config import Configuration, Option
 from seishub.loader import ComponentLoader
+from seishub.packages.installer import PackageInstaller
 from seishub.xmldb.xmlcatalog import XmlCatalog
 from seishub.db.dbmanager import DatabaseManager
 from seishub.log import Logger
@@ -61,8 +62,9 @@ class Environment(ComponentManager):
         self.registry = PackageRegistry(self)
         # load plugins
         ComponentLoader(self)
-        # initiate class based package registration
-        self.registry.init_registration()
+        # invoke auto installer
+        PackageInstaller.install(self)
+        #self.registry.init_registration()
     
     def getSeisHubPath(self):
         """Returns the absolute path to the SeisHub directory."""

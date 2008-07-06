@@ -175,3 +175,8 @@ def from_uri(uri):
         rid = elements[2]
         args = elements[3]
     return pid, rid, args
+
+def to_xpath_query(package_id, resourcetype_id, expr):
+    package_id = package_id or '*'
+    resourcetype_id = resourcetype_id or '*'
+    return '/' + package_id + '/' + resourcetype_id + expr

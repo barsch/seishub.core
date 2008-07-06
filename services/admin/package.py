@@ -12,7 +12,7 @@ class SchemasPanel(Component):
         return ('packages', 'Packages', 'edit-schemas', 'Schemas')
     
     def renderPanel(self, request):
-        packages = self.env.registry.getPackageIds()
+        packages = self.env.registry.packages
         resourcetypes = dict([(p, self.env.registry.getResourceTypes(p).keys())
                               for p in packages])
         data  = {
@@ -64,7 +64,7 @@ class StylesheetsPanel(Component):
         return ('packages', 'Packages', 'edit-stylesheets', 'Stylesheets')
     
     def renderPanel(self, request):
-        packages = self.env.registry.getPackageIds()
+        packages = self.env.registry.packages
         resourcetypes = dict([(p, self.env.registry.getResourceTypes(p).keys())
                               for p in packages])
         data  = {
@@ -116,7 +116,7 @@ class PackageBrowserPanel(Component):
         return ('packages', 'Packages', 'browse-packages', 'Browse Packages')
     
     def renderPanel(self, request):
-        packages = self.env.registry.getPackageIds()
+        packages = self.env.registry.packages
         data = {}
         data['packages'] = packages
         data['resturl'] = self.env.getRestUrl()
@@ -131,7 +131,7 @@ class IndexesPanel(Component):
         return ('packages', 'Packages', 'edit-indexes', 'Indexes')
     
     def renderPanel(self, request):
-        packages = self.env.registry.getPackageIds()
+        packages = self.env.registry.packages
         resourcetypes = dict([(p, self.env.registry.getResourceTypes(p).keys())
                               for p in packages])
         data  = {
@@ -193,7 +193,7 @@ class AliasesPanel(Component):
         return ('packages', 'Packages', 'edit-aliases', 'Aliases')
     
     def renderPanel(self, request):
-        packages = self.env.registry.getPackageIds()
+        packages = self.env.registry.packages
         resourcetypes = dict([(p, self.env.registry.getResourceTypes(p).keys())
                               for p in packages])
         data  = {
