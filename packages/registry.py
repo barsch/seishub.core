@@ -87,58 +87,101 @@ class PackageRegistry(DbStorage):
         return resourcetypes
     
     # methods for database registration of packages
-    def registerPackage(self, package_id, version):
+    def db_registerPackage(self, package_id, version):
         o = PackageWrapper(package_id, version)
         self.store(o)
         
-    def getPackage(self, package_id):
-        try:
-            return self.pickup(PackageWrapper, package_id = package_id)[0]
-        except IndexError:
-            return None
+    def db_getPackages(self, package_id = None):
+        kwargs = dict()
+        if package_id:
+            kwargs['package_id'] = package_id
+        return self.pickup(PackageWrapper, **kwargs)
         
-    def deletePackage(self, package_id):
-        # XXX: check if any object with package id is present
-        # or do this via ForeignKey
-        try:
-            self.drop(PackageWrapper, package_id = package_id)
-        except IntegrityError:
+    def db_deletePackage(self, package_id):
+        #XXX: workaround to check if there are any dependencies on this object
+        # as not all dbs are supporting foreign keys
+        if not self._is_package_deletable(package_id):
             raise SeisHubError(("Package with id '%s' cannot be deleted due "+\
                                "to other objects depending on it.") %\
                                 (str(package_id)))
+        self.drop(PackageWrapper, package_id = package_id)
+        #except IntegrityError:
+        #    raise SeisHubError(("Package with id '%s' cannot be deleted due "+\
+        #                       "to other objects depending on it.") %\
+        #                        (str(package_id)))
         
-    def registerResourcetype(self, resourcetype_id, package_id, version, 
+    def db_registerResourceType(self, resourcetype_id, package_id, version, 
                              version_control = False):
-        package = self.getPackage(package_id)
-        if not package:
+        try:
+            package = self.db_getPackages(package_id)[0]
+        except IndexError:
             raise SeisHubError('Package not present in database: %s', 
                                str(package_id))
         o = ResourceTypeWrapper(resourcetype_id, package, 
                                 version, version_control)
         self.store(o)
         
-    def getResourcetype(self, package_id, resourcetype_id):
-        package = self.getPackage(package_id)
-        if not package:
+    def db_getResourceTypes(self, package_id = None, resourcetype_id = None):
+        kwargs = dict()
+        packages = self.db_getPackages(package_id)
+        if package_id and len(packages) == 0:
             raise SeisHubError('Package not present in database: %s', 
                                str(package_id))
-        try:
-            rt = self.pickup(ResourceTypeWrapper, 
-                             package_id = package._id,
-                             resourcetype_id = resourcetype_id)[0]
-        except IndexError:
-            return None
-        rt.package = package
+        if resourcetype_id:
+            kwargs['resourcetype_id'] = resourcetype_id
+        rt = list()
+        for p in packages:
+            kwargs['package._id'] = p._id
+            rtypes = self.pickup(ResourceTypeWrapper, **kwargs)
+            #import pdb;pdb.set_trace()  
+            for o in rtypes:
+                o.package = p
+            rt.extend(rtypes)
         return rt
         
-    def deleteResourcetype(self, package_id, resourcetype_id):
-        # XXX: only delete if no object is present anymore => ForeignKey
-        package = self.getPackage(package_id)
+    def db_deleteResourceType(self, package_id, resourcetype_id):
+        # XXX: workaround to check if there are any dependencies on this object
+        # as not all dbs are supporting foreign keys
+        if not self._is_resourcetype_deletable(package_id, resourcetype_id):
+            raise SeisHubError(("Resourcetype with id '%s' in package '%s' "+\
+                                "cannot be deleted due to other objects " +\
+                                "depending on it.") %\
+                                (str(resourcetype_id), str(package_id)))
+        kwargs = dict()
+        package = self.db_getPackages(package_id)[0]
         if not package:
             raise SeisHubError('Package not present in database: %s', 
                                str(package_id))
-        self.drop(ResourceTypeWrapper, package_id = package._id,
-                  resourcetype_id = resourcetype_id)
+        kwargs['package._id'] = package._id
+        kwargs['resourcetype_id'] = resourcetype_id
+        self.drop(ResourceTypeWrapper, **kwargs)
+        
+    def _is_package_deletable(self, package_id):
+        try:
+            p = self.db_getPackages(package_id)[0]
+        except IndexError:
+            raise SeisHubError('Package not present in database: %s', 
+                               str(package_id))
+        # check if any resourcetype is present:
+        resourcetypes = self.db_getResourceTypes(package_id)
+        if len(resourcetypes) > 0:
+            return False
+        # XXX: check if schemas/stylesheets or aliases are present:
+        # XXX: check if any catalog entries are present
+        return True
+    
+    def _is_resourcetype_deletable(self, package_id, resourcetype_id):
+        try:
+            rt = self.db_getResourceTypes(package_id, resourcetype_id)[0] 
+        except IndexError:
+            raise SeisHubError("Resourcetype with id '%s' in package '%s' "+\
+                               "not present in database!", 
+                               (str(resourcetype_id), str(package_id)))
+        # XXX: check if schemas/stylesheets or aliases are present:
+        # XXX: check if any catalog entries are present
+        return True
+        
+        
     
 
 class RegistryBase(DbStorage):

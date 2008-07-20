@@ -62,9 +62,9 @@ class Environment(ComponentManager):
         self.registry = PackageRegistry(self)
         # load plugins
         ComponentLoader(self)
-        # invoke auto installer
+        # trigger auto installer
+        PackageInstaller.cleanup(self)
         PackageInstaller.install(self)
-        #self.registry.init_registration()
     
     def getSeisHubPath(self):
         """Returns the absolute path to the SeisHub directory."""
@@ -111,6 +111,7 @@ class Environment(ComponentManager):
             self.config.set('components', fullname, 'enabled')
             self.log.info('Enabling component %s' % fullname)
             self.config.save()
+            PackageInstaller.install(self)
     
     def disableComponent(self, component):
         """Disables a component."""
@@ -126,6 +127,7 @@ class Environment(ComponentManager):
             self.config.set('components', fullname, 'disabled')
             self.log.info('Disabling component %s' % fullname)
             self.config.save()
+            PackageInstaller.cleanup(self)
     
     def initOptions(self):
         """Initialize any not yet set default options in configuration file."""

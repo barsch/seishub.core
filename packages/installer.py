@@ -1,5 +1,7 @@
 import sys, os
 
+from seishub.core import SeisHubError
+
 class PackageInstaller(object):
     """The PackageInstaller allows file system based registration of:
      * packages
@@ -20,7 +22,7 @@ class PackageInstaller(object):
             version = p.version
         else:
             version = ''
-        env.registry.registerPackage(p.package_id, version)
+        env.registry.db_registerPackage(p.package_id, version)
         PackageInstaller._install_pre_registered(env, p)
     
     @staticmethod
@@ -33,7 +35,7 @@ class PackageInstaller(object):
             version_control = rt.version_control
         else:
             version_control = False
-        env.registry.registerResourcetype(rt.resourcetype_id,
+        env.registry.db_registerResourceType(rt.resourcetype_id,
                                           rt.package_id,
                                           version,
                                           version_control)
@@ -106,15 +108,16 @@ class PackageInstaller(object):
             
     @staticmethod
     def install(env):
+        """auto install all known packages"""
         # XXX: problem: if installation fails here, packages still show up in the
         # registry but adding of resources etc. is not possible => possible solution
         # mark those packages as 'defect' and handle that seperately in the admin interface 
-    
+        
         # install new packages
         for p in env.registry.packages:
             fs_package = env.registry.packages.get(p)
-            db_package = env.registry.getPackage(p)
-            if not db_package:
+            db_packages = env.registry.db_getPackages(p)
+            if len(db_packages) == 0:
                 try:
                     PackageInstaller._install_package(env, fs_package)
                 except Exception, e:
@@ -124,14 +127,37 @@ class PackageInstaller(object):
                 
             # install new resourcetypes for current package
             for rt_id, rt in env.registry.getResourceTypes(p).iteritems():
-                db_rt = env.registry.getResourcetype(p, rt_id)
-                if not db_rt:
+                db_rt = env.registry.db_getResourceTypes(p, rt_id)
+                if len(db_rt) == 0:
                     try:
                         PackageInstaller._install_resourcetype(env, rt)
                     except Exception, e:
                         env.log.warn(("Registration of resourcetype "+\
                                       "with id '%s' in package '%s'"+\
                                       " failed. (%s)") % (rt_id, p, e))
+
+    @staticmethod        
+    def cleanup(env):
+        """automatically remove unused packages"""
+        db_rtypes = env.registry.db_getResourceTypes()
+        fs_rtypes = env.registry.getResourceTypes()
+        #import pdb;pdb.set_trace()
+        for rt in db_rtypes:
+            if [rt.package.package_id, rt.resourcetype_id] not in \
+               [[o.package_id, o.resourcetype_id] for o in fs_rtypes.values()]:
+                try:
+                    env.registry.db_deleteResourceType(rt.package.package_id, 
+                                                       rt.resourcetype_id)
+                except SeisHubError:
+                    pass
+        db_packages = env.registry.db_getPackages()
+        fs_packages = env.registry.packages
+        for p in db_packages:
+            if p.package_id not in fs_packages:
+                try:
+                    env.registry.db_deletePackage(p.package_id)
+                except SeisHubError:
+                    pass
         
     
     @staticmethod

@@ -33,21 +33,21 @@ class PackageRegistryTest(SeisHubEnvironmentTestCase):
             
     def test_DatabaseRegistry(self):
         # regsiter a package
-        self.env.registry.registerPackage('db_registered_package', '1.0')
-        package = self.env.registry.getPackage('db_registered_package')
+        self.env.registry.db_registerPackage('db_registered_package', '1.0')
+        package = self.env.registry.db_getPackages('db_registered_package')[0]
         self.assertEqual(package.package_id, 'db_registered_package')
         self.assertEqual(package.version, '1.0')
-        self.env.registry.deletePackage('db_registered_package')
-        package = self.env.registry.getPackage('db_registered_package')
-        assert package is None
+        self.env.registry.db_deletePackage('db_registered_package')
+        package = self.env.registry.db_getPackages('db_registered_package')
+        assert package == list()
         
         # regsiter a resourcetype
-        self.env.registry.registerPackage('db_registered_package', '1.0')
-        self.env.registry.registerResourcetype('db_regsitered_resourcetype', 
+        self.env.registry.db_registerPackage('db_registered_package', '1.0')
+        self.env.registry.db_registerResourceType('db_regsitered_resourcetype', 
                                                'db_registered_package', 
                                                '1.0', True)
-        restype = self.env.registry.getResourcetype('db_registered_package',
-                                                    'db_regsitered_resourcetype')
+        restype = self.env.registry.db_getResourceTypes('db_registered_package',
+                                                    'db_regsitered_resourcetype')[0]
         self.assertEqual(restype.package.package_id, 'db_registered_package')
         self.assertEqual(restype.resourcetype_id, 'db_regsitered_resourcetype')
         self.assertEqual(restype.version, '1.0')
@@ -57,15 +57,17 @@ class PackageRegistryTest(SeisHubEnvironmentTestCase):
         # still there
         # XXX: fails with sqlite
         self.assertRaises(SeisHubError, 
-                          self.env.registry.deletePackage, 
+                          self.env.registry.db_deletePackage, 
                           'db_registered_package')
         
-        self.env.registry.deleteResourcetype('db_registered_package',
+        self.env.registry.db_deleteResourceType('db_registered_package',
                                              'db_regsitered_resourcetype')
-        restype = self.env.registry.getResourcetype('db_registered_package',
-                                                    'db_regsitered_resourcetype')
-        assert restype is None
-        self.env.registry.deletePackage('db_registered_package')
+        restype = self.env.registry.db_getResourceTypes('db_registered_package',
+                                                  'db_regsitered_resourcetype')
+        assert restype == list()
+        self.env.registry.db_deletePackage('db_registered_package')
+        
+        # XXX: check deletion constraint with schemas/aliases/stylesheets/catalog objects
         
 
     def test_SchemaRegistry(self):

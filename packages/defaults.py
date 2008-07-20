@@ -11,6 +11,7 @@ STYLESHEET_TABLE = 'stylesheets'
 ALIAS_TABLE = 'aliases'
 
 # XXX: use ForeignKey on all package_id and resourcetype_id cols
+# XXX: SQLIte does not support ForeignKey constraints
 
 packages_tab = Table(DEFAULT_PREFIX + PACKAGES_TABLE, metadata,
     Column('id', Integer, primary_key = True, autoincrement = True),
@@ -28,6 +29,16 @@ resourcetypes_tab = Table(DEFAULT_PREFIX + RESOURCETYPES_TABLE, metadata,
     Column('version_control', Boolean),
     UniqueConstraint('name', 'package_id')
 )
+
+## SQLite does not support foreign key constrints -> we use triggers instead
+#resourcetypes_trigger = """
+#CREATE TRIGGER fkd_%(fk)s_%(table)s_package_id
+#  BEFORE DELETE ON %(table)s
+#  FOR EACH ROW BEGIN
+#      SELECT RAISE(ROLLBACK, 'delete on table "%(table)s" violates foreign key constraint "fk_%(table)s_package_id"')
+#      WHERE (SELECT package_id FROM %(fk)s WHERE package_id = OLD.package_id) IS NOT NULL;
+#  END;
+#"""
 
 schema_tab = Table(DEFAULT_PREFIX + SCHEMA_TABLE, metadata,
     Column('id', Integer, primary_key = True, autoincrement = True),

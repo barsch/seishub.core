@@ -65,6 +65,9 @@ class DbStorage(DbEnabled):
     db_tables = dict()
     db_mapping = dict()
     
+    def _is_sqlite(self):
+        return str(self._db.url).startswith('sqlite')
+    
     def _to_kwargs(self, tables, o, map):
         d = dict()
         cls = o.__class__
@@ -204,10 +207,14 @@ class DbStorage(DbEnabled):
         table = self.db_tables[cls]
         try:
             map = self.db_mapping[cls]
-            w = self._to_where_clause(table, map, keys, null)
-            #import pdb;pdb.set_trace()
-#            if len(w) == 0:
-#                continue
+            w = self._to_where_clause(table, map, keys, null)          
+#            # manually check foreign key constraints on SQLIte databases:
+#            if self._is_sqlite():
+#                fkeys = table.foreign_keys
+#                for fk in fkeys:
+#                    fk_q = select([fk.column], fk.parent == value)
+#                    
+#                import pdb;pdb.set_trace()
             conn.execute(table.delete(w))
             txn.commit()
         except:
