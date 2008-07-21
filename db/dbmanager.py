@@ -9,6 +9,14 @@ from seishub.defaults import DEFAULT_DB_URI
 
 meta = sa.MetaData()
 
+SQLITE_WARNING = \
+"""---------------------------------------------------------------
+Warning: A SQLite database should never be used in a productive
+environment! Instead try to use any supported database listed  
+at http://www.sqlalchemy.org/trac/wiki/DatabaseNotes.          
+---------------------------------------------------------------"""
+
+
 
 class DatabaseManager(object):
     """A wrapper around SQLAlchemy connection pool."""
@@ -68,11 +76,10 @@ class DatabaseManager(object):
     def _getSQLiteEngine(self):
         """Return a sqlite engine without a connection pool."""
         
-        print "---------------------------------------------------------------"
-        print "Warning: A SQLite database should never be used in a productive"
-        print "environment! Instead try to use any supported database listed  "
-        print "at http://www.sqlalchemy.org/trac/wiki/DatabaseNotes.          "
-        print "---------------------------------------------------------------"
+        logging =self.env.config.get('logging', 'log_level')
+        
+        if logging!='OFF':
+            print SQLITE_WARNING
         
         return sa.create_engine(self.uri,
                                 echo = self.echo,

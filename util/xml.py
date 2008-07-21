@@ -197,7 +197,7 @@ class XmlTreeDoc(XmlDoc):
         
         try:
             res = self._xml_doc.xpath(expr)
-        except etree.XPathSyntaxError, e:
+        except Exception, e:
             raise InvalidXPathExpression(e)
         #import pdb; pdb.set_trace()
         if res:

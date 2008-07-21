@@ -41,8 +41,8 @@ def main():
     reactor.run() #@UndefinedVariable
 
 
-#if __name__ == '__main__':
+if __name__ == '__main__':
 #    main()
-prof = hotshot.Profile('seishub.prof')
-benchtime, stones = prof.runcall(main)
-prof.close()
+    prof = hotshot.Profile('seishub.prof')
+    benchtime, stones = prof.runcall(main)
+    prof.close()

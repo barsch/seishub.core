@@ -17,7 +17,8 @@ packages_tab = Table(DEFAULT_PREFIX + PACKAGES_TABLE, metadata,
     Column('id', Integer, primary_key = True, autoincrement = True),
     Column('name', Text,),
     Column('version', Text),
-    UniqueConstraint('name')
+    UniqueConstraint('name'),
+    useexisting=True,
 )
 
 resourcetypes_tab = Table(DEFAULT_PREFIX + RESOURCETYPES_TABLE, metadata,
@@ -27,7 +28,8 @@ resourcetypes_tab = Table(DEFAULT_PREFIX + RESOURCETYPES_TABLE, metadata,
                                              '.id')),
     Column('version', Text), 
     Column('version_control', Boolean),
-    UniqueConstraint('name', 'package_id')
+    UniqueConstraint('name', 'package_id'),
+    useexisting=True,
 )
 
 ## SQLite does not support foreign key constrints -> we use triggers instead
@@ -46,7 +48,8 @@ schema_tab = Table(DEFAULT_PREFIX + SCHEMA_TABLE, metadata,
     Column('package_id', Text, nullable = False),
     Column('resourcetype_id', Text),
     Column('type', Text),
-    UniqueConstraint('package_id', 'resourcetype_id', 'type')
+    UniqueConstraint('package_id', 'resourcetype_id', 'type'),
+    useexisting=True,
 )
 
 stylesheet_tab = Table(DEFAULT_PREFIX + STYLESHEET_TABLE, metadata,
@@ -55,7 +58,8 @@ stylesheet_tab = Table(DEFAULT_PREFIX + STYLESHEET_TABLE, metadata,
     Column('package_id', Text, nullable = False),
     Column('resourcetype_id', Text),
     Column('type', Text),
-    UniqueConstraint('package_id', 'resourcetype_id', 'type')
+    UniqueConstraint('package_id', 'resourcetype_id', 'type'),
+    useexisting=True,
 )
 
 alias_tab = Table(DEFAULT_PREFIX + ALIAS_TABLE, metadata,
@@ -65,4 +69,5 @@ alias_tab = Table(DEFAULT_PREFIX + ALIAS_TABLE, metadata,
     Column('name', Text, nullable = False),
     Column('expr', Text, nullable = False),
     UniqueConstraint('package_id', 'resourcetype_id', 'name'),
+    useexisting=True,
 )

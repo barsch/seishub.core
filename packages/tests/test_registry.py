@@ -194,7 +194,9 @@ class FromFilesystemTest(SeisHubEnvironmentTestCase):
         res = self.registry.stylesheets.get('testpackage', 'aresourcetype',
                                             'aformat')
         self.assertEqual(len(res), 1)
-        self.assertEqual(res[0].resource.data, file('data/weapon.xsd').read())
+        p = os.path.join(self.env.config.path,'seishub','packages','tests',
+                         'data','weapon.xsd')
+        self.assertEqual(res[0].resource.data, file(p).read())
         
         # clean up
         self.registry.stylesheets.delete(res[0].package_id,
