@@ -224,7 +224,7 @@ class PredicateExpression(object):
     def getOperator(self):
         return self._op
 
-class XPathQuery(RestrictedXpathExpression, PackageSpecific):
+class XPathQuery(RestrictedXpathExpression):
     """Query types supported by now:
      - single key queries: /packageid/resourcetype/rootnode[.../key1 = value1]
      - multi key queries with logical operators ('and', 'or')
@@ -271,7 +271,8 @@ class XPathQuery(RestrictedXpathExpression, PackageSpecific):
         
         # cut off package and resource type from query
         package, resourcetype, query = self._parsePrefix(query)
-        PackageSpecific.__init__(self, package, resourcetype)
+        self.package_id = package
+        self.resourcetype_id = resourcetype
         try:
             RestrictedXpathExpression.__init__(self, query)
         except RestrictedXpathError, e:
@@ -305,8 +306,8 @@ class XPathQuery(RestrictedXpathExpression, PackageSpecific):
     def getValue_path(self):
         """@see: L{seishub.xmldb.interfaces.IXPathQuery}"""
         #XXX: maybe completely remove value path from indexes and replace by seperate
-        # packageid resourcetypeid fields; don't save rootnode name into db at all
-        # as this is redundant (rootnode is detemrined by any xml document)
+        # packageid resourcetypeid fields; rootnode is needed as XXML Schema allows
+        # different rootnodes for different files
         return str(self.package_id) + '/' + str(self.resourcetype_id) + '/' +\
                self.node_test
     

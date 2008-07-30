@@ -31,6 +31,13 @@ class IResourceType(IPackage):
     """Interface definition for a unique resource type of a package."""
     
     resourcetype_id = Attribute("Defines the ID of this resource type.")
+    
+
+class IResourceTypeWrapper(IResourceType):
+    """Interface definition for a ResourceTypeWrapper class.
+    
+    A ResourceTypeWrapper is returned by the registry whenever a ResourceType 
+    isn't present in the file system anymore but only in the database."""
 
 
 class IResourceMapper(IResourceType):

@@ -37,8 +37,8 @@
   <div class="field">
     #for $schema in $schemas
     <input type="checkbox" name="schema[]" value="$schema.resource_id" /> 
-    $schema.package_id
-    $schema.resourcetype_id
+    $schema.package.package_id
+    $schema.resourcetype.resourcetype_id
     $schema.type
     <br />
     #end for

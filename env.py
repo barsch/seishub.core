@@ -55,15 +55,16 @@ class Environment(ComponentManager):
         # set up DB handler
         self.db = DatabaseManager(self) 
         # set XML catalog
-        self.catalog = XmlCatalog(self.db)
+        self.catalog = XmlCatalog(self)
         # User & group management
         self.auth = UserManager(self)
         # Package manager
         self.registry = PackageRegistry(self)
         # load plugins
         ComponentLoader(self)
-        # trigger auto installer
+        # trigger auto installer, install seishub package first
         PackageInstaller.cleanup(self)
+        PackageInstaller.install(self, 'seishub')
         PackageInstaller.install(self)
     
     def getSeisHubPath(self):
@@ -111,7 +112,7 @@ class Environment(ComponentManager):
             self.config.set('components', fullname, 'enabled')
             self.log.info('Enabling component %s' % fullname)
             self.config.save()
-            PackageInstaller.install(self)
+            #PackageInstaller.install(self)
     
     def disableComponent(self, component):
         """Disables a component."""
@@ -127,7 +128,7 @@ class Environment(ComponentManager):
             self.config.set('components', fullname, 'disabled')
             self.log.info('Disabling component %s' % fullname)
             self.config.save()
-            PackageInstaller.cleanup(self)
+            #PackageInstaller.cleanup(self)
     
     def initOptions(self):
         """Initialize any not yet set default options in configuration file."""

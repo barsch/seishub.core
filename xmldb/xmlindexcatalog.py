@@ -22,13 +22,6 @@ class XmlIndexCatalog(DbStorage):
                IResourceIndexing,
                IXmlIndexCatalog)
     
-    db_tables = {XmlIndex:index_def_tab}
-    db_mapping = {XmlIndex:
-                  {'key_path':'key_path',
-                   'value_path':'value_path',
-                   'type':'data_type'}
-                  }
-    
     def __init__(self,db,resource_storage = None):
         super(XmlIndexCatalog, self).__init__(db)
         

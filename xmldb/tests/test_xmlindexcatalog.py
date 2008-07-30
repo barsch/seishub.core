@@ -11,7 +11,7 @@ from seishub.xmldb.xmlindexcatalog import XmlIndexCatalog
 from seishub.xmldb.xmlindexcatalog import XmlIndexCatalogError
 from seishub.xmldb.xmldbms import XmlDbManager
 from seishub.xmldb.index import XmlIndex
-from seishub.xmldb.xmlresource import XmlResource
+from seishub.xmldb.resource import XmlResource
 from seishub.xmldb.defaults import index_def_tab, DEFAULT_PREFIX, \
                                    INDEX_DEF_TABLE
 from seishub.xmldb.xpath import XPathQuery
@@ -72,12 +72,38 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         super(XmlIndexCatalogTest,self).__init__(*args,**kwargs)
         self.catalog = self.env.catalog.index_catalog
         self.so_ids = list()
+        
+    def setUp(self):
+        self.pkg1 = self.env.registry.db_registerPackage("testpackage")
+        self.rt1 = self.env.registry.db_registerResourceType("station", 
+                                                             "testpackage")
+        self.rt2 = self.env.registry.db_registerResourceType('testml', 
+                                                             'testpackage')
+        self.rt3 = self.env.registry.db_registerResourceType('testtype', 
+                                                             'testpackage')
+        self.pkg2 = self.env.registry.db_registerPackage("sortordertests")
+        self.rt4 = self.env.registry.db_registerResourceType('sotest', 
+                                                             "sortordertests")
     
+    def tearDown(self):
+        self.env.registry.db_deleteResourceType("testpackage", "station")
+        self.env.registry.db_deleteResourceType("testpackage", 'testml')
+        self.env.registry.db_deleteResourceType("testpackage", 'testtype')
+        self.env.registry.db_deletePackage("testpackage")
+        self.env.registry.db_deleteResourceType("sortordertests", 'sotest')
+        self.env.registry.db_deletePackage("sortordertests")
+        
     def _setup_testdata(self):
         # create us a small test catalog
-        self.res1 = self.env.catalog.addResource('testpackage', 'station', RAW_XML1)
-        self.res2 = self.env.catalog.addResource('testpackage', 'station', RAW_XML2)
-        self.res3 = self.env.catalog.addResource('testpackage', 'testml', RAW_XML3)
+        self.res1 = self.env.catalog.addResource(self.pkg1.package_id, 
+                                                 self.rt1.resourcetype_id, 
+                                                 RAW_XML1)
+        self.res2 = self.env.catalog.addResource(self.pkg1.package_id, 
+                                                 self.rt1.resourcetype_id, 
+                                                 RAW_XML2)
+        self.res3 = self.env.catalog.addResource(self.pkg1.package_id, 
+                                                 self.rt2.resourcetype_id, 
+                                                 RAW_XML3)
         self.env.catalog.registerIndex(xpath = IDX1)
         self.env.catalog.registerIndex(xpath = IDX2)
         self.env.catalog.registerIndex(xpath = IDX3)
@@ -95,7 +121,8 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
             fh.close()
             res = self.env.catalog.addResource('sortordertests', 'sotest', 
                                                data)
-            self.so_ids.append([res.info.package_id, res.info.resourcetype_id, 
+            self.so_ids.append([res.info.package.package_id, 
+                                res.info.resourcetype.resourcetype_id, 
                                 res.info.id, res.resource_id])
         for i in so_indexes:
             self.env.catalog.registerIndex(xpath = i)
@@ -106,14 +133,14 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         self.env.catalog.removeIndex(xpath = IDX2)
         self.env.catalog.removeIndex(xpath = IDX3)
         self.env.catalog.removeIndex(xpath = IDX4)
-        self.env.catalog.deleteResource(self.res1.info.package_id,
-                                        self.res1.info.resourcetype_id,
+        self.env.catalog.deleteResource(self.res1.info.package.package_id,
+                                        self.res1.info.resourcetype.resourcetype_id,
                                         self.res1.info.id)
-        self.env.catalog.deleteResource(self.res2.info.package_id,
-                                        self.res2.info.resourcetype_id,
+        self.env.catalog.deleteResource(self.res2.info.package.package_id,
+                                        self.res2.info.resourcetype.resourcetype_id,
                                         self.res2.info.id)
-        self.env.catalog.deleteResource(self.res3.info.package_id,
-                                        self.res3.info.resourcetype_id,
+        self.env.catalog.deleteResource(self.res3.info.package.package_id,
+                                        self.res3.info.resourcetype.resourcetype_id,
                                         self.res3.info.id)
         for i in so_indexes:
             self.env.catalog.removeIndex(xpath = i)
@@ -207,7 +234,7 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         bad_catalog = XmlIndexCatalog(db = self.db)
         
         # register a test resource:
-        test_res=XmlResource('testpackage','testtype', data = RAW_XML1)
+        test_res=XmlResource(self.pkg1,self.rt3, data = RAW_XML1)
         dbmgr.addResource(test_res)
 
         # register a test index:
@@ -233,7 +260,7 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         
         # clean up:
         catalog.removeIndex(key_path=self._test_kp, value_path=self._test_vp)
-        dbmgr.deleteResource('testpackage','testtype', test_res.info.id)
+        dbmgr.deleteResource(self.pkg1,self.rt3, test_res.info.id)
     
     def testFlushIndex(self):
         dbmgr=XmlDbManager(self.db)
@@ -246,7 +273,7 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         except:
             print "Error registering index."
         
-        test_res = XmlResource('testpackage', 'testtype', data = RAW_XML1)
+        test_res = XmlResource(self.pkg1, self.rt3, data = RAW_XML1)
         try:
             dbmgr.addResource(test_res)
         except:
@@ -264,7 +291,7 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         
         # clean up:
         catalog.removeIndex(test_index.getValue_path(), test_index.getKey_path())
-        dbmgr.deleteResource('testpackage', 'testtype', test_res.info.id)
+        dbmgr.deleteResource(self.pkg1, self.rt3, test_res.info.id)
         
     def testQuery(self):
         # create test catalog
@@ -273,7 +300,7 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         q0 = "/testpackage/station/station[lon != 12.51200 and lat = 55.23200]"
         q1 = "/testpackage/station/station[lat]"
         q2 = "/testpackage/station/station[XY/paramXY or lon = 12.51200]"
-        q3 = "/testpackage/testml/testml"
+        q3 = "/".join(['',str(self.pkg1._id), str(self.rt2._id), 'testml'])
 
         res0 = self.catalog.query(XPathQuery(q0))
         res1 = self.catalog.query(XPathQuery(q1))
@@ -287,7 +314,7 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
 
         # sort order tests
         so1 = "/sortordertests/sotest/sortorder[int1]"
-        so2 = "/sortordertests/sotest/sortorder"
+        so2 = "/".join(['',str(self.pkg2._id), str(self.rt4._id), 'sortorder'])
         res1 = self.catalog.query(
             XPathQuery(so1, [["/sortordertests/sotest/sortorder/int1","asc"]])
             )

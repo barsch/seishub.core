@@ -4,15 +4,20 @@ from zope.interface.exceptions import DoesNotImplement
 
 from seishub.core import SeisHubError
 from seishub.db.util import Serializable
+from seishub.xmldb.defaults import index_def_tab
 from seishub.xmldb.interfaces import IXmlIndex, IVirtualIndex, IXmlResource
 from seishub.xmldb.errors import XmlIndexError
-from seishub.xmldb.package import PackageSpecific
 
 __all__ = ['XmlIndex', 'VirtualIndex']
 
 TEXT_INDEX = "text"
 
 class IndexBase(Serializable):
+    db_table = index_def_tab
+    db_mapping = {'key_path':'key_path',
+                  'value_path':'value_path',
+                  'type':'data_type'}
+    
     def __init__(self,value_path=None, key_path=None, type=TEXT_INDEX):
         super(IndexBase, self).__init__()
         if not (value_path and key_path):

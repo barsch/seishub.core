@@ -1,34 +1,39 @@
 from seishub.util.text import validate_id
+from seishub.packages.package import PackageWrapper, ResourceTypeWrapper,\
+                                     IPackageWrapper, IResourceTypeWrapper
 
 class PackageSpecific(object):
     """Mixin providing package specific information to the class"""
     def __init__(self, *args, **kwargs):
         super(PackageSpecific, self).__init__(*args, **kwargs)
         if len(args) == 2:
-            package_id = args[0]
-            resourcetype_id = args[1]
+            package = args[0]
+            resourcetype = args[1]
         elif len(kwargs) == 2:
-            package_id = kwargs.get('package_id')
-            resourcetype_id = kwargs.get('resourcetype_id')
+            package = kwargs.get('package')
+            resourcetype = kwargs.get('resourcetype')
         else:
-            package_id = None
-            resourcetype_id = None
-        self.package_id = package_id
-        self.resourcetype_id = resourcetype_id
+            package = PackageWrapper()
+            resourcetype = ResourceTypeWrapper()
+        self.package = package
+        self.resourcetype = resourcetype
     
-    def getPackage_id(self):
-        return self._package_id
+    def getPackage(self):
+        return self._package
     
-    def setPackage_id(self, data):
-        self._package_id = validate_id(data)
+    def setPackage(self, data):
+        if not IPackageWrapper.providedBy(data):
+            raise TypeError('%s is not an IPackageWrapper' % str(data))
+        self._package = data
         
-    package_id = property(getPackage_id, setPackage_id, "package id")
+    package = property(getPackage, setPackage, "package")
     
-    def getResourcetype_id(self):
-        return self._resourcetype_id
+    def getResourcetype(self):
+        return self._resourcetype
     
-    def setResourcetype_id(self, data):
-        self._resourcetype_id = validate_id(data)
+    def setResourcetype(self, data):
+        if not IResourceTypeWrapper.providedBy(data):
+            raise TypeError('%s is not an IResourceTypeWrapper' % str(data))
+        self._resourcetype = data
         
-    resourcetype_id = property(getResourcetype_id, setResourcetype_id, 
-                               "resourcetype id")
+    resourcetype = property(getResourcetype, setResourcetype, "resourcetype")

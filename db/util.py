@@ -4,6 +4,8 @@ from zope.interface.exceptions import DoesNotImplement
 from sqlalchemy import select, text, Text #@UnresolvedImport
 from sqlalchemy.sql.expression import ClauseList #@UnresolvedImport
 
+class DbError(Exception):
+    pass
 
 class IDbEnabled(Interface):
     """Object provides access to db manager"""
@@ -15,16 +17,21 @@ class IDbEnabled(Interface):
 
 
 class ISerializable(Interface):
-    """Object providing functionality for serialization"""
+    """Object providing functionality for serialization"""    
     def _getId():
         """return internal storage id"""
     
     def _setId(self, id):
         """set internal storage id"""
+        
+
+class IRelation(Interface):
+    pass
 
 
 class DbEnabled(object):
     """Mixin providing access to a sqlalchemy database manager"""
+    
     implements(IDbEnabled)
     
     def __init__(self, db):
@@ -38,88 +45,76 @@ class DbEnabled(object):
 
 class DbStorage(DbEnabled):
     """Mixin providing object serialization to a sqlalchemy SQL database.
-    db_tables and db_mapping must be defined by subclasses.
-    where db_tables is of the form: 
-            {Class1:table1, 
-             Class2:table2, 
-             ... }
-    db_mapping should look like: 
-            {Class1:{'property1':'column1',
-                     'property2':'column2',
-                     ...}, 
-             Class2:{'property1':'column1',
-                     'property2':'column2',
-                     ...}
-            }
             
     Internal integer ids are stored into the _id attribute of Serializable 
     objects.
-    
-    #XXX: TODO Foreign keys defined in the table definition get automatically resolved
-    via inline SELECT, if the according property names in the classes match.
-    E.g.: class Package has a property 'name' and is stored into 'packages',
-    class ResourceType has a property 'name' and is stored into 'resourcetypes',
-    packages.c.name is a Foreign Key of resourcetypes.c.name.
     """
-    
-    db_tables = dict()
-    db_mapping = dict()
     
     def _is_sqlite(self):
         return str(self._db.url).startswith('sqlite')
     
-    def _to_kwargs(self, tables, o, map):
+    def _to_kwargs(self, o):
         d = dict()
         cls = o.__class__
-        table = tables[cls]
-        for field, col in map[cls].iteritems():
-            # allow multiple fields separated by '.'
-            fields = field.split('.')
-#            # check if attribute is already 
-#            if not hasattr(o, fields[0]):
-#                continue
-            value = o.__getattribute__(fields[0])
-            for f in fields[1:]:
-                value = value.__getattribute__(f)
+        table = o.db_table
+        for field, col in o.db_mapping.iteritems():
+            value = o.__getattribute__(field)
+            # object relation
+            if IRelation.providedBy(col):
+                if value:
+                    assert isinstance(value, col.cls)
+                    if not value._id:
+                        raise DbError('A related object could not be '+\
+                                      'located in the database. %s: %s' %\
+                                      (type(value),str(value)))
+                    value = value._id
+                col = col.name
+#                kwargs = self._to_kwargs(value)
+#                value = self.pickup(col, **kwargs)._id
             # convert None to '' on Text columns
             if value is None:
                 if isinstance(table.c[col].type, Text):
                     value = ''
                 else:
                     continue
-            # store byte strings
+            # convert to byte strings
             if isinstance(value, unicode):
                 value = value.encode("utf-8")
-            # handle foreign keys
-#            if hasattr(table.c[col], 'foreign_keys'):
-#                fk = table.c[col].foreign_keys
-#                # there's only one Foreign Key supported by now
-#                if len(fk) == 1:
-#                    fk_col = fk[0].column
-#                    fk_table = fk_col.table
-#                    # find class belonging to foreign key table
-#                    fk_cls = [c for c, t in tables.iteritems() if t is fk_table][0]
-#                    fk_q = 'SELECT %s FROM %s WHERE (%s = %s)' %\
-#                        (str(fk_col), str(fk_table), str(map[fk_cls][col]), value)
-#                    #fk_q = select([fk_col], fk_table.c[map[fk_cls][col]] == value)
-#                    value = text(fk_q)
-#                    #import pdb;pdb.set_trace()
-                    
             d[col] = value
         return d
     
     def _to_where_clause(self, table, map, values, null = list()):
         cl = ClauseList(operator = "AND")
-        for key in values:
+        for key, val in values.iteritems():
             if key not in map.keys():
                 continue
-            if values[key] == None:
+            col = map[key]
+            if IRelation.providedBy(col):
+                if isinstance(val, dict): # retrieve sub-object
+                    try:
+                        # TODO: do this via inline selects rather than getting
+                        # objects recursively
+                        o = self.pickup(col.cls, **val)[0]
+                        val = o._id
+                        values[key] = o
+                    except IndexError:
+                        raise DbError('A related object could not be '+\
+                                      'located in the database. %s: %s' %\
+                                      (col.cls, str(val)))
+                elif isinstance(val, col.cls): # object already there
+                    values[key] = val
+                    val = val._id
+                elif val:
+                    raise DbError("Invalid value for key '%s': %s" %\
+                                  (str(col.name), str(val)))
+                col = col.name
+            if val == None:
                 if key not in null:
                     continue
-                elif isinstance(table.c[map[key]].type, Text):
-                    values[key] = ''
-            cl.append(table.c[map[key]] == values[key])
-        return cl
+                elif isinstance(table.c[col].type, Text):
+                    val = ''
+            cl.append(table.c[col] == val)
+        return cl, values
     
     def _to_order_by(self, table, order_by = dict()):
         cl = ClauseList()
@@ -142,18 +137,15 @@ class DbStorage(DbEnabled):
         db = self.getDb()
         conn = db.connect()
         txn = conn.begin()
-
         try:
             for o in objs: 
                 if not ISerializable.providedBy(o):
                     raise DoesNotImplement(ISerializable)
-                cls = o.__class__
-                tables = self.db_tables
-                map = self.db_mapping
-                kwargs = self._to_kwargs(tables, o, map)
-                r = conn.execute(tables[cls].insert(),
+                table = o.db_table
+                kwargs = self._to_kwargs(o)
+                r = conn.execute(table.insert(),
                                  **kwargs)
-                o._setId(r.last_inserted_ids()[0])
+                o._id = r.last_inserted_ids()[0]
             txn.commit()
         except:
             txn.rollback()
@@ -168,13 +160,15 @@ class DbStorage(DbEnabled):
             raise DoesNotImplement(ISerializable)
         null = keys.get('_null', list())
         order_by = keys.get('_order_by', list())
-        table = self.db_tables[cls]
-        map = self.db_mapping[cls]
+        table = cls.db_table
+        map = cls.db_mapping
         db = self.getDb()
         c = list()
         for col in map.values():
+            if IRelation.providedBy(col):
+                col = col.name
             c.append(table.c[col])
-        w = self._to_where_clause(table, map, keys, null)
+        w, keys = self._to_where_clause(table, map, keys, null)
         ob = self._to_order_by(table, order_by)
         q = select(c, w, order_by = ob)
         r = db.execute(q)
@@ -185,14 +179,23 @@ class DbStorage(DbEnabled):
         objs = list()
         for res in results:
             obj = cls()
-            for field in map:
-                val = res[map[field]]
-                if isinstance(val, basestring) and len(val) == 0:
+            for field, col in map.iteritems():
+                if IRelation.providedBy(col): # object relation
+                    if field in keys and keys[field]:  
+                        # use the object already retrieved during the query
+                        # this avoids getting objects twice
+                        assert isinstance(keys[field], col.cls)
+                        val = keys[field]
+                    elif res[col.name]:
+                        val = self.pickup(col.cls, _id = res[col.name])[0]
+                    else:
+                        # TODO: really needed ?
+                        val = col.cls()
+                else:
+                    val = res[col]
+                if val == '':
                     val = None
                 obj.__setattr__(field, val)
-                #import pdb;pdb.set_trace()
-#                if 'id' in res:
-#                    obj._id = res['id']
             objs.append(obj)
                     
         return self._to_list(objs)
@@ -204,17 +207,10 @@ class DbStorage(DbEnabled):
         db = self.getDb()
         conn = db.connect()
         txn = conn.begin()
-        table = self.db_tables[cls]
+        table = cls.db_table
         try:
-            map = self.db_mapping[cls]
-            w = self._to_where_clause(table, map, keys, null)          
-#            # manually check foreign key constraints on SQLIte databases:
-#            if self._is_sqlite():
-#                fkeys = table.foreign_keys
-#                for fk in fkeys:
-#                    fk_q = select([fk.column], fk.parent == value)
-#                    
-#                import pdb;pdb.set_trace()
+            map = cls.db_mapping
+            w, _ = self._to_where_clause(table, map, keys, null)          
             conn.execute(table.delete(w))
             txn.commit()
         except:
@@ -232,6 +228,8 @@ class Serializable(object):
     
     implements(ISerializable)
     
+    db_mapping = dict()
+    
     def __init__(self, *args, **kwargs):
         #super(Serializable, self).__init__(*args, **kwargs)
         
@@ -248,3 +246,10 @@ class Serializable(object):
         self._serializable_id = id
         
     _id = property(_getId, _setId, 'Internal id (integer)')
+    
+
+class Relation(object):
+    implements(IRelation)
+    def __init__(self, cls, name):
+        self.cls = cls
+        self.name = name

@@ -5,7 +5,7 @@ from zope.interface.exceptions import DoesNotImplement
 
 from seishub.test import SeisHubEnvironmentTestCase
 from seishub.core import SeisHubError
-from seishub.xmldb.xmlresource import XmlResource
+from seishub.xmldb.resource import XmlResource
 from seishub.xmldb.index import XmlIndex, TEXT_INDEX
 
 
@@ -23,7 +23,18 @@ RAW_XML1="""<station rel_uri="bern">
     </XY>
 </station>"""
 
-class XmlIndexTest(SeisHubEnvironmentTestCase):   
+class XmlIndexTest(SeisHubEnvironmentTestCase):
+    def setUp(self):
+        # register packages
+        self.pkg1 = self.env.registry.db_registerPackage("testpackage")
+        self.rt1 = self.env.registry.db_registerResourceType("station", 
+                                                             "testpackage")
+    
+    def tearDown(self):
+        # remove packages
+        self.env.registry.db_deleteResourceType("testpackage", "station")
+        self.env.registry.db_deletePackage("testpackage")
+        
     def testEval(self):
         #index with single node key result:
         test_index=XmlIndex(key_path = "lon",
@@ -35,7 +46,7 @@ class XmlIndexTest(SeisHubEnvironmentTestCase):
                           )
         
         empty_resource = XmlResource()
-        test_resource = XmlResource('testpackage','station',
+        test_resource = XmlResource(self.pkg1,self.rt1,
                                     data = RAW_XML1)
         
         class Foo(object):

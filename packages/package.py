@@ -2,17 +2,28 @@
 from zope.interface import implements
 
 from seishub.util.text import validate_id, to_uri, to_xpath_query
-from seishub.db.util import Serializable
-from seishub.packages.interfaces import IPackageWrapper
+from seishub.db.util import Serializable, Relation
+from seishub.packages.interfaces import IPackageWrapper, IResourceTypeWrapper
+from seishub.packages.defaults import schema_tab, stylesheet_tab, alias_tab,\
+                                      packages_tab, resourcetypes_tab
 
 class PackageWrapper(Serializable):
     """Wrapped around packages for storage in database."""
     
     implements(IPackageWrapper)
     
+    db_table = packages_tab
+    db_mapping = {'package_id':'name',
+                  'version':'version',
+                  '_id':'id'
+                  } 
+    
     def __init__(self, package_id = None, version = ''):
         self.package_id = package_id
         self.version = version
+        
+    def __str__(self):
+        return self.package_id + '/' + self.version
         
     def setPackage_id(self, package_id):
         self._package_id = validate_id(package_id)
@@ -36,6 +47,17 @@ class PackageWrapper(Serializable):
 
 class ResourceTypeWrapper(Serializable):
     """Wrapped around resource types for storage in database."""
+    
+    implements(IResourceTypeWrapper)
+    
+    db_table = resourcetypes_tab
+    db_mapping = {'resourcetype_id':'name',
+                  'package':Relation(PackageWrapper,'package_id'),
+                  'version':'version',
+                  'version_control':'version_control',
+                  '_id':'id'
+                  }
+    
     def __init__(self, resourcetype_id = None, package = PackageWrapper(), 
                  version = '', version_control = False):
         self.resourcetype_id = resourcetype_id
@@ -43,11 +65,15 @@ class ResourceTypeWrapper(Serializable):
         self.version = version
         self.version_control = version_control
         
+    def __str__(self):
+        return str(self.package.package_id) + '/' +\
+               str(self.resourcetype_id) + '/' + self.version
+        
     def setResourcetype_id(self, id):
-        self._id = validate_id(id)
+        self._resourcetype_id = validate_id(id)
         
     def getResourcetype_id(self):
-        return self._id
+        return self._resourcetype_id
     
     resourcetype_id = property(getResourcetype_id, setResourcetype_id, 
                                "unique package id (string)")
@@ -96,35 +122,46 @@ class ResourceTypeWrapper(Serializable):
     
 
 class Alias(Serializable):
-    def __init__(self, package_id = None, resourcetype_id = None,
+    db_table = alias_tab
+    db_mapping = {'resourcetype':Relation(ResourceTypeWrapper, 
+                                             'resourcetype_id'),
+                  'package':Relation(PackageWrapper, 'package_id'),
+                  'name':'name',
+                  'expr':'expr'
+                  }
+    
+    def __init__(self, package = PackageWrapper(), 
+                 resourcetype = ResourceTypeWrapper(),
                  name = None, expr = None):
         super(Serializable, self).__init__()
-        self.package_id = package_id
-        self.resourcetype_id = resourcetype_id
+        self.package = package
+        self.resourcetype = resourcetype
         self.name = name
         self.expr = expr
     
     def __str__(self):
-        return to_uri(self.package_id, self.resourcetype_id) + '/@' + self.name
+        return to_uri(self.package.package_id, 
+                      self.resourcetype.resourcetype_id) + '/@' + self.name
     
-    def getResourceTypeId(self):
-        return self._resourcetype_id
+    def getResourceType(self):
+        return self._resourcetype
      
-    def setResourceTypeId(self, data):
-        self._resourcetype_id = None
-        if data:
-            self._resourcetype_id = validate_id(data)
+    def setResourceType(self, data):
+        if data and not IResourceTypeWrapper.providedBy(data):
+            raise TypeError("%s is not an IResourceTypeWrapper" % str(data))
+        self._resourcetype = data
         
-    resourcetype_id = property(getResourceTypeId, setResourceTypeId, 
-                               "Resource type id")
+    resourcetype = property(getResourceType, setResourceType, "Resource type")
     
-    def getPackageId(self):
-        return self._package_id
+    def getPackage(self):
+        return self._package
     
-    def setPackageId(self, data):
-        self._package_id = validate_id(data)
+    def setPackage(self, data):
+        if data and not IPackageWrapper.providedBy(data):
+            raise TypeError("%s is not an IPackageWrapper" % str(data))
+        self._package = data
         
-    package_id = property(getPackageId, setPackageId, "Package id")
+    package = property(getPackage, setPackage, "Package")
     
     def getName(self):
         return self._name
@@ -149,36 +186,51 @@ class Alias(Serializable):
     
     def getQuery(self):
         """return query string"""
-        return to_xpath_query(self.package_id, self.resourcetype_id, self._expr)
+        return to_xpath_query(self.package.package_id, 
+                              self.resourcetype.resourcetype_id, self._expr)
 
 class Schema(Serializable):
-    def __init__(self, package_id = None, resourcetype_id = None, 
+    db_table = schema_tab
+    db_mapping = {'resourcetype':Relation(ResourceTypeWrapper, 
+                                          'resourcetype_id'),
+                  'package':Relation(PackageWrapper,
+                                     'package_id'),
+                  'type':'type',
+                  'resource_id':'resource_id'
+                  }
+    
+    def __init__(self, package = PackageWrapper(), 
+                 resourcetype = ResourceTypeWrapper(), 
                  type = None, resource_id = None):
         super(Serializable, self).__init__()
-        self.package_id = package_id
-        self.resourcetype_id = resourcetype_id
+        self.package = package
+        self.resourcetype = resourcetype
         self.type = type
         self.resource_id = resource_id
         
     def __str__(self):
-        return to_uri(self.package_id, self.resourcetype_id) + '/' + self.uid
+        return to_uri(self.package.package_id, 
+                      self.resourcetype.resourcetype_id) + '/' + self.type
     
-    def getResourceTypeId(self):
-        return self._resourcetype_id
+    def getResourceType(self):
+        return self._resourcetype
      
-    def setResourceTypeId(self, data):
-        self._resourcetype_id = validate_id(data)
+    def setResourceType(self, data):
+        if data and not IResourceTypeWrapper.providedBy(data):
+            raise TypeError("%s is not an IResourceTypeWrapper" % str(data))
+        self._resourcetype = data
         
-    resourcetype_id = property(getResourceTypeId, setResourceTypeId, 
-                               "Resource type id")
+    resourcetype = property(getResourceType, setResourceType, "Resource type")
     
-    def getPackageId(self):
-        return self._package_id
+    def getPackage(self):
+        return self._package
     
-    def setPackageId(self, data):
-        self._package_id = validate_id(data)
+    def setPackage(self, data):
+        if data and not IPackageWrapper.providedBy(data):
+            raise TypeError("%s is not an IPackageWrapper" % str(data))
+        self._package = data
         
-    package_id = property(getPackageId, setPackageId, "Package id")
+    package = property(getPackage, setPackage, "Package")
     
     def getResource_id(self):
         return self._resource_id
@@ -212,4 +264,4 @@ class Schema(Serializable):
     resource = property(getResource, doc = "XmlResource (read only)")
     
 class Stylesheet(Schema):
-    pass
+    db_table = stylesheet_tab

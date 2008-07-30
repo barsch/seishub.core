@@ -3,6 +3,7 @@
 import unittest
 
 from seishub.test import SeisHubEnvironmentTestCase
+from seishub.core import SeisHubError
 
 
 RAW_XML = """<station rel_uri="bern">
@@ -69,43 +70,80 @@ IDX3 = "/weapon/damage"
 
 class XmlCatalogTest(SeisHubEnvironmentTestCase):
     def setUp(self):
+        # register packages
+        self.pkg1 = self.env.registry.db_registerPackage(pid1)
+        self.rt1 = self.env.registry.db_registerResourceType(rid1, pid1)
+        self.rt2 = self.env.registry.db_registerResourceType(rid2, pid1)
+        self.pkg2 = self.env.registry.db_registerPackage(pid2)
+        self.rt3 = self.env.registry.db_registerResourceType(rid3, pid2)
+        
         # create a small test catalog
-        self.res1 = self.env.catalog.addResource("testpackage", "station", 
-                                                 RAW_XML1)
-        self.res2 = self.env.catalog.addResource("testpackage", "station", 
-                                                 RAW_XML2)
-        self.res3 = self.env.catalog.addResource("testpackage","testml",
-                                                 RAW_XML3)
-        self.env.catalog.registerIndex("testpackage", "station", IDX1)
-        self.env.catalog.registerIndex("testpackage", "testml", IDX2)
-        self.env.catalog.registerIndex("degenesis", "weapon", IDX3)
+        self.res1 = self.env.catalog.addResource(pid1, rid1, RAW_XML1)
+        self.res2 = self.env.catalog.addResource(pid1, rid1, RAW_XML2)
+        self.res3 = self.env.catalog.addResource(pid1, rid2, RAW_XML3)
+        self.env.catalog.registerIndex(pid1, rid1, IDX1)
+        self.env.catalog.registerIndex(pid1, rid2, IDX2)
+        self.env.catalog.registerIndex(pid2, rid3, IDX3)
     
     def tearDown(self):
-        # clean up again
+        # clean up test catalog
         self.env.catalog.removeIndex("testpackage", "station", IDX1)
         self.env.catalog.removeIndex("testpackage", "testml", IDX2)
         self.env.catalog.removeIndex("degenesis", "weapon", IDX3)
-        self.env.catalog.deleteResource(self.res1.info.package_id,
-                                        self.res1.info.resourcetype_id,
+        self.env.catalog.deleteResource(self.res1.info.package.package_id,
+                                        self.res1.info.resourcetype.resourcetype_id,
                                         self.res1.info.id)
-        self.env.catalog.deleteResource(self.res2.info.package_id,
-                                        self.res2.info.resourcetype_id,
+        self.env.catalog.deleteResource(self.res2.info.package.package_id,
+                                        self.res2.info.resourcetype.resourcetype_id,
                                         self.res2.info.id)
-        self.env.catalog.deleteResource(self.res3.info.package_id,
-                                        self.res3.info.resourcetype_id,
+        self.env.catalog.deleteResource(self.res3.info.package.package_id,
+                                        self.res3.info.resourcetype.resourcetype_id,
                                         self.res3.info.id)
+        # remove packages
+        self.env.registry.db_deleteResourceType(pid1, rid1)
+        self.env.registry.db_deleteResourceType(pid1, rid2)
+        self.env.registry.db_deletePackage(pid1)
+        self.env.registry.db_deleteResourceType(pid2, rid3)
+        self.env.registry.db_deletePackage(pid2)
         
     def testIResourceManager(self):
+        # add / get / delete a resource
         catalog = self.env.catalog
-        res = catalog.addResource("testpackage", "station", RAW_XML)
-        r = catalog.getResource("testpackage", "station", res.info.id)
+        res = catalog.addResource(pid1, rid1, RAW_XML)
+        r = catalog.getResource(pid1, rid1, res.info.id)
         self.assertEquals(RAW_XML, r.getData())
-        catalog.deleteResource("testpackage", "station", res.info.id)
+        catalog.deleteResource(pid1, rid1, res.info.id)
+        # list resources
+        r = catalog.getResourceList(pid1, rid1)
+        self.assertEqual(len(r), 2)
+        self.assertEqual(r[0].package.package_id, pid1)
+        self.assertEqual(r[0].resourcetype.resourcetype_id, rid1)
+        self.assertEqual(r[0].resource.data, self.res1.data)
+        self.assertEqual(r[1].package.package_id, pid1)
+        self.assertEqual(r[1].resourcetype.resourcetype_id, rid1)
+        self.assertEqual(r[1].resource.data, self.res2.data)
+        r = catalog.getResourceList(pid1)
+        self.assertEqual(len(r), 3)
+        self.assertEqual(r[0].package.package_id, pid1)
+        self.assertEqual(r[0].resourcetype.resourcetype_id, rid1)
+        self.assertEqual(r[0].resource.data, self.res1.data)
+        self.assertEqual(r[1].package.package_id, pid1)
+        self.assertEqual(r[1].resourcetype.resourcetype_id, rid1)
+        self.assertEqual(r[1].resource.data, self.res2.data)
+        self.assertEqual(r[2].package.package_id, pid1)
+        self.assertEqual(r[2].resourcetype.resourcetype_id, rid2)
+        self.assertEqual(r[2].resource.data, self.res3.data)
+        r = catalog.getResourceList()
+        assert len(r) >= 3
+        self.assertRaises(SeisHubError, 
+                          catalog.getResourceList, 'unexisting package')
+        r = catalog.getResourceList(pid2)
+        self.assertEqual(r, list())
     
     def testReindex(self):
         # TODO: testReindex
         self.env.catalog.reindex("testpackage", "station", IDX1)
-    
+
     def testListIndexes(self):
         # get all indexes
         l = self.env.catalog.listIndexes()
@@ -145,7 +183,8 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         res2 = self.env.catalog.query({'query':'/testpackage/station/station',
                                        'order_by':[['/testpackage/station/station/XY/paramXY','asc']],
                                        'limit':2})
-        self.assertEqual(res1,res2)
+        self.assertEqual(res1, [self.res2.resource_id, self.res1.resource_id])
+        self.assertEqual(res2, [self.res2.resource_id, self.res1.resource_id])
 
 
 def suite():

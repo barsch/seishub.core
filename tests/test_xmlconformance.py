@@ -17,10 +17,14 @@ class XMLConformanceTestCase(SeisHubEnvironmentTestCase):
         #setup a test
         path = os.path.dirname(inspect.getsourcefile(self.__class__))
         self.test_path = os.path.join(path,'data', 'xmlconf')
+        self.env.registry.db_registerPackage('test')
+        self.env.registry.db_registerResourceType('xml', 'test')
         
     def tearDown(self):
         # clean up again
-        pass
+        self.env.registry.db_deleteResourceType('test', 'xml')
+        self.env.registry.db_deletePackage('test')
+        
     
     def testXmltest(self):
         path = self.test_path

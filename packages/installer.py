@@ -107,14 +107,18 @@ class PackageInstaller(object):
         #import pdb;pdb.set_trace()
             
     @staticmethod
-    def install(env):
-        """auto install all known packages"""
+    def install(env, package_id = None):
+        """auto install all known packages
+        if package is given, only the specified package will be installed"""
         # XXX: problem: if installation fails here, packages still show up in the
         # registry but adding of resources etc. is not possible => possible solution
-        # mark those packages as 'defect' and handle that seperately in the admin interface 
-        
+        # mark those packages as 'defect' and handle that seperately in the admin interface
+        if package_id:
+            packages = [package_id]
+        else:
+            packages = env.registry.packages
         # install new packages
-        for p in env.registry.packages:
+        for p in packages:
             fs_package = env.registry.packages.get(p)
             db_packages = env.registry.db_getPackages(p)
             if len(db_packages) == 0:
@@ -125,7 +129,7 @@ class PackageInstaller(object):
                                   "failed. (%s)") % (p, e))
                     continue
                 
-            # install new resourcetypes for current package
+            # install new resourcetypes for package p
             for rt_id, rt in env.registry.getResourceTypes(p).iteritems():
                 db_rt = env.registry.db_getResourceTypes(p, rt_id)
                 if len(db_rt) == 0:
@@ -158,16 +162,15 @@ class PackageInstaller(object):
                     env.registry.db_deletePackage(p.package_id)
                 except SeisHubError:
                     pass
-        
-    
+
     @staticmethod
     def getUpdatedPackages():
         pass
-    
+
     @staticmethod
     def getUpdatedResourcetypes(package_id = None):
         pass 
-            
+
 registerSchema = lambda type, filename: PackageInstaller._pre_register\
                                                   ('_schemas', 
                                                    type = type,
