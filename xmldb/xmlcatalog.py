@@ -5,7 +5,7 @@ from zope.interface import implements
 from seishub.xmldb.interfaces import IXmlCatalog
 from seishub.xmldb.xmldbms import XmlDbManager
 from seishub.xmldb.xmlindexcatalog import XmlIndexCatalog
-from seishub.xmldb.resource import XmlResource
+from seishub.xmldb.resource import XmlDocument, Resource
 from seishub.xmldb.index import XmlIndex
 from seishub.xmldb.xpath import IndexDefiningXpathExpression, XPathQuery
 
@@ -29,7 +29,7 @@ class XmlCatalog(object):
         """@see: L{seishub.xmldb.interfaces.IXmlCatalog}"""
         package, resourcetype = self.env.registry.\
                                    objects_from_id(package_id, resourcetype_id)
-        res = XmlResource(package, resourcetype, xml_data)
+        res = Resource(package, resourcetype, document = XmlDocument(xml_data))
         self.xmldb.addResource(res)
         return res
         
@@ -155,7 +155,7 @@ class XmlCatalog(object):
                                        resourcetype_id = type)
         # reindex
         for res in reslist:
-            self.index_catalog.indexResource(res.resource.resource_id, 
+            self.index_catalog.indexResource(res.document._id, 
                                              value_path, key_path)
         
         return True

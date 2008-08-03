@@ -187,7 +187,12 @@ class DbStorage(DbEnabled):
                         assert isinstance(keys[field], col.cls)
                         val = keys[field]
                     elif res[col.name]:
-                        val = self.pickup(col.cls, _id = res[col.name])[0]
+                        try:
+                            val = self.pickup(col.cls, _id = res[col.name])[0]
+                        except IndexError:
+                            raise DbError('A related object could not be '+\
+                                          'located in the database. %s: %s' %\
+                                          (col.cls, str(res[col.name])))
                     else:
                         # TODO: really needed ?
                         val = col.cls()

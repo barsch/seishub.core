@@ -5,127 +5,75 @@ from zope.interface import implements
 from seishub.db.util import Serializable, Relation
 from seishub.util.xml import IXmlDoc, XmlTreeDoc
 from seishub.packages.package import PackageWrapper, ResourceTypeWrapper
-from seishub.xmldb.defaults import resource_meta_tab, resource_tab
+from seishub.xmldb.defaults import resource_tab, data_tab
 from seishub.xmldb.errors import XmlResourceError
-from seishub.xmldb.interfaces import IResource, IResourceInformation,\
-                                     IXmlResource
+from seishub.xmldb.interfaces import IResource,\
+                                     IXmlDocument
 from seishub.xmldb.package import PackageSpecific
+   
 
-class Resource(Serializable):
-    """Resource base class"""
-    implements(IResource)
-    
-    def __init__(self, data = None, info = None):
-        self.data = data
-        self.info = info
-        Serializable.__init__(self)
-            
-    def getData(self):
-        return self.__data
-    
-    def setData(self, newdata):
-        self.__data = newdata
-    
-    data = property(getData, setData, 'Raw data')
-    
-    def _getResource_Id(self):
-        return self._id
-    
-    def _setResource_Id(self,id):
-        self._id = id
-    
-    resource_id = property(_getResource_Id, _setResource_Id, 'unique id')
-    
-    def getInfo(self):
-        try:
-            return self._info
-        except:
-            return None
-    
-    def setInfo(self, data):
-        if not IResourceInformation.providedBy(data):
-            raise TypeError("%s is not a ResourceInformation" % str(data))
-        self._info = data
-        self._info.resource = self
-    
-    info = property(getInfo, setInfo, 'resource information')
-    
-
-class XmlResource(Resource):
+class XmlDocument(Serializable):
     """auto-parsing xml resource, 
     given xml data gets validated and parsed on resource creation"""
     
-    implements (IXmlResource)
+    implements (IXmlDocument)
     
-    db_table = resource_tab
-    db_mapping = {'resource_id':'id',
-                  'data':'data',
+    db_table = data_tab
+    db_mapping = {'data':'data',
                   '_id':'id'
                   }
     
-    def __init__(self, package = PackageWrapper(), 
-                 resourcetype = ResourceTypeWrapper(), data = None,
-                 id = None, version_control = False):
-        self.__xml_doc = None
-        info = ResourceInformation(package, resourcetype, id,
-                                   version_control = version_control)
-        Resource.__init__(self, data, info)
+    def __init__(self, data = None, id = None):
+        self._xml_doc = None
+        self.data = data
+        Serializable.__init__(self)
         
 #    # auto update resource id when Serializable id is changed:
 #    def _setId(self, id):
 #        Serializable._setId(self, id)
 #        self.resource_id = id
     
-    # pass ResourceInformation.id to XmlResource.id for easy access (read-only)
-    def getId(self):
-        return self.info.id
+#    # pass Resource.id to XmlDocument.id for easy access (read-only)
+#    def getId(self):
+#        return self.id
+#    
+#    id = property(getId, "Integer identification number (external id)")
     
-    id = property(getId, "Integer identification number (external id)")
-    
-    # overloaded method setData from Resource
-    # gets invoked by Resource's constructor
-    def setData(self, xml_data):
+    def setData(self, data):
         # parse and validate xml_data
         # decode raw data to utf-8 unicode string
-        if xml_data is None or len(xml_data) == 0:
-            return Resource.setData(self, xml_data)
-            #raise XmlResourceError("No xml data given")
-        xml_data = str(xml_data)
-        if not isinstance(xml_data, unicode) and xml_data:
-            xml_data = unicode(xml_data, "utf-8")
-            
+        if not data or data == "":
+            self._data = None
+            return
+        if not isinstance(data, basestring):
+            data = str(data)
+        if not isinstance(data, unicode):
+            data = unicode(data, "utf-8")
+        self._data = data
         try:
-            self.__xml_doc = self._validateXml_data(xml_data)
+            self._xml_doc = self._validateXml_data(self._data)
         except Exception, e:
             raise XmlResourceError(e)
-        
-        return Resource.setData(self, xml_data)
     
     def getData(self):
-        data = super(XmlResource,self).getData()
+        data = self._data
         if not data:
             return None
-        # XXX: use encoded byte strings or unicode strings internally?
         return data.encode("utf-8")
-        #return data
     
     data = property(getData, setData, 'Raw xml data as a string')
     
     
     def getXml_doc(self):
-        return self.__xml_doc
+        return self._xml_doc
     
     def setXml_doc(self,xml_doc):
         if not IXmlDoc.providedBy(xml_doc):
             raise TypeError("%s is not an IXmlDoc" % str(xml_doc))
         else:
-            self.__xml_doc = xml_doc
-
-            
-#    def getUri(self):
-##         XXX: remove this method or handle non existing self._id properly
-#        return '/' + self.info.package_id + '/' + self.info.resourcetype_id + '/' +\
-#               str(self._id)
+            self._xml_doc = xml_doc
+    
+    xml_doc = property(getXml_doc, setXml_doc, 'Parsed xml document (IXmlDoc)')
     
     def _validateXml_data(self,value):
         return self._parseXml_data(value)
@@ -135,29 +83,50 @@ class XmlResource(Resource):
         # encode before handing it to parser:
         xml_data = xml_data.encode("utf-8")
         return XmlTreeDoc(xml_data=xml_data, blocking=True)
-
-
-class ResourceInformation(Serializable, PackageSpecific):
     
-    implements(IResourceInformation)
+#    # XXX: change to document_id
+#    def getResource_Id(self):
+#        return self._id
+#    
+#    def setResource_Id(self,id):
+#        self._id = id
+#    
+#    resource_id = property(getResource_Id, setResource_Id, 'unique id')
     
-    db_table = resource_meta_tab
+#    def getInfo(self):
+#        try:
+#            return self._info
+#        except:
+#            return None
+#    
+#    def setInfo(self, data):
+#        if not IResource.providedBy(data):
+#            raise TypeError("%s is not a Resource" % str(data))
+#        self._info = data
+#        self._resource = self
+#    
+#    info = property(getInfo, setInfo, 'resource information')
+    
+
+class Resource(Serializable, PackageSpecific):
+    
+    implements(IResource)
+    
+    db_table = resource_tab
     db_mapping = {'id':'id',  # external id
                   'revision':'revision',
-                  'resource':Relation(XmlResource, 'resource_id'),
+                  'document':Relation(XmlDocument, 'resource_id'),
                   'package':Relation(PackageWrapper,'package_id'),
                   'resourcetype':Relation(ResourceTypeWrapper,
-                                             'resourcetype_id'),
-                  'version_control':'version_control'
+                                          'resourcetype_id')
                   }
     
     def __init__(self, package = PackageWrapper(), 
                  resourcetype = ResourceTypeWrapper(), id = None, 
-                 revision = None, resource = None, version_control = False):
-        self.version_control = version_control
+                 revision = None, document = None):
         self.id = id
         self.revision = revision
-        self.resource = resource
+        self.document = document
         self.package = package
         self.resourcetype = resourcetype
         
@@ -170,24 +139,22 @@ class ResourceInformation(Serializable, PackageSpecific):
         Serializable._setId(self, id)
         self.id = id
     
-    #methods and attributes from IResourceInformation
-    def getResource(self):
-        return self._resource
+    def getDocument(self):
+        return self._document
     
-    def setResource(self, data):
-        self._resource = data
-        if self._resource and not self._resource.info == self:
-            self._resource.info = self
+    def setDocument(self, data):
+        if data and not IXmlDocument.providedBy(data):
+            raise TypeError("%s is not an IXmlDocument." % str(data))
+        self._document = data
     
-    resource = property(getResource, setResource, "related document")
+    document = property(getDocument, setDocument, "xml document")
     
     def getRevision(self):
         return self._revision
     
     def setRevision(self, data):
-        if not self.version_control:
-            self._revision = 1
-        else:
+        self._revision = 1
+        if hasattr(self, 'resourcetype') and self.resourcetype.version_control:
             self._revision = data
          
     revision = property(getRevision, setRevision, "revision")

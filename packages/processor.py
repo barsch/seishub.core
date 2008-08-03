@@ -154,7 +154,7 @@ class Processor:
             if self._checkResourceType(self.postpath[0], self.postpath[1]):
                 res = self._addResource(self.postpath[0], self.postpath[1])
                 self.response_code = http.CREATED
-                self.response_header['Location'] = str(res.getInfo())
+                self.response_header['Location'] = str(res)
                 return ''
         raise RequestError(http.FORBIDDEN)
     
@@ -362,7 +362,7 @@ class Processor:
             raise RequestError(http.INTERNAL_SERVER_ERROR)
         else:
             # return resource content
-            return result.data
+            return result.document.data
     
     def _modifyResource(self, package_id, resourcetype_id, document_id):
         """Modifies the content of an existing resource."""

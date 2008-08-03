@@ -8,32 +8,31 @@ from sqlalchemy.sql import text #@UnresolvedImport
 from seishub.db.dbmanager import meta as metadata
 
 DEFAULT_PREFIX = 'default_'
-RESOURCE_TABLE = 'data'
+DATA_TABLE = 'data'
 INDEX_TABLE = 'index'
 INDEX_DEF_TABLE = 'index_def'
 METADATA_TABLE = 'meta'
 METADATA_DEF_TABLE = 'meta_def'
-RESOURCE_META_TABLE = 'resource_meta'
+RESOURCE_TABLE = 'resource'
 
 # xmldbms tables:
-resource_tab = Table(DEFAULT_PREFIX + RESOURCE_TABLE, metadata,
+data_tab = Table(DEFAULT_PREFIX + DATA_TABLE, metadata,
     Column('id', Integer, primary_key = True, autoincrement = True),
     Column('data', Binary),
     useexisting=True,
     )
 
 # XXX: sqlite does not support autoincrement on combined primary keys
-resource_meta_tab = Table(DEFAULT_PREFIX + RESOURCE_META_TABLE, metadata,
+resource_tab = Table(DEFAULT_PREFIX + RESOURCE_TABLE, metadata,
     Column('id', Integer, autoincrement = True,
            default = text('(SELECT coalesce(max(id), 0) + 1 FROM '+\
-                          DEFAULT_PREFIX + RESOURCE_META_TABLE +')')),
+                          DEFAULT_PREFIX + RESOURCE_TABLE +')')),
     Column('revision', Integer, autoincrement = True),
     Column('resource_id', Integer, 
-           ForeignKey(DEFAULT_PREFIX + RESOURCE_TABLE + '.id'),
+           ForeignKey(DEFAULT_PREFIX + DATA_TABLE + '.id'),
            ),
     Column('package_id', Integer),
     Column('resourcetype_id', Integer),
-    Column('version_control', Boolean), 
     # Column('hash', Integer),
     PrimaryKeyConstraint('id', 'revision'),
     useexisting=True,
@@ -47,7 +46,7 @@ metadata_def_tab = Table(DEFAULT_PREFIX + METADATA_DEF_TABLE, metadata,
     )
 
 metadata_tab = Table(DEFAULT_PREFIX + METADATA_TABLE, metadata,
-    Column('resource_id', Integer, ForeignKey(DEFAULT_PREFIX + RESOURCE_TABLE +
+    Column('resource_id', Integer, ForeignKey(DEFAULT_PREFIX + DATA_TABLE +
                                               '.id')),
     Column('metadata_id', Integer),
     Column('value', Text),

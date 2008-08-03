@@ -12,7 +12,7 @@ from seishub.xmldb.interfaces import IXmlIndexCatalog, IIndexRegistry, \
 from seishub.xmldb.errors import XmlIndexCatalogError, \
                                  InvalidIndexError
 from seishub.xmldb.defaults import index_def_tab, index_tab, \
-                                   resource_meta_tab
+                                   resource_tab
 from seishub.xmldb.index import XmlIndex
 from seishub.xmldb.xpath import IndexDefiningXpathExpression
 
@@ -120,7 +120,7 @@ class XmlIndexCatalog(DbStorage):
         pass
     
     # methods from IResourceIndexing:
-    def indexResource(self, resource_id, value_path, key_path):
+    def indexResource(self, document_id, value_path, key_path):
         """@see: L{seishub.xmldb.xmlindexcatalog.interfaces.IResourceIndexing}"""
 #        #TODO: do this not index specific but resource type specific
 
@@ -130,14 +130,14 @@ class XmlIndexCatalog(DbStorage):
         
         #get objs and evaluate index on resource:
         try:
-            resource = self._storage.getResource(resource_id = resource_id)
+            resource = self._storage.getResource(document_id = document_id)
         except AttributeError:
             raise XmlIndexCatalogError("No resource storage.")
         index = self.getIndex(value_path, key_path)
         if not index:
             raise InvalidIndexError("No index found for (%s,%s)" % 
                                     (value_path, key_path))
-        keysvals = index.eval(resource)
+        keysvals = index.eval(resource.document)
         #data_type = index.getType()
         index_id = index._getId()
         if not keysvals: # index does not apply
@@ -228,11 +228,11 @@ class XmlIndexCatalog(DbStorage):
             q = select([value_col],w)
         else:
             # value path only: => resource type query
-            value_col = resource_meta_tab.c.resource_id
+            value_col = resource_tab.c.resource_id
             q = select([value_col], 
                        and_( 
-                           resource_meta_tab.c.package_id == query.package_id,
-                           resource_meta_tab.c.resourcetype_id == query.resourcetype_id
+                           resource_tab.c.package_id == query.package_id,
+                           resource_tab.c.resourcetype_id == query.resourcetype_id
                        )
                 )
         q = q.group_by(value_col)

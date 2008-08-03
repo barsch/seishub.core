@@ -5,7 +5,7 @@ from zope.interface.exceptions import DoesNotImplement
 
 from seishub.test import SeisHubEnvironmentTestCase
 from seishub.core import SeisHubError
-from seishub.xmldb.resource import XmlResource
+from seishub.xmldb.resource import XmlDocument, Resource
 from seishub.xmldb.index import XmlIndex, TEXT_INDEX
 
 
@@ -45,32 +45,32 @@ class XmlIndexTest(SeisHubEnvironmentTestCase):
                           value_path = "/testpackage/station/station"
                           )
         
-        empty_resource = XmlResource()
-        test_resource = XmlResource(self.pkg1,self.rt1,
-                                    data = RAW_XML1)
+        empty_resource = Resource(document = XmlDocument())
+        test_resource = Resource(self.pkg1,self.rt1,
+                                 document = XmlDocument(RAW_XML1))
         
         class Foo(object):
             pass
         
         # pass a Foo: (which does not implement IXmlDoc)
-        self.assertRaises(DoesNotImplement,
+        self.assertRaises(TypeError,
                           test_index.eval,
                           Foo())
         # pass an empty XmlDoc:
         self.assertRaises(SeisHubError,
                           test_index.eval,
-                          empty_resource)
+                          empty_resource.document)
         
         self.assertEquals({'value': None, 
                            'key': '12.51200'},
-                          test_index.eval(test_resource)[0])
+                          test_index.eval(test_resource.document)[0])
         self.assertEquals([{'value': None, 
                             'key': '20.5'}, 
                            {'value': None, 
                             'key': '11.5'}, 
                            {'value': None, 
                             'key': 'blah'}],
-                          xy_index.eval(test_resource)
+                          xy_index.eval(test_resource.document)
                           )
 
 

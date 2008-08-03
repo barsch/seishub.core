@@ -196,17 +196,17 @@ class Schema(Serializable):
                   'package':Relation(PackageWrapper,
                                      'package_id'),
                   'type':'type',
-                  'resource_id':'resource_id'
+                  'document_id':'resource_id'
                   }
     
     def __init__(self, package = PackageWrapper(), 
                  resourcetype = ResourceTypeWrapper(), 
-                 type = None, resource_id = None):
+                 type = None, document_id = None):
         super(Serializable, self).__init__()
         self.package = package
         self.resourcetype = resourcetype
         self.type = type
-        self.resource_id = resource_id
+        self.document_id = document_id
         
     def __str__(self):
         return to_uri(self.package.package_id, 
@@ -232,14 +232,14 @@ class Schema(Serializable):
         
     package = property(getPackage, setPackage, "Package")
     
-    def getResource_id(self):
-        return self._resource_id
+    def getDocument_id(self):
+        return self._document_id
     
-    def setResource_id(self, data):
-        self._resource_id = data
+    def setDocument_id(self, data):
+        self._document_id = data
         
-    resource_id = property(getResource_id, setResource_id, 
-                           "Unique resource identifier (integer)")
+    document_id = property(getDocument_id, setDocument_id, 
+                           "Unique document identifier (integer)")
     
     def getType(self):
         return self._type
@@ -257,7 +257,7 @@ class Schema(Serializable):
             return self._resource
         if not hasattr(self, '_catalog'):
             return None
-        r = self._catalog.xmldb.getResource(resource_id = self.resource_id)
+        r = self._catalog.xmldb.getResource(document_id = self.document_id)
         self._resource = r
         return r
 

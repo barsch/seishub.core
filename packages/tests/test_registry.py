@@ -88,9 +88,9 @@ class PackageRegistryTest(SeisHubEnvironmentTestCase):
         self.assertEqual(schema[0].type, 'xsd')
         # get schema resource
         res = schema[0].resource
-        self.assertEqual(res.data, TEST_SCHEMA)
-        self.assertEqual(res.info.package.package_id, 'seishub')
-        self.assertEqual(res.info.resourcetype.resourcetype_id, 'schema')
+        self.assertEqual(res.document.data, TEST_SCHEMA)
+        self.assertEqual(res.package.package_id, 'seishub')
+        self.assertEqual(res.resourcetype.resourcetype_id, 'schema')
         # add a second schema without resourcetype
         self.env.registry.schemas.register('testpackage0', None, 'xsd', 
                                            TEST_SCHEMA)
@@ -117,9 +117,9 @@ class PackageRegistryTest(SeisHubEnvironmentTestCase):
         self.assertEqual(stylesheet[0].type, 'xhtml')
         # get stylesheet resource
         res = stylesheet[0].resource
-        self.assertEqual(res.data, TEST_SCHEMA)
-        self.assertEqual(res.info.package.package_id, 'seishub')
-        self.assertEqual(res.info.resourcetype.resourcetype_id, 'stylesheet')
+        self.assertEqual(res.document.data, TEST_SCHEMA)
+        self.assertEqual(res.package.package_id, 'seishub')
+        self.assertEqual(res.resourcetype.resourcetype_id, 'stylesheet')
         self.env.registry.stylesheets.delete(
                                     stylesheet[0].package.package_id,
                                     stylesheet[0].resourcetype.resourcetype_id,
@@ -228,7 +228,7 @@ class FromFilesystemTest(SeisHubEnvironmentTestCase):
         self.assertEqual(len(stylesheet), 1)
         p = os.path.join(self.env.config.path,'seishub','packages','tests',
                          'data','weapon.xsd')
-        self.assertEqual(stylesheet[0].resource.data, file(p).read())
+        self.assertEqual(stylesheet[0].resource.document.data, file(p).read())
         # alias
         alias = self.registry.aliases.get('testpackage', 'aresourcetype', 
                                         'analias')

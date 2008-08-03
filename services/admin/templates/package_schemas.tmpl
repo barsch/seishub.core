@@ -36,7 +36,7 @@
 <form method="post" name="list">
   <div class="field">
     #for $schema in $schemas
-    <input type="checkbox" name="schema[]" value="$schema.resource_id" /> 
+    <input type="checkbox" name="schema[]" value="$schema.document_id" /> 
     $schema.package.package_id
     $schema.resourcetype.resourcetype_id
     $schema.type

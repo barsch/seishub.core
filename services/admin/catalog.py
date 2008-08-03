@@ -2,9 +2,9 @@
 
 from seishub.core import Component, implements
 from seishub.services.admin.interfaces import IAdminPanel
-from seishub.xmldb.defaults import DEFAULT_PREFIX, RESOURCE_TABLE, \
+from seishub.xmldb.defaults import DEFAULT_PREFIX, DATA_TABLE, \
                                    INDEX_TABLE, INDEX_DEF_TABLE, \
-                                   METADATA_TABLE, RESOURCE_META_TABLE
+                                   METADATA_TABLE, DATA_TABLE
 from seishub.packages.defaults import SCHEMA_TABLE, STYLESHEET_TABLE, \
                                       ALIAS_TABLE
 from seishub.xmldb.errors import AddResourceError
@@ -37,8 +37,8 @@ class DatabaseQueryPanel(Component):
     """Query the database via http form."""
     implements(IAdminPanel)
     
-    tables = [RESOURCE_TABLE, INDEX_TABLE, INDEX_DEF_TABLE, \
-              METADATA_TABLE, RESOURCE_META_TABLE, ALIAS_TABLE, SCHEMA_TABLE, \
+    tables = [DATA_TABLE, INDEX_TABLE, INDEX_DEF_TABLE, \
+              METADATA_TABLE, DATA_TABLE, ALIAS_TABLE, SCHEMA_TABLE, \
               STYLESHEET_TABLE]
     
     def getPanelId(self):

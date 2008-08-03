@@ -90,15 +90,15 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         self.env.catalog.removeIndex("testpackage", "station", IDX1)
         self.env.catalog.removeIndex("testpackage", "testml", IDX2)
         self.env.catalog.removeIndex("degenesis", "weapon", IDX3)
-        self.env.catalog.deleteResource(self.res1.info.package.package_id,
-                                        self.res1.info.resourcetype.resourcetype_id,
-                                        self.res1.info.id)
-        self.env.catalog.deleteResource(self.res2.info.package.package_id,
-                                        self.res2.info.resourcetype.resourcetype_id,
-                                        self.res2.info.id)
-        self.env.catalog.deleteResource(self.res3.info.package.package_id,
-                                        self.res3.info.resourcetype.resourcetype_id,
-                                        self.res3.info.id)
+        self.env.catalog.deleteResource(self.res1.package.package_id,
+                                        self.res1.resourcetype.resourcetype_id,
+                                        self.res1.id)
+        self.env.catalog.deleteResource(self.res2.package.package_id,
+                                        self.res2.resourcetype.resourcetype_id,
+                                        self.res2.id)
+        self.env.catalog.deleteResource(self.res3.package.package_id,
+                                        self.res3.resourcetype.resourcetype_id,
+                                        self.res3.id)
         # remove packages
         self.env.registry.db_deleteResourceType(pid1, rid1)
         self.env.registry.db_deleteResourceType(pid1, rid2)
@@ -110,29 +110,29 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         # add / get / delete a resource
         catalog = self.env.catalog
         res = catalog.addResource(pid1, rid1, RAW_XML)
-        r = catalog.getResource(pid1, rid1, res.info.id)
-        self.assertEquals(RAW_XML, r.getData())
-        catalog.deleteResource(pid1, rid1, res.info.id)
+        r = catalog.getResource(pid1, rid1, res.id)
+        self.assertEquals(RAW_XML, r.document.data)
+        catalog.deleteResource(pid1, rid1, res.id)
         # list resources
         r = catalog.getResourceList(pid1, rid1)
         self.assertEqual(len(r), 2)
         self.assertEqual(r[0].package.package_id, pid1)
         self.assertEqual(r[0].resourcetype.resourcetype_id, rid1)
-        self.assertEqual(r[0].resource.data, self.res1.data)
+        self.assertEqual(r[0].document.data, self.res1.document.data)
         self.assertEqual(r[1].package.package_id, pid1)
         self.assertEqual(r[1].resourcetype.resourcetype_id, rid1)
-        self.assertEqual(r[1].resource.data, self.res2.data)
+        self.assertEqual(r[1].document.data, self.res2.document.data)
         r = catalog.getResourceList(pid1)
         self.assertEqual(len(r), 3)
         self.assertEqual(r[0].package.package_id, pid1)
         self.assertEqual(r[0].resourcetype.resourcetype_id, rid1)
-        self.assertEqual(r[0].resource.data, self.res1.data)
+        self.assertEqual(r[0].document.data, self.res1.document.data)
         self.assertEqual(r[1].package.package_id, pid1)
         self.assertEqual(r[1].resourcetype.resourcetype_id, rid1)
-        self.assertEqual(r[1].resource.data, self.res2.data)
+        self.assertEqual(r[1].document.data, self.res2.document.data)
         self.assertEqual(r[2].package.package_id, pid1)
         self.assertEqual(r[2].resourcetype.resourcetype_id, rid2)
-        self.assertEqual(r[2].resource.data, self.res3.data)
+        self.assertEqual(r[2].document.data, self.res3.document.data)
         r = catalog.getResourceList()
         assert len(r) >= 3
         self.assertRaises(SeisHubError, 
@@ -183,8 +183,10 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         res2 = self.env.catalog.query({'query':'/testpackage/station/station',
                                        'order_by':[['/testpackage/station/station/XY/paramXY','asc']],
                                        'limit':2})
-        self.assertEqual(res1, [self.res2.resource_id, self.res1.resource_id])
-        self.assertEqual(res2, [self.res2.resource_id, self.res1.resource_id])
+        self.assertEqual(res1, [self.res2.document._id, 
+                                self.res1.document._id])
+        self.assertEqual(res2, [self.res2.document._id, 
+                                self.res1.document._id])
 
 
 def suite():

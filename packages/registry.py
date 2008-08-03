@@ -5,10 +5,7 @@ import os
 from seishub.core import PackageManager, SeisHubError
 from seishub.util.text import from_uri
 from seishub.db.util import DbStorage
-from sqlalchemy.exceptions import IntegrityError #@UnresolvedImport
 from seishub.packages.interfaces import IPackage, IResourceType
-from seishub.packages.defaults import schema_tab, stylesheet_tab, alias_tab, \
-                                      packages_tab, resourcetypes_tab
 from seishub.packages.package import PackageWrapper, ResourceTypeWrapper, \
                                      Alias, Schema, Stylesheet
 
@@ -207,12 +204,12 @@ class RegistryBase(DbStorage):
         res = self.catalog.addResource(self.package_id, self.resourcetype_id, 
                                        xml_data)
         try:
-            o = self.cls(package, resourcetype, type, res.resource_id)
+            o = self.cls(package, resourcetype, type, res.document._id)
             self.store(o)
         except:
             self.catalog.deleteResource(self.package_id, 
                                         self.resourcetype_id, 
-                                        res.resource_id)
+                                        res.document._id)
             raise
         return True
     
@@ -237,8 +234,8 @@ class RegistryBase(DbStorage):
     
     def delete(self, package_id, resourcetype_id, type):
         o = self.get(package_id, resourcetype_id, type)[0]
-        self.catalog.xmldb.deleteResource(resource_id = o.resource_id)
-        self.drop(self.cls, resource_id = o.resource_id)
+        self.catalog.xmldb.deleteResource(document_id = o.document_id)
+        self.drop(self.cls, document_id = o.document_id)
         return True
     
 

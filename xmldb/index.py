@@ -5,7 +5,7 @@ from zope.interface.exceptions import DoesNotImplement
 from seishub.core import SeisHubError
 from seishub.db.util import Serializable
 from seishub.xmldb.defaults import index_def_tab
-from seishub.xmldb.interfaces import IXmlIndex, IVirtualIndex, IXmlResource
+from seishub.xmldb.interfaces import IXmlIndex, IVirtualIndex, IXmlDocument
 from seishub.xmldb.errors import XmlIndexError
 
 __all__ = ['XmlIndex', 'VirtualIndex']
@@ -81,8 +81,8 @@ class XmlIndex(IndexBase):
     # methods from IXmlIndex:
     
     def eval(self,xml_resource):
-        if not IXmlResource.providedBy(xml_resource):
-            raise DoesNotImplement(IXmlResource)
+        if not IXmlDocument.providedBy(xml_resource):
+            raise TypeError("%s is not an IXmlDocument." % str(xml_resource))
         
         xml_doc = xml_resource.getXml_doc()
         if not xml_doc:
@@ -96,7 +96,7 @@ class XmlIndex(IndexBase):
         if node_size == 0:
             return None
         
-        idx_value = xml_resource.resource_id
+        idx_value = xml_resource._id
         res = [{'key':node.getStrContent(),
                 'value':idx_value} for node in nodes]
         self._values.append(idx_value)

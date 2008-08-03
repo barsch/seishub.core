@@ -83,13 +83,13 @@ class IResourceStorage(Interface):
         """Return a list of resource informations"""
 
 
+#class IResource(Interface):
+#    uid = Attribute("unique resource id")
+#    data = Attribute("any data")
+#    info = Attribute("ResourceInformation for that resource")
+
+
 class IResource(Interface):
-    uid = Attribute("unique resource id")
-    data = Attribute("any data")
-    info = Attribute("ResourceInformation for that resource")
-
-
-class IResourceInformation(Interface):
     id = Attribute("Id of resource (Integer)")
     revision = Attribute("Revision of that resource")
     resource_id = Attribute("Unique id of related XML resource")
@@ -100,7 +100,7 @@ class IResourceInformation(Interface):
     
         
 
-class IXmlResource(Interface):
+class IXmlDocument(Interface):
     """XmlResource is a subclass of Resource providing some special xml 
     functionality such as xml validation and parsing
     """
