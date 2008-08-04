@@ -192,15 +192,32 @@ class PackageRegistry(DbStorage):
 
 
 class RegistryBase(DbStorage):
-    """base class for StylesheetRegistry, SchemaRegistry and AliasRegistry"""
+    """base class for StylesheetRegistry, SchemaRegistry and AliasRegistry
+    
+    NOTE: a registry object is unambiguously defined by either 
+    (package, resourcetype, type) or by (package, type) respectively. """
+    
     def __init__(self, registry):
         super(DbStorage, self).__init__(registry.env.db)
         self.catalog = registry.env.catalog
         self.log = registry.env.log
         self.registry = registry
+        
+    def _split_uri(self, uri):
+        resourcetype_id = None
+        type = None
+        args = uri.split('/')
+        package_id = args[1]
+        if len(args) == 3: # no resourcetype
+            type = args[2]
+        else:
+            resourcetype_id = args[2]
+            type = args[3]
+        return package_id, resourcetype_id, type
             
     def register(self, package_id, resourcetype_id, type, xml_data):
-        package, resourcetype = self.registry.objects_from_id(package_id, resourcetype_id)
+        package, resourcetype = self.registry.objects_from_id(package_id, 
+                                                              resourcetype_id)
         res = self.catalog.addResource(self.package_id, self.resourcetype_id, 
                                        xml_data)
         try:
@@ -216,26 +233,35 @@ class RegistryBase(DbStorage):
     def update(self, package_id, resourcetype_id, type, xml_data):
         pass
     
-    def get(self, package_id = None, resourcetype_id = None, 
-                  type = None, uid = None):
-        # get package and resourcetype first
-        #package, resourcetype = self.registry.objects_from_id(package_id, resourcetype_id)
+    def get(self, package_id = None, resourcetype_id = None, type = None, 
+            document_id = None, uri = None):
+        """Get objects either by (package_id, resourcetype_id, type), 
+        by document_id of related XmlDocument or by unique uri"""
+        if uri:
+            package_id, resourcetype_id, type = self._split_uri(uri)
+        null = ['resourcetype']
         keys = {'type':type,
-                'uid':uid}
+                'resourcetype':None}
+        if document_id:
+            keys['document_id'] = document_id
         if package_id:
             keys['package'] = {'package_id' : package_id}
         if resourcetype_id:
             keys['resourcetype'] = {'resourcetype_id' : resourcetype_id}
-        objs = self.pickup(self.cls, **keys)
+        objs = self.pickup(self.cls, _null = null, **keys)
         # inject catalog into objs for lazy resource retrieval
         for o in objs:
             o._catalog = self.catalog
         return objs
     
-    def delete(self, package_id, resourcetype_id, type):
-        o = self.get(package_id, resourcetype_id, type)[0]
-        self.catalog.xmldb.deleteResource(document_id = o.document_id)
-        self.drop(self.cls, document_id = o.document_id)
+    def delete(self, package_id = None, resourcetype_id = None, type = None,
+               document_id = None, uri = None):
+        o = self.get(package_id, resourcetype_id, type,
+                     uri = uri, document_id = document_id)
+        if len(o) > 1:
+            raise SeisHubError("Unexpected result set length.")
+        self.catalog.xmldb.deleteResource(document_id = o[0].document_id)
+        self.drop(self.cls, document_id = o[0].document_id)
         return True
     
 
@@ -264,16 +290,24 @@ class AliasRegistry(RegistryBase):
         if args[2].startswith('@'):
             args[2] = args[2][1:]
         return args
-        
+    
     def register(self, package_id, resourcetype_id, name, expr, limit = None,
                  order_by = None):
-        package, resourcetype = self.registry.objects_from_id(package_id, resourcetype_id)
+        package, resourcetype = self.registry.objects_from_id(package_id, 
+                                                              resourcetype_id)
         o = self.cls(package, resourcetype, name, expr)
         self.store(o)
         return True
     
     def get(self, package_id = None, resourcetype_id = None, 
-                  name = None, expr = None):
+            name = None, expr = None,
+            uri = None):
+        """Get a single alias by either (package_id, resourcetype_id, name), by 
+        expression, or by unique uri.
+        Get multiple aliases by (package_id, resourcetype_id) or by package_id.
+        """
+        if uri:
+            package_id, resourcetype_id, name = self._split_uri(uri)
         keys = {'name':name,
                 'expr':expr}
         null = ['resourcetype']
