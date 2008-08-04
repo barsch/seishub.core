@@ -139,6 +139,7 @@ class XmlDbManagerTest(SeisHubEnvironmentTestCase):
                                          revision = 1)
         self.assertEquals(result.revision, 1)
         self.assertEquals(result.document._id, testres.document._id)
+            
         # delete resource
         self.xmldbm.deleteResource(testres.package, 
                                    testres.resourcetype, 
@@ -155,8 +156,53 @@ class XmlDbManagerTest(SeisHubEnvironmentTestCase):
                                          revision = 2)
         self.assertEquals(result.revision, 2)
         self.assertEquals(result.document._id, testres_v2.document._id)
+        
+        # get version history
+        revisions = self.xmldbm.getResourceList(self.test_package, 
+                                              self.vc_resourcetype,
+                                              testres.id)
+        self.assertEqual(len(revisions), 3)
+        self.assertEqual(revisions[0].revision, 1)
+        self.assertEqual(revisions[1].revision, 2)
+        self.assertEqual(revisions[2].revision, 3)
+        
+        # delete revision 2
+        self.xmldbm.deleteResource(self.test_package, self.vc_resourcetype,
+                                   testres.id, 2)
+        revisions = self.xmldbm.getResourceList(self.test_package, 
+                                              self.vc_resourcetype,
+                                              testres.id)
+        self.assertEqual(len(revisions), 2)
+        self.assertEqual(revisions[0].revision, 1)
+        self.assertEqual(revisions[1].revision, 3)
+        
+        # revert revision 1
+        self.xmldbm.revertResource(self.test_package, self.vc_resourcetype,
+                                   testres.id, 1)
+        newest = self.xmldbm.getResource(self.test_package, 
+                                         self.vc_resourcetype,
+                                         testres.id)
+        self.assertEqual(newest.revision, 4)
+        self.assertEqual(newest.document._id, testres.document._id)
+        
+        # delete revision 3 (resource deleted marker)
+        self.xmldbm.deleteResource(self.test_package, self.vc_resourcetype,
+                                   testres.id, 3)
+        revisions = self.xmldbm.getResourceList(self.test_package, 
+                                                self.vc_resourcetype,
+                                                testres.id)
+        self.assertEqual(len(revisions), 2)
+        self.assertEqual(revisions[0].revision, 1)
+        self.assertEqual(revisions[1].revision, 4)
+        
+        # delete version history
+        self.xmldbm.deleteRevisions(self.test_package, 
+                                    self.vc_resourcetype,
+                                    testres.id)
+        self.assertRaises(GetResourceError, self.xmldbm.getResource,
+                          self.test_package, self.vc_resourcetype, testres.id)
                 
-        # XXX: remove made db entries / BuG: revision counter is not reset on new resources
+        # XXX: BuG: revision counter is not reset on new resources
 
 #    def testGetResourceList(self):
 #        # add some test resources first:

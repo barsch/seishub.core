@@ -20,33 +20,6 @@ class ResourceTypeListDesc(object):
     def __get__(self, obj, objtype):
         return ResourceTypeList(obj.getEnabledResourceTypeIds(), obj)
 
-    
-class PackageList(list):
-    def __init__(self, values, registry):
-        list.__init__(self, values)
-        self._registry = registry
-        
-    def __getitem__(self, key):
-        return self.get(key)
-        
-    def get(self, package_id):
-        return self._registry.getComponents(IPackage, package_id)[0]
-
-
-class ResourceTypeList(dict):
-    def __init__(self, values, registry):
-        dict.__init__(self, values)
-        self._registry = registry
-        
-    def get(self, package_id, resourcetype_id = None):
-        if not resourcetype_id:
-            return dict.get(self, package_id)
-        rtypes = self._registry.getComponents(IResourceType, package_id)
-        for rt in rtypes:
-            if rt.resourcetype_id == resourcetype_id:
-                return rt
-        return None
-
 
 class RegistryListDesc(object):
     """provide list style access to registry"""
@@ -227,6 +200,33 @@ class PackageRegistry(DbStorage):
         # XXX: check if any catalog entries are present
         return True
 
+    
+class PackageList(list):
+    def __init__(self, values, registry):
+        list.__init__(self, values)
+        self._registry = registry
+        
+    def __getitem__(self, key):
+        return self.get(key)
+        
+    def get(self, package_id):
+        return self._registry.getComponents(IPackage, package_id)[0]
+
+
+class ResourceTypeList(dict):
+    def __init__(self, values, registry):
+        dict.__init__(self, values)
+        self._registry = registry
+        
+    def get(self, package_id, resourcetype_id = None):
+        if not resourcetype_id:
+            return dict.get(self, package_id)
+        rtypes = self._registry.getComponents(IResourceType, package_id)
+        for rt in rtypes:
+            if rt.resourcetype_id == resourcetype_id:
+                return rt
+        return None
+    
 
 class RegistryBase(DbStorage, list):
     """base class for StylesheetRegistry, SchemaRegistry and AliasRegistry

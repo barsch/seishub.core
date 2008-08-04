@@ -257,7 +257,7 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
                 
         # pass unknown index:
         self.assertRaises(XmlIndexCatalogError, catalog.indexResource,
-                          test_res._id, value_path="blub", key_path="blah")
+                          test_res.document._id, value_path="blub", key_path="blah")
         
         # clean up:
         catalog.removeIndex(key_path=self._test_kp, value_path=self._test_vp)
