@@ -10,10 +10,16 @@ from seishub.packages.package import PackageWrapper, ResourceTypeWrapper, \
                                      Alias, Schema, Stylesheet
 
 class PackageListDesc(object):
-    # provide registry.packages with an updated package list on every access
+    """provide registry.packages with an updated list on every access"""
     def __get__(self, obj, objtype):
         return PackageList(obj.getEnabledPackageIds(), obj)
     
+
+class ResourceTypeListDesc(object):
+    """provide registry.resourcetypes with an updated list on every access"""
+    def __get__(self, obj, objtype):
+        return ResourceTypeList(obj.getEnabledResourceTypeIds(), obj)
+
     
 class PackageList(list):
     def __init__(self, values, registry):
@@ -25,17 +31,47 @@ class PackageList(list):
         
     def get(self, package_id):
         return self._registry.getComponents(IPackage, package_id)[0]
+
+
+class ResourceTypeList(dict):
+    def __init__(self, values, registry):
+        dict.__init__(self, values)
+        self._registry = registry
         
+    def get(self, package_id, resourcetype_id = None):
+        if not resourcetype_id:
+            return dict.get(self, package_id)
+        rtypes = self._registry.getComponents(IResourceType, package_id)
+        for rt in rtypes:
+            if rt.resourcetype_id == resourcetype_id:
+                return rt
+        return None
+
+
+class RegistryListDesc(object):
+    """provide list style access to registry"""
+    def __init__(self, registry):
+        self.registry = registry
+        
+    def __get__(self, obj, objtype):
+        registry = obj.__getattribute__(self.registry)
+        list.__init__(registry, registry.get())
+        return registry
+
 
 class PackageRegistry(DbStorage):  
     packages = PackageListDesc()
+    resourcetypes = ResourceTypeListDesc()
+    aliases = RegistryListDesc('_alias_reg')
+    schemas = RegistryListDesc('_schema_reg')
+    stylesheets = RegistryListDesc('_stylesheet_reg')
     
     def __init__(self, env):
         DbStorage.__init__(self, env.db)
         self.env = env
-        self.stylesheets = StylesheetRegistry(self)
-        self.schemas = SchemaRegistry(self)
-        self.aliases = AliasRegistry(self)
+        self._stylesheet_reg = StylesheetRegistry(self)
+        self._schema_reg = SchemaRegistry(self)
+        self._alias_reg = AliasRegistry(self)
         
     def getComponents(self, interface, package_id = None):
         """Returns components implementing a certain interface with given 
@@ -43,14 +79,6 @@ class PackageRegistry(DbStorage):
         components = PackageManager.getComponents(interface, package_id, 
                                                   self.env)
         return components
-    
-#    def getPackageIds(self):
-#        """Returns sorted list of all packages."""
-#        # XXX: to be removed
-#        packages = self.getComponents(IPackage)
-#        packages = [str(p.package_id) for p in packages]
-#        packages.sort()
-#        return packages
 
     def getEnabledPackageIds(self):
         """Returns sorted list of all enabled packages"""
@@ -60,6 +88,15 @@ class PackageRegistry(DbStorage):
         enabled.sort()
         return enabled
     
+    def getEnabledResourceTypeIds(self):
+        package_ids = self.getEnabledPackageIds()
+        rtypes = dict()
+        for p in package_ids:
+            all = PackageManager.getClasses(IResourceType, p)
+            rtypes[p] = [cls.resourcetype_id for cls in all\
+                         if self.env.isComponentEnabled(cls)]
+        return rtypes
+
     def getResourceTypes(self, package_id = None):
         """
         Returns sorted list of all resource types, optionally filtered by a 
@@ -71,7 +108,7 @@ class PackageRegistry(DbStorage):
             id = c.resourcetype_id
             resourcetypes[id] = c
         return resourcetypes
-    
+
     def objects_from_id(self, package_id, resourcetype_id):
         package = None
         resourcetype = None
@@ -89,7 +126,7 @@ class PackageRegistry(DbStorage):
             raise SeisHubError('Resourcetype not present in database: %s', 
                                str(package_id))
         return package, resourcetype
-    
+
     # methods for database registration of packages
     def db_registerPackage(self, package_id, version = ''):
         o = PackageWrapper(package_id, version)
@@ -191,7 +228,7 @@ class PackageRegistry(DbStorage):
         return True
 
 
-class RegistryBase(DbStorage):
+class RegistryBase(DbStorage, list):
     """base class for StylesheetRegistry, SchemaRegistry and AliasRegistry
     
     NOTE: a registry object is unambiguously defined by either 
@@ -239,12 +276,13 @@ class RegistryBase(DbStorage):
         by document_id of related XmlDocument or by unique uri"""
         if uri:
             package_id, resourcetype_id, type = self._split_uri(uri)
-        null = ['resourcetype']
         keys = {'type':type,
                 'resourcetype':None}
+        null = []
         if document_id:
             keys['document_id'] = document_id
         if package_id:
+            null = ['resourcetype']
             keys['package'] = {'package_id' : package_id}
         if resourcetype_id:
             keys['resourcetype'] = {'resourcetype_id' : resourcetype_id}

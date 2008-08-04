@@ -45,6 +45,11 @@ class PackageRegistryTest(SeisHubEnvironmentTestCase):
         packages = self.env.registry.packages
         for p in packages:
             assert self.env.registry.packages.get(p).package_id == p
+        resourcetypes = self.env.registry.resourcetypes
+        rt_ids = resourcetypes.get('seishub')
+        for id in rt_ids:
+            rt_object = resourcetypes.get('seishub', id)
+            assert rt_object.resourcetype_id == id
             
     def test_DatabaseRegistry(self):
         # regsiter a package
@@ -126,6 +131,10 @@ class PackageRegistryTest(SeisHubEnvironmentTestCase):
 #        # try to delete multiple schemas
 #        self.assertRaises(SeisHubError, self.env.registry.schemas.delete, 
 #                          uri = '/testpackage0')
+        # get all
+        schemas = self.env.registry.schemas
+        self.assertEqual(len(schemas), 2)
+        
         # delete first added schema
         self.env.registry.schemas.delete(schema[0].package.package_id,
                                          schema[0].resourcetype.resourcetype_id,
@@ -191,7 +200,7 @@ class PackageRegistryTest(SeisHubEnvironmentTestCase):
                          '/testpackage0/*/*[./name = Bogen]')
         
         # get all
-        all = self.env.registry.aliases.get()
+        all = self.env.registry.aliases
         assert len(all) >= 2
         
         # delete
