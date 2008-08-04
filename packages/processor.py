@@ -354,9 +354,11 @@ class Processor:
                                                   resourcetype_id,
                                                   document_id,
                                                   version_id)
+        # http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.4.1
         # XXX: 401 Unauthorized
         # XXX: 404 Not Found
-        # XXX: 409 Conflict -> XSD not valid - here we need additional info why
+        # XXX: 409 Conflict/415 Unsupported Media Type -> XSD not valid - here we need additional info why
+        # XXX: 410 Gone
         except Exception, e:
             self.env.log.error(e)
             raise RequestError(http.INTERNAL_SERVER_ERROR)

@@ -172,7 +172,7 @@ class AdminRequest(http.Request):
     
     def _renderError(self, data):
         """Render an error message."""
-        if not data.get('error', None) and not data.get('exception', None):
+        if not data.get('error', None):
             return
         res = resource_filename(__name__, os.path.join('templates',
                                                        'error.tmpl'))
