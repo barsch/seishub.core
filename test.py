@@ -4,15 +4,16 @@
 import unittest
 import sys, doctest, os, tempfile
 
-from twisted.internet import reactor
-
-from seishub.services.rest import RESTServiceFactory
 from seishub.env import Environment
 from seishub.config import Configuration
 
 
 class SeisHubEnvironmentTestCase(unittest.TestCase):
-    """Base class used for SeisHub test cases"""
+    """This class is a unit test incoporating a valid SeisHub environment 
+    without any service running. We generate a temporary configuration file, a
+    sqlite data base and disable logging at all. Any class inheriting from 
+    this test case may overwrite the _config method to preset additional
+    options to the test environment."""
     def __init__(self, methodName):
         unittest.TestCase.__init__(self, methodName)
         self.filename = os.path.join(tempfile.gettempdir(), 'seishub-test.ini')
@@ -36,18 +37,19 @@ class SeisHubEnvironmentTestCase(unittest.TestCase):
 
 
 def suite():
-    import seishub.tests
-    import seishub.services.tests
-    import seishub.xmldb.tests
-    import seishub.util.tests
-    import seishub.packages.tests
+    """This methods calls all test suites."""
+    from seishub.packages.tests import suite as packages_suite
+    from seishub.services.tests import suite as services_suite
+    from seishub.tests import suite as tests_suite
+    from seishub.util.tests import suite as util_suite
+    from seishub.xmldb.tests import suite as xmldb_suite
     
     suite = unittest.TestSuite()
-    suite.addTest(seishub.tests.suite())
-    suite.addTest(seishub.services.tests.suite())
-    suite.addTest(seishub.xmldb.tests.suite())
-    suite.addTest(seishub.util.tests.suite())
-    suite.addTest(seishub.packages.tests.suite())
+    suite.addTest(packages_suite())
+    suite.addTest(services_suite())
+    suite.addTest(tests_suite())
+    suite.addTest(util_suite())
+    suite.addTest(xmldb_suite())
     
     return suite
 

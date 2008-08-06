@@ -112,7 +112,6 @@ def detectXMLEncoding(filename):
     
     
     ### search xml declaration for encoding attribute
-    import re
     
     ## assume xml declaration fits into the first 2 KB (*cough*)
     fp.seek(0)
