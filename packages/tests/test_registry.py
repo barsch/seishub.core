@@ -219,7 +219,7 @@ from seishub.packages.installer import registerStylesheet, registerAlias
 
 class AResourceType(Component):
     implements(IResourceType, IPackage)
-    package_id = 'testpackage'
+    package_id = 'atestpackage'
     resourcetype_id = 'aresourcetype'
     registerStylesheet('aformat','data/weapon.xsd')
     registerAlias('analias','/resourceroot[./a/predicate/expression]',
@@ -240,7 +240,7 @@ class FromFilesystemTest(SeisHubEnvironmentTestCase):
             assert isinstance(e, AssertionError)
         
         class Bar():
-            package_id = 'testpackage'
+            package_id = 'atestpackage'
             resourcetype_id = 'aresourcetype'
             registerStylesheet('xhtml','path/to/file')
         p = os.path.join(self.env.config.path,'seishub','packages','tests',
@@ -272,14 +272,14 @@ class FromFilesystemTest(SeisHubEnvironmentTestCase):
         self.env.enableComponent(AResourceType)
         PackageInstaller.install(self.env)
         # stylesheet
-        stylesheet = self.registry.stylesheets.get('testpackage', 'aresourcetype',
+        stylesheet = self.registry.stylesheets.get('atestpackage', 'aresourcetype',
                                             'aformat')
         self.assertEqual(len(stylesheet), 1)
         p = os.path.join(self.env.config.path,'seishub','packages','tests',
                          'data','weapon.xsd')
         self.assertEqual(stylesheet[0].resource.document.data, file(p).read())
         # alias
-        alias = self.registry.aliases.get('testpackage', 'aresourcetype', 
+        alias = self.registry.aliases.get('atestpackage', 'aresourcetype', 
                                         'analias')
         self.assertEqual(len(alias), 1)
         self.assertEqual(alias[0].expr,'/resourceroot[./a/predicate/expression]')
