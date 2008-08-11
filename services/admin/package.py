@@ -13,8 +13,8 @@ class SchemasPanel(Component):
     
     def renderPanel(self, request):
         packages = self.env.registry.packages
-        resourcetypes = dict([(p, self.env.registry.getResourceTypes(p).keys())
-                              for p in packages])
+        resourcetypes = self.env.registry.resourcetypes
+        
         data  = {
             'packages': packages,
             'resourcetypes': resourcetypes,
@@ -65,8 +65,8 @@ class StylesheetsPanel(Component):
     
     def renderPanel(self, request):
         packages = self.env.registry.packages
-        resourcetypes = dict([(p, self.env.registry.getResourceTypes(p).keys())
-                              for p in packages])
+        resourcetypes = self.env.registry.resourcetypes
+        
         data  = {
             'packages': packages,
             'resourcetypes': resourcetypes,
@@ -132,8 +132,8 @@ class IndexesPanel(Component):
     
     def renderPanel(self, request):
         packages = self.env.registry.packages
-        resourcetypes = dict([(p, self.env.registry.getResourceTypes(p).keys())
-                              for p in packages])
+        resourcetypes = self.env.registry.resourcetypes
+        
         data  = {
             'indexes': [],
             'error': '',
@@ -193,16 +193,13 @@ class AliasesPanel(Component):
         return ('packages', 'Packages', 'edit-aliases', 'Aliases')
     
     def renderPanel(self, request):
-        packages = self.env.registry.packages
-        resourcetypes = dict([(p, self.env.registry.getResourceTypes(p).keys())
-                              for p in packages])
         data  = {
             'aliases': {},
             'error': '',
             'alias': '',
             'xpath': '',
-            'packages': packages,
-            'resourcetypes': resourcetypes,
+            'packages': self.env.registry.packages,
+            'resourcetypes': self.env.registry.resourcetypes,
             'resturl': self.env.getRestUrl(),
         }
         if request.method=='POST':
@@ -217,6 +214,7 @@ class AliasesPanel(Component):
             elif 'delete' in args.keys() and 'alias[]' in args.keys():
                 data['error'] = self._deleteAliases(args.get('alias[]',[]))
         # fetch all aliases
+        # XXX: ohne without .get()
         data['aliases'] = self.env.registry.aliases.get()
         return ('package_aliases.tmpl', data)
     

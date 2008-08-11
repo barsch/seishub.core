@@ -61,7 +61,7 @@ resource type. The result of an alias is a list of unique resources. </i></p>
       selectbox.options.length = 0;
       var emptylink = new Option('-', '');
       selectbox.options[0] = emptylink;
-      for (var i=0;i<resourcetypes[package_id].length;i++)
+      for (var i=0; i<resourcetypes[package_id].length; i++)
       {
         var link = resourcetypes[package_id][i];
         var addme = new Option(link, link);

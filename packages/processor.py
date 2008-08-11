@@ -7,6 +7,7 @@ from urllib import unquote
 
 from seishub.core import SeisHubError
 from seishub.util.text import isInteger
+from seishub.xmldb.errors import GetResourceError, ResourceDeletedError
 
 
 class RequestError(SeisHubError):
@@ -95,16 +96,16 @@ class Processor:
         if not isInteger(self.postpath[2]):
             raise RequestError(http.NOT_FOUND)
         
-        ### from here on we can rely on a valid document_id
-        document_id = self.postpath[2]
+        ### from here on we can rely on a valid resource_id
+        resource_id = self.postpath[2]
         # test if only resource is requested
         if len(self.postpath)==3:
-            return self._getResource(package_id, resourcetype_id, document_id)
+            return self._getResource(package_id, resourcetype_id, resource_id)
         # test if resource property
         if self.postpath[3].startswith('.'):
             return self._processResourceProperty(package_id, 
                                                  resourcetype_id,
-                                                 document_id, 
+                                                 resource_id, 
                                                  None,
                                                  self.postpath[4:])
         # test if a version controlled resource at all
@@ -115,13 +116,13 @@ class Processor:
         version_id = self.postpath[3]
         # test if only version controlled resource is requested
         if len(self.postpath)==4:
-            return self._getResource(package_id, resourcetype_id, document_id,
+            return self._getResource(package_id, resourcetype_id, resource_id,
                                      version_id)
         # test if resource property
         if self.postpath[3].startswith('.'):
             return self._processResourceProperty(package_id, 
                                                  resourcetype_id,
-                                                 document_id,
+                                                 resource_id,
                                                  version_id,
                                                  self.postpath[4:])
         raise RequestError(http.NOT_FOUND)
@@ -252,8 +253,7 @@ class Processor:
         of this package (e.g., resource types, package aliases and mappings) 
         and return them as a resource list."""
         # fetch resource types
-        resourcetypes = self.env.registry.getResourceTypes(package_id)
-        resourcetype_ids = resourcetypes.keys()
+        resourcetype_ids = self.env.registry.resourcetypes[package_id]
         resourcetype_ids.sort()
         resourcetype_ids = self._formatResourceList([package_id],
                                                     resourcetype_ids)
@@ -325,7 +325,7 @@ class Processor:
         if len(alias)>1:
             # XXX: missing yet
             raise NotImplementedError
-        # fetch alias id and remove leading @
+        # remove leading @
         alias_id = alias[0][1:]
         # fetch alias
         aliases = self.env.registry.aliases.get(package_id, resourcetype_id,
@@ -342,23 +342,28 @@ class Processor:
             return self.renderResourceList(resource=resource_ids)
     
     def _processResourceProperty(self, package_id, resourcetype_id, 
-                                 document_id, version_id, property_id):
+                                 resource_id, version_id, property_id):
         # XXX: missing yet
         raise NotImplementedError
     
-    def _getResource(self, package_id, resourcetype_id, document_id, 
+    def _getResource(self, package_id, resourcetype_id, resource_id, 
                      version_id=None):
         """Fetches the content of an existing resource."""
         try:
             result = self.env.catalog.getResource(package_id,
                                                   resourcetype_id,
-                                                  document_id,
+                                                  resource_id,
                                                   version_id)
         # http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.4.1
         # XXX: 401 Unauthorized
-        # XXX: 404 Not Found
         # XXX: 409 Conflict/415 Unsupported Media Type -> XSD not valid - here we need additional info why
         # XXX: 410 Gone
+        except GetResourceError, e:
+            self.env.log.debug(e)
+            raise RequestError(http.NOT_FOUND)
+        except ResourceDeletedError, e:
+            self.env.log.debug(e)
+            raise RequestError(http.GONE)
         except Exception, e:
             self.env.log.error(e)
             raise RequestError(http.INTERNAL_SERVER_ERROR)
@@ -366,16 +371,17 @@ class Processor:
             # return resource content
             return result.document.data
     
-    def _modifyResource(self, package_id, resourcetype_id, document_id):
+    def _modifyResource(self, package_id, resourcetype_id, resource_id):
         """Modifies the content of an existing resource."""
         try:
             self.env.catalog.modifyResource(package_id,
                                             resourcetype_id,
-                                            document_id,
+                                            resource_id,
                                             self.content.read())
         # XXX: fetch all kind of exception types and return to clients
         except Exception, e:
             self.env.log.error(e)
+            print e
             raise RequestError(http.INTERNAL_SERVER_ERROR)
     
     def _addResource(self, package_id, resourcetype_id):
@@ -390,12 +396,12 @@ class Processor:
         else:
             return res
     
-    def _deleteResource(self, package_id, resourcetype_id, document_id):
+    def _deleteResource(self, package_id, resourcetype_id, resource_id):
         """Deletes a resource."""
         try:
             self.env.catalog.deleteResource(package_id,
                                             resourcetype_id,
-                                            document_id)
+                                            resource_id)
         # XXX: fetch all kind of exception types and return to clients
         except Exception, e:
             self.env.log.error(e)

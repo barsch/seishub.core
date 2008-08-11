@@ -52,9 +52,16 @@ def to_unicode(text, charset=None):
             return unicode(text, locale.getpreferredencoding(), 'replace')
 
 
-def detectXMLEncoding(filename):
-    """Attempts to detect the character encoding of the xml file
-    given by a filename.
+def toUnicode(data):
+    """Convert XML string to unicode by detecting the encoding."""
+    encoding = detectXMLEncoding(data)
+    if encoding:
+        data = unicode(data, encoding)
+    return data
+
+
+def detectXMLEncoding(data):
+    """Attempts to detect the character encoding of the given xml string.
     
     The return value can be:
         - if detection of the BOM succeeds, the codec name of the
@@ -80,16 +87,15 @@ def detectXMLEncoding(filename):
     
     ## the BOMs we know, by their pattern
     bomDict={ # bytepattern : name              
-             (0x00, 0x00, 0xFE, 0xFF) : "utf_32_be",
-             (0xFF, 0xFE, 0x00, 0x00) : "utf_32_le",
-             (0xFE, 0xFF, None, None) : "utf_16_be",
-             (0xFF, 0xFE, None, None) : "utf_16_le",
-             (0xEF, 0xBB, 0xBF, None) : "utf_8",
+             (0x00, 0x00, 0xFE, 0xFF) : "utf-32be",
+             (0xFF, 0xFE, 0x00, 0x00) : "utf-32le",
+             (0xFE, 0xFF, None, None) : "utf-16be",
+             (0xFF, 0xFE, None, None) : "utf-16le",
+             (0xEF, 0xBB, 0xBF, None) : "utf-8",
             }
     ## go to beginning of file and get the first 4 bytes
     try:
-        fp = open(filename, 'r')
-        (byte1, byte2, byte3, byte4) = tuple(map(ord, fp.read(4)))
+        (byte1, byte2, byte3, byte4) = tuple(map(ord, data[0:4]))
     except:
         return None
     
@@ -113,10 +119,6 @@ def detectXMLEncoding(filename):
     
     ### search xml declaration for encoding attribute
     
-    ## assume xml declaration fits into the first 2 KB (*cough*)
-    fp.seek(0)
-    buffer = fp.read(2048)
-    
     ## set up regular expression
     xmlDeclPattern = r"""
     ^<\?xml             # w/o BOM, xmldecl starts with <?xml at the first byte
@@ -134,13 +136,13 @@ def detectXMLEncoding(filename):
     xmlDeclRE = re.compile(xmlDeclPattern, re.VERBOSE)
     
     ## search and extract encoding string
-    match = xmlDeclRE.search(buffer)
-    fp.close()
+    match = xmlDeclRE.search(data)
     if match :
         return match.group("encstr")
     else :
         return None
-    
+
+
 def validate_id(str):
     """ids have to be alphanumeric, start with a character"""
     id_pt = """^[a-zA-Z]    # leading character
@@ -148,7 +150,7 @@ def validate_id(str):
     """
     # XXX: not here!
     if str is None:
-        return str
+        return None
     # ecnode to bytestring first
     str = str.encode("utf-8")
     # match regex
@@ -158,12 +160,14 @@ def validate_id(str):
         raise ValueError('Invalid id: %s' % str)
     return str
 
+
 def to_uri(package_id, resourcetype_id):
     uri = '/' + package_id
     if resourcetype_id:
         uri += '/' + resourcetype_id
     return uri
-            
+
+
 def from_uri(uri):
     elements = uri.split('/')
     pid = elements[1]
@@ -174,6 +178,7 @@ def from_uri(uri):
         rid = elements[2]
         args = elements[3]
     return pid, rid, args
+
 
 def to_xpath_query(package_id, resourcetype_id, expr):
     package_id = package_id or '*'

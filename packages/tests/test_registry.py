@@ -1,8 +1,13 @@
+# -*- coding: utf-8 -*-
 import unittest
 import os
 
 from seishub.core import SeisHubError
 from seishub.test import SeisHubEnvironmentTestCase
+from seishub.core import Component, implements
+from seishub.packages.builtin import IResourceType, IPackage
+from seishub.packages.installer import registerStylesheet, registerAlias
+
 
 TEST_SCHEMA="""<?xml version="1.0"?>
 <xs:schema elementFormDefault="qualified"
@@ -24,6 +29,7 @@ TEST_SCHEMA="""<?xml version="1.0"?>
 
 </xs:schema>
 """
+
 
 class PackageRegistryTest(SeisHubEnvironmentTestCase):
     def setUp(self):
@@ -61,7 +67,7 @@ class PackageRegistryTest(SeisHubEnvironmentTestCase):
         package = self.env.registry.db_getPackages('db_registered_package')
         assert package == list()
         
-        # regsiter a resourcetype
+        # register a resourcetype
         self.env.registry.db_registerPackage('db_registered_package', '1.0')
         self.env.registry.db_registerResourceType('db_registered_package',
                                                   'db_regsitered_resourcetype',  
@@ -213,9 +219,6 @@ class PackageRegistryTest(SeisHubEnvironmentTestCase):
         alias = self.env.registry.aliases.get(package_id = 'testpackage0')
         self.assertEquals(alias, list())
 
-from seishub.core import Component, implements
-from seishub.packages.builtin import IResourceType, IPackage
-from seishub.packages.installer import registerStylesheet, registerAlias
 
 class AResourceType(Component):
     implements(IResourceType, IPackage)
@@ -224,6 +227,7 @@ class AResourceType(Component):
     registerStylesheet('aformat','data/weapon.xsd')
     registerAlias('analias','/resourceroot[./a/predicate/expression]',
                   limit = 10, order_by = {'/path/to/element':'ASC'})
+
 
 class FromFilesystemTest(SeisHubEnvironmentTestCase):
     def __init__(self, *args, **kwargs):
@@ -294,11 +298,13 @@ class FromFilesystemTest(SeisHubEnvironmentTestCase):
         self.env.disableComponent(AResourceType)
         PackageInstaller.cleanup(self.env)
 
+
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(PackageRegistryTest, 'test'))
     suite.addTest(unittest.makeSuite(FromFilesystemTest, 'test'))
     return suite
+
 
 if __name__ == '__main__':
     unittest.main(defaultTest='suite')

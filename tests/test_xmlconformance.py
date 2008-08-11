@@ -3,10 +3,12 @@
 import unittest
 import os
 import inspect
+from xml.dom import minidom
 
 from lxml import etree
 
 from seishub.test import SeisHubEnvironmentTestCase
+from seishub.util.text import detectXMLEncoding, toUnicode
 
 
 class XMLConformanceTestCase(SeisHubEnvironmentTestCase):
@@ -65,9 +67,6 @@ class XMLConformanceTestCase(SeisHubEnvironmentTestCase):
             # skip not standalone documents
             if test.get('ENTITIES') not in ['none', 'parameter']:
                 continue
-            # skip invalid documents
-            if test.get('TYPE')!='valid':
-                continue
             props = {}
             props['type'] = test.get('TYPE')
             props['entities'] = test.get('ENTITIES')
@@ -79,23 +78,54 @@ class XMLConformanceTestCase(SeisHubEnvironmentTestCase):
         test_file = os.path.join(path, testcase, filename)
         test_id = os.path.join(testcase, filename)
         
-        #check if well formed and valid
-        parser = etree.XMLParser(dtd_validation=True)
+        data = file(test_file, 'r').read()
+        
+        
+        encoding = detectXMLEncoding(data)
+        if not encoding:
+            encoding = 'utf-8'
+        
         try:
-            etree.parse(test_file, parser)
-        except etree.XMLSyntaxError, e:
+            doc = minidom.parseString(data)
+        except Exception, e:
             if props['type']!='valid':
                 return
-            #print 'INVALID:', test_id, '-', e
-            return
+            print test_file, e
+        
+        
+#        #check if well formed and valid
+#        print encoding
+#        parser = etree.XMLParser(encoding=encoding)
+#        try:
+#            etree.parse(test_file, parser)
+#            if props['type']=='valid':
+#                return
+#            print test_file, props['type']
+#        except Exception, e:
+#            #if props['type']!='valid':
+#            #    return
+#            print test_file, props['type'], e
+#        #    print 'INVALID:', test_id, '-', e
+#        #    return
         
         #test if still invalid or error doc exists at this point
-        if props['type']!='valid':
+        #if props['type']!='valid':
             #print 'VALID:', test_id, '-',
             #print 'document should not be marked valid:', props['type']
-            return
+        #    return
         
         # try to add resources
+        #try:
+        #    res = self.env.catalog.addResource('test', 'xml', toUnicode(data))
+        #    if props['type']!='valid':
+        #        print test_file, props['type']
+        #except Exception, e:
+        #    #if props['type']!='valid':
+        #    #    return
+        #    #print 'ADD RESOURCE:', test_id, '-', e, props['type']
+        #    return
+        
+        
         data = file(test_file, 'r').read()
         try:
             _ = self.env.catalog.addResource('test', 'xml', data)
