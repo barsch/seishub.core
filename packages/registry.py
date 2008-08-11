@@ -206,8 +206,8 @@ class PackageList(list):
         list.__init__(self, values)
         self._registry = registry
         
-    def __getitem__(self, key):
-        return self.get(key)
+#    def __getitem__(self, key):
+#        return self.get(key)
         
     def get(self, package_id):
         return self._registry.getComponents(IPackage, package_id)[0]
