@@ -131,7 +131,7 @@ class PackageRegistry(DbStorage):
         #                       "to other objects depending on it.") %\
         #                        (str(package_id)))
         
-    def db_registerResourceType(self, resourcetype_id, package_id, 
+    def db_registerResourceType(self, package_id, resourcetype_id,  
                                 version = '', version_control = False):
         try:
             package = self.db_getPackages(package_id)[0]

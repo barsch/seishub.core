@@ -28,7 +28,7 @@ TEST_SCHEMA="""<?xml version="1.0"?>
 class PackageRegistryTest(SeisHubEnvironmentTestCase):
     def setUp(self):
         self.env.registry.db_registerPackage('testpackage0', '1.0')
-        self.env.registry.db_registerResourceType('weapon', 'testpackage0',  
+        self.env.registry.db_registerResourceType('testpackage0', 'weapon',   
                                                   '1.0')
     def tearDown(self):
         self.env.registry.db_deleteResourceType('testpackage0', 'weapon')
@@ -63,8 +63,8 @@ class PackageRegistryTest(SeisHubEnvironmentTestCase):
         
         # regsiter a resourcetype
         self.env.registry.db_registerPackage('db_registered_package', '1.0')
-        self.env.registry.db_registerResourceType('db_regsitered_resourcetype', 
-                                                  'db_registered_package', 
+        self.env.registry.db_registerResourceType('db_registered_package',
+                                                  'db_regsitered_resourcetype',  
                                                   '1.0', True)
         restype = self.env.registry.db_getResourceTypes('db_registered_package',
                                                'db_regsitered_resourcetype')[0]

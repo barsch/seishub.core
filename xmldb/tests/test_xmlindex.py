@@ -27,8 +27,8 @@ class XmlIndexTest(SeisHubEnvironmentTestCase):
     def setUp(self):
         # register packages
         self.pkg1 = self.env.registry.db_registerPackage("testpackage")
-        self.rt1 = self.env.registry.db_registerResourceType("station", 
-                                                             "testpackage")
+        self.rt1 = self.env.registry.db_registerResourceType("testpackage",
+                                                             "station")
     
     def tearDown(self):
         # remove packages

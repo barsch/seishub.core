@@ -40,9 +40,9 @@ class XmlDbManagerTest(SeisHubEnvironmentTestCase):
     def setUp(self):
         self.test_package = self.env.registry.db_registerPackage('test')
         self.test_resourcetype = self.env.registry.db_registerResourceType(
-                                                              'testml', 'test')
+                                                              'test', 'testml')
         self.vc_resourcetype = self.env.registry.db_registerResourceType(
-                                                        'vcresource', 'test',
+                                                        'test', 'vcresource', 
                                                         version_control = True)
 
     def tearDown(self):
@@ -59,8 +59,8 @@ class XmlDbManagerTest(SeisHubEnvironmentTestCase):
         testres = Resource(self.test_package, self.test_resourcetype, 
                            document = XmlDocument(self.test_data))
         otherpackage = self.env.registry.db_registerPackage("otherpackage")
-        othertype = self.env.registry.db_registerResourceType("testml",
-                                                              "otherpackage")
+        othertype = self.env.registry.db_registerResourceType("otherpackage", 
+                                                              "testml")
         testres2 = Resource(otherpackage, othertype,
                             document = XmlDocument(self.test_data))
         self.xmldbm.addResource(testres)

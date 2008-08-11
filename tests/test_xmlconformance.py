@@ -18,7 +18,7 @@ class XMLConformanceTestCase(SeisHubEnvironmentTestCase):
         path = os.path.dirname(inspect.getsourcefile(self.__class__))
         self.test_path = os.path.join(path,'data', 'xmlconf')
         self.env.registry.db_registerPackage('test')
-        self.env.registry.db_registerResourceType('xml', 'test')
+        self.env.registry.db_registerResourceType('test', 'xml')
         
     def tearDown(self):
         # clean up again

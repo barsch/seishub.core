@@ -72,10 +72,10 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
     def setUp(self):
         # register packages
         self.pkg1 = self.env.registry.db_registerPackage(pid1)
-        self.rt1 = self.env.registry.db_registerResourceType(rid1, pid1)
-        self.rt2 = self.env.registry.db_registerResourceType(rid2, pid1)
+        self.rt1 = self.env.registry.db_registerResourceType(pid1, rid1)
+        self.rt2 = self.env.registry.db_registerResourceType(pid1, rid2)
         self.pkg2 = self.env.registry.db_registerPackage(pid2)
-        self.rt3 = self.env.registry.db_registerResourceType(rid3, pid2)
+        self.rt3 = self.env.registry.db_registerResourceType(pid2, rid3)
         
         # create a small test catalog
         self.res1 = self.env.catalog.addResource(pid1, rid1, RAW_XML1)

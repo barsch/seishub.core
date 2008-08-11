@@ -35,10 +35,10 @@ class PackageInstaller(object):
             version_control = rt.version_control
         else:
             version_control = False
-        env.registry.db_registerResourceType(rt.resourcetype_id,
-                                          rt.package_id,
-                                          version,
-                                          version_control)
+        env.registry.db_registerResourceType(rt.package_id,
+                                             rt.resourcetype_id,
+                                             version,
+                                             version_control)
         PackageInstaller._install_pre_registered(env, rt)
     
     @staticmethod

@@ -75,15 +75,15 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
 
     def setUp(self):
         self.pkg1 = self.env.registry.db_registerPackage("testpackage")
-        self.rt1 = self.env.registry.db_registerResourceType("station", 
-                                                             "testpackage")
-        self.rt2 = self.env.registry.db_registerResourceType('testml', 
-                                                             'testpackage')
-        self.rt3 = self.env.registry.db_registerResourceType('testtype', 
-                                                             'testpackage')
+        self.rt1 = self.env.registry.db_registerResourceType("testpackage",
+                                                             "station")
+        self.rt2 = self.env.registry.db_registerResourceType('testpackage',
+                                                             'testml')
+        self.rt3 = self.env.registry.db_registerResourceType('testpackage',
+                                                             'testtype')
         self.pkg2 = self.env.registry.db_registerPackage("sortordertests")
-        self.rt4 = self.env.registry.db_registerResourceType('sotest', 
-                                                             "sortordertests")
+        self.rt4 = self.env.registry.db_registerResourceType("sortordertests",
+                                                             'sotest')
 
     def tearDown(self):
         self.env.registry.db_deleteResourceType("testpackage", "station")
