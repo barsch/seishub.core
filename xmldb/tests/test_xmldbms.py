@@ -14,6 +14,12 @@ TEST_XML="""<?xml version="1.0"?>
 <blah1 id="3"><blahblah1>blahblahblah</blahblah1></blah1>
 </testml>
 """
+TEST_XML_MOD="""<?xml version="1.0"?>
+<testml>
+<blah1 id="3"><blahblah1>blahblahblah</blahblah1></blah1>
+<newblah>newblah</newblah>
+</testml>
+"""
 TEST_BAD_XML="""<?xml version="1.0"?>
 <testml>
 <blah1 id="3"></blah1><blahblah1>blahblahblah<foo></blahblah1></foo></blah1>
@@ -36,6 +42,10 @@ class XmlDbManagerTest(SeisHubEnvironmentTestCase):
         # set up test env:
         self.xmldbm = XmlDbManager(self.db)
         self.test_data = TEST_XML
+        self.test_data_mod = TEST_XML_MOD
+        
+#    def _config(self):
+#        self.config.set('db', 'verbose', True)
         
     def setUp(self):
         self.test_package = self.env.registry.db_registerPackage('test')
@@ -74,6 +84,20 @@ class XmlDbManagerTest(SeisHubEnvironmentTestCase):
         self.assertEquals(result.resourcetype.resourcetype_id, 
                           self.test_resourcetype.resourcetype_id)
         self.assertEquals(result.resourcetype.version_control, False)
+        # modify resource
+        modres = Resource(result.package, result.resourcetype, result.id,
+                          document = XmlDocument(self.test_data_mod))
+        self.xmldbm.modifyResource(modres)
+        result = self.xmldbm.getResource(testres.package, 
+                                         testres.resourcetype, 
+                                         testres.id)
+        self.assertEquals(result.document.data, self.test_data_mod)
+        self.assertEquals(result.package.package_id, 
+                          self.test_package.package_id)
+        self.assertEquals(result.resourcetype.resourcetype_id, 
+                          self.test_resourcetype.resourcetype_id)
+        self.assertEquals(result.resourcetype.version_control, False)
+        # delete resource
         self.xmldbm.deleteResource(testres.package, 
                                    testres.resourcetype, 
                                    testres.id)
@@ -120,11 +144,11 @@ class XmlDbManagerTest(SeisHubEnvironmentTestCase):
                           self.vc_resourcetype.resourcetype_id)
         self.assertEquals(result.resourcetype.version_control, True)
         self.assertEquals(result.revision, 1)
-        # add a new resource with same id
+        # modify resource /  a new resource with same id
         testres_v2 = Resource(self.test_package, self.vc_resourcetype, 
                               document = XmlDocument(self.test_data), 
                               id = result.id)
-        self.xmldbm.addResource(testres_v2)
+        self.xmldbm.modifyResource(testres_v2)
         # get latest revision
         result = self.xmldbm.getResource(testres.package, 
                                          testres.resourcetype, 
@@ -159,8 +183,8 @@ class XmlDbManagerTest(SeisHubEnvironmentTestCase):
         
         # get version history
         revisions = self.xmldbm.getResourceList(self.test_package, 
-                                              self.vc_resourcetype,
-                                              testres.id)
+                                                self.vc_resourcetype,
+                                                testres.id)
         self.assertEqual(len(revisions), 3)
         self.assertEqual(revisions[0].revision, 1)
         self.assertEqual(revisions[1].revision, 2)
