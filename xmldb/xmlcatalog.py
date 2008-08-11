@@ -39,11 +39,16 @@ class XmlCatalog(object):
                                    objects_from_id(package_id, resourcetype_id)
         return self.xmldb.deleteResource(package, resourcetype, id, revision)
     
+    def deleteAllResources(self, package_id, resourcetype_id):
+        package, resourcetype = self.env.registry.\
+                                   objects_from_id(package_id, resourcetype_id)
+        return self.xmldb.deleteResources(package, resourcetype)
+    
     def deleteRevisions(self, package_id, resourcetype_id, id):
         """@see: L{seishub.xmldb.interfaces.IXmlCatalog}"""
         package, resourcetype = self.env.registry.\
                                    objects_from_id(package_id, resourcetype_id)
-        return self.xmldb.deleteRevisions(package, resourcetype, id)
+        return self.xmldb.deleteResources(package, resourcetype, id)
     
     def getResource(self, package_id, resourcetype_id, id, revision = None):
         """@see: L{seishub.xmldb.interfaces.IXmlCatalog}"""

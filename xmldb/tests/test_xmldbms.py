@@ -196,7 +196,7 @@ class XmlDbManagerTest(SeisHubEnvironmentTestCase):
         self.assertEqual(revisions[1].revision, 4)
         
         # delete version history
-        self.xmldbm.deleteRevisions(self.test_package, 
+        self.xmldbm.deleteResources(self.test_package, 
                                     self.vc_resourcetype,
                                     testres.id)
         self.assertRaises(GetResourceError, self.xmldbm.getResource,

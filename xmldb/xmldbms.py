@@ -100,7 +100,6 @@ class XmlDbManager(DbStorage):
             raise DeleteResourceError("Error deleting resource."+\
                                       " '%s/%s/%s/%s'", e)
 
-    
     def deleteResource(self, package = None, resourcetype = None, id = None,
                        revision = None, document_id = None):
         """Remove a resource from the storage, by either (package_id, 
@@ -109,8 +108,9 @@ class XmlDbManager(DbStorage):
         Note: if (package, resourcetype, id) is given and resource
         is version controlled, a new, empty revision will be added instead of
         deleting the resource, to delete all revisions of a resource use
-        deleteRevisions() instead.
+        deleteResources() instead.
         """
+        # XXX: get resource really needed in any case?
         if not ((package and resourcetype and id) or document_id):
             raise TypeError("deleteResource(): Invalid number of arguments.")
         if document_id:
@@ -132,8 +132,9 @@ class XmlDbManager(DbStorage):
                                           " resource. '%s/%s/%s/%s'", e)
         return True
     
-    def deleteRevisions(self, package, resourcetype, id):
-        """delete all revisions of the specified resource"""
+    def deleteResources(self, package, resourcetype, id = None):
+        """delete all resources of specified package and resourcetype,
+        or delete, if id is given, all revisions of the specified resource"""
         resources = self.getResourceList(package, resourcetype, id)
         self.drop(Resource, 
                   package = package,
