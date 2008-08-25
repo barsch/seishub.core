@@ -22,7 +22,8 @@ class Processor:
         self.env = env
         # fetch all package ids in alphabetical order
         self.package_ids = self.env.registry.packages
-        self.package_ids.sort()
+        # fetch all mapping URLs
+        self.mapping_urls = self.env.registry.mappers
         # response code and header for a request
         self.response_code = http.OK
         self.response_header = {}
@@ -56,8 +57,11 @@ class Processor:
         if self.postpath[0].startswith('.'):
             return self._processRootProperty(self.postpath[0:])
         
-        # test if any mapping fits - this covers all mapping GET request!
-        # XXX: missing yet
+        # test if root mapping
+        if self.path in self.mapping_urls:
+            # XXX: Error handling
+            mapper = self.env.registry.mappers.get(method="GET", url=self.path)
+            return mapper[0].processGET(self)
         
         # test if package at all
         if self.postpath[0] not in self.package_ids:
@@ -237,11 +241,21 @@ class Processor:
     
     def _processRoot(self):
         """The root element can be only accessed via the GET method and shows 
-        only a list of all available packages and properties."""
+        only a list of all available packages, root mappings and properties."""
         package_ids = self._formatResourceList([], self.package_ids)
+        # get all root mappings
+        
+        def notPackageMapping(item):
+            parts = item.split('/')
+            if parts[1] in self.package_ids:
+                return False
+            return True
+        
+        mapping_urls = filter(notPackageMapping, self.mapping_urls)
         # XXX: missing yet
         property_ids = []
         return self.renderResourceList(package=package_ids, 
+                                       mapping=mapping_urls,
                                        property=property_ids)
     
     def _processRootProperty(self, property_id=[]):

@@ -7,19 +7,25 @@
 <form method="post" name="plugins">
   <dl class="accordion">
     #for $plugin in $sorted_plugins
-    <dt>$plugin</dt>
+    <dt>
+      <div class="check">
+        <input type="checkbox" name="" value="" />
+      </div>
+      <b>$plugin</b><br />
+      <i></i>
+    </dt>
     <dd class="close">
       #for $p in $plugins.get($plugin)
       <div class="check">
-      <input type="hidden" name="plugin" value="$p.classname" />
-      <input type="checkbox"
-            #if $p.required
-                 disabled="disabled" 
-            #end if 
-            #if $p.enabled
-                 checked="checked" 
-            #end if 
-                 name="enabled" value="$p.classname" />
+        <input type="hidden" name="plugin" value="$p.classname" />
+        <input type="checkbox"
+          #if $p.required
+               disabled="disabled" 
+          #end if 
+          #if $p.enabled
+               checked="checked" 
+          #end if 
+               name="enabled" value="$p.classname" />
       </div>
       <div>
         <b>$p.classname</b><br />
