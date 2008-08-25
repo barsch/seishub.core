@@ -127,9 +127,7 @@ class ComponentMeta(type):
 
 
 class PackageManager(object):
-    """package manager
-    
-    Takes care of package registration."""
+    """Takes care of package registration."""
     
     # from seishub.packages.interfaces import IPackage
     
@@ -157,7 +155,7 @@ class PackageManager(object):
     def getComponents(interface, package_id, component):
         """get objects providing interface within specified package,
         if package_id is None, this is the same as a call to 
-        seishub.core.ExtensionPoint(interface).etensions(component)
+        seishub.core.ExtensionPoint(interface).extensions(component)
         """
         classes = PackageManager.getClasses(interface, package_id)
         # get, activate and return objects 
@@ -189,7 +187,11 @@ class Component(object):
             return self
         
         # The normal case where the component is not also the component manager
-        compmgr = args[0]
+        try:
+            compmgr = args[0]
+        except IndexError:
+            raise TypeError("Component takes a component manager instance " +\
+                            "as first argument.")
         self = compmgr.components.get(cls)
         if self is None:
             self = super(Component, cls).__new__(cls)

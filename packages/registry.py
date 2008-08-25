@@ -6,6 +6,7 @@ from seishub.core import PackageManager, SeisHubError
 from seishub.util.text import from_uri
 from seishub.db.util import DbStorage
 from seishub.packages.interfaces import IPackage, IResourceType
+from seishub.packages.mapper import MapperRegistry
 from seishub.packages.package import PackageWrapper, ResourceTypeWrapper, \
                                      Alias, Schema, Stylesheet
 
@@ -38,6 +39,7 @@ class PackageRegistry(DbStorage):
     aliases = RegistryListDesc('_alias_reg')
     schemas = RegistryListDesc('_schema_reg')
     stylesheets = RegistryListDesc('_stylesheet_reg')
+    mappers = RegistryListDesc('_mapper_reg')
     
     def __init__(self, env):
         DbStorage.__init__(self, env.db)
@@ -45,6 +47,7 @@ class PackageRegistry(DbStorage):
         self._stylesheet_reg = StylesheetRegistry(self)
         self._schema_reg = SchemaRegistry(self)
         self._alias_reg = AliasRegistry(self)
+        self._mapper_reg = MapperRegistry(self.env)
         
     def getComponents(self, interface, package_id = None):
         """Returns components implementing a certain interface with given 
@@ -99,6 +102,7 @@ class PackageRegistry(DbStorage):
             raise SeisHubError('Resourcetype not present in database: %s', 
                                str(package_id))
         return package, resourcetype
+
 
     # methods for database registration of packages
     def db_registerPackage(self, package_id, version = ''):
@@ -371,4 +375,4 @@ class AliasRegistry(RegistryBase):
                   name = name,
                   _null = null)
         return True
-        
+

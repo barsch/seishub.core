@@ -7,6 +7,7 @@ from seishub.test import SeisHubEnvironmentTestCase
 from seishub.core import Component, implements
 from seishub.packages.builtin import IResourceType, IPackage
 from seishub.packages.installer import registerStylesheet, registerAlias
+from seishub.packages.interfaces import IGETMapper, IPUTMapper
 
 
 TEST_SCHEMA="""<?xml version="1.0"?>
@@ -227,11 +228,27 @@ class AResourceType(Component):
     registerStylesheet('aformat','data/weapon.xsd')
     registerAlias('analias','/resourceroot[./a/predicate/expression]',
                   limit = 10, order_by = {'/path/to/element':'ASC'})
+    
 
+class TestMapper(Component):
+    implements(IGETMapper, IPUTMapper)
+    
+    mapping_url = '/testmapping'
+    
+    def processGET(self, request):
+        pass
 
 class FromFilesystemTest(SeisHubEnvironmentTestCase):
     def __init__(self, *args, **kwargs):
         SeisHubEnvironmentTestCase.__init__(self, *args, **kwargs)
+        
+    def testMapperRegistry(self):
+        all = self.env.registry.mappers
+        assert '/testmapping' in all
+        mapper = self.env.registry.mappers.get('/testmapping', 'GET')
+        assert TestMapper(self.env) is mapper[0]
+        methods = self.env.registry.mappers.getMethods('/testmapping')
+        self.assertEqual(methods, ['PUT', 'GET'])
         
     def testRegisterStylesheet(self):
         # note: schema registry uses the same functionality and is therefore
@@ -297,6 +314,8 @@ class FromFilesystemTest(SeisHubEnvironmentTestCase):
                                          stylesheet[0].type)
         self.env.disableComponent(AResourceType)
         PackageInstaller.cleanup(self.env)
+        
+    
 
 
 def suite():
