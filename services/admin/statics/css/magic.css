@@ -241,14 +241,6 @@ div.field {
 }
 
 /* Accordion */
-.accordion dt {
-    color: #BBB !important;
-}
-
-.accordion dt.selected {
-    color: black !important;
-}
-
 .accordion dt:hover, .accordion dt.over {
     color: #0066cc !important;
 }

@@ -7,6 +7,7 @@ CRLF = '\r\n'
 
 
 def isInteger(source):
+    """Tests if the given string is an integer."""
     try:
         stripped = str(int(source))
     except:
@@ -14,6 +15,18 @@ def isInteger(source):
     if source == stripped:
         return True
     return False
+
+
+def getFirstSentence(text, maxlen=255):
+    """Returns the text left of the first occurring dot and reduces the final 
+    text to maxlen chars."""
+    if not text:
+        return ""
+    if "." not in text:
+        return text[0:maxlen]
+    text = text.split(".")
+    text = text[0] + '.'
+    return text[0:maxlen]
 
 
 def to_unicode(text, charset=None):

@@ -116,9 +116,8 @@ class PackageBrowserPanel(Component):
         return ('packages', 'Packages', 'browse-packages', 'Browse Packages')
     
     def renderPanel(self, request):
-        packages = self.env.registry.packages
         data = {}
-        data['packages'] = packages
+        data['packages'] = self.env.registry.packages
         data['resturl'] = self.env.getRestUrl()
         return ('package_browser.tmpl', data)
 

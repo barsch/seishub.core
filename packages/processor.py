@@ -21,9 +21,9 @@ class Processor:
     def __init__(self, env):
         self.env = env
         # fetch all package ids in alphabetical order
-        self.package_ids = self.env.registry.packages
+        self.package_ids = list(self.env.registry.packages)
         # fetch all mapping URLs
-        self.mapping_urls = self.env.registry.mappers
+        self.mapping_urls = dict(self.env.registry.mappers)
         # response code and header for a request
         self.response_code = http.OK
         self.response_header = {}
@@ -57,11 +57,9 @@ class Processor:
         if self.postpath[0].startswith('.'):
             return self._processRootProperty(self.postpath[0:])
         
-        # test if root mapping
-        if self.path in self.mapping_urls:
-            # XXX: Error handling
-            mapper = self.env.registry.mappers.get(method="GET", url=self.path)
-            return mapper[0].processGET(self)
+        # test if it fits to a valid mapping
+        if self.method in self.mapping_urls.get(self.path, []):
+            return self._processMapping()
         
         # test if package at all
         if self.postpath[0] not in self.package_ids:
@@ -153,7 +151,8 @@ class Processor:
         Adding documents can be done directly on an existing resource type or 
         via user defined mapping."""
         # test if it fits to a valid mapping
-        # XXX: missing yet
+        if self.method in self.mapping_urls.get(self.path, []):
+            return self._processMapping()
         # test if the request was called in a resource type directory 
         if len(self.postpath)==2:
             if self._checkResourceType(self.postpath[0], self.postpath[1]):
@@ -183,7 +182,8 @@ class Processor:
         Modifying a document always needs a valid path to a resource or uses a 
         user defined mapping."""
         # test if it fits to a valid mapping
-        # XXX: missing yet
+        if self.method in self.mapping_urls.get(self.path, []):
+            return self._processMapping()
         # test if the request was called on a resource 
         if len(self.postpath)==3 and isInteger(self.postpath[2]):
             if self._checkResourceType(self.postpath[0], self.postpath[1]):
@@ -211,7 +211,8 @@ class Processor:
         Deleting a document always needs a valid path to a resource or may use 
         a user defined mapping."""
         # test if it fits to a valid mapping
-        # XXX: missing yet
+        if self.method in self.mapping_urls.get(self.path, []):
+            return self._processMapping()
         # test if the request was called on a resource 
         if len(self.postpath)==3 and isInteger(self.postpath[2]):
             if self._checkResourceType(self.postpath[0], self.postpath[1]):
@@ -243,19 +244,17 @@ class Processor:
         """The root element can be only accessed via the GET method and shows 
         only a list of all available packages, root mappings and properties."""
         package_ids = self._formatResourceList([], self.package_ids)
-        # get all root mappings
-        
+        # get all root mappings not starting with a package name
         def notPackageMapping(item):
             parts = item.split('/')
             if parts[1] in self.package_ids:
                 return False
             return True
-        
-        mapping_urls = filter(notPackageMapping, self.mapping_urls)
+        mapping_ids = filter(notPackageMapping, self.mapping_urls.keys())
         # XXX: missing yet
         property_ids = []
         return self.renderResourceList(package=package_ids, 
-                                       mapping=mapping_urls,
+                                       mapping=mapping_ids,
                                        property=property_ids)
     
     def _processRootProperty(self, property_id=[]):
@@ -275,10 +274,15 @@ class Processor:
         aliases = self.env.registry.aliases.get(package_id)
         alias_ids = [str(alias) for alias in aliases]
         alias_ids.sort()
-        # fetch valid mappings
-        # XXX: missing yet!
+        # fetch all mappings in this package, not being a resource type
         mapping_ids = []
-        mapping_ids.sort()
+        for url in self.mapping_urls.keys():
+            if not url.startswith('/' + package_id):
+                continue
+            parts = url.split('/')
+            if parts[2] in self.env.registry.resourcetypes[package_id]:
+                continue
+            mapping_ids.append(url)
         # special properties
         # XXX: missing yet
         property_ids = []
@@ -300,10 +304,10 @@ class Processor:
         aliases = self.env.registry.aliases.get(package_id, resourcetype_id)
         alias_ids = [str(alias) for alias in aliases]
         alias_ids.sort()
-        # fetch resource type mappings 
-        # XXX: missing
-        mapping_ids = []
-        mapping_ids.sort()
+        # fetch all mappings in this package and resource type
+        mapping_ids = [url for url in self.mapping_urls.keys() 
+                       if url.startswith('/' + package_id + '/' + \
+                                         resourcetype_id)]
         # fetch indexes
         indexes = self.env.catalog.listIndexes(package_id, resourcetype_id)
         index_ids = [str(i) for i in indexes]
@@ -330,8 +334,19 @@ class Processor:
             raise RequestError(http.NOT_FOUND)
     
     def _processMapping(self):
-        # XXX: missing yet
-        raise NotImplementedError
+        mapper = self.env.registry.mappers.get(method=self.method, 
+                                               url=self.path)
+        if not mapper or len(mapper)<1:
+            raise RequestError(http.NOT_IMPLEMENTED)
+        #only use first found object, but warn if multiple implementations
+        if len(mapper)>1:
+            self.log.error('Multiple %s mappings found for %s' % 
+                           (self.method, self.path))
+        func = getattr(mapper[0], 'process'+self.method)
+        if not func:
+            raise RequestError(http.NOT_IMPLEMENTED)
+        #XXX: error handling missing yet
+        return func(self)
     
     def _processAlias(self, package_id, resourcetype_id, alias):
         """Generates a list of resources from an alias query."""
@@ -362,23 +377,28 @@ class Processor:
     
     def _getResource(self, package_id, resourcetype_id, resource_id, 
                      version_id=None):
-        """Fetches the content of an existing resource."""
+        """Fetches the content of an existing resource.
+        
+        @see: http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.4.1
+        for all possible error codes.
+        """
         try:
             result = self.env.catalog.getResource(package_id,
                                                   resourcetype_id,
                                                   resource_id,
                                                   version_id)
-        # http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.4.1
         # XXX: 401 Unauthorized
         # XXX: 409 Conflict/415 Unsupported Media Type -> XSD not valid - here we need additional info why
-        # XXX: 410 Gone
         except GetResourceError, e:
+            # 404 Not Found
             self.env.log.debug(e)
             raise RequestError(http.NOT_FOUND)
         except ResourceDeletedError, e:
+            # 410 Gone
             self.env.log.debug(e)
             raise RequestError(http.GONE)
         except Exception, e:
+            # 500 Internal Server Error
             self.env.log.error(e)
             raise RequestError(http.INTERNAL_SERVER_ERROR)
         else:

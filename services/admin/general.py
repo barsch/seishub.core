@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+"""
+General configuration panels for the web-based administration service.
+"""
 
 import inspect
 import sys
@@ -10,6 +13,7 @@ from twisted.application import service
 from seishub.core import Component, implements
 from seishub.services.admin.interfaces import IAdminPanel
 from seishub.defaults import DEFAULT_COMPONENTS
+from seishub.util.text import getFirstSentence
 
 
 class BasicPanel(Component):
@@ -146,19 +150,20 @@ class PluginsPanel(Component):
         from seishub.core import ComponentMeta
         for component in ComponentMeta._components:
             module = sys.modules[component.__module__]
-            description = inspect.getdoc(component)
-            
-            classname = module.__name__+'.'+component.__name__
+            description = getFirstSentence(inspect.getdoc(module))
+            classname = module.__name__ + '.' + component.__name__
             plugin = {
               'name': component.__name__, 
               'module': module.__name__,
               'file': module.__file__,
               'classname': classname,
-              'description': description,
+              'description': getFirstSentence(inspect.getdoc(component)),
               'enabled': self.env.isComponentEnabled(component),
               'required': classname in DEFAULT_COMPONENTS,
             }
-            plugins.setdefault(module.__name__,[]).append(plugin)
+            plugins.setdefault(module.__name__,{})
+            plugins[module.__name__].setdefault('plugins',[]).append(plugin)
+            plugins[module.__name__]['description'] = description
         sorted_plugins = plugins.keys()
         sorted_plugins.sort()
         data = {

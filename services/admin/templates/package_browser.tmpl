@@ -29,8 +29,8 @@
     function loadNodeData(node, fnLoadComplete) {
       var nodeTitle = encodeURI(node.title);
       var sUrl = "/rest/" + nodeTitle;
-      var elements = ['resourcetype', 'property', 'alias', 'mapper', 
-                      'resource','index'];
+      var elements = ['package', 'resourcetype', 'property', 'alias', 
+                      'mapping', 'resource', 'index'];
       
       //prepare our callback object
       var callback = {
@@ -42,17 +42,23 @@
               var items = data[element];
               for each (var item in items) {
                 var text = item.substr(item.lastIndexOf('/')+1);
-                if (element=='resource') {
+                if (element=='resource' || element=='alias') {
                   var tmp = new YAHOO.widget.TextNode(text, node, false);
                   tmp.href = "$resturl" + item;
                   tmp.title = item;
                   tmp.isLeaf = 1;
-                  tmp.labelStyle = "icon icon-resource";
+                  tmp.labelStyle = "icon icon-"+element;
                 } else if (element=='index') {
                   var tmp = new YAHOO.widget.HTMLNode('<span class="htmlnodelabel">'+item+'</span>', node, false, true);
                   tmp.isLeaf = 1;
                   tmp.title = item;
                   tmp.contentStyle = "icon icon-index";
+                } else if (element=='mapping') {
+                  var tmp = new YAHOO.widget.TextNode(item, node, false);
+                  tmp.href = "$resturl" + item;
+                  tmp.title = item;
+                  tmp.isLeaf = 1;
+                  tmp.labelStyle = "icon icon-"+element;
                 } else {
                   var tmp = new YAHOO.widget.TextNode(text, node, false);
                   tmp.href = "$resturl" + item;
@@ -80,14 +86,12 @@
       tree = new YAHOO.widget.TreeView("treediv");
       tree.setDynamicLoad(loadNodeData, 1);
       var root = tree.getRoot();
-      
-      // cycle trough all packages
-      #for $p in $packages
-      var tmp = new YAHOO.widget.TextNode("$p", root, false);
+      // root node
+      var tmp = new YAHOO.widget.TextNode("/", root, true);
       tmp.labelStyle = "icon icon-package";
-      tmp.href = "$resturl/$p";
-      tmp.title = "/$p";
-      #end for
+      tmp.href = "$resturl";
+      tmp.title = "/";
+      
       tree.draw();
     }
     YAHOO.util.Event.onDOMReady(treeInit);

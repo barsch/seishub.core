@@ -19,7 +19,7 @@
 .accordion dd {
     display: none;
     padding: 4px;
-    margin-left: 10px;
+    margin-left: 30px;
     overflow: hidden;
 }
 
@@ -33,5 +33,5 @@
 
 .check {
     float: left;
-    margin-right: 10px;;
+    margin-right: 10px;
 }

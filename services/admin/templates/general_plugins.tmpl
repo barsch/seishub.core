@@ -8,29 +8,23 @@
   <dl class="accordion">
     #for $plugin in $sorted_plugins
     <dt>
-      <div class="check">
-        <input type="checkbox" name="" value="" />
-      </div>
+      <input class="check" type="checkbox" name="" value="" />
       <b>$plugin</b><br />
-      <i></i>
+      <i>$plugins.get($plugin).get('description')</i><br />
     </dt>
     <dd class="close">
-      #for $p in $plugins.get($plugin)
-      <div class="check">
-        <input type="hidden" name="plugin" value="$p.classname" />
-        <input type="checkbox"
-          #if $p.required
-               disabled="disabled" 
-          #end if 
-          #if $p.enabled
-               checked="checked" 
-          #end if 
-               name="enabled" value="$p.classname" />
-      </div>
-      <div>
-        <b>$p.classname</b><br />
-        <i>$p.description</i><br />
-      </div>
+      #for $p in $plugins.get($plugin).get('plugins')
+      <input type="hidden" name="plugin" value="$p.classname" />
+      <input class="check" type="checkbox"
+        #if $p.required
+             disabled="disabled" 
+        #end if 
+        #if $p.enabled
+             checked="checked" 
+        #end if 
+             name="enabled" value="$p.classname" />
+      <b>$p.classname</b><br />
+      <i>$p.description </i><br />
       #end for
     </dd>
     #end for

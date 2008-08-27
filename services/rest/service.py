@@ -9,6 +9,7 @@ from seishub import __version__ as SEISHUB_VERSION
 from seishub.config import IntOption, BoolOption
 from seishub.packages.processor import Processor, RequestError
 from seishub.util.http import parseAccept, validMediaType
+from seishub.util.path import absPath
 
 
 class RESTRequest(Processor, http.Request):
@@ -86,7 +87,7 @@ class RESTRequest(Processor, http.Request):
         for tag in ['package', 'resourcetype', 'property', 'alias', 'mapping',
                     'resource']:
             for uri in kwargs.get(tag,[]):
-                content = uri.split('/')[-1]
+                content = absPath(uri[len(self.path):])[1:]
                 doc += tmpl % (tag, uri, content, tag)
         result = str(root % (self.env.getRestUrl(), doc))
         # set header
