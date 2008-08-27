@@ -1,45 +1,22 @@
 # -*- coding: utf-8 -*-
-import sys
-import os
-
 from seishub.core import PackageManager, SeisHubError
 from seishub.util.text import from_uri
 from seishub.db.util import DbStorage
-from seishub.packages.interfaces import IPackage, IResourceType
-from seishub.packages.mapper import MapperRegistry
+from seishub.packages.interfaces import IPackage, IResourceType, \
+                                        IGETMapper, IPUTMapper, IPOSTMapper, \
+                                        IDELETEMapper
 from seishub.packages.package import PackageWrapper, ResourceTypeWrapper, \
                                      Alias, Schema, Stylesheet
-
-class PackageListDesc(object):
-    """provide registry.packages with an updated list on every access"""
-    def __get__(self, obj, objtype):
-        return PackageList(obj.getEnabledPackageIds(), obj)
-    
-
-class ResourceTypeListDesc(object):
-    """provide registry.resourcetypes with an updated list on every access"""
-    def __get__(self, obj, objtype):
-        return ResourceTypeList(obj.getEnabledResourceTypeIds(), obj)
-
-
-class RegistryListDesc(object):
-    """provide list style access to registry"""
-    def __init__(self, registry):
-        self.registry = registry
-        
-    def __get__(self, obj, objtype):
-        registry = obj.__getattribute__(self.registry)
-        list.__init__(registry, registry.get())
-        return registry
-
+from seishub.packages.util import PackageListProxy, RegistryDictProxy, \
+                                  RegistryListProxy, ResourceTypeListProxy
 
 class PackageRegistry(DbStorage):  
-    packages = PackageListDesc()
-    resourcetypes = ResourceTypeListDesc()
-    aliases = RegistryListDesc('_alias_reg')
-    schemas = RegistryListDesc('_schema_reg')
-    stylesheets = RegistryListDesc('_stylesheet_reg')
-    mappers = RegistryListDesc('_mapper_reg')
+    packages = PackageListProxy()
+    resourcetypes = ResourceTypeListProxy()
+    aliases = RegistryListProxy('_alias_reg')
+    schemas = RegistryListProxy('_schema_reg')
+    stylesheets = RegistryListProxy('_stylesheet_reg')
+    mappers = RegistryDictProxy('_mapper_reg')
     
     def __init__(self, env):
         DbStorage.__init__(self, env.db)
@@ -203,33 +180,6 @@ class PackageRegistry(DbStorage):
         # XXX: check if schemas/stylesheets or aliases are present:
         # XXX: check if any catalog entries are present
         return True
-
-    
-class PackageList(list):
-    def __init__(self, values, registry):
-        list.__init__(self, values)
-        self._registry = registry
-        
-#    def __getitem__(self, key):
-#        return self.get(key)
-        
-    def get(self, package_id):
-        return self._registry.getComponents(IPackage, package_id)[0]
-
-
-class ResourceTypeList(dict):
-    def __init__(self, values, registry):
-        dict.__init__(self, values)
-        self._registry = registry
-        
-    def get(self, package_id, resourcetype_id = None):
-        if not resourcetype_id:
-            return dict.get(self, package_id)
-        rtypes = self._registry.getComponents(IResourceType, package_id)
-        for rt in rtypes:
-            if rt.resourcetype_id == resourcetype_id:
-                return rt
-        return None
     
 
 class RegistryBase(DbStorage, list):
@@ -376,3 +326,52 @@ class AliasRegistry(RegistryBase):
                   _null = null)
         return True
 
+
+class MapperRegistry(dict):
+    """
+    mappers                     list of urls
+    mappers.get(url, method)    get mapper object
+    """
+    
+    methods = {'GET':IGETMapper,
+               'PUT':IPUTMapper,
+               'POST':IPOSTMapper,
+               'DELETE':IDELETEMapper}
+    
+    def __init__(self, env):
+        self.env = env
+        
+    def _getMapper(self, interface, url):
+        all = PackageManager.getClasses(interface)
+        mapper = [m for m in all if m.mapping_url == url]
+        return mapper
+    
+    def getMethods(self, url):
+        """return list of methods provided by given mapping"""
+        methods = list()
+        for method, interface in self.methods.iteritems():
+            if self._getMapper(interface, url):
+                methods.append(method)
+        return methods
+                
+    def get(self, url = None, method = None):
+        if not (url and method):
+            return self.getMappings()
+        interface = self.methods[method.upper()]
+        mapper = self._getMapper(interface, url)
+        objs = [m(self.env) for m in mapper]
+        return objs
+    
+    def getMappings(self):
+        """return a dict of all known mappings of the form 
+        {uri : [allowed methods]}
+        """
+        mappings = dict()
+        for method, interface in self.methods.iteritems():
+            mapper_classes = PackageManager.getClasses(interface)
+            for cls in mapper_classes:
+                if cls.mapping_url in mappings:
+                    mappings[cls.mapping_url].append(method)
+                else:
+                    mappings[cls.mapping_url] = [method]
+        return mappings

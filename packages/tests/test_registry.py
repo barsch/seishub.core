@@ -237,6 +237,9 @@ class TestMapper(Component):
     
     def processGET(self, request):
         pass
+    
+    def processPUT(self, request):
+        pass
 
 class FromFilesystemTest(SeisHubEnvironmentTestCase):
     def __init__(self, *args, **kwargs):
@@ -245,6 +248,7 @@ class FromFilesystemTest(SeisHubEnvironmentTestCase):
     def testMapperRegistry(self):
         all = self.env.registry.mappers
         assert '/testmapping' in all
+        self.assertEqual(all['/testmapping'], ['PUT', 'GET'])
         mapper = self.env.registry.mappers.get('/testmapping', 'GET')
         assert TestMapper(self.env) is mapper[0]
         methods = self.env.registry.mappers.getMethods('/testmapping')
@@ -253,6 +257,7 @@ class FromFilesystemTest(SeisHubEnvironmentTestCase):
     def testRegisterStylesheet(self):
         # note: schema registry uses the same functionality and is therefore
         # not tested seperately
+        
         # invalid class (no package id/resourcetype id)
         try:
             class Foo():
