@@ -229,12 +229,12 @@ class XmlIndexCatalog(DbStorage):
         else:
             # value path only: => resource type query
             value_col = resource_tab.c.resource_id
-            q = select([value_col], 
-                       and_( 
-                           resource_tab.c.package_id == query.package_id,
-                           resource_tab.c.resourcetype_id == query.resourcetype_id
-                       )
-                )
+            w = ClauseList(operator = 'AND')
+            if query.package_id:
+                w.append(resource_tab.c.package_id==query.package_id)
+            if query.resourcetype_id:
+                w.append(resource_tab.c.resourcetype_id==query.resourcetype_id)
+            q = select([value_col], w)
         q = q.group_by(value_col)
         
         # order by

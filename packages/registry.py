@@ -3,6 +3,7 @@ from seishub.core import PackageManager, SeisHubError
 from seishub.util.text import from_uri
 from seishub.db.util import DbStorage
 from seishub.packages.interfaces import IPackage, IResourceType, \
+                                        IMapperMethod, \
                                         IGETMapper, IPUTMapper, IPOSTMapper, \
                                         IDELETEMapper
 from seishub.packages.package import PackageWrapper, ResourceTypeWrapper, \
@@ -73,11 +74,10 @@ class PackageRegistry(DbStorage):
                                str(package_id))
         if not resourcetype_id:
             return package, resourcetype
-        resourcetype = self.db_getResourceType(package_id, 
-                                                        resourcetype_id)
+        resourcetype = self.db_getResourceType(package_id, resourcetype_id)
         if not resourcetype:
             raise SeisHubError('Resourcetype not present in database: %s', 
-                               str(package_id))
+                               str(resourcetype_id))
         return package, resourcetype
 
 
@@ -340,6 +340,8 @@ class MapperRegistry(dict):
     
     def __init__(self, env):
         self.env = env
+        # get available mapper methods
+        methods = PackageManager.getClasses(IMapperMethod)
         
     def _getMapper(self, interface, url):
         all = PackageManager.getClasses(interface)

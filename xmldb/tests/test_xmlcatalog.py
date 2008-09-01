@@ -302,6 +302,18 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
                                 self.res1.document._id])
         self.assertEqual(res2, [self.res2.document._id, 
                                 self.res1.document._id])
+        res3 = self.env.catalog.query('/testpackage/*/*')
+        self.assertEqual(res3, [self.res1.document._id,
+                         self.res2.document._id,
+                         self.res3.document._id])
+        res4 = self.env.catalog.query('/testpackage/*/station')
+        # XXX: rootnode still ignored here!!!
+#        self.assertEqual(res4, [self.res1.document._id,
+#                                self.res2.document._id])
+        print res4
+        res5 = self.env.catalog.query('/testpackage/testml/testml')
+        self.assertEqual(res5, [self.res3.document._id])
+        
 
 
 def suite():

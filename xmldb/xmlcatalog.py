@@ -21,6 +21,11 @@ class XmlCatalog(object):
         if not expr.startswith('/'):
             expr = '/' + expr
         return '/' + pid + '/' + rid + expr
+    
+    def _convert_wildcards(self, item):
+        if item == '*':
+            return None
+        return item
         
     # methods from IXmlCatalog
     
@@ -195,10 +200,13 @@ class XmlCatalog(object):
         except AttributeError:
             qu = query
         qu = qu.split('/')
+        qu_wk = map(self._convert_wildcards, qu)
         package, resourcetype = self.env.registry.\
-                                   objects_from_id(qu[1], qu[2])
-        qu[1] = str(package._id)
-        qu[2] = str(resourcetype._id)
+                                   objects_from_id(qu_wk[1], qu_wk[2])
+        if package:
+            qu[1] = str(package._id)
+        if resourcetype:
+            qu[2] = str(resourcetype._id)
         qu = '/'.join(qu)
         # end workaround
         if isinstance(query,dict):

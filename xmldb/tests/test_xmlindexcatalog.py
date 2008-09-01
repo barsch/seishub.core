@@ -308,6 +308,7 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         res1 = self.catalog.query(XPathQuery(q1))
         res2 = self.catalog.query(XPathQuery(q2))
         res3 = self.catalog.query(XPathQuery(q3))
+        #import pdb;pdb.set_trace()
         res0.sort(); res1.sort(); res2.sort(); res3.sort()
         self.assertEqual(res0, [self.res2.document._id])
         self.assertEqual(res1, [self.res1.document._id, 

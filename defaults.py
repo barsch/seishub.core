@@ -7,9 +7,9 @@ DEFAULT_DB_URI = 'sqlite:///db/seishub.db'
 DEFAULT_COMPONENTS = ('seishub.services.admin.general.PluginsPanel',
                       'seishub.services.admin.general.ServicesPanel',
                       'seishub.services.ssh.general.ServicesCommand',
-                      'seishub.packages.builtin.SeisHubPackage',
-                      'seishub.packages.builtin.StylesheetResource',
-                      'seishub.packages.builtin.SchemaResource',
+                      'seishub.packages.builtins.SeisHubPackage',
+                      'seishub.packages.builtins.StylesheetResource',
+                      'seishub.packages.builtins.SchemaResource',
                       'seishub.services.admin.themes.DefaultTheme')
 
 ADMIN_PORT = 40443

@@ -7,7 +7,7 @@ from twisted.web import http
 from seishub.test import SeisHubEnvironmentTestCase
 from seishub.packages.processor import Processor, RequestError
 from seishub.core import Component, implements
-from seishub.packages.builtin import IResourceType, IPackage
+from seishub.packages.builtins import IResourceType, IPackage
 
 
 XML_DOC = """<?xml version="1.0" encoding="UTF-8"?>

@@ -1,3 +1,3 @@
 # -*- coding: utf-8 -*-
 
-from seishub.packages.builtin import *
+from seishub.packages.builtins import *

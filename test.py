@@ -25,6 +25,10 @@ class SeisHubEnvironmentTestCase(unittest.TestCase):
         self.config.set('db', 'uri', 'sqlite://')
         self._config()
         self._start()
+        res = self.env.db.engine.execute("SELECT * from default_packages")
+#        print self.__class__
+#        print res.fetchall()
+#        print "---------"
     
     def _config(self):
         """Method to write into temporary config file."""

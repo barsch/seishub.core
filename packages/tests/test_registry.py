@@ -5,7 +5,7 @@ import os
 from seishub.core import SeisHubError
 from seishub.test import SeisHubEnvironmentTestCase
 from seishub.core import Component, implements
-from seishub.packages.builtin import IResourceType, IPackage
+from seishub.packages.builtins import IResourceType, IPackage
 from seishub.packages.installer import registerStylesheet, registerAlias
 from seishub.packages.interfaces import IGETMapper, IPUTMapper
 

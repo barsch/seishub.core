@@ -38,6 +38,10 @@ class IResourceTypeWrapper(IResourceType):
     
     A ResourceTypeWrapper is returned by the registry whenever a ResourceType 
     isn't present in the file system anymore but only in the database."""
+    
+
+class IMapperMethod(Interface):
+    """General interface definition for a HTTP mapper method"""
 
 
 class IMapper(Interface):
