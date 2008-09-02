@@ -333,15 +333,40 @@ class MapperRegistry(dict):
     mappers.get(url, method)    get mapper object
     """
     
-    methods = {'GET':IGETMapper,
-               'PUT':IPUTMapper,
-               'POST':IPOSTMapper,
-               'DELETE':IDELETEMapper}
+    methods = dict()
+    _registry = dict()
     
     def __init__(self, env):
         self.env = env
         # get available mapper methods
         methods = PackageManager.getClasses(IMapperMethod)
+        for m in methods:
+            self.methods[m.id] = m.mapper
+        self._rebuild()
+    
+    def _merge_dicts(self, source, target):
+        for key in source:
+            if key not in target:
+                target[key] = source[key]
+            else:
+                if isinstance(source[key], dict):
+                    target[key] = self._merge_dicts(source[key], target[key])
+        return target
+        
+    def _parse_uri(self, uri):
+        if len(uri) > 1:
+            return {uri[0]:self._parse_uri(uri[1:])}
+        else:
+            return {uri[0]:True}
+            
+    def _rebuild(self):
+        """rebuild the mapper registry"""
+        for m in self.methods.values():
+            classes = PackageManager.getClasses(m)
+            for cls in classes:
+                uri = cls.mapping_url.split('/')[1:]
+                uri_dict = self._parse_uri(uri)
+                #import pdb;pdb.set_trace()
         
     def _getMapper(self, interface, url):
         all = PackageManager.getClasses(interface)

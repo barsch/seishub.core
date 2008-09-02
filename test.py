@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import unittest
-import sys, doctest, os, tempfile
+import sys, doctest, os, tempfile, random
 
 from seishub.env import Environment
 from seishub.config import Configuration
@@ -16,7 +16,9 @@ class SeisHubEnvironmentTestCase(unittest.TestCase):
     options to the test environment."""
     def __init__(self, methodName):
         unittest.TestCase.__init__(self, methodName)
-        self.filename = os.path.join(tempfile.gettempdir(), 'seishub-test.ini')
+        self.filename = os.path.join(tempfile.gettempdir(), 
+                                     'seishub-test.ini' + \
+                                     str(random.randint(1, 100000)))
         self.config = Configuration(self.filename)
         #set a few standard settings
         self.config.set('logging', 'log_level', 'OFF')
@@ -25,6 +27,9 @@ class SeisHubEnvironmentTestCase(unittest.TestCase):
         self.config.set('db', 'uri', 'sqlite://')
         self._config()
         self._start()
+        
+    def __del__(self):
+        os.remove(self.filename)
     
     def _config(self):
         """Method to write into temporary config file."""

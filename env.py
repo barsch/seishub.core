@@ -58,10 +58,12 @@ class Environment(ComponentManager):
         self.catalog = XmlCatalog(self)
         # User & group management
         self.auth = UserManager(self)
-        # Package manager
-        self.registry = PackageRegistry(self)
         # load plugins
         ComponentLoader(self)
+        # Package manager
+        # init PackageRegistry after ComponentLoader(), as plugins may 
+        # provide registry objects
+        self.registry = PackageRegistry(self)
         # trigger auto installer, install seishub package first
         PackageInstaller.cleanup(self)
         PackageInstaller.install(self, 'seishub')
