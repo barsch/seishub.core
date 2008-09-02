@@ -342,6 +342,7 @@ class MapperRegistry(dict):
         methods = PackageManager.getClasses(IMapperMethod)
         for m in methods:
             self.methods[m.id] = m.mapper
+            self._registry[m.id] = dict()
         self._rebuild()
     
     def _merge_dicts(self, source, target):
@@ -353,20 +354,46 @@ class MapperRegistry(dict):
                     target[key] = self._merge_dicts(source[key], target[key])
         return target
         
-    def _parse_uri(self, uri):
+    def _parse_uri(self, uri, cls):
         if len(uri) > 1:
-            return {uri[0]:self._parse_uri(uri[1:])}
+            return {uri[0]:self._parse_uri(uri[1:], cls)}
         else:
-            return {uri[0]:True}
+            return {uri[0]:{'':cls}}
             
     def _rebuild(self):
         """rebuild the mapper registry"""
-        for m in self.methods.values():
-            classes = PackageManager.getClasses(m)
+        for name, interface in self.methods.iteritems():
+            classes = PackageManager.getClasses(interface)
             for cls in classes:
                 uri = cls.mapping_url.split('/')[1:]
-                uri_dict = self._parse_uri(uri)
-                #import pdb;pdb.set_trace()
+                uri_dict = self._parse_uri(uri, cls)
+                self._registry[name] = self._merge_dicts(uri_dict, 
+                                                      self._registry[name])
+                
+    def _getSupportedMethods(self, cls):
+        supported = []
+        for method, interface in self.methods.iteritems():
+            # XXX: workaround due to seishub's 'implements' not fully beeing 
+            # compatible with zope interfaces
+#            if interface.implementedBy(cls):
+#                supported.append(method)
+            if interface in cls._implements:
+                supported.append(method)
+        return supported
+    
+    def _tree_find(self, url, subtree):
+        # search direction is top-to-bottom because the url might have an 
+        # arbitrary ending
+        try:
+            return self._tree_find(url[1:], subtree[url[0]])
+        except (KeyError, IndexError):
+            try:
+                return subtree[url[0]]['']
+            except KeyError:
+                try:
+                    return subtree['']
+                except KeyError:
+                    return None
         
     def _getMapper(self, interface, url):
         all = PackageManager.getClasses(interface)
@@ -382,12 +409,26 @@ class MapperRegistry(dict):
         return methods
                 
     def get(self, url = None, method = None):
-        if not (url and method):
+        """returns the mapper object on which the given url fits best, 
+        deepest path first
+        
+        if no url or method is given: get() == getMappings()
+        
+        if only method is given, returns a list of all known mappers for that
+        method"""
+        if not (url or method):
             return self.getMappings()
-        interface = self.methods[method.upper()]
-        mapper = self._getMapper(interface, url)
-        objs = [m(self.env) for m in mapper]
-        return objs
+        url = url.split('/')[1:]
+        if not method:
+            methods = self.methods.keys()
+        else:
+            methods = [method]
+        objs = list()
+        for m in methods:
+            mapper_cls = self._tree_find(url, self._registry[m])
+            if mapper_cls:
+                objs.append(mapper_cls(self.env))
+        return list(set(objs))
     
     def getMappings(self):
         """return a dict of all known mappings of the form 

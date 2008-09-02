@@ -5,6 +5,7 @@ import os
 from seishub.core import SeisHubError
 from seishub.test import SeisHubEnvironmentTestCase
 from seishub.core import Component, implements
+from zope.interface import implements as zope_implements
 from seishub.packages.builtins import IResourceType, IPackage
 from seishub.packages.installer import registerStylesheet, registerAlias
 from seishub.packages.interfaces import IGETMapper, IPUTMapper
@@ -233,7 +234,7 @@ class AResourceType(Component):
 class TestMapper(Component):
     implements(IGETMapper, IPUTMapper)
     
-    mapping_url = '/testmapping'
+    mapping_url = '/test/testmapping'
     
     def processGET(self, request):
         pass
@@ -241,17 +242,49 @@ class TestMapper(Component):
     def processPUT(self, request):
         pass
 
+
+class TestMapper2(Component):
+    implements(IGETMapper)
+    
+    mapping_url = '/test/testmapping/two'
+    
+    def processGET(self, request):
+        pass
+    
+
+class TestMapper3(Component):
+    implements(IGETMapper)
+    
+    mapping_url = '/test/three/testmapping'
+    
+    def processGET(self, request):
+        pass
+
 class FromFilesystemTest(SeisHubEnvironmentTestCase):
     def __init__(self, *args, **kwargs):
         SeisHubEnvironmentTestCase.__init__(self, *args, **kwargs)
         
     def testMapperRegistry(self):
+        self.env.registry.mappers._rebuild()
+        # get with exact url
+        print self.env.registry.mappers.get('/test/testmapping', 'GET')
+        print self.env.registry.mappers.get('/test/testmapping/two', 'GET')
+        print self.env.registry.mappers.get('/test/three/testmapping', 'GET')
+        # url longer than mapper url
+        print self.env.registry.mappers.get('/test/testmapping/nottwo', 'GET')
+        print self.env.registry.mappers.get('/test/testmapping/two/nottwo', 
+                                            'GET')
+        # no mapper
+        print self.env.registry.mappers.get('/test/three')
+        # without method
+        print self.env.registry.mappers.get('/test/testmapping/two')
+        
         all = self.env.registry.mappers
-        assert '/testmapping' in all
-        self.assertEqual(all['/testmapping'], ['PUT', 'GET'])
-        mapper = self.env.registry.mappers.get('/testmapping', 'GET')
+        assert '/test/testmapping' in all
+        self.assertEqual(all['/test/testmapping'], ['PUT', 'GET'])
+        mapper = self.env.registry.mappers.get('/test/testmapping', 'GET')
         assert TestMapper(self.env) is mapper[0]
-        methods = self.env.registry.mappers.getMethods('/testmapping')
+        methods = self.env.registry.mappers.getMethods('/test/testmapping')
         self.assertEqual(methods, ['PUT', 'GET'])
         
     def testRegisterStylesheet(self):
