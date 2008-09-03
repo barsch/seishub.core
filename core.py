@@ -21,7 +21,7 @@ import sys
 from zope.interface import Interface as ZopeInterface
 
 __all__ = ['Component', 'ExtensionPoint', 'implements', 'Interface',
-           'SeisHubError', 'ERROR', 'WARN', 'INFO', 'DEBUG']
+           'SeisHubError', 'ERROR', 'WARN', 'INFO', 'DEBUG', 'ComponentMeta']
 
 ERROR = 0
 WARN = 5

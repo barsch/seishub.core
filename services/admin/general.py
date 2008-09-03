@@ -138,9 +138,11 @@ class PluginsPanel(Component):
         from seishub.core import ComponentMeta
         for component in ComponentMeta._components:
             module = sys.modules[component.__module__]
-            fullname = module.__name__+'.'+component.__name__
+            modulename = module.__name__ 
+            classname = modulename + '.' + component.__name__
             
-            if fullname in enabled or fullname in DEFAULT_COMPONENTS:
+            if classname in enabled or classname in DEFAULT_COMPONENTS or \
+               modulename in DEFAULT_COMPONENTS:
                 self.env.enableComponent(component)
             else:
                 self.env.disableComponent(component)
@@ -151,7 +153,8 @@ class PluginsPanel(Component):
         for component in ComponentMeta._components:
             module = sys.modules[component.__module__]
             description = getFirstSentence(inspect.getdoc(module))
-            classname = module.__name__ + '.' + component.__name__
+            modulename = module.__name__ 
+            classname = modulename + '.' + component.__name__
             plugin = {
               'name': component.__name__, 
               'module': module.__name__,
@@ -159,11 +162,12 @@ class PluginsPanel(Component):
               'classname': classname,
               'description': getFirstSentence(inspect.getdoc(component)),
               'enabled': self.env.isComponentEnabled(component),
-              'required': classname in DEFAULT_COMPONENTS,
+              'required': classname in DEFAULT_COMPONENTS or \
+                          modulename in DEFAULT_COMPONENTS,
             }
-            plugins.setdefault(module.__name__,{})
-            plugins[module.__name__].setdefault('plugins',[]).append(plugin)
-            plugins[module.__name__]['description'] = description
+            plugins.setdefault(modulename,{})
+            plugins[modulename].setdefault('plugins',[]).append(plugin)
+            plugins[modulename]['description'] = description
         sorted_plugins = plugins.keys()
         sorted_plugins.sort()
         data = {
