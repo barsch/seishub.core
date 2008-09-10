@@ -28,7 +28,7 @@
     
     function loadNodeData(node, fnLoadComplete) {
       var nodeTitle = encodeURI(node.title);
-      var sUrl = "/rest/" + nodeTitle;
+      var sUrl = "/rest" + nodeTitle;
       var elements = ['package', 'resourcetype', 'property', 'alias', 
                       'mapping', 'resource', 'index'];
       
@@ -57,7 +57,6 @@
                   var tmp = new YAHOO.widget.TextNode({label:item, target:"_blank"}, node, false);
                   tmp.href = "$resturl" + item;
                   tmp.title = item;
-                  tmp.isLeaf = 1;
                   tmp.labelStyle = "icon icon-"+element;
                 } else {
                   var tmp = new YAHOO.widget.TextNode({label:text, target:"_blank"}, node, false);

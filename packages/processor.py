@@ -347,7 +347,16 @@ class Processor:
         if not func:
             raise RequestError(http.NOT_IMPLEMENTED)
         #XXX: error handling missing yet
-        return func(self)
+        result = func(self)
+        # test if basestring -> could be a resource
+        if isinstance(result, basestring):
+            return self.renderResource(result)
+        # result must be a dictionary with either mapping or resource entries
+        if not isinstance(result, dict):
+            raise RequestError(http.INTERNAL_SERVER_ERROR)
+        mappings = result.get('mapping', [])
+        resources = result.get('resource', [])
+        return self.renderResourceList(mapping=mappings, resource=resources)
     
     def _processAlias(self, package_id, resourcetype_id, alias):
         """Generates a list of resources from an alias query."""

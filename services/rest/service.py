@@ -84,11 +84,13 @@ class RESTRequest(Processor, http.Request):
         tmpl = """<%s xlink:type="simple" xlink:href="%s">%s</%s>\n"""
         doc = ""
         # generate a list of standard elements
-        for tag in ['package', 'resourcetype', 'property', 'alias', 'mapping',
-                    'resource']:
+        for tag in ['package', 'resourcetype', 'property', 'alias', 'mapping']:
             for uri in kwargs.get(tag,[]):
                 content = absPath(uri[len(self.path):])[1:]
                 doc += tmpl % (tag, uri, content, tag)
+        # generate a list of standard elements
+        for uri in kwargs.get('resource',[]):
+            doc += tmpl % ('resource', uri, uri, 'resource')
         result = str(root % (self.env.getRestUrl(), doc))
         # set header
         self._setHeaders(result)

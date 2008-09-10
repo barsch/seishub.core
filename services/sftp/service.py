@@ -91,6 +91,7 @@ class SFTPServiceProtocol:
         return absPath(path)
     
     def openFile(self, filename, flags, attrs):
+        print "-------------openFile", filename, flags, attrs
         # fetch the symbolic link path
         path = self.readLink(filename[:-4])
         # process resource
@@ -105,7 +106,7 @@ class SFTPServiceProtocol:
         return InMemoryFile(data)
     
     def openDirectory(self, path):
-        print "-------------openDirectory"
+        print "-------------openDirectory", path
         request = Processor(self.env)
         request.method = 'GET'
         request.path = path
@@ -129,6 +130,10 @@ class SFTPServiceProtocol:
         for d in data.get('alias',[]):
             name = d[1+len(path):]
             filelist.append((name, {}))
+        # mappers are readable directories
+        for d in data.get('mapping',[]):
+            name = d[1+len(path):]
+            filelist.append((name, {}))
         # .all directory
         if path+'/'+'.all' in data.get('property',[]):
             filelist.append(('.all', {}))
@@ -141,15 +146,13 @@ class SFTPServiceProtocol:
         return DirList(iter(filelist))
     
     def getAttrs(self, path, followLinks):
-        print "-------------getAttrs"
-        print path
-        print followLinks
+        print "-------------getAttrs", path, followLinks
         return {'permissions': 020755, 'size': 0, 'uid': 0, 'gid': 0,
                 'atime': time.time(), 'mtime': time.time()}
     
     def readLink(self, path):
         """Find the root of a set of symbolic links."""
-        print "-------------readLink"
+        print "-------------readLink", path
         temp = path.split('/')
         name = '/' + temp[1] + '/' + temp[2] + '/' + temp[-1:][0]
         return name
