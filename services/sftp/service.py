@@ -114,17 +114,28 @@ class SFTPServiceProtocol:
         except RequestError, e:
             self.env.log.error('RequestError:', str(e))
             raise SFTPError(FX_FAILURE, str(e))
-        
         filelist = []
         filelist.append(('.', {}))
         filelist.append(('..', {}))
-        # packages, resource types, aliases and mappings are directories
-        for r in ['package','resourcetype','alias','mapping']:
-            for d in data.get(r,[]):
-                filelist.append((d, {}))
+        # packages are readable directories
+        for d in data.get('package',[]):
+            name = d[1:]
+            filelist.append((name, {}))
+        # resourcetypes are readable directories
+        for d in data.get('resourcetype',[]):
+            name = d[1+len(path):]
+            filelist.append((name, {}))
+        # alias are readable directories
+        for d in data.get('alias',[]):
+            name = d[1+len(path):]
+            filelist.append((name, {}))
+        # .all directory
+        if path+'/'+'.all' in data.get('property',[]):
+            filelist.append(('.all', {}))
         # direct resource will be a symbolic link to a document
         for d in data.get('resource',[]):
             name = d.split('/')[-1:][0]
+            print name
             filelist.append((name+'.xml', {'permissions': 0120777, 
                                            'size': len(d)}))
         return DirList(iter(filelist))
@@ -139,10 +150,9 @@ class SFTPServiceProtocol:
     def readLink(self, path):
         """Find the root of a set of symbolic links."""
         print "-------------readLink"
-        print path
-        name = path.split('/')[-1:][0]
-        #raise SFTPError(FX_OP_UNSUPPORTED, '')
-        return '/degenesis/weapon/'+name
+        temp = path.split('/')
+        name = '/' + temp[1] + '/' + temp[2] + '/' + temp[-1:][0]
+        return name
     
     def setAttrs(self, path, attrs):
         raise SFTPError(FX_OP_UNSUPPORTED, '')
