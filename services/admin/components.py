@@ -9,7 +9,7 @@ class SchemasPanel(Component):
     implements(IAdminPanel)
     
     def getPanelId(self):
-        return ('packages', 'Packages', 'edit-schemas', 'Schemas')
+        return ('components', 'Components', 'edit-schemas', 'Schemas')
     
     def renderPanel(self, request):
         packages = self.env.registry.packages
@@ -36,7 +36,7 @@ class SchemasPanel(Component):
                 data['error'] = self._deleteSchema(args['schema[]'])
         # fetch all uris
         data['schemas'] = self.registry.schemas.get()
-        return ('package_schemas.tmpl', data)
+        return ('components_schemas.tmpl', data)
     
     def _addSchema(self, package_id, resourcetype_id, type, file):
         try:
@@ -61,7 +61,7 @@ class StylesheetsPanel(Component):
     implements(IAdminPanel)
     
     def getPanelId(self):
-        return ('packages', 'Packages', 'edit-stylesheets', 'Stylesheets')
+        return ('components', 'Components', 'edit-stylesheets', 'Stylesheets')
     
     def renderPanel(self, request):
         packages = self.env.registry.packages
@@ -88,7 +88,7 @@ class StylesheetsPanel(Component):
                 data['error'] = self._deleteStylesheet(args['stylesheet[]'])
         # fetch all uris
         data['stylesheets'] = self.registry.stylesheets.get()
-        return ('package_stylesheets.tmpl', data)
+        return ('components_stylesheets.tmpl', data)
     
     def _addStylesheet(self, package_id, resourcetype_id, type, file):
         try:
@@ -108,18 +108,18 @@ class StylesheetsPanel(Component):
                 return ("Error deleting stylesheet: %s" % uid, e)
 
 
-class PackageBrowserPanel(Component):
-    """Browse through all installed packages."""
+class ComponentBrowserPanel(Component):
+    """Browse through all installed components."""
     implements(IAdminPanel)
     
     def getPanelId(self):
-        return ('packages', 'Packages', 'browse-packages', 'Browse Packages')
+        return ('components', 'Components', 'browse-components', 
+                'Browse Components')
     
     def renderPanel(self, request):
         data = {}
-        data['packages'] = self.env.registry.packages
         data['resturl'] = self.env.getRestUrl()
-        return ('package_browser.tmpl', data)
+        return ('components_browser.tmpl', data)
 
 
 class IndexesPanel(Component):
@@ -127,7 +127,7 @@ class IndexesPanel(Component):
     implements(IAdminPanel)
     
     def getPanelId(self):
-        return ('packages', 'Packages', 'edit-indexes', 'Indexes')
+        return ('components', 'Components', 'edit-indexes', 'Indexes')
     
     def renderPanel(self, request):
         packages = self.env.registry.packages
@@ -158,7 +158,7 @@ class IndexesPanel(Component):
                 data['error'] = self._reindex(args.get('index[]',[]))
         # fetch all indexes
         data['indexes'] = self.catalog.listIndexes()
-        return ('package_indexes.tmpl', data)
+        return ('components_indexes.tmpl', data)
     
     def _reindex(self, data=[]):
         for xpath in data:
@@ -189,7 +189,7 @@ class AliasesPanel(Component):
     implements(IAdminPanel)
     
     def getPanelId(self):
-        return ('packages', 'Packages', 'edit-aliases', 'Aliases')
+        return ('components', 'Components', 'edit-aliases', 'Aliases')
     
     def renderPanel(self, request):
         data  = {
@@ -215,7 +215,7 @@ class AliasesPanel(Component):
         # fetch all aliases
         # XXX: ohne without .get()
         data['aliases'] = self.env.registry.aliases.get()
-        return ('package_aliases.tmpl', data)
+        return ('components_aliases.tmpl', data)
     
     def _deleteAliases(self, aliases=[]):
         for alias in aliases:
