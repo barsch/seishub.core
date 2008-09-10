@@ -34,15 +34,29 @@
 
 <h2>List of all schemas</h2>
 <form method="post" name="list">
-  <div class="field">
+  <table>
+    <tr>
+      <th></th>
+      <th>Package</th>
+      <th>Resourcetype</th>
+      <th>Label</th>
+      <th>Document</th>
+    </tr>
     #for $schema in $schemas
-    <input type="checkbox" name="schema[]" value="$schema.document_id" /> 
-    $schema.package.package_id
-    $schema.resourcetype.resourcetype_id
-    $schema.type
-    <br />
+    <tr> 
+      <td>
+        <input type="checkbox" name="schema[]" 
+               value="$schema.document_id" />
+      </td> 
+      <td>$schema.package.package_id</td>
+      <td>$schema.resourcetype.resourcetype_id</td>
+      <td>$schema.type</td>
+      <td>
+        <a href="$resturl/seishub/schema/$schema.document_id">[XML]</a>
+      </td>
+    </tr>
     #end for
-  </div>
+  </table>
 
   <input type="submit" name="delete" value="Delete" />
 </form>

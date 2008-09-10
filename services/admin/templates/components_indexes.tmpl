@@ -34,14 +34,29 @@
 
 <h2>List of all indexes</h2>
 <form method="post" name="list">
-  <div class="field">
-    #for $index in $indexes 
-    <input type="checkbox" name="index[]" value="$index.__str__()" /> 
-    $index
-    <br />
+  <table>
+    <tr>
+      <th></th>
+      <th>Package</th>
+      <th>Resourcetype</th>
+      <th>Type</th>
+      <th>Expression</th>
+    </tr>
+    #for $index in $indexes
+    <tr> 
+      <td>
+        <input type="checkbox" name="index[]" 
+               value="$index.__str__()" />
+        $index.__str__()
+      </td> 
+      <td>XXX: index.package.package_id missing yet!</td>
+      <td>XXX: index.resourcetype.resourcetype_id missing yet!</td>
+      <td>$index.type</td>
+      <td>XXX: index.expr missing yet!</td>
+    </tr>
     #end for
-  </div>
-
+  </table>
+  
   <input type="submit" name="reindex" value="Reindex" /> 
   <input type="submit" name="delete" value="Delete" />
 </form>

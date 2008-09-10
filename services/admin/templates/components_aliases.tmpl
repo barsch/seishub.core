@@ -36,16 +36,29 @@ resource type. The result of an alias is a list of unique resources. </i></p>
 
 <h2>List of all aliases</h2>
 <form method="post" name="list">
-  <div class="field">
-  #for $alias in $aliases
-    <input type="checkbox" 
-           value="$alias"
-           name="alias[]"/>
-           $alias.__dict__
-        <a href="$resturl$alias">$alias</a>
-    ($alias.expr)<br />
-  #end for
-  </div>
+  <table>
+    <tr>
+      <th></th>
+      <th>Package</th>
+      <th>Resourcetype</th>
+      <th>Alias ID</th>
+      <th>XPath</th>
+      <th>Resulting document</th>
+    </tr>
+    #for $alias in $aliases
+    <tr> 
+      <td>
+        <input type="checkbox" name="alias[]" value="$alias" />
+      </td> 
+      <td>$alias.package.package_id</td>
+      <td>$alias.resourcetype.resourcetype_id</td>
+      <td>$alias.name</td>
+      <td>$alias.expr</td>
+      <td><a href="$resturl$alias">[XML]</a></td>
+    </tr>
+    #end for
+  </table>
+
   <input type="submit" name="delete" value="Delete" />
 </form>
 

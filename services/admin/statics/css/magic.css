@@ -26,6 +26,20 @@ a:hover {
     text-decoration: underline;
 }
 
+form table {
+    border: 1px solid #dedede;
+    margin-bottom: 1em;
+    border-collapse:collapse
+}
+
+form td, form th {
+    border: 1px solid #dedede;
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-bottom: 3px;
+    padding-top: 3px;
+}
+
 /* header*/
 #header {
     height: 115px;
@@ -203,17 +217,17 @@ div.field {
     margin-bottom: 1em;
 }
 
-/* Error */
-#error {
+/* Messagebox */
+dl.messagebox {
     text-align: justify;
     margin-top: 20px;
     margin-right: 20px;
     margin-left: 230px;
-    background-color: #ffffe3;
+    background-color: rffffe3;
     border: 1px solid #996;
 }
 
-#error dt {
+dl.messagebox dt {
     background-color: #996; 
     font-weight: bold;
     float: left;
@@ -222,9 +236,31 @@ div.field {
     color: white;
 }
 
-#error dd {
+dl.messagebox dd {
     padding: 0.5em 0.5em; 
     margin: 0;
+}
+
+/* Info */
+dl.info {
+    background-color: #ffffe3;
+    border: 1px solid #996;
+}
+
+dl.info dt {
+    background-color: #996; 
+    color: white;
+}
+
+/* Error */
+dl.error {
+    background-color: #fd7;
+    border: 1px solid #d80;
+}
+
+dl.error dt {
+    background-color: #d00; 
+    color: white;
 }
 
 /* Infobox */

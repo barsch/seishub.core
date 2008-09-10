@@ -202,15 +202,50 @@ div.field {
     margin-bottom: 1em;
 }
 
-/* Error message */
-#error {
+/* Messagebox */
+dl.messagebox {
     text-align: justify;
-    padding: 1em;
-    margin: 1em;
-    margin-left: 17em;
-    background-color: white;
-    color: #934249;
-    border: 2px solid #934249;
+    margin-top: 20px;
+    margin-right: 20px;
+    margin-left: 230px;
+    background-color: rffffe3;
+    border: 1px solid #996;
+}
+
+dl.messagebox dt {
+    background-color: #996; 
+    font-weight: bold;
+    float: left;
+    margin: 0 0.5em 0 0;
+    padding: 0.5em 0.75em;
+    color: white;
+}
+
+dl.messagebox dd {
+    padding: 0.5em 0.5em; 
+    margin: 0;
+}
+
+/* Info */
+dl.info {
+    background-color: #ffffe3;
+    border: 1px solid #996;
+}
+
+dl.info dt {
+    background-color: #996; 
+    color: white;
+}
+
+/* Error */
+dl.error {
+    background-color: #fd7;
+    border: 1px solid #d80;
+}
+
+dl.error dt {
+    background-color: #d00; 
+    color: white;
 }
 
 
