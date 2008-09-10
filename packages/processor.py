@@ -58,7 +58,7 @@ class Processor:
             return self._processRootProperty(self.postpath[0:])
         
         # test if it fits to a valid mapping
-        if self.method in self.mapping_urls.get(self.path, []):
+        if self.env.registry.mappers.get(self.path, self.method):
             return self._processMapping()
         
         # test if package at all
@@ -151,7 +151,7 @@ class Processor:
         Adding documents can be done directly on an existing resource type or 
         via user defined mapping."""
         # test if it fits to a valid mapping
-        if self.method in self.mapping_urls.get(self.path, []):
+        if self.env.registry.mappers.get(self.path, self.method):
             return self._processMapping()
         # test if the request was called in a resource type directory 
         if len(self.postpath)==2:
@@ -182,7 +182,7 @@ class Processor:
         Modifying a document always needs a valid path to a resource or uses a 
         user defined mapping."""
         # test if it fits to a valid mapping
-        if self.method in self.mapping_urls.get(self.path, []):
+        if self.env.registry.mappers.get(self.path, self.method):
             return self._processMapping()
         # test if the request was called on a resource 
         if len(self.postpath)==3 and isInteger(self.postpath[2]):
@@ -211,7 +211,7 @@ class Processor:
         Deleting a document always needs a valid path to a resource or may use 
         a user defined mapping."""
         # test if it fits to a valid mapping
-        if self.method in self.mapping_urls.get(self.path, []):
+        if self.env.registry.mappers.get(self.path, self.method):
             return self._processMapping()
         # test if the request was called on a resource 
         if len(self.postpath)==3 and isInteger(self.postpath[2]):
@@ -277,7 +277,7 @@ class Processor:
         # fetch all mappings in this package, not being a resource type
         mapping_ids = []
         for url in self.mapping_urls.keys():
-            if not url.startswith('/' + package_id):
+            if not url.startswith('/' + package_id + '/'):
                 continue
             parts = url.split('/')
             if parts[2] in self.env.registry.resourcetypes[package_id]:
@@ -307,7 +307,7 @@ class Processor:
         # fetch all mappings in this package and resource type
         mapping_ids = [url for url in self.mapping_urls.keys() 
                        if url.startswith('/' + package_id + '/' + \
-                                         resourcetype_id)]
+                                         resourcetype_id + '/')]
         # fetch indexes
         indexes = self.env.catalog.listIndexes(package_id, resourcetype_id)
         index_ids = [str(i) for i in indexes]
@@ -334,14 +334,15 @@ class Processor:
             raise RequestError(http.NOT_FOUND)
     
     def _processMapping(self):
-        mapper = self.env.registry.mappers.get(method=self.method, 
-                                               url=self.path)
+        mapper = self.env.registry.mappers.get(url=self.path, 
+                                               method=self.method) 
         if not mapper or len(mapper)<1:
             raise RequestError(http.NOT_IMPLEMENTED)
-        #only use first found object, but warn if multiple implementations
-        if len(mapper)>1:
-            self.log.error('Multiple %s mappings found for %s' % 
-                           (self.method, self.path))
+        # XXX: is this possible anymore??
+        # only use first found object, but warn if multiple implementations
+        #if len(mapper)>1:
+        #    self.log.error('Multiple %s mappings found for %s' % 
+        #                   (self.method, self.path))
         func = getattr(mapper[0], 'process'+self.method)
         if not func:
             raise RequestError(http.NOT_IMPLEMENTED)
