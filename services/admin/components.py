@@ -238,3 +238,21 @@ class AliasesPanel(Component):
             self.log.error("Error generating an alias", e)
             return {'error': ("Error generating an alias", e)}
         return {'info': "Alias has been added."}
+
+
+class ManagerPanel(Component):
+    """Manage components."""
+    implements(IAdminPanel)
+    
+    def getPanelId(self):
+        return ('components', 'Components', 'component-manager', 
+                'Component Manager')
+    
+    def renderPanel(self, request):
+        data = {'packages': self.env.registry.packages,
+                'resourcetypes': self.env.registry.resourcetypes,
+                'aliases': self.env.registry.aliases,
+                'mappers': self.env.registry.mappers,
+                'stylesheets': self.env.registry.stylesheets,
+                'schemas': self.env.registry.schemas,}
+        return ('components_manager.tmpl', data)

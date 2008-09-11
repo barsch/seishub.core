@@ -1,0 +1,22 @@
+<h1>Component Manager</h1>
+
+<h2>Packages + Resourcetypes</h2>
+
+<ol>
+#for $p in $packages
+  <li>$p</li>
+  <ol>
+    #for $rt in $resourcetypes.get($p)
+      <li>$rt</li>
+    #end for
+  </ol>
+#end for
+</ol>
+<hr />
+$mappers
+<hr />
+$schemas
+<hr />
+$stylesheets
+<hr />
+$aliases
