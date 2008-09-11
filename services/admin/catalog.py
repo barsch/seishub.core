@@ -8,6 +8,7 @@ from seishub.xmldb.defaults import DEFAULT_PREFIX, DATA_TABLE, \
 from seishub.packages.defaults import SCHEMA_TABLE, STYLESHEET_TABLE, \
                                       ALIAS_TABLE
 from seishub.xmldb.errors import AddResourceError
+from seishub.db.dbmanager import SQLITE_WARNING 
 
 
 class BasicPanel(Component):
@@ -30,6 +31,10 @@ class BasicPanel(Component):
           'verbose': self.config.get('db', 'verbose'),
           'db': db,
         }
+        if db.name=='sqlite':
+            data['info'] = ('SQLite Database enabled!',
+                            SQLITE_WARNING.replace('-',''))
+        
         return ('catalog_db_basic.tmpl', data)
 
 
