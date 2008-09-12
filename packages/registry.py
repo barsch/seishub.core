@@ -375,10 +375,10 @@ class MapperRegistry(dict):
         for method, interface in self.methods.iteritems():
             # XXX: workaround due to seishub's 'implements' not fully beeing 
             # compatible with zope interfaces
-#            if interface.implementedBy(cls):
-#                supported.append(method)
-            if interface in cls._implements:
+            if interface.implementedBy(cls):
                 supported.append(method)
+            #if interface in cls._implements:
+            #    supported.append(method)
         return supported
     
     def _tree_find(self, url, subtree):

@@ -13,15 +13,17 @@
 # individuals. For the exact contribution history, see the revision
 # history and logs, available at http://trac.edgewall.org/log/.
 #
-# Author: Jonas BorgstrÃ¶m <jonas@edgewall.com>
+# Author: Jonas Borgström <jonas@edgewall.com>
 #         Christopher Lenz <cmlenz@gmx.de>
 
 import sys
 
-from zope.interface import Interface as ZopeInterface
+from zope.interface import Interface #@UnusedImport
+from zope.interface.declarations import _implements, classImplements
 
 __all__ = ['Component', 'ExtensionPoint', 'implements', 'Interface',
-           'SeisHubError', 'ERROR', 'WARN', 'INFO', 'DEBUG', 'ComponentMeta']
+           'SeisHubError', 'ERROR', 'WARN', 'INFO', 'DEBUG', 'ComponentMeta',
+           'ComponentManager', 'PackageManager']
 
 ERROR = 0
 WARN = 5
@@ -34,12 +36,6 @@ class SeisHubError(Exception):
     
     def __init__(self, *args, **kwargs):
         Exception.__init__(self, *args, **kwargs)
-
-
-class Interface(ZopeInterface):
-    """Marker base class for extension point interfaces inherits from Zopes 
-    interface class.
-    """
 
 
 class ExtensionPoint(property):
@@ -198,24 +194,23 @@ class Component(object):
             self.compmgr = compmgr
             compmgr.initComponent(self)
         return self
+
+
+def implements(*interfaces):
+    """Can be used in the class definition of `Component` subclasses to
+    declare the extension points that are extended.
+    """
+    frame = sys._getframe(1)
+    locals_ = frame.f_locals
     
-    def implements(*interfaces):
-        """Can be used in the class definition of `Component` subclasses to
-        declare the extension points that are extended.
-        """
-        
-        frame = sys._getframe(1)
-        locals_ = frame.f_locals
-        
-        # Some sanity checks
-        assert locals_ is not frame.f_globals and '__module__' in locals_, \
-               'implements() can only be used in a class definition'
-        
-        locals_.setdefault('_implements', []).extend(interfaces)
-    implements = staticmethod(implements)
-
-
-implements = Component.implements
+    # Some sanity checks
+    assert locals_ is not frame.f_globals and '__module__' in locals_, \
+           'implements() can only be used in a class definition'
+    
+    locals_.setdefault('_implements', []).extend(interfaces)
+    
+    # zope.interfaces compatibility
+    _implements("implements", interfaces, classImplements)
 
 
 class ComponentManager(object):

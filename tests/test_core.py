@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 #
+"""Core test suite mainly adopted from Trac."""
+
+
 # Copyright (C) 2005 Edgewall Software
 # Copyright (C) 2005 Christopher Lenz <cmlenz@gmx.de>
 # All rights reserved.
@@ -142,7 +145,11 @@ class ComponentTestCase(unittest.TestCase):
                 implements()
                 implements()
             self.fail('Expected AssertionError')
+        except TypeError:
+            # Zope Interfaces
+            pass
         except AssertionError:
+            # SeisHub Interfaces
             pass
 
     def test_attribute_access(self):
