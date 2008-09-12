@@ -111,3 +111,6 @@ class HeartbeatService(service.MultiService):
     def startService(self):
         if self.env.config.getbool('heartbeat', 'autostart'):
             service.MultiService.startService(self)
+    
+    def stopService(self):
+        pass
