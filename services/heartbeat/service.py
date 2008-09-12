@@ -113,4 +113,5 @@ class HeartbeatService(service.MultiService):
             service.MultiService.startService(self)
     
     def stopService(self):
-        pass
+        if self.running:
+            service.MultiService.stopService(self)
