@@ -25,7 +25,7 @@ class BasicPanel(Component):
     
     def renderPanel(self, request):
         if request.method == 'POST':
-            for option in ('host', 'default_charset', 'description'):
+            for option in ('host', 'description'):
                 self.config.set('seishub', option, 
                                 request.args.get(option,[])[0])
             for option in ('theme',):
@@ -35,7 +35,6 @@ class BasicPanel(Component):
             request.redirect(request.path)
         data = {
           'host': self.config.get('seishub', 'host'),
-          'default_charset': self.config.get('seishub', 'default_charset'),
           'description': self.config.get('seishub', 'description'),
           'theme': self.config.get('webadmin', 'theme'),
           'themes': request.getAllAdminThemes(),

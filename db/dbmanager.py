@@ -28,6 +28,7 @@ class DatabaseManager(object):
     max_overflow = 10
     
     def __init__(self, env):
+        self.version = sa.__version__
         self.env = env
         self.uri = self.env.config.get('db', 'uri')
         self.echo = self.env.config.getbool('db', 'verbose')
@@ -85,8 +86,4 @@ class DatabaseManager(object):
                                 echo = self.echo,
                                 encoding = 'utf-8',
                                 convert_unicode = True,)
-        
-    def _checkVersion(self):
-        self.version = sa.__version__
-        if not self.version.startswith('0.4'):
-            self.env.log.error("We need at least a SQLAlchemy 0.4.0")
+

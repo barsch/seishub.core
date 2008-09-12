@@ -1,11 +1,25 @@
+<script type="text/javascript" src="/yui/build/yahoo-dom-event/yahoo-dom-event.js"></script>
+
 <h1>Logs</h1>
 
 <h2>Access Log</h2>
-<textarea class="log" wrap="off">
+<textarea id="accesslog" class="log" wrap="off">
 #for $line in $accesslog#$line#end for
 </textarea>
 
 <h2>Error Log</h2>
-<textarea class="log" wrap="off">
+<textarea id="errorlog" class="log" wrap="off">
 #for $line in $errorlog#$line#end for
 </textarea>
+
+<script>
+  var Event = YAHOO.util.Event;
+
+  initPage = function() {
+    var ta1 = document.getElementById('accesslog');
+    ta1.scrollTop = ta1.scrollHeight;
+    var ta2 = document.getElementById('errorlog');
+    ta2.scrollTop = ta2.scrollHeight;
+  }
+  Event.on(window,"load",initPage);
+</script>

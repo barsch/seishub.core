@@ -4,9 +4,11 @@ from seishub.core import Component, implements
 from seishub.services.admin.interfaces import IAdminPanel
 from seishub.xmldb.defaults import DEFAULT_PREFIX, DATA_TABLE, \
                                    INDEX_TABLE, INDEX_DEF_TABLE, \
-                                   METADATA_TABLE, DATA_TABLE, RESOURCE_TABLE
+                                   METADATA_TABLE, METADATA_DEF_TABLE, \
+                                   RESOURCE_TABLE
 from seishub.packages.defaults import SCHEMA_TABLE, STYLESHEET_TABLE, \
-                                      ALIAS_TABLE
+                                      ALIAS_TABLE, PACKAGES_TABLE, \
+                                      RESOURCETYPES_TABLE
 from seishub.xmldb.errors import AddResourceError
 from seishub.db.dbmanager import SQLITE_WARNING 
 
@@ -19,22 +21,23 @@ class BasicPanel(Component):
         return ('catalog', 'Catalog', 'dbbasic', 'Database Settings')
     
     def renderPanel(self, request):
-        db = self.db.engine
+        db = self.db
+        data = {}
+        if db.engine.name=='sqlite':
+            data['info'] = ('SQLite Database enabled!',
+                            SQLITE_WARNING.replace('-',''))
         if request.method == 'POST':
             for option in ('uri', 'verbose'):
                 self.config.set('db', option, 
                                 request.args.get(option,[''])[0])
             self.config.save()
-            request.redirect(request.path)
-        data = {
+            data['info'] = "You have to restart SeisHub in order to see " + \
+                           "any changes at the database settings."
+        data.update({
           'uri': self.config.get('db', 'uri'),
-          'verbose': self.config.get('db', 'verbose'),
+          'verbose': self.config.getbool('db', 'verbose'),
           'db': db,
-        }
-        if db.name=='sqlite':
-            data['info'] = ('SQLite Database enabled!',
-                            SQLITE_WARNING.replace('-',''))
-        
+        })
         return ('catalog_db_basic.tmpl', data)
 
 
@@ -43,8 +46,9 @@ class DatabaseQueryPanel(Component):
     implements(IAdminPanel)
     
     tables = [DATA_TABLE, INDEX_TABLE, INDEX_DEF_TABLE, \
-              METADATA_TABLE, ALIAS_TABLE, SCHEMA_TABLE, \
-              STYLESHEET_TABLE, RESOURCE_TABLE]
+              METADATA_TABLE, METADATA_DEF_TABLE, ALIAS_TABLE, SCHEMA_TABLE, \
+              STYLESHEET_TABLE, RESOURCE_TABLE, PACKAGES_TABLE, \
+              RESOURCETYPES_TABLE]
     
     def getPanelId(self):
         return ('catalog', 'Catalog', 'dbquery', 'Query DB')
@@ -54,6 +58,7 @@ class DatabaseQueryPanel(Component):
         data = {
             'query': 'select 1;', 
             'result': '',
+            'cols': '',
             'tables': self.tables,
         }
         args = request.args
@@ -68,7 +73,10 @@ class DatabaseQueryPanel(Component):
             if query:
                 data['query'] = query
                 try:
-                    data['result'] = db.execute(query).fetchall()
+                    query = db.execute(query)
+                    data['cols'] = query.keys
+                    data['result'] = query.fetchall()
+                    
                 except Exception, e:
                     self.env.log.error('Database query error', e)
                     data['error'] = ('Database query error', e)

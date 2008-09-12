@@ -26,13 +26,13 @@ a:hover {
     text-decoration: underline;
 }
 
-form table {
+table.list {
     border: 1px solid #dedede;
     margin-bottom: 1em;
     border-collapse: collapse
 }
 
-form td,form th {
+table.list td,table.list th {
     border: 1px solid #dedede;
     padding-left: 10px;
     padding-right: 10px;

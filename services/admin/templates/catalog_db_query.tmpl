@@ -6,14 +6,30 @@
     <textarea name="query" rows="3" cols="80">$query</textarea>
   </div>
   
-  <input type="submit" name="send" value="Query" />
   #for $table in $tables
   <input type="submit" name="$table" value="$table" />
   #end for
+  <br /><br />
+  <input type="submit" name="send" value="Query" />
 </form>
 
 <br />
 <br />
 
 <h2>Result</h2>
-<textarea rows="17" cols="80">$result</textarea>
+#if $cols
+<table class="list">
+  <tr>
+  #for $k in $cols 
+    <th>$k</th>
+  #end for
+  </tr> 
+#for $r in $result
+  <tr>
+  #for $f in $r
+    <td>$f</td>
+  #end for
+  </tr>
+#end for
+</table>
+#end if

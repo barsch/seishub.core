@@ -7,6 +7,20 @@ body {
     padding: 0;
 }
 
+table.list {
+    border: 1px solid black;
+    margin-bottom: 1em;
+    border-collapse: collapse
+}
+
+table.list td,table.list th {
+    border: 1px solid black;
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-bottom: 3px;
+    padding-top: 3px;
+}
+
 /* logo */
 #logo {
     color: rgb(175, 175, 175);
@@ -207,7 +221,7 @@ dl.messagebox {
     text-align: justify;
     margin-top: 20px;
     margin-right: 20px;
-    margin-left: 230px;
+    margin-left: 210px;
     background-color: rffffe3;
     border: 1px solid #996;
 }

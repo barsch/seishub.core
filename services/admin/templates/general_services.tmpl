@@ -1,19 +1,25 @@
 <h1>Services</h1>
 
 <form method="post" name="services">
-  <div class="field">
+  <table class="list">
     #for $s in $services
-    <input type="checkbox" 
-      #if $s.running
-           checked="checked" 
-      #end if 
-           name="service" value="$s.name" /> $s.name
-      #if hasattr($s,'args')
-      [#echo $s.args[0]#]
-      #end if
-    <br />
+    <tr>
+      <td>
+        <input type="checkbox" 
+          #if $s.running
+               checked="checked" 
+          #end if 
+               name="service" value="$s.name" />
+      </td>
+      <td>
+        $s.name
+        #if hasattr($s,'args')
+          [#echo $s.args[0]#]
+        #end if
+      </td>
+    </tr>
     #end for
-  </div>
+  </table>
   
   <input type="submit" name="reload" value="Set Services" />
   <br />

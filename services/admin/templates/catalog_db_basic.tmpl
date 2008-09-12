@@ -7,11 +7,29 @@
 
 <h2>Status</h2>
 
-DB name: $db.name<br />
-URI: $db.url<br />
-Verbose: $db.echo<br />
+<table class="list">
+  <tr>
+    <th>SQLAlchemy Version</th>
+    <td>$db.version</td>
+  </tr>
+  <tr>
+    <th>DB name</th>
+    <td>$db.engine.name</td>
+  </tr>
+  <tr>
+    <th>Encoding</th>
+    <td>$db.engine.dialect.encoding</td>
+  </tr>
+  <tr>
+    <th>URI</th>
+    <td>$db.engine.url</td>
+  </tr>
+  <tr>
+    <th>Verbose</th>
+    <td>$db.engine.echo</td>
+  </tr>
+</table>
 
-<br />
 <br />
 
 <h2>Settings</h2>
