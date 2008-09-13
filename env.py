@@ -109,12 +109,12 @@ class Environment(ComponentManager):
         module = sys.modules[component.__module__]
         fullname = module.__name__+'.'+component.__name__
         if not component in self:
-            self.enabled[component]=True
             self[component]
-            self.config.set('components', fullname, 'enabled')
-            self.log.info('Enabling component %s' % fullname)
-            self.config.save()
-            #PackageInstaller.install(self)
+        self.enabled[component]=True
+        self.config.set('components', fullname, 'enabled')
+        self.log.info('Enabling component %s' % fullname)
+        self.config.save()
+        #PackageInstaller.install(self)
     
     def disableComponent(self, component):
         """Disables a component."""
@@ -125,12 +125,12 @@ class Environment(ComponentManager):
             return
         
         if component in self:
-            self.enabled[component]=False
             del self[component]
-            self.config.set('components', fullname, 'disabled')
-            self.log.info('Disabling component %s' % fullname)
-            self.config.save()
-            #PackageInstaller.cleanup(self)
+        self.enabled[component]=False
+        self.config.set('components', fullname, 'disabled')
+        self.log.info('Disabling component %s' % fullname)
+        self.config.save()
+        #PackageInstaller.cleanup(self)
     
     def initOptions(self):
         """Initialize any not yet set default options in configuration file."""

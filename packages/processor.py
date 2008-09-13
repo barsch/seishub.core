@@ -18,6 +18,10 @@ class Processor:
     """General class for processing a resource request used by services, like
     REST and SFTP."""
     
+    package_id = None
+    resourcetype_id = None
+    resource_id = None
+    
     def __init__(self, env):
         self.env = env
         # fetch all package ids in alphabetical order
@@ -67,6 +71,7 @@ class Processor:
         
         ### from here on we have a valid package_id
         package_id = self.postpath[0]
+        self.package_id = package_id
         # test if only package is requested
         if len(self.postpath)==1:
             return self._processPackage(package_id)
@@ -82,6 +87,7 @@ class Processor:
         
         ### from here on we can rely on a valid resourcetype_id
         resourcetype_id = self.postpath[1]
+        self.resourcetype_id = resourcetype_id
         # test if only resource type is requested
         if len(self.postpath)==2:
             return self._processResourceType(package_id, resourcetype_id)
@@ -100,6 +106,7 @@ class Processor:
         
         ### from here on we can rely on a valid resource_id
         resource_id = self.postpath[2]
+        self.resource_id = resource_id
         # test if only resource is requested
         if len(self.postpath)==3:
             return self._getResource(package_id, resourcetype_id, resource_id)

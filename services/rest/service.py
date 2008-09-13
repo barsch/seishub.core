@@ -12,6 +12,15 @@ from seishub.util.http import parseAccept, validMediaType
 from seishub.util.path import absPath
 
 
+RESOURCELIST_ROOT = """<?xml version="1.0"?>
+            
+    <seishub xml:base="%s" xmlns:xlink="http://www.w3.org/1999/xlink">
+    %s
+    </seishub>"""
+
+RESOURCELIST_NODE = """<%s xlink:type="simple" xlink:href="%s">%s</%s>\n"""
+
+
 class RESTRequest(Processor, http.Request):
     """A REST request via the http(s) protocol."""
     
@@ -32,11 +41,12 @@ class RESTRequest(Processor, http.Request):
         self.method = self.method.upper()
         # fetch output type
         self.accept = parseAccept(self.getHeader('accept'))
+        self.format = ''
         if 'format' in self.args.keys():
-            format = self.args.get('format')[0]
-            if validMediaType(format):
+            self.format = self.args.get('format')[0]
+            if validMediaType(self.format):
                 # add the valid format to the front of the list!
-                self.accept = [(1.0, format, {}, {})] + self.accept
+                self.accept = [(1.0, self.format, {}, {})] + self.accept
     
     def _processContent(self):
         try:
@@ -71,32 +81,61 @@ class RESTRequest(Processor, http.Request):
     
     def renderResource(self, data):
         # handle output/format conversion here
+        if self.format:
+            package_id = self.package_id
+            resourcetype_id = self.resourcetype_id
+            type = self.format
+            data = self._transformContent(package_id, resourcetype_id, type, 
+                                          data)
         self.setResponseCode(http.OK)
         return data
     
     def renderResourceList(self, **kwargs):
         """Resource list handler for the inheriting class."""
-        root = """<?xml version="1.0"?>
-            
-    <seishub xml:base="%s" xmlns:xlink="http://www.w3.org/1999/xlink">
-    %s
-    </seishub>"""
-        tmpl = """<%s xlink:type="simple" xlink:href="%s">%s</%s>\n"""
+        root = RESOURCELIST_ROOT
+        tmpl = RESOURCELIST_NODE
         doc = ""
         # generate a list of standard elements
         for tag in ['package', 'resourcetype', 'property', 'alias', 'mapping']:
             for uri in kwargs.get(tag,[]):
                 content = absPath(uri[len(self.path):])[1:]
                 doc += tmpl % (tag, uri, content, tag)
-        # generate a list of standard elements
+        # generate a list of resources
         for uri in kwargs.get('resource',[]):
             doc += tmpl % ('resource', uri, uri, 'resource')
         result = str(root % (self.env.getRestUrl(), doc))
+        self.setHeader('content-type', 'application/xml; charset=UTF-8')
+        # handle output/format conversion here
+        if self.format:
+            package_id = 'seishub'
+            resourcetype_id = 'stylesheet'
+            type = 'resourcelist:%s' % self.format
+            result = self._transformContent(package_id, resourcetype_id, type, 
+                                            result)
         # set header
         self._setHeaders(result)
-        self.setHeader('content-type', 'application/xml; charset=UTF-8')
         self.setResponseCode(http.OK)
         return result 
+    
+    def _transformContent(self, package_id, resourcetype_id, type, data):
+        from lxml import etree
+        from StringIO import StringIO
+        reg = self.env.registry
+        xslt = reg.stylesheets.get(package_id=package_id,
+                                   resourcetype_id=resourcetype_id,
+                                   type=type)
+        if not xslt:
+            return data
+        xslt = StringIO(xslt[0].getResource().getDocument().data)
+        xslt_doc = etree.parse(xslt)
+        transform = etree.XSLT(xslt_doc)
+        f = StringIO(data)
+        doc = etree.parse(f)
+        result_tree = transform(doc)
+        data = str(result_tree)
+        # XXX: need another field for content-type :/
+        self.setHeader('content-type', 'text/html; charset=UTF-8')
+        return data
 
 
 class RESTHTTPChannel(http.HTTPChannel):

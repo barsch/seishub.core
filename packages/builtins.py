@@ -1,18 +1,22 @@
 # -*- coding: utf-8 -*-
 
+import os
+
 from seishub.core import Component, implements
 from seishub.packages.interfaces import IPackage, IResourceType, \
                                         IMapperMethod, \
                                         IGETMapper, IPUTMapper, \
                                         IPOSTMapper, IDELETEMapper
+from seishub.packages.installer import registerStylesheet
 
 
 class SeisHubPackage(Component):
     """The SeisHub package.""" 
     implements(IPackage)
-    
     package_id = 'seishub'
+    
     version = '0.1'
+
 
 class StylesheetResource(Component):
     """A stylesheet resource type for SeisHub."""
@@ -20,6 +24,9 @@ class StylesheetResource(Component):
     
     package_id = 'seishub'
     resourcetype_id = 'stylesheet'
+    
+    registerStylesheet('resourcelist:xhtml', 
+                       'xslt' + os.sep + 'resourcelist_xhtml.xslt')
 
 
 class SchemaResource(Component):

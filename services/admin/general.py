@@ -139,7 +139,6 @@ class PluginsPanel(Component):
             module = sys.modules[component.__module__]
             modulename = module.__name__ 
             classname = modulename + '.' + component.__name__
-            
             if classname in enabled or classname in DEFAULT_COMPONENTS or \
                modulename in DEFAULT_COMPONENTS:
                 self.env.enableComponent(component)
