@@ -93,13 +93,13 @@ version: 2.5.1
 /* the style for the empty cells that are used for rendering the depth 
  * of the node */
 .ygtvdepthcell {
-    width: 14px;
+    width: 34px;
     height: 20px;
     background: none
 }
 
 .ygtvblankdepthcell {
-    width: 14px;
+    width: 34px;
     height: 20px;
 }
 

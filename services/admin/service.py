@@ -17,7 +17,7 @@ from seishub.defaults import ADMIN_PORT, ADMIN_CERTIFICATE, ADMIN_PRIVATE_KEY
 from seishub.packages.processor import Processor, RequestError
 from seishub.services.admin.interfaces import IAdminPanel, IAdminTheme, \
                                               IAdminStaticContent
-from seishub.util import json
+from seishub.util import demjson
 
 
 class AdminRequest(http.Request):
@@ -31,8 +31,8 @@ class AdminRequest(http.Request):
         self.postpath = map(urllib.unquote, string.split(self.path[1:], '/'))
         
         # process REST requests
-        if self.postpath[0]=='rest':
-            return self._renderRESTContent()
+        if self.postpath[0]=='json':
+            return self._renderJSONContent()
         
         # process user defined static content
         static_content = self._getAdminStaticContent()
@@ -77,7 +77,7 @@ class AdminRequest(http.Request):
         d.addCallback(self._renderPanel)
         d.addErrback(self._processingFailed) 
     
-    def _renderRESTContent(self):
+    def _renderJSONContent(self):
         """Asynchronous calls from JavaScript are only allowed from the same 
         server (ip and port). So in order to fetch a REST request via the admin
         service, we need to provide a REST fetcher on the server side.
@@ -92,9 +92,9 @@ class AdminRequest(http.Request):
         except RequestError, e:
             self.env.log.info('RequestError:', e)
         else:
-            if isinstance(data, type({})):
+            if isinstance(data, dict):
                 # format as json
-                data = json.write(data)
+                data = str(demjson.encode(data))
                 self.write(data)
                 self.setHeader('content-type', 'text/plain; charset=UTF-8')
                 self.setResponseCode(http.OK)
