@@ -365,21 +365,6 @@ class ZopeCompatibilityTestCase(unittest.TestCase):
         # clean up
         IInvariant.setTaggedValue('invariants', old_invariants)
 
-    def test___doc___element(self):
-        class I(Interface):
-            "xxx"
-
-        self.assertEqual(I.__doc__, "xxx")
-        self.assertEqual(list(I), [])
-
-        class I(Interface):
-            "xxx"
-
-            __doc__ = Attribute('the doc')
-
-        self.assertEqual(I.__doc__, "")
-        self.assertEqual(list(I), ['__doc__'])
-
     def testIssue228(self):
         # Test for http://collector.zope.org/Zope3-dev/228
         class I(Interface):

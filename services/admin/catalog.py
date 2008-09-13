@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+from sqlalchemy import create_engine
+
 from seishub.core import Component, implements
 from seishub.services.admin.interfaces import IAdminPanel
 from seishub.xmldb.defaults import DEFAULT_PREFIX, DATA_TABLE, \
@@ -22,22 +24,34 @@ class BasicPanel(Component):
     
     def renderPanel(self, request):
         db = self.db
-        data = {}
+        data = {
+          'db': db,
+          'uri': self.config.get('db', 'uri'),
+        }
         if db.engine.name=='sqlite':
             data['info'] = ('SQLite Database enabled!',
                             SQLITE_WARNING.replace('-',''))
         if request.method == 'POST':
-            for option in ('uri', 'verbose'):
-                self.config.set('db', option, 
-                                request.args.get(option,[''])[0])
+            uri = request.args.get('uri',[''])[0]
+            verbose = request.args.get('verbose',[''])[0]
+            self.config.set('db', 'verbose', verbose)
+            data['uri'] = uri
+            try:
+                engine = create_engine(uri)
+                engine.connect()
+            except:
+                data['error'] = ("Could not connect to database %s" % uri, 
+                                 "Please make sure the database URI has " + \
+                                 "the following syntax: dialect://user:" + \
+                                 "password@host:port/dbname.")
+            else:
+                self.config.set('db', 'uri', uri)
+                data['info'] = ("Connection to new database was successful", 
+                                "You have to restart SeisHub in order to " + \
+                                "see any changes at the database settings.")
             self.config.save()
-            data['info'] = "You have to restart SeisHub in order to see " + \
-                           "any changes at the database settings."
-        data.update({
-          'uri': self.config.get('db', 'uri'),
-          'verbose': self.config.getbool('db', 'verbose'),
-          'db': db,
-        })
+
+        data['verbose'] = self.config.getbool('db', 'verbose')
         return ('catalog_db_basic.tmpl', data)
 
 
@@ -76,7 +90,6 @@ class DatabaseQueryPanel(Component):
                     query = db.execute(query)
                     data['cols'] = query.keys
                     data['result'] = query.fetchall()
-                    
                 except Exception, e:
                     self.env.log.error('Database query error', e)
                     data['error'] = ('Database query error', e)

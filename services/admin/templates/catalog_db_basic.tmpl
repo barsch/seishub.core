@@ -1,11 +1,6 @@
 <h1>Database Settings</h1>
 
-<p><i>
-  You have to restart SeisHub in order to see any changes at the database 
-  settings.
-</i></p>
-
-<h2>Status</h2>
+<h2>Current Status</h2>
 
 <table class="list">
   <tr>
@@ -36,7 +31,7 @@
 
 <form method="post">
   <div class="field">
-    <label>Database URI</label><br />
+    <label>Database URI (dialect://user:password@host:port/dbname)</label><br />
     <input name="uri" size="80" type="text" value="$uri" />
   </div>
 
@@ -49,5 +44,5 @@
       />
   </div>
 
-  <input type="submit" value="Save" />
+  <input type="submit" value="Save & Test connection" /> 
 </form>

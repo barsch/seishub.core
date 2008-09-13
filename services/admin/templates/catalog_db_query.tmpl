@@ -27,7 +27,15 @@
 #for $r in $result
   <tr>
   #for $f in $r
-    <td>$f</td>
+    <td>
+      #if isinstance(f, buffer)
+        #filter WebSafe 
+        #echo f.__repr__() #
+        #end filter
+      #else
+        $f
+      #end if
+    </td>
   #end for
   </tr>
 #end for
