@@ -55,7 +55,11 @@ table.list td,table.list th {
     left: 10px;
     top: 5px;
     color: #999;
-    font-size: 56px;
+    font-size: 0px;
+    background-image: url("/images/seishub.png");
+    background-repeat: no-repeat;
+    height: 80px;
+    width: 300px;
 }
 
 /* caption */
