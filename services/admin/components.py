@@ -116,7 +116,7 @@ class BrowserPanel(Component):
     
     def getPanelId(self):
         return ('components', 'Components', 'browse-components', 
-                'Browse Components')
+                'Component Browser')
     
     def renderPanel(self, request):
         data = {'resturl': self.env.getRestUrl()}
@@ -240,13 +240,13 @@ class AliasesPanel(Component):
         return {'info': "Alias has been added."}
 
 
-class ManagerPanel(Component):
+class QuickinstallerPanel(Component):
     """Manage components."""
     implements(IAdminPanel)
     
     def getPanelId(self):
-        return ('components', 'Components', 'component-manager', 
-                'Component Manager')
+        return ('components', 'Components', 'quickinstaller', 
+                'Quickinstaller')
     
     def renderPanel(self, request):
         data = {'packages': self.env.registry.packages,
@@ -255,4 +255,4 @@ class ManagerPanel(Component):
                 'mappers': self.env.registry.mappers,
                 'stylesheets': self.env.registry.stylesheets,
                 'schemas': self.env.registry.schemas,}
-        return ('components_manager.tmpl', data)
+        return ('components_quickinstaller.tmpl', data)
