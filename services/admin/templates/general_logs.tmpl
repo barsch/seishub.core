@@ -1,22 +1,27 @@
-<script type="text/javascript" src="/yui/build/yahoo-dom-event/yahoo-dom-event.js"></script>
+#def JAVASCRIPT
+  <script type="text/javascript" src="/yui/build/yahoo-dom-event/yahoo-dom-event.js"></script>
+#end def JAVASCRIPT
 
 <h1>Logs</h1>
 
 <h2>Access Log</h2>
-<textarea id="accesslog" class="log" wrap="off">
+<textarea id="accesslog" class="log" cols="80" rows="10">
 #filter WebSafe
 #for $line in $accesslog#$line#end for
 #end filter
 </textarea>
 
 <h2>Error Log</h2>
-<textarea id="errorlog" class="log" wrap="off">
+<textarea id="errorlog" class="log" cols="80" rows="10">
 #filter WebSafe
 #for $line in $errorlog#$line#end for
 #end filter
 </textarea>
 
-<script>
+
+<script type="text/javascript">
+/* <![CDATA[ */
+
   var Event = YAHOO.util.Event;
 
   initPage = function() {
@@ -26,4 +31,6 @@
     ta2.scrollTop = ta2.scrollHeight;
   }
   Event.on(window,"load",initPage);
+
+/* ]]> */
 </script>

@@ -1,16 +1,18 @@
 <h1>Query DB</h1>
 
 <h2>Query</h2>
-<form method="post">
+<form method="post" action="">
   <div class="field">
     <textarea name="query" rows="3" cols="80">$query</textarea>
   </div>
   
-  #for $table in $tables
-  <input type="submit" name="$table" value="$table" />
-  #end for
-  <br /><br />
-  <input type="submit" name="send" value="Query" />
+  <div class="button">
+    #for $table in $tables
+    <input type="submit" name="$table" value="$table" />
+    #end for
+    <br /><br />
+    <input type="submit" name="send" value="Query" />
+  </div>
 </form>
 
 <br />

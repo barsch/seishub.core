@@ -184,6 +184,7 @@ table.list td,table.list th {
     left: 0px;
     width: 170px;
     padding: 20px;
+    margin: 0;
 }
 
 #submenu li {

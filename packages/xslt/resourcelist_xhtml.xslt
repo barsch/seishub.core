@@ -5,7 +5,7 @@
     version="1.0">
     
     <xsl:output method="xml" encoding="utf-8" indent="yes"
-        media-type="application/xhtml+xml" 
+        media-type="text/html" 
         doctype-public="-//W3C//DTD XHTML 1.0 Strict//EN"
         doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"
         omit-xml-declaration="yes" />
@@ -36,10 +36,9 @@
     </xsl:template>
     
     <xsl:template match="/seishub">
-        <html>
+        <html lang="en" xml:lang="en">
             <head>
-                <meta http-equiv="Content-Type" 
-                      content="application/xhtml+xml; charset=UTF-8" />
+                <title></title>
                 <link rel="stylesheet" type="text/css"
                       href="http://www.seishub.org/css/components.css" />
             </head>

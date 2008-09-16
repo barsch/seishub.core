@@ -158,6 +158,8 @@ class AdminRequest(http.Request):
         temp.submenu = self._renderSubMenu()
         temp.version = SEISHUB_VERSION
         temp.content = body
+        temp.CSS = body.getVar('CSS','')
+        temp.JAVASCRIPT = body.getVar('JAVASCRIPT','')
         temp.error = self._renderError(data)
         body = str(temp)
         
@@ -229,7 +231,7 @@ class AdminRequest(http.Request):
                 "recent call last):</b>\n\n%s\n\n</body></html>\n"
                 % webutil.formatFailure(reason))
         self.setResponseCode(http.INTERNAL_SERVER_ERROR)
-        self.setHeader('content-type', 'application/xhtml+xml; charset=UTF-8')
+        self.setHeader('content-type', 'text/html; charset=UTF-8')
         self.setHeader('content-length', str(len(body)))
         self.write(body)
         self.finish()

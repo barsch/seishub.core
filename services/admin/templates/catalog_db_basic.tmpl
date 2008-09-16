@@ -29,7 +29,7 @@
 
 <h2>Settings</h2>
 
-<form method="post">
+<form method="post" action="">
   <div class="field">
     <label>Database URI (dialect://user:password@host:port/dbname)</label><br />
     <input name="uri" size="80" type="text" value="$uri" />
@@ -43,6 +43,8 @@
       #end if 
       />
   </div>
-
-  <input type="submit" value="Save &amp; Test connection" /> 
+  
+  <div class="button">
+    <input type="submit" value="Save &amp; Test connection" />
+  </div> 
 </form>

@@ -1,21 +1,21 @@
-  var Dom = YAHOO.util.Dom;
-  var Event = YAHOO.util.Event;
-  var $ = function(id) {
-      return document.getElementById(id);
-  } 
+var Dom = YAHOO.util.Dom;
+var Event = YAHOO.util.Event;
+var $ = function(id) {
+    return document.getElementById(id);
+} 
 
-  //++++++++++++++++++++++++++++++++++++
-  // YUI ACCORDION
-  // 1/22/2008 - Edwart Visser
-  //
-  // accordion
-  //
-  // REQUIRES: yahoo-dom-event.js
-  //++++++++++++++++++++++++++++++++++++
+//++++++++++++++++++++++++++++++++++++
+// YUI ACCORDION
+// 1/22/2008 - Edwart Visser
+//
+// accordion
+//
+// REQUIRES: yahoo-dom-event.js
+//++++++++++++++++++++++++++++++++++++
 
-  YAHOO.namespace("lutsr");
+YAHOO.namespace("lutsr");
 
-  YAHOO.lutsr.accordion = {
+YAHOO.lutsr.accordion = {
     properties : {
         multipleOpen : false
     },
@@ -28,7 +28,7 @@
         var accordionObjects = Dom.getElementsByClassName("accordion");
 
         if(accordionObjects.length > 0) {
-
+    
             for(var i=0; i<accordionObjects.length; i++) {
                 if(accordionObjects[i].nodeName == "DL") {
                     var headers = accordionObjects[i].getElementsByTagName("dt");
@@ -47,7 +47,7 @@
                 jsObj : this
             }
             
-            Event.addListener(headers[i].getElementsByTagName("div"),
+            Event.addListener(headers[i].getElementsByTagName("span"),
                               "click", 
                               this.clickHeader,headerProperties);
             Event.addListener(headers[i].getElementsByTagName("input"),
@@ -55,12 +55,12 @@
                               this.clickHeaderCheckbox,headerProperties);
         }
     },
-
+    
     clickHeader : function(e,headerProperties) {
         var parentObj = headerProperties.objRef.parentNode.parentNode;
         var headers = parentObj.getElementsByTagName("dd"); 
         var header = headers[headerProperties.nr];
-
+    
         if(Dom.hasClass(header,"open")) {
             headerProperties.jsObj.collapse(header);
         } else {
@@ -76,7 +76,7 @@
             }
         }
     },
-    
+
     clickHeaderCheckbox : function(e,headerProperties) {
         var objRef = headerProperties.objRef
         var headerCheck = objRef.getElementsByTagName("input")[0];
@@ -91,18 +91,20 @@
             checks[i].checked=headerCheck.checked;
         }
     },
-    
+
     collapse : function(header) {
         Dom.removeClass(Dom.getPreviousSibling(header),"selected");
         Dom.removeClass(header,"open");
     },
+
     expand : function(header) {
         Dom.addClass(Dom.getPreviousSibling(header),"selected");
         Dom.addClass(header,"open");
-    },
-  }
+    }
+}
 
-  initPage = function() {
+initPage = function() {
     YAHOO.lutsr.accordion.init();
-  }
-  Event.on(window,"load",initPage);
+}
+
+Event.on(window,"load",initPage);

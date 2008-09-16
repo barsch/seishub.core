@@ -1,21 +1,23 @@
 <h1>Resources</h1>
 
 <h2>Upload XML Documents</h2>
-<form method="post" enctype="multipart/form-data" name="add">
+<form method="post" enctype="multipart/form-data" id="add" action="">
   <div class="field">
     <label>Package</label><br />
     <select name="package_id" id="package_id">
-        #for $p in $packages
-        #if $resourcetypes[$p]
-        <option value="$p" onclick="changePackage('$p');">$p</option>
-        #end if
-        #end for
+      #for $p in $packages
+      #if $resourcetypes[$p]
+      <option value="$p" onclick="changePackage('$p');">$p</option>
+      #end if
+      #end for
     </select>
   </div>
   
   <div class="field">
     <label>Resource type</label><br />
-    <select name="resourcetype_id" id="resourcetype_id"></select>
+    <select name="resourcetype_id" id="resourcetype_id">
+      <option></option>
+    </select>
   </div>
 
   <div class="field">
@@ -24,14 +26,16 @@
            accept="text/xml" />
   </div>
 
-  <input type="submit" value="Submit" />
+  <div class="button">
+    <input type="submit" value="Submit" />
+  </div>
 </form>
 
 <br />
 <br />
 
 <h2>List of all resources</h2>
-<form method="post" name="list">
+<form method="post" id="list" action="">
   <div class="field">
     #for $resource in $resources
     <input type="checkbox" name="resource[]" value="$resource" /> 
@@ -39,10 +43,15 @@
     #end for
   </div>
 
-  <input type="submit" name="delete" value="Delete" />
+  <div class="button">
+    <input type="submit" name="delete" value="Delete" />
+  </div>
 </form>
 
+
 <script type="text/javascript">
+/* <![CDATA[ */
+
     var resourcetypes = new Array();
     #for $p in $packages
     resourcetypes['$p'] = $resourcetypes[$p];
@@ -60,4 +69,6 @@
       }
     }
     changePackage('$packages[0]');
+
+/* ]]> */
 </script>

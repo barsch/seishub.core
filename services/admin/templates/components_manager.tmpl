@@ -2,16 +2,17 @@
 
 <h2>Packages + Resourcetypes</h2>
 
-<ol>
+#filter WebSafe
 #for $p in $packages
-  <li>$p</li>
-  <ol>
-    #for $rt in $resourcetypes.get($p)
-      <li>$rt</li>
-    #end for
-  </ol>
-#end for
+<h3>$p</h3>
+#if $resourcetypes.get($p)
+<ol>
+  #for $rt in $resourcetypes.get($p)
+    <li>$rt</li>
+  #end for
 </ol>
+#end if
+#end for
 <hr />
 $mappers
 <hr />
@@ -20,3 +21,4 @@ $schemas
 $stylesheets
 <hr />
 $aliases
+#end filter

@@ -1,11 +1,14 @@
-<script type="text/javascript" src="/yui/build/yahoo/yahoo-min.js"></script>
-<script type="text/javascript" src="/yui/build/event/event-min.js"></script>
-<script type="text/javascript" src="/yui/build/treeview/treeview-min.js"></script>
-<script type="text/javascript" src="/yui/build/connection/connection-min.js"></script>
-<script type="text/javascript" src="/yui/build/json/json-min.js"></script> 
-<link rel="stylesheet" type="text/css" href="/yui/assets/treeview-menu.css" />
-<link rel="stylesheet" type="text/css" href="/yui/assets/treeview-sprite.css" />
-
+#def JAVASCRIPT
+  <script type="text/javascript" src="/yui/build/yahoo/yahoo-min.js"></script>
+  <script type="text/javascript" src="/yui/build/event/event-min.js"></script>
+  <script type="text/javascript" src="/yui/build/treeview/treeview-min.js"></script>
+  <script type="text/javascript" src="/yui/build/connection/connection-min.js"></script>
+  <script type="text/javascript" src="/yui/build/json/json-min.js"></script> 
+#end def JAVASCRIPT
+#def CSS
+  <link rel="stylesheet" type="text/css" href="/yui/assets/treeview-menu.css" />
+  <link rel="stylesheet" type="text/css" href="/yui/assets/treeview-sprite.css" />
+#end def CSS
 
 <div id="infobox">
   <h2>Legend</h2>
@@ -22,7 +25,10 @@
 
 <div id="treediv"></div>
 
-<script>
+
+<script type="text/javascript">
+/* <![CDATA[ */
+
   (function() { 
     var tree;
     
@@ -38,9 +44,14 @@
           if (oResponse.responseText) {
             var data = []; 
             data = YAHOO.lang.JSON.parse(oResponse.responseText);
-            for each (var element in elements) {
+            for (var j=0; j<elements.length; j++) { 
+              var element = elements[j];
               var items = data[element];
-              for each (var item in items) {
+              if (!items) {
+                continue;
+              }
+              for (var i=0; i<items.length; i++) {
+                var item = items[i];
                 var text = item.substr(item.lastIndexOf('/')+1);
                 if (element=='resource' || element=='alias') {
                   var tmp = new YAHOO.widget.TextNode({label:text, target:"_blank"}, node, false);
@@ -90,4 +101,6 @@
     }
     YAHOO.util.Event.onDOMReady(treeInit);
   })();  
+
+/* ]]> */
 </script>

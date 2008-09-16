@@ -1,6 +1,6 @@
 <h1>Services</h1>
 
-<form method="post" name="services">
+<form method="post" id="services" action="">
   <table class="list">
     #for $s in $services
     <tr>
@@ -21,9 +21,11 @@
     #end for
   </table>
   
-  <input type="submit" name="reload" value="Set Services" />
-  <br />
-  <input type="submit" name="shutdown" value="Shutdown" />
-  <input type="submit" name="restart" value="Restart" disabled="disabled"/>
+  <div class="button">
+    <input type="submit" name="reload" value="Set Services" />
+    <br />
+    <input type="submit" name="shutdown" value="Shutdown" />
+    <input type="submit" name="restart" value="Restart" disabled="disabled"/>
+  </div>
 </form>
 
