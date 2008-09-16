@@ -96,7 +96,8 @@ class AdminRequest(http.Request):
                 # format as json
                 data = str(demjson.encode(data))
                 self.write(data)
-                self.setHeader('content-type', 'text/plain; charset=UTF-8')
+                self.setHeader('content-type', 
+                               'application/json; charset=UTF-8')
                 self.setResponseCode(http.OK)
         self.finish()
     
@@ -118,7 +119,7 @@ class AdminRequest(http.Request):
             for p in self.postpath[1:]:
                 node = node.getChild(p, self)
             if not node.isLeaf:
-                self.setHeader('content-type', "text/html; charset=UTF-8")
+                self.setHeader('content-type', 'text/html; charset=UTF-8')
             # favicon.ico needs extra content type and encoding settings
             if self.path.endswith('.ico'):
                 node.type = "image/x-icon"
@@ -163,7 +164,7 @@ class AdminRequest(http.Request):
         # set various default headers
         self.setHeader('server', 'SeisHub '+ SEISHUB_VERSION)
         self.setHeader('date', http.datetimeToString())
-        self.setHeader('content-type', "text/html; charset=UTF-8")
+        self.setHeader('content-type', 'text/html; charset=UTF-8')
         self.setHeader('content-length', str(len(body)))
         
         # write content
@@ -228,7 +229,7 @@ class AdminRequest(http.Request):
                 "recent call last):</b>\n\n%s\n\n</body></html>\n"
                 % webutil.formatFailure(reason))
         self.setResponseCode(http.INTERNAL_SERVER_ERROR)
-        self.setHeader('content-type', "text/html")
+        self.setHeader('content-type', 'application/xhtml+xml; charset=UTF-8')
         self.setHeader('content-length', str(len(body)))
         self.write(body)
         self.finish()

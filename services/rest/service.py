@@ -104,6 +104,7 @@ class RESTRequest(Processor, http.Request):
         for uri in kwargs.get('resource',[]):
             doc += tmpl % ('resource', uri, uri, 'resource')
         result = str(root % (self.env.getRestUrl(), doc))
+        # set default content type to XML
         self.setHeader('content-type', 'application/xml; charset=UTF-8')
         # handle output/format conversion here
         if self.format:
@@ -133,8 +134,12 @@ class RESTRequest(Processor, http.Request):
         doc = etree.parse(f)
         result_tree = transform(doc)
         data = str(result_tree)
-        # XXX: need another field for content-type :/
-        self.setHeader('content-type', 'text/html; charset=UTF-8')
+        # content type should be included into the stylesheet 
+        root = xslt_doc.getroot()
+        content_type = root.xpath('.//xsl:output/@media-type', 
+                                  namespaces=root.nsmap)
+        if content_type and isinstance(content_type, list):
+            self.setHeader('content-type', content_type[0] + '; charset=UTF-8')
         return data
 
 

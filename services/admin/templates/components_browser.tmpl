@@ -53,11 +53,6 @@
                   tmp.isLeaf = 1;
                   tmp.title = item;
                   tmp.contentStyle = "icon icon-index";
-                } else if (element=='mapping') {
-                  var tmp = new YAHOO.widget.TextNode({label:item, target:"_blank"}, node, false);
-                  tmp.href = "$resturl" + item;
-                  tmp.title = item;
-                  tmp.labelStyle = "icon icon-"+element;
                 } else {
                   var tmp = new YAHOO.widget.TextNode({label:text, target:"_blank"}, node, false);
                   tmp.href = "$resturl" + item;

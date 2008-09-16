@@ -239,18 +239,28 @@ class Processor:
                 return True
         return False
     
-    def _formatResourceList(self, base=[], items=[]):
-        """Adds a base path to each element of the items list."""
-        if base:
-            base_path = '/' + '/'.join(base)
-        else:
-            base_path = ''
-        return [base_path + '/' + i for i in items]
+    def _addBaseToList(self, base='/', items=[]):
+        """Adds a base path to each single element of a list."""
+        if not base.startswith('/'):
+            base = '/' + base
+        if not base.endswith('/'):
+            base = base + '/'
+        return [base + i for i in items]
+    
+    def _formatPathList(self, items=[], level=0):
+        """Returns a list of unique paths cut at a certain level."""
+        data = {}
+        for item in items:
+            temp = '/'.join(item.split('/')[0:level+1])
+            data[temp] = temp;
+        data=data.keys()
+        data.sort()
+        return data
     
     def _processRoot(self):
         """The root element can be only accessed via the GET method and shows 
         only a list of all available packages, root mappings and properties."""
-        package_ids = self._formatResourceList([], self.package_ids)
+        package_ids = self._addBaseToList('/', self.package_ids)
         # get all root mappings not starting with a package name
         def notPackageMapping(item):
             parts = item.split('/')
@@ -258,6 +268,7 @@ class Processor:
                 return False
             return True
         mapping_ids = filter(notPackageMapping, self.mapping_urls.keys())
+        mapping_ids = self._formatPathList(mapping_ids, 1)
         # XXX: missing yet
         property_ids = []
         return self.renderResourceList(package=package_ids, 
@@ -275,8 +286,7 @@ class Processor:
         # fetch resource types
         resourcetype_ids = self.env.registry.resourcetypes[package_id]
         resourcetype_ids.sort()
-        resourcetype_ids = self._formatResourceList([package_id],
-                                                    resourcetype_ids)
+        resourcetype_ids = self._addBaseToList(package_id, resourcetype_ids)
         # fetch package aliases
         aliases = self.env.registry.aliases.get(package_id)
         alias_ids = [str(alias) for alias in aliases]
@@ -322,8 +332,8 @@ class Processor:
         # special properties
         property_ids = ['.all']
         property_ids.sort()
-        property_ids = self._formatResourceList((package_id, resourcetype_id),
-                                                property_ids)
+        property_ids = self._addBaseToList(package_id + '/' + resourcetype_id, 
+                                           property_ids)
         return self.renderResourceList(property=property_ids,
                                        alias=alias_ids,
                                        mapping=mapping_ids,

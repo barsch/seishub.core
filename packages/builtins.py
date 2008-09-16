@@ -27,6 +27,8 @@ class StylesheetResource(Component):
     
     registerStylesheet('resourcelist:xhtml', 
                        'xslt' + os.sep + 'resourcelist_xhtml.xslt')
+    registerStylesheet('resourcelist:json', 
+                       'xslt' + os.sep + 'resourcelist_json.xslt')
 
 
 class SchemaResource(Component):
