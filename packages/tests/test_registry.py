@@ -286,7 +286,10 @@ class FromFilesystemTest(SeisHubEnvironmentTestCase):
         assert TestMapper(self.env) is mapper[0]
         methods = self.env.registry.mappers.getMethods('/test/testmapping')
         self.assertEqual(methods, ['PUT', 'GET'])
-        
+        # get mappers of a certain method
+        print self.env.registry.mappers.get(method='GET')
+        print self.env.registry.mappers.getMappings(method='GET')
+    
     def testRegisterStylesheet(self):
         # note: schema registry uses the same functionality and is therefore
         # not tested seperately

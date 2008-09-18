@@ -412,12 +412,14 @@ class MapperRegistry(dict):
         """returns the mapper object on which the given url fits best, 
         deepest path first
         
-        if no url or method is given: get() == getMappings()
+        if no url and no method is given: get() == getAllMappings()
         
         if only method is given, returns a list of all known mappers for that
         method"""
-        if not (url or method):
-            return self.getMappings()
+        if not url and not method:
+            return self.getAllMappings()
+        if not url:
+            return self.getMappings(method)
         url = url.split('/')[1:]
         if not method:
             methods = self.methods.keys()
@@ -430,7 +432,22 @@ class MapperRegistry(dict):
                 objs.append(mapper_cls(self.env))
         return list(set(objs))
     
-    def getMappings(self):
+    def getMappings(self, method, base=None):
+        """Returns a list of all mappings of a given method with an optional 
+        base path.
+        """
+        # make sure we have a trailing slash for any given base
+        if base and not base.endswith('/'):
+            base = base + '/'
+        mappings = list()
+        interface = self.methods[method]
+        mapper_classes = PackageManager.getClasses(interface)
+        for cls in mapper_classes:
+            if not base or cls.mapping_url.startswith(base):
+                mappings.append(cls.mapping_url)
+        return mappings
+    
+    def getAllMappings(self):
         """return a dict of all known mappings of the form 
         {uri : [allowed methods]}
         """

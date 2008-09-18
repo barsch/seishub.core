@@ -72,6 +72,15 @@ class TestMapper2(Component):
         pass
 
 
+class TestMapper3(Component):
+    implements(IGETMapper)
+    
+    mapping_url = '/test/vc/muh'
+    
+    def processGET(self, request):
+        pass
+
+
 class ProcessorTest(SeisHubEnvironmentTestCase):
     def setUp(self):
         self.env.enableComponent(AVersionControlledResourceType)
@@ -95,8 +104,8 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
         self.assertTrue('/test' in data.get('package'))
         self.assertTrue('/seishub' in data.get('package'))
         # check entries in mapping
-        self.assertTrue('/test2/testmapping' in data.get('mapping'))
-        self.assertFalse('/test/testmapping' in data.get('mapping'))
+        self.assertTrue('/test2' in data.get('mapping'))
+        self.assertFalse('/test' in data.get('mapping'))
     
     def test_processPackage(self):
         request = Processor(self.env)
@@ -116,7 +125,7 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
         # check entries in mapping
         self.assertTrue('/test/testmapping' in data.get('mapping'))
         self.assertFalse('/test2/testmapping' in data.get('mapping'))
-        
+        self.assertFalse('/test/vc' in data.get('mapping'))
     
     def test_processPackageAlias(self):
         pass
@@ -132,9 +141,7 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
         data = request.process()
         # should have at least 'index', 'alias', 'mapping' and 'property'
         self._test_process_result(data, ['index', 'alias', 'mapping', 
-                                         'property'])
-        # check default entries
-        self.assertTrue('/test/notvc/.all' in data.get('property'))
+                                         'property', 'resource'])
         # test valid PUT method
         request.method = 'PUT'
         request.content = StringIO.StringIO(XML_DOC)
@@ -149,7 +156,7 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
         self.assertTrue(location.startswith(request.path))
         # fetch all resources via property .all
         request.method = 'GET'
-        request.path = '/test/notvc/.all'
+        request.path = '/test/notvc'
         data = request.process()
         # only resources should be there
         self.assertTrue(data.has_key('resource'))

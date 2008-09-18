@@ -82,6 +82,7 @@ class RESTRequest(Processor, http.Request):
     def renderResource(self, data):
         # handle output/format conversion here
         if self.format:
+            # XXX: how to fetch that???
             package_id = self.package_id
             resourcetype_id = self.resourcetype_id
             type = self.format

@@ -18,16 +18,10 @@ class Processor:
     """General class for processing a resource request used by services, like
     REST and SFTP."""
     
-    package_id = None
-    resourcetype_id = None
-    resource_id = None
-    
     def __init__(self, env):
         self.env = env
         # fetch all package ids in alphabetical order
         self.package_ids = list(self.env.registry.packages)
-        # fetch all mapping URLs
-        self.mapping_urls = dict(self.env.registry.mappers)
         # response code and header for a request
         self.response_code = http.OK
         self.response_header = {}
@@ -53,25 +47,25 @@ class Processor:
     
     def _processGET(self):
         """Working through the GET process chain."""
+        
         # test if plain root node
         if len(self.postpath)==0:
             return self._processRoot()
-        
         # test if root property
         if self.postpath[0].startswith('.'):
             return self._processRootProperty(self.postpath[0:])
         
-        # test if it fits to a valid mapping
+        # test if it fits directly to a valid mapping
         if self.env.registry.mappers.get(self.path, self.method):
             return self._processMapping()
         
         # test if package at all
         if self.postpath[0] not in self.package_ids:
-            raise RequestError(http.NOT_FOUND)
+            # finally it could be a sub path of a mapping
+            return self._checkForMappingSubPath()
         
         ### from here on we have a valid package_id
         package_id = self.postpath[0]
-        self.package_id = package_id
         # test if only package is requested
         if len(self.postpath)==1:
             return self._processPackage(package_id)
@@ -83,11 +77,11 @@ class Processor:
             return self._processAlias(package_id, None, self.postpath[1:])
         # test if valid resource type at all
         if not self._checkResourceType(package_id, self.postpath[1]):
-            raise RequestError(http.NOT_FOUND)
+            # finally it could be a sub path of a mapping
+            return self._checkForMappingSubPath()
         
         ### from here on we can rely on a valid resourcetype_id
         resourcetype_id = self.postpath[1]
-        self.resourcetype_id = resourcetype_id
         # test if only resource type is requested
         if len(self.postpath)==2:
             return self._processResourceType(package_id, resourcetype_id)
@@ -102,11 +96,11 @@ class Processor:
                                       self.postpath[2:])
         # test if a resource at all
         if not isInteger(self.postpath[2]):
-            raise RequestError(http.NOT_FOUND)
+            # finally it could be a sub path of a mapping
+            return self._checkForMappingSubPath()
         
         ### from here on we can rely on a valid resource_id
         resource_id = self.postpath[2]
-        self.resource_id = resource_id
         # test if only resource is requested
         if len(self.postpath)==3:
             return self._getResource(package_id, resourcetype_id, resource_id)
@@ -127,7 +121,7 @@ class Processor:
         if len(self.postpath)==4:
             return self._getResource(package_id, resourcetype_id, resource_id,
                                      version_id)
-        # test if resource property
+        # test if version controlled resource property
         if self.postpath[3].startswith('.'):
             return self._processResourceProperty(package_id, 
                                                  resourcetype_id,
@@ -161,7 +155,7 @@ class Processor:
         if self.env.registry.mappers.get(self.path, self.method):
             return self._processMapping()
         # test if the request was called in a resource type directory 
-        if len(self.postpath)==2:
+        if len(self.postpath) in [2, 3] and self.postpath[0]!='seishub':
             if self._checkResourceType(self.postpath[0], self.postpath[1]):
                 res = self._addResource(self.postpath[0], self.postpath[1])
                 self.response_code = http.CREATED
@@ -192,7 +186,8 @@ class Processor:
         if self.env.registry.mappers.get(self.path, self.method):
             return self._processMapping()
         # test if the request was called on a resource 
-        if len(self.postpath)==3 and isInteger(self.postpath[2]):
+        if len(self.postpath)==3 and isInteger(self.postpath[2]) and \
+           self.postpath[0]!='seishub':
             if self._checkResourceType(self.postpath[0], self.postpath[1]):
                 self._modifyResource(self.postpath[0],
                                      self.postpath[1],
@@ -221,7 +216,8 @@ class Processor:
         if self.env.registry.mappers.get(self.path, self.method):
             return self._processMapping()
         # test if the request was called on a resource 
-        if len(self.postpath)==3 and isInteger(self.postpath[2]):
+        if len(self.postpath)==3 and isInteger(self.postpath[2]) and \
+           self.postpath[0]!='seishub':
             if self._checkResourceType(self.postpath[0], self.postpath[1]):
                 self._deleteResource(self.postpath[0],
                                      self.postpath[1],
@@ -262,15 +258,17 @@ class Processor:
         only a list of all available packages, root mappings and properties."""
         package_ids = self._addBaseToList('/', self.package_ids)
         # get all root mappings not starting with a package name
-        def notPackageMapping(item):
-            parts = item.split('/')
+        urls = self.env.registry.mappers.getMappings(method=self.method)
+        mapping_ids = []
+        for url in urls:
+            parts = url.split('/')
             if parts[1] in self.package_ids:
-                return False
-            return True
-        mapping_ids = filter(notPackageMapping, self.mapping_urls.keys())
-        mapping_ids = self._formatPathList(mapping_ids, 1)
+                continue
+            mapping_ids.append('/'.join(parts[0:2]))
+        mapping_ids=list(set(mapping_ids))
+        mapping_ids.sort()
         # XXX: missing yet
-        property_ids = []
+        property_ids = ['/.info']
         return self.renderResourceList(package=package_ids, 
                                        mapping=mapping_ids,
                                        property=property_ids)
@@ -292,14 +290,15 @@ class Processor:
         alias_ids = [str(alias) for alias in aliases]
         alias_ids.sort()
         # fetch all mappings in this package, not being a resource type
+        urls = self.env.registry.mappers.getMappings(method=self.method,
+                                                     base=self.path)
         mapping_ids = []
-        for url in self.mapping_urls.keys():
-            if not url.startswith('/' + package_id + '/'):
-                continue
+        for url in urls:
             parts = url.split('/')
             if parts[2] in self.env.registry.resourcetypes[package_id]:
                 continue
-            mapping_ids.append(url)
+            mapping_ids.append('/'.join(parts[0:3]))
+        mapping_ids=list(set(mapping_ids))
         # special properties
         # XXX: missing yet
         property_ids = []
@@ -322,39 +321,56 @@ class Processor:
         alias_ids = [str(alias) for alias in aliases]
         alias_ids.sort()
         # fetch all mappings in this package and resource type
-        mapping_ids = [url for url in self.mapping_urls.keys() 
-                       if url.startswith('/' + package_id + '/' + \
-                                         resourcetype_id + '/')]
+        urls = self.env.registry.mappers.getMappings(method=self.method,
+                                                     base=self.path)
+        mapping_ids = []
+        for url in urls:
+            parts = url.split('/')
+            mapping_ids.append('/'.join(parts[0:4]))
+        mapping_ids=list(set(mapping_ids))
         # fetch indexes
         indexes = self.env.catalog.listIndexes(package_id, resourcetype_id)
         index_ids = [str(i) for i in indexes]
         index_ids.sort()
         # special properties
-        property_ids = ['.all']
+        # XXX: missing yet
+        property_ids = []
         property_ids.sort()
-        property_ids = self._addBaseToList(package_id + '/' + resourcetype_id, 
-                                           property_ids)
+        # fetching resources
+        res = self.env.catalog.getResourceList(package_id, resourcetype_id)
+        resource_ids = [str(r) for r in res]
+        
         return self.renderResourceList(property=property_ids,
                                        alias=alias_ids,
                                        mapping=mapping_ids,
-                                       index=index_ids)
+                                       index=index_ids,
+                                       resource=resource_ids)
     
     def _processResourceTypeProperty(self, package_id, resourcetype_id,
                                      property_id):
         """Property request on a resource type."""
-        
-        if property_id[0]=='.all':
-            res = self.env.catalog.getResourceList(package_id, resourcetype_id)
-            resource_ids = [str(r) for r in res]
-            return self.renderResourceList(resource=resource_ids)
-        else:
+        # XXX: missing yet
+        raise NotImplementedError
+    
+    def _checkForMappingSubPath(self):
+        """This method checks if we can find at least some sub paths of 
+        registered mappings and returns it as resource list."""
+        urls = self.env.registry.mappers.getMappings(method=self.method,
+                                                     base=self.path)
+        if not urls:
             raise RequestError(http.NOT_FOUND)
+        pos = len(self.postpath)+2
+        mapping_ids = ['/'.join(url.split('/')[0:pos]) for url in urls]
+        return self.renderResourceList(mapping=mapping_ids)
     
     def _processMapping(self):
+        """Here we processing a registered mapping. This method results either
+        into a resource or a resource list consisting of further mappings or
+        resource entries."""
         mapper = self.env.registry.mappers.get(url=self.path, 
                                                method=self.method) 
         if not mapper or len(mapper)<1:
-            raise RequestError(http.NOT_IMPLEMENTED)
+            raise RequestError(http.NOT_IMPLEMENTED, "No mapper found.")
         # XXX: is this possible anymore??
         # only use first found object, but warn if multiple implementations
         #if len(mapper)>1:
@@ -362,9 +378,20 @@ class Processor:
         #                   (self.method, self.path))
         func = getattr(mapper[0], 'process'+self.method)
         if not func:
-            raise RequestError(http.NOT_IMPLEMENTED)
+            raise RequestError(http.NOT_IMPLEMENTED, "No mapper found.")
         #XXX: error handling missing yet
-        result = func(self)
+        try:
+            result = func(self)
+        except Exception, e:
+            raise RequestError(http.INTERNAL_SERVER_ERROR, e.msg)
+        if self.method=='DELETE':
+            self.response_code = http.NO_CONTENT
+            return ''
+        if self.method=='PUT':
+            self.response_code = http.CREATED
+            self.response_header['Location'] = str(result)
+            return ''
+        # XXX: POST missing
         # test if basestring -> could be a resource
         if isinstance(result, basestring):
             return self.renderResource(result)
@@ -438,7 +465,7 @@ class Processor:
             self.env.catalog.modifyResource(package_id,
                                             resourcetype_id,
                                             resource_id,
-                                            self.content.read())
+                                            self.content.getvalue())
         # XXX: fetch all kind of exception types and return to clients
         except Exception, e:
             self.env.log.error(e)
@@ -449,7 +476,7 @@ class Processor:
         """Adds a new resource."""
         try:
             res = self.env.catalog.addResource(package_id, resourcetype_id,
-                                               self.content.read())
+                                               self.content.getvalue())
         # XXX: fetch all kind of exception types and return to clients
         except Exception, e:
             self.env.log.error(e)
