@@ -1,24 +1,25 @@
 # -*- coding: utf-8 -*-
 
-import string, StringIO
+import StringIO
 
 from twisted.web import http
-from urllib import unquote
 
 from seishub.core import SeisHubError
+from seishub.util.list import unique
 from seishub.util.text import isInteger
+from seishub.util.path import splitPath
 from seishub.xmldb.errors import GetResourceError, ResourceDeletedError
 
 
 class ProcessorError(SeisHubError):
     
-    code = None
-    message = ""
-    
-    def __init__(self, code, message="", **kwargs):
-        SeisHubError.__init__(self, code, message, **kwargs)
+    def __init__(self, code, message=''):
+        SeisHubError.__init__(self)
         self.code = code
-        self.message = message
+        self.message = message or http.RESPONSES.get(code, '')
+    
+    def __str__(self):
+        return 'ProcessorError %s: %s' % (self.code, self.message)
 
 
 class Processor:
@@ -33,14 +34,17 @@ class Processor:
         self.response_header = {}
         # set content
         self.content = StringIO.StringIO()
+        self.data = StringIO.StringIO()
     
     def process(self):
         """Working through the process chain."""
         # post process self.path
-        self.postpath = filter(len, map(unquote,
-                                        string.split(self.path[1:], '/')))
+        self.postpath = splitPath(self.path)
         # check if correct method
         self.method = self.method.upper()
+        # read content
+        self.content.seek(0)
+        self.data=self.content.read()
         if self.method == 'GET':
             return self._processGET()
         elif self.method == 'POST':
@@ -274,14 +278,6 @@ class Processor:
         self.response_code = http.NO_CONTENT
         return ''
     
-    def _addBaseToList(self, base='/', items=[]):
-        """Adds a base path to each single element of a list."""
-        if not base.startswith('/'):
-            base = '/' + base
-        if not base.endswith('/'):
-            base = base + '/'
-        return [base + i for i in items]
-    
     def _processRoot(self):
         """The root element can be only accessed via the GET method and shows 
         only a list of all available packages, root mappings and properties.
@@ -295,7 +291,7 @@ class Processor:
             if parts[1] in self.env.registry.getPackageIds():
                 continue
             mapping_urls.append('/'.join(parts[0:2]))
-        mapping_urls=list(set(mapping_urls))
+        mapping_urls=unique(mapping_urls)
         mapping_urls.sort()
         # XXX: missing yet
         property_urls = ['/.info']
@@ -327,7 +323,7 @@ class Processor:
             if parts[2] in self.env.registry.getResourceTypeIds(package_id):
                 continue
             mapping_urls.append('/'.join(parts[0:3]))
-        mapping_urls=list(set(mapping_urls))
+        mapping_urls=unique(mapping_urls)
         # special properties
         # XXX: missing yet
         property_urls = []
@@ -347,43 +343,44 @@ class Processor:
         """
         # fetch resource type aliases
         aliases = self.env.registry.aliases.get(package_id, resourcetype_id)
-        alias_ids = [str(alias) for alias in aliases]
-        alias_ids.sort()
+        alias_urls = [str(alias) for alias in aliases]
+        alias_urls.sort()
         # fetch all mappings in this package and resource type
         urls = self.env.registry.mappers.getMappings(method=self.method,
                                                      base=self.path)
-        mapping_ids = []
+        mapping_urls = []
         for url in urls:
             parts = url.split('/')
-            mapping_ids.append('/'.join(parts[0:4]))
-        mapping_ids=list(set(mapping_ids))
+            mapping_urls.append('/'.join(parts[0:4]))
+        mapping_urls=unique(mapping_urls)
         # fetch indexes
         indexes = self.env.catalog.listIndexes(package_id, resourcetype_id)
-        index_ids = [str(i) for i in indexes]
-        index_ids.sort()
+        index_urls = [str(i) for i in indexes]
+        index_urls.sort()
         # special properties
         # XXX: missing yet
-        property_ids = []
-        property_ids.sort()
+        property_urls = []
+        property_urls.sort()
         # fetching resources
         res = self.env.catalog.getResourceList(package_id, resourcetype_id)
-        resource_ids = [str(r) for r in res]
+        resource_urls = [str(r) for r in res]
         
-        return self.renderResourceList(property=property_ids,
-                                       alias=alias_ids,
-                                       mapping=mapping_ids,
-                                       index=index_ids,
-                                       resource=resource_ids)
+        return self.renderResourceList(property=property_urls,
+                                       alias=alias_urls,
+                                       mapping=mapping_urls,
+                                       index=index_urls,
+                                       resource=resource_urls)
     
     def _processResourceTypeProperty(self, package_id, resourcetype_id,
                                      property_id):
         """Property request on a resource type."""
         # XXX: missing yet
-        raise NotImplementedError
+        raise ProcessorError(http.NOT_IMPLEMENTED)
     
     def _checkForMappingSubPath(self):
         """This method checks if we can find at least some sub paths of 
-        registered mappings and returns it as resource list."""
+        registered mappings and returns it as resource list.
+        """
         urls = self.env.registry.mappers.getMappings(method=self.method,
                                                      base=self.path)
         if not urls:
@@ -393,13 +390,23 @@ class Processor:
         return self.renderResourceList(mapping=mapping_ids)
     
     def _processMapping(self):
-        """Here we processing a registered mapping. This method results either
-        into a resource or a resource list consisting of further mappings or
-        resource entries."""
+        """Here we processing a registered mapping. 
+        
+        The result a HTTP GET request is either a basestring containing a XML
+        resource document or a resource list consisting of further mappings and
+        resource entries. All other HTTP mehtods return nothing, but status 
+        code and document location.
+        
+        Errors should be handled in the user-defined mapping functions by 
+        raising a ProcessError with an proper error code and message defined
+        in twisted.web.http.
+        """
         mapper = self.env.registry.mappers.get(url=self.path, 
                                                method=self.method) 
-        if not mapper or len(mapper)<1:
-            raise ProcessorError(http.NOT_IMPLEMENTED, "No mapper found.")
+        if not mapper:
+            raise ProcessorError(http.NOT_FOUND, 
+                                 "There is no %s mapper defined for %s." % + \
+                                 (self.method, self.path))
         # XXX: is this possible anymore??
         # only use first found object, but warn if multiple implementations
         #if len(mapper)>1:
@@ -407,36 +414,45 @@ class Processor:
         #                   (self.method, self.path))
         func = getattr(mapper[0], 'process'+self.method)
         if not func:
-            raise ProcessorError(http.NOT_IMPLEMENTED, "No mapper found.")
-        #XXX: error handling missing yet
+            raise ProcessorError(http.NOT_IMPLEMENTED, "Function process%s" + \
+                                 "is not implemented." % self.method)
+        # general error handling should be done by the mapper functions
         try:
             result = func(self)
         except Exception, e:
-            raise ProcessorError(http.INTERNAL_SERVER_ERROR, e)
-        if self.method=='DELETE':
+            print e
+            if isinstance(e, ProcessorError):
+                raise
+            else:
+                raise ProcessorError(http.INTERNAL_SERVER_ERROR, 
+                                     "Error processing %s mapper for %s." % + \
+                                     (self.method, self.path))
+        if self.method in ['DELETE','POST']:
             self.response_code = http.NO_CONTENT
             return ''
-        if self.method=='PUT':
+        if self.method=='PUT' :
             self.response_code = http.CREATED
             self.response_header['Location'] = str(result)
             return ''
-        # XXX: POST missing
         # test if basestring -> could be a resource
         if isinstance(result, basestring):
             return self.renderResource(result)
         # result must be a dictionary with either mapping or resource entries
         if not isinstance(result, dict):
-            raise ProcessorError(http.INTERNAL_SERVER_ERROR)
-        mappings = result.get('mapping', [])
-        resources = result.get('resource', [])
-        return self.renderResourceList(mapping=mappings, resource=resources)
+            raise ProcessorError(http.INTERNAL_SERVER_ERROR, 
+                                 "A mapper must return a dictionary " + \
+                                 "containing mapping or resource elements.")
+        mapping_urls = result.get('mapping', [])
+        resource_urls = result.get('resource', [])
+        return self.renderResourceList(mapping=mapping_urls, 
+                                       resource=resource_urls)
     
     def _processAlias(self, package_id, resourcetype_id, alias):
         """Generates a list of resources from an alias query."""
         # if alias > 1 - may be an indirect resource request - SFTP problem
         if len(alias)>1:
             # XXX: missing yet
-            raise NotImplementedError
+            raise ProcessorError(http.NOT_IMPLEMENTED)
         # remove leading @
         alias_id = alias[0][1:]
         # fetch alias
@@ -446,7 +462,7 @@ class Processor:
             res = self.env.catalog.query(aliases[0].getQuery())
         except Exception, e:
             self.env.log.error(e)
-            raise ProcessorError(http.INTERNAL_SERVER_ERROR)
+            raise ProcessorError(http.INTERNAL_SERVER_ERROR, e)
             return
         else:
             resource_ids = [str(r) for r in res]
@@ -456,7 +472,7 @@ class Processor:
     def _processResourceProperty(self, package_id, resourcetype_id, 
                                  resource_id, version_id, property_id):
         # XXX: missing yet
-        raise NotImplementedError
+        raise ProcessorError(http.NOT_IMPLEMENTED)
     
     def _getResource(self, package_id, resourcetype_id, resource_id, 
                      version_id=None):
@@ -476,15 +492,15 @@ class Processor:
         except GetResourceError, e:
             # 404 Not Found
             self.env.log.debug(e)
-            raise ProcessorError(http.NOT_FOUND)
+            raise ProcessorError(http.NOT_FOUND, e)
         except ResourceDeletedError, e:
             # 410 Gone
             self.env.log.debug(e)
-            raise ProcessorError(http.GONE)
+            raise ProcessorError(http.GONE, e)
         except Exception, e:
             # 500 Internal Server Error
             self.env.log.error(e)
-            raise ProcessorError(http.INTERNAL_SERVER_ERROR)
+            raise ProcessorError(http.INTERNAL_SERVER_ERROR, e)
         else:
             # return resource content
             return result.document.data
@@ -495,22 +511,21 @@ class Processor:
             self.env.catalog.modifyResource(package_id,
                                             resourcetype_id,
                                             resource_id,
-                                            self.content.getvalue())
+                                            self.data)
         # XXX: fetch all kind of exception types and return to clients
         except Exception, e:
             self.env.log.error(e)
-            print e
-            raise ProcessorError(http.INTERNAL_SERVER_ERROR)
+            raise ProcessorError(http.INTERNAL_SERVER_ERROR, e)
     
     def _addResource(self, package_id, resourcetype_id):
         """Adds a new resource."""
         try:
             res = self.env.catalog.addResource(package_id, resourcetype_id,
-                                               self.content.getvalue())
+                                               self.data)
         # XXX: fetch all kind of exception types and return to clients
         except Exception, e:
             self.env.log.error(e)
-            raise ProcessorError(http.INTERNAL_SERVER_ERROR)
+            raise ProcessorError(http.INTERNAL_SERVER_ERROR, e)
         else:
             return res
     
@@ -523,11 +538,10 @@ class Processor:
         # XXX: fetch all kind of exception types and return to clients
         except Exception, e:
             self.env.log.error(e)
-            raise ProcessorError(http.INTERNAL_SERVER_ERROR)
+            raise ProcessorError(http.INTERNAL_SERVER_ERROR, e)
     
     def renderResource(self, data):
-        """
-        Resource handler. Returns a content of this resource as string.
+        """Resource handler. Returns a content of this resource as string.
         
         This method should be overwritten by the inheriting class in order to
         further validate and format the output of this document.
@@ -539,5 +553,6 @@ class Processor:
         contains a list of valid url's, e.g. {'package':['/quakeml','/resp']}.
         
         This method should be overwritten by the inheriting class in order to
-        further validate and format the output of this resource list."""
+        further validate and format the output of this resource list.
+        """
         return kwargs

@@ -1,23 +1,5 @@
 # -*- coding: utf-8 -*-
-import os,sys
 
-def getRelativePath(path1,path2=sys.path[0]):
-    path1=os.path.abspath(path1)
-    path2=os.path.abspath(path2)
-    if path1.startswith(path2):
-        return path1[len(path2)+1:]
-    elif path2.startswith(path1):
-        return path2[len(path1)+1:]
-
-def rglob(base_path=sys.path[0],search_path=sys.path[0],ext=""):
-    ext_files=[]
-    
-    def ls(arg,dirname,files):
-        dirname=getRelativePath(dirname,base_path)
-        ext_files.extend([os.path.join(dirname,i) for i in files if i.endswith(ext)])
-    
-    os.path.walk(search_path,ls,"")
-    return ext_files
 
 def getAbsoluteSegments(path, cwd='/'):
     """
@@ -27,7 +9,12 @@ def getAbsoluteSegments(path, cwd='/'):
     @param cwd: optional string specifying the current working directory
     
     returns a list of string segments which most succinctly
-    describe how to get to path from root
+    describe how to get to path from root.
+    
+    @organization: Twisted Matrix Labs
+    @see: U{http://twistedmatrix.com/trac/browser/tags/releases/twisted-8.1.0/twisted/vfs/pathutils.py}
+    @copyright: MIT license U{http://en.wikipedia.org/wiki/MIT_License}
+    @contact: U{Andy Gayton<mailto:andy@thecablelounge.com>}
     """
     if not isinstance(path, list): paths = path.split("/")
     else: paths = path
@@ -51,8 +38,21 @@ def getAbsoluteSegments(path, cwd='/'):
     
     return result
 
-def absPath(path):
-    return "/" + "/".join(splitPath(path))
 
 def splitPath(path):
+    """Split a path in segments returning a list."""
     return getAbsoluteSegments(path)
+
+
+def absPath(path):
+    """Returns the absolute path."""
+    return "/" + "/".join(splitPath(path))
+
+
+def addBaseToList(base='/', items=[]):
+    """Adds a base path to each single element of a list."""
+    if not base.startswith('/'):
+        base = '/' + base
+    if not base.endswith('/'):
+        base = base + '/'
+    return [base + i for i in items]

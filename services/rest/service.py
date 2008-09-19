@@ -80,40 +80,36 @@ class RESTRequest(Processor, http.Request):
         return reason
     
     def renderResource(self, data):
-        # handle output/format conversion here
-        if self.format:
+        # XXX: handle output/format conversion here
+        #if self.format:
             # XXX: how to fetch that???
-            package_id = self.package_id
-            resourcetype_id = self.resourcetype_id
-            label = self.format
-            data = self._transformContent(package_id, resourcetype_id, label, 
-                                          data)
+            #package_id = self.package_id
+            #resourcetype_id = self.resourcetype_id
+            #label = self.format
+            #data = self._transformContent(package_id, resourcetype_id, label, 
+            #                              data)
         self.setResponseCode(http.OK)
         return data
     
     def renderResourceList(self, **kwargs):
         """Resource list handler for the inheriting class."""
-        root = RESOURCELIST_ROOT
-        tmpl = RESOURCELIST_NODE
-        doc = ""
+        doc = ''
         # generate a list of standard elements
         for tag in ['package', 'resourcetype', 'property', 'alias', 'mapping']:
             for uri in kwargs.get(tag,[]):
                 content = absPath(uri[len(self.path):])[1:]
-                doc += tmpl % (tag, uri, content, tag)
+                doc += RESOURCELIST_NODE % (tag, uri, content, tag)
         # generate a list of resources
         for uri in kwargs.get('resource',[]):
-            doc += tmpl % ('resource', uri, uri, 'resource')
-        result = str(root % (self.env.getRestUrl(), doc))
+            doc += RESOURCELIST_NODE % ('resource', uri, uri, 'resource')
+        result = str(RESOURCELIST_ROOT % (self.env.getRestUrl(), doc))
         # set default content type to XML
         self.setHeader('content-type', 'application/xml; charset=UTF-8')
-        # handle output/format conversion here
+        # handle output/format conversion
         if self.format:
-            package_id = 'seishub'
-            resourcetype_id = 'stylesheet'
-            label = 'resourcelist:%s' % self.format
-            result = self._transformContent(package_id, resourcetype_id, 
-                                            label, result)
+            result = self._transformContent('seishub', 'stylesheet', 
+                                            'resourcelist:%s' % self.format, 
+                                            result)
         # set header
         self._setHeaders(result)
         self.setResponseCode(http.OK)

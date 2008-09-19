@@ -12,6 +12,7 @@ from seishub.packages.interfaces import IPackage, IResourceType, \
 from seishub.packages.processor import ProcessorError
 from seishub.packages.installer import registerStylesheet
 from seishub.util.text import isInteger
+from seishub.util.path import addBaseToList
 
 
 class GETMethod(Component):
@@ -20,7 +21,6 @@ class GETMethod(Component):
     
     id = 'GET'
     mapper = IGETMapper
-
 
 class PUTMethod(Component):
     """HTTP PUT method for mappers."""
@@ -107,10 +107,8 @@ class SchemaResourceMapper(Component):
                                              resourcetype_id=resourcetype_id)
             ids = [obj.type for obj in objs]
             ids.sort()
-            ids = request._addBaseToList(self.mapping_url + '/' + \
-                                         package_id + '/' + resourcetype_id, 
-                                         ids)
-            return {'resource': ids}
+            urls = addBaseToList('/'.join(request.postpath[0:5]), ids)
+            return {'resource': urls}
         # direct resource request
         obj = self.registry.schemas.get(package_id=package_id,
                                         resourcetype_id=resourcetype_id,
@@ -134,8 +132,7 @@ class SchemaResourceMapper(Component):
                                          type=request.postpath[5])
         except Exception, e:
             self.log.info("Error deleting schemas", e)
-            raise ProcessorError(http.INTERNAL_SERVER_ERROR, 
-                                 "Error deleting schema.")
+            raise ProcessorError(http.INTERNAL_SERVER_ERROR, e)
     
     def processPUT(self, request):
         """Process a PUT request at the mapping_url."""
@@ -154,11 +151,10 @@ class SchemaResourceMapper(Component):
             self.registry.schemas.register(request.postpath[3],
                                            request.postpath[4],
                                            request.postpath[5],
-                                           request.content.getvalue())
+                                           request.data)
         except Exception, e:
             self.log.error("Error adding schemas", e)
-            raise ProcessorError(http.INTERNAL_SERVER_ERROR, 
-                                 "Error adding schema.")
+            raise ProcessorError(http.INTERNAL_SERVER_ERROR, e)
         return self.mapping_url + '/'.join(request.postpath[3:])
     
     def processPOST(self, request):

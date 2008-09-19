@@ -169,7 +169,8 @@ class SSHServiceFactory(factory.SSHFactory):
     
     def __init__(self, env):
         self.env = env
-        self.portal = portal.Portal(SSHServiceRealm(env), env.auth)
+        self.portal = portal.Portal(SSHServiceRealm(env), 
+                                    env.auth.getCheckers())
         #set keys
         pub, priv = self._getCertificates()
         self.publicKeys = {'ssh-rsa': keys.Key.fromFile(pub)}

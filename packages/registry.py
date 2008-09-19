@@ -2,6 +2,7 @@
 
 from seishub.core import PackageManager, SeisHubError
 from seishub.util.text import from_uri
+from seishub.util.list import unique
 from seishub.db.util import DbStorage
 from seishub.packages.interfaces import IPackage, IResourceType, \
                                         IMapperMethod
@@ -481,7 +482,7 @@ class MapperRegistry(dict):
             mapper_cls = self._tree_find(url, self._registry[m])
             if mapper_cls:
                 objs.append(mapper_cls(self.env))
-        return list(set(objs))
+        return unique(objs)
     
     def getMappings(self, method, base=None):
         """Returns a list of all mappings of a given method with an optional 

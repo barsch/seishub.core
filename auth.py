@@ -21,6 +21,11 @@ class PasswordDictChecker:
         return defer.fail(err)
 
 
-def UserManager(env):
-    users = {'admin': 'aaa', 'barsch': 'muh'}
-    return (PasswordDictChecker(users),)
+class UserManager(object):
+    
+    def __init__(self, env):
+        self.env = env
+        self.users = {'admin': 'aaa', 'barsch': 'muh'}
+    
+    def getCheckers(self):
+        return (PasswordDictChecker(self.users),)

@@ -19,12 +19,13 @@ import os
 from sets import Set as set
 
 from seishub.core import SeisHubError
-from seishub.util.text import to_unicode, CRLF
+from seishub.util.text import toUnicode
 
 __all__ = ['Configuration', 'Option', 'BoolOption', 'IntOption', 'ListOption',
            'ConfigurationError']
 
 _TRUE_VALUES = ('yes', 'true', 'on', '1', 1, True)
+CRLF = '\r\n'
 
 
 class ConfigurationError(SeisHubError):
@@ -150,7 +151,7 @@ class Configuration(object):
                     else:
                         val = val.replace(CRLF, '\n').replace('\n', '\n ')
                         print>>fileobj, '%s = %s' % \
-                                        (key, to_unicode(val).encode('utf-8'))
+                                        (key, toUnicode(val).encode('utf-8'))
                 print>>fileobj
         finally:
             fileobj.close()
@@ -204,7 +205,7 @@ class Section(object):
                 value = default
         if value is None:
             return ''
-        return to_unicode(value)
+        return toUnicode(value)
     
     def getbool(self, name, default=None):
         """Return the value of the specified option as boolean.
@@ -264,7 +265,7 @@ class Section(object):
             self.overridden[name] = True
             value = ''
         else:
-            value = to_unicode(value).encode('utf-8')
+            value = toUnicode(value).encode('utf-8')
         return self.config.parser.set(self.name, name, value)
 
 

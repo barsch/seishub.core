@@ -1,4 +1,5 @@
-#
+# -*- coding: utf-8 -*-
+
 # SchoolTool - common information systems platform for school administration
 # Copyright (c) 2003 Shuttleworth Foundation
 #
@@ -26,10 +27,10 @@ def parseAccept(value):
     Returns a list of tuples
       (qvalue, media_type, media_params, accept_params)
     
-    qvalue is a float in range 0..1 (inclusive)
-    media_type is a string "type/subtype", it can be "type/*" or "*/*"
-    media_params is a dict
-    accept_params is a dict
+    @return: qvalue is a float in range 0..1 (inclusive)
+    @return: media_type is a string "type/subtype", it can be "type/*" or "*/*"
+    @return: media_params is a dict
+    @return: accept_params is a dict
     """
     if not value:
         return []

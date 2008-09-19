@@ -8,19 +8,19 @@ from zope.interface import implements
 
 from twisted.application import internet
 from twisted.conch.ssh import factory, keys, common, session
-from twisted.conch.ssh.filetransfer import FileTransferServer, SFTPError
+from twisted.conch.ssh.filetransfer import FileTransferServer
 from twisted.conch.interfaces import ISFTPFile, ISFTPServer, IConchUser
 from twisted.conch import avatar
 from twisted.conch.ls import lsLine
 from twisted.cred import portal
 from twisted.python import components
-from twisted.web import http
 
 #from seishub import __version__ as SEISHUB_VERSION
+from seishub.core import SeisHubError
 from seishub.defaults import SFTP_PORT, SFTP_PRIVATE_KEY, SFTP_PUBLIC_KEY, \
                              SFTP_AUTOSTART
 from seishub.config import IntOption, Option, BoolOption
-from seishub.packages.processor import Processor, ProcessorError
+from seishub.packages.processor import Processor
 from seishub.util.path import absPath
 
 
@@ -44,6 +44,17 @@ FX_OP_UNSUPPORTED              = 8
 FX_FILE_ALREADY_EXISTS         = FX_FAILURE
 FX_NOT_A_DIRECTORY             = FX_FAILURE
 FX_FILE_IS_A_DIRECTORY         = FX_FAILURE
+
+
+class SFTPError(SeisHubError):
+
+    def __init__(self, code, message=''):
+        SeisHubError.__init__(self)
+        self.code = code
+        self.message = message
+
+    def __str__(self):
+        return 'SFTPError %s: %s' % (self.code, self.message)
 
 
 class DirList:
@@ -76,6 +87,7 @@ class InMemoryFile:
     implements(ISFTPFile)
     
     def __init__(self, env, filename, flags, attrs):
+        print "-------------file.__init__", filename, flags, attrs
         self.env = env
         self.filename = filename
         self.flags = flags
@@ -90,23 +102,23 @@ class InMemoryFile:
                 raise SFTPError(FX_NO_SUCH_FILE)
     
     def _readResource(self):
+        print "-------------file._readResource"
         # check if resource exists
         self.request.method = 'GET'
         self.request.path = self.filename
-        print "HERE", self.filename
         try:
             data = self.request.process()
-        except:
-            return
+        except Exception:
+            data = ''
         return data
     
     def readChunk(self, offset, length):
-        print "-------------file.read"
+        print "-------------file.read", offset, length
         self.data.seek(offset)
         return self.data.read(length)
     
     def writeChunk(self, offset, data):
-        print "-------------file.write"
+        print "-------------file.write", offset
         self.data.seek(offset)
         self.data.write(data)
     
@@ -130,8 +142,8 @@ class InMemoryFile:
         try:
             self.request.process()
         except Exception, e:
-            self.env.log.error('ProcessorError:', str(e))
-            raise SFTPError(FX_FAILURE, str(e))
+            self.env.log.error('ProcessorError:', e)
+            raise SFTPError(FX_FAILURE, e)
     
     def getAttrs(self):
         print "-------------file.getAttrs"
@@ -139,7 +151,7 @@ class InMemoryFile:
                 'atime': time.time(), 'mtime': time.time()}
     
     def setAttrs(self, attrs):
-        print "-------------file.setAttrs"
+        print "-------------file.setAttrs", attrs
         return
 
 
@@ -176,9 +188,9 @@ class SFTPServiceProtocol:
         request.path = path
         try:
             data = request.process()
-        except ProcessorError, e:
-            self.env.log.error('ProcessorError:', str(e))
-            raise SFTPError(FX_FAILURE, str(e))
+        except Exception, e:
+            self.env.log.error('ProcessorError:', e)
+            raise SFTPError(FX_FAILURE, e)
         filelist = []
         filelist.append(('.', {}))
         filelist.append(('..', {}))
@@ -224,16 +236,15 @@ class SFTPServiceProtocol:
         request.path = filename
         try:
             request.process()
-        except:
-            return {}
+        except Exception, e:
+            self.env.log.error('ProcessorError:', e)
+            raise SFTPError(FX_FAILURE, e)
         
         return {'permissions': 020755, 'size': 0, 'uid': 0, 'gid': 0,
                 'atime': time.time(), 'mtime': time.time()}
     
-    def readLink(self, path):
-        raise SFTPError(FX_OP_UNSUPPORTED, '')
-    
     def setAttrs(self, path, attrs):
+        print "-------------setAttrs", path, attrs
         return
     
     def removeFile(self, filename):
@@ -251,21 +262,21 @@ class SFTPServiceProtocol:
         request.path = filename
         try:
             request.process()
-        except ProcessorError, e:
-            code = int(e.message)
-            if code==http.FORBIDDEN:
-                raise SFTPError(FX_PERMISSION_DENIED, str(e))
-            self.env.log.error('ProcessorError:', str(e))
-            raise SFTPError(FX_FAILURE, str(e))
+        except Exception, e:
+            self.env.log.error('ProcessorError:', e)
+            raise SFTPError(FX_FAILURE, e)
     
     def renameFile(self, oldpath, newpath):
+        print "-------------renameFile", oldpath, newpath
         return
     
     def makeDirectory(self, path, attrs):
         raise SFTPError(FX_OP_UNSUPPORTED, '')
     
     def removeDirectory(self, path):
-        print "-------------removeDirectory", path
+        raise SFTPError(FX_OP_UNSUPPORTED, '')
+    
+    def readLink(self, path):
         raise SFTPError(FX_OP_UNSUPPORTED, '')
     
     def makeLink(self, linkPath, targetPath):
@@ -308,7 +319,8 @@ class SFTPServiceFactory(factory.SSHFactory):
     
     def __init__(self, env):
         self.env = env
-        self.portal = portal.Portal(SFTPServiceRealm(env), env.auth)
+        self.portal = portal.Portal(SFTPServiceRealm(env), 
+                                    env.auth.getCheckers())
         #set keys
         pub, priv = self._getCertificates()
         self.publicKeys = {'ssh-rsa': keys.Key.fromFile(pub)}
@@ -347,10 +359,11 @@ class SFTPServiceFactory(factory.SSHFactory):
 class SFTPService(internet.TCPServer): #@UndefinedVariable
     """Service for SFTP server."""
     BoolOption('sftp', 'autostart', SFTP_AUTOSTART, 
-               "Enable service on start-up.")
+               'Enable service on start-up.')
     IntOption('sftp', 'port', SFTP_PORT, "SFTP port number.")
     Option('sftp', 'public_key_file', SFTP_PUBLIC_KEY, 'Public RSA key file.')
-    Option('sftp', 'private_key_file', SFTP_PRIVATE_KEY, 'Private RSA key file.')
+    Option('sftp', 'private_key_file', SFTP_PRIVATE_KEY, 
+           'Private RSA key file.')
     
     def __init__(self, env):
         self.env = env

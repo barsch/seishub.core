@@ -8,7 +8,7 @@ from xml.dom import minidom
 from lxml import etree
 
 from seishub.test import SeisHubEnvironmentTestCase
-from seishub.util.text import detectXMLEncoding, toUnicode
+from seishub.util.xml import detectXMLEncoding, toUnicode
 
 
 class XMLConformanceTestCase(SeisHubEnvironmentTestCase):

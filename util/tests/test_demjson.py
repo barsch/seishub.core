@@ -9,9 +9,7 @@ import seishub.util.demjson as demjson
 
 
 class DemjsonTest(unittest.TestCase):
-    """This class contains test cases for demjson.
-
-    """
+    """This class contains test cases for demjson."""
     def testConstants(self):
         self.failIf( not isinstance(demjson.nan, float), "Missing nan constant" )
         self.failIf( not isinstance(demjson.inf, float), "Missing inf constant" )
