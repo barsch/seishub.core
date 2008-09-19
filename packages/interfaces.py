@@ -64,9 +64,10 @@ class IGETMapper(IMapper):
         
         This function may return a resource list - a dict in form of 
         {'resource': ['/path/to/resource',], 'mapping': ['/path/to/mapping',]} 
-        or a basestring containing a valid XML document. 
+        or a basestring containing a valid XML document. A request at the plain
+        mapping_url *must* return a resource list.
         
-        A request at the plain mapping_url *must* return a resource list.
+        If an error occurs it should raise a ProcessorError.
         """
 
 
@@ -77,7 +78,7 @@ class IPUTMapper(IMapper):
         """Process a PUT request.
         
         This function should return a string containing the full path to the
-        new resource URL.
+        new resource URL, otherwise it should raise a ProcessorError.
         """
 
 
@@ -88,7 +89,8 @@ class IPOSTMapper(IMapper):
         """Process a POST request.
         
         This function should return a string containing the new resource URL if
-        the resource could be updated, otherwise a SeisHubError instance.
+        the resource could be updated, otherwise it should raise a 
+        ProcessorError.
         """
 
 
@@ -99,5 +101,31 @@ class IDELETEMapper(IMapper):
         """Process a DELETE request.
         
         This function should return True if the resource could be deleted 
-        otherwise a SeisHubError instance.
+        otherwise it should raise a ProcessorError.
         """
+
+
+class IProperty(Interface):
+    """General interface definition for a property file."""
+
+
+class IPackageProperty(Interface):
+    """Interface definition for a package property."""
+    
+    package_id = Attribute("""
+        Defines the package ID of this package property.
+        
+        Single string representing a unique package id. Leave this attribute
+        empty to implement this property for all packages.
+        """)
+
+
+class IResourceTypeProperty(IPackageProperty):
+    """Interface definition for a resource type property."""
+    
+    resourcetype_id = Attribute("""
+        Defines the resource type ID of this resource type property.
+        
+        Single string representing a unique package id. Leave this attribute
+        empty to implement this property for all resource types.
+        """)

@@ -66,6 +66,7 @@ class Environment(ComponentManager):
         self.registry = PackageRegistry(self)
         # trigger auto installer, install seishub package first
         PackageInstaller.cleanup(self)
+        # XXX: ???
         PackageInstaller.install(self, 'seishub')
         PackageInstaller.install(self)
     
@@ -114,7 +115,7 @@ class Environment(ComponentManager):
         self.config.set('components', fullname, 'enabled')
         self.log.info('Enabling component %s' % fullname)
         self.config.save()
-        #PackageInstaller.install(self)
+        #XXX: PackageInstaller.install(self)
     
     def disableComponent(self, component):
         """Disables a component."""
@@ -130,7 +131,7 @@ class Environment(ComponentManager):
         self.config.set('components', fullname, 'disabled')
         self.log.info('Disabling component %s' % fullname)
         self.config.save()
-        #PackageInstaller.cleanup(self)
+        #XXX: PackageInstaller.cleanup(self)
     
     def initOptions(self):
         """Initialize any not yet set default options in configuration file."""
@@ -153,7 +154,8 @@ class Environment(ComponentManager):
         member variables: `env` (the environment object), `config` (the
         environment configuration), `log` (a logger object), `db` (the 
         database handler), `catalog` (a XML catalog object), `registry` (a 
-        package registry handler) and `auth` (a user management object)."""
+        package registry handler) and `auth` (a user management object).
+        """
         component.env = self
         component.config = self.config
         component.log = self.log
@@ -168,7 +170,8 @@ class Environment(ComponentManager):
         
         This is called by the `ComponentManager` base class when a component is
         about to be activated. If this method returns false, the component does
-        not get activated."""
+        not get activated.
+        """
         if not isinstance(cls, basestring):
             component_name = (cls.__module__ + '.' + cls.__name__).lower()
         else:

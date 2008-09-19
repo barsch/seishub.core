@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import hotshot
-
 from twisted.application import service
 from twisted.internet import reactor 
 
@@ -42,7 +40,15 @@ def main():
 
 
 if __name__ == '__main__':
-#    main()
-    prof = hotshot.Profile('seishub.prof')
-    benchtime, stones = prof.runcall(main)
+    statement = 'main()'
+    filename='output.pstats' 
+    sort=-1
+    import os, tempfile, hotshot, hotshot.stats
+    logfd, logfn = tempfile.mkstemp()
+    prof = hotshot.Profile(logfn)
+    prof = prof.run(statement)
     prof.close()
+    stats = hotshot.stats.load(logfn)
+    stats.strip_dirs()
+    stats.sort_stats(sort)
+    result = stats.dump_stats(filename)

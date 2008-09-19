@@ -14,7 +14,7 @@ from seishub import __version__ as SEISHUB_VERSION
 from seishub.config import IntOption, Option, BoolOption
 from seishub.core import ExtensionPoint, SeisHubError
 from seishub.defaults import ADMIN_PORT, ADMIN_CERTIFICATE, ADMIN_PRIVATE_KEY
-from seishub.packages.processor import Processor, RequestError
+from seishub.packages.processor import Processor, ProcessorError
 from seishub.services.admin.interfaces import IAdminPanel, IAdminTheme, \
                                               IAdminStaticContent
 from seishub.util import demjson
@@ -89,8 +89,8 @@ class AdminRequest(http.Request):
         request.path = self.path[5:]
         try:
             data = request.process()
-        except RequestError, e:
-            self.env.log.info('RequestError:', e)
+        except ProcessorError, e:
+            self.env.log.info('ProcessorError:', e)
         else:
             if isinstance(data, dict):
                 # format as json

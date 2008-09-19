@@ -17,9 +17,10 @@ from twisted.python import components
 from twisted.web import http
 
 #from seishub import __version__ as SEISHUB_VERSION
-from seishub.defaults import SFTP_PORT, SFTP_PRIVATE_KEY, SFTP_PUBLIC_KEY
+from seishub.defaults import SFTP_PORT, SFTP_PRIVATE_KEY, SFTP_PUBLIC_KEY, \
+                             SFTP_AUTOSTART
 from seishub.config import IntOption, Option, BoolOption
-from seishub.packages.processor import Processor, RequestError
+from seishub.packages.processor import Processor, ProcessorError
 from seishub.util.path import absPath
 
 
@@ -129,7 +130,7 @@ class InMemoryFile:
         try:
             self.request.process()
         except Exception, e:
-            self.env.log.error('RequestError:', str(e))
+            self.env.log.error('ProcessorError:', str(e))
             raise SFTPError(FX_FAILURE, str(e))
     
     def getAttrs(self):
@@ -175,8 +176,8 @@ class SFTPServiceProtocol:
         request.path = path
         try:
             data = request.process()
-        except RequestError, e:
-            self.env.log.error('RequestError:', str(e))
+        except ProcessorError, e:
+            self.env.log.error('ProcessorError:', str(e))
             raise SFTPError(FX_FAILURE, str(e))
         filelist = []
         filelist.append(('.', {}))
@@ -250,11 +251,11 @@ class SFTPServiceProtocol:
         request.path = filename
         try:
             request.process()
-        except RequestError, e:
+        except ProcessorError, e:
             code = int(e.message)
             if code==http.FORBIDDEN:
                 raise SFTPError(FX_PERMISSION_DENIED, str(e))
-            self.env.log.error('RequestError:', str(e))
+            self.env.log.error('ProcessorError:', str(e))
             raise SFTPError(FX_FAILURE, str(e))
     
     def renameFile(self, oldpath, newpath):
@@ -345,7 +346,8 @@ class SFTPServiceFactory(factory.SSHFactory):
 
 class SFTPService(internet.TCPServer): #@UndefinedVariable
     """Service for SFTP server."""
-    BoolOption('sftp', 'autostart', 'True', "Enable service on start-up.")
+    BoolOption('sftp', 'autostart', SFTP_AUTOSTART, 
+               "Enable service on start-up.")
     IntOption('sftp', 'port', SFTP_PORT, "SFTP port number.")
     Option('sftp', 'public_key_file', SFTP_PUBLIC_KEY, 'Public RSA key file.')
     Option('sftp', 'private_key_file', SFTP_PRIVATE_KEY, 'Private RSA key file.')

@@ -5,7 +5,7 @@ import StringIO
 from twisted.web import http
 
 from seishub.test import SeisHubEnvironmentTestCase
-from seishub.packages.processor import Processor, RequestError
+from seishub.packages.processor import Processor, ProcessorError
 from seishub.core import Component, implements
 from seishub.packages.builtins import IResourceType, IPackage
 from seishub.packages.interfaces import IGETMapper, IPUTMapper, \
@@ -185,22 +185,22 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
         try:
             request.process()
         except Exception, e:
-            assert isinstance(e, RequestError)
-            self.assertEqual(e.message, http.FORBIDDEN)
+            assert isinstance(e, ProcessorError)
+            self.assertEqual(e.code, http.BAD_REQUEST)
         # package and/or resource type does not exists
         request.path = '/xxx/yyy/1'
         try:
             request.process()
         except Exception, e:
-            assert isinstance(e, RequestError)
-            self.assertEqual(e.message, http.FORBIDDEN)
+            assert isinstance(e, ProcessorError)
+            self.assertEqual(e.code, http.FORBIDDEN)
         # id does not exists
         request.path = '/test/notvc/-1'
         try:
             request.process()
         except Exception, e:
-            assert isinstance(e, RequestError)
-            self.assertEqual(e.message, http.INTERNAL_SERVER_ERROR)
+            assert isinstance(e, ProcessorError)
+            self.assertEqual(e.code, http.INTERNAL_SERVER_ERROR)
         # upload a resource via PUT
         request.path = '/test/notvc'
         request.method = 'PUT'
@@ -240,8 +240,8 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
         try:
             data = request.process()
         except Exception, e:
-            assert isinstance(e, RequestError)
-            self.assertEqual(e.message, http.NOT_FOUND)
+            assert isinstance(e, ProcessorError)
+            self.assertEqual(e.code, http.NOT_FOUND)
     
     def test_processVersionControlledResource(self):
         request = Processor(self.env)
@@ -291,8 +291,8 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
         try:
             data = request.process()
         except Exception, e:
-            assert isinstance(e, RequestError)
-            self.assertEqual(e.message, http.NOT_FOUND)
+            assert isinstance(e, ProcessorError)
+            self.assertEqual(e.code, http.NOT_FOUND)
         # DELETE resource
         request.method = 'DELETE'
         request.path = location
@@ -303,8 +303,8 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
         try:
             data = request.process()
         except Exception, e:
-            assert isinstance(e, RequestError)
-            self.assertEqual(e.message, http.GONE)
+            assert isinstance(e, ProcessorError)
+            self.assertEqual(e.code, http.GONE)
     
     def _test_invalid_methods(self, request, 
                               methods=['HEAD', 'XXX', 'GETPUT']):
@@ -314,8 +314,8 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
             try:
                 request.process()
             except Exception, e:
-                assert isinstance(e, RequestError)
-                self.assertEqual(e.message, http.NOT_ALLOWED)
+                assert isinstance(e, ProcessorError)
+                self.assertEqual(e.code, http.NOT_ALLOWED)
     
     def _test_forbidden_methods(self, request, 
                                 methods=['POST', 'PUT', 'DELETE']):
@@ -325,8 +325,8 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
             try:
                 request.process()
             except Exception, e:
-                assert isinstance(e, RequestError)
-                self.assertEqual(e.message, http.FORBIDDEN)
+                assert isinstance(e, ProcessorError)
+                self.assertEqual(e.code, http.FORBIDDEN)
     
     def _test_process_result(self, data, fields=[]):
         # data must be a dict

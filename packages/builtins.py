@@ -9,8 +9,9 @@ from seishub.packages.interfaces import IPackage, IResourceType, \
                                         IMapperMethod, \
                                         IGETMapper, IPUTMapper, \
                                         IPOSTMapper, IDELETEMapper
-from seishub.packages.processor import RequestError
+from seishub.packages.processor import ProcessorError
 from seishub.packages.installer import registerStylesheet
+from seishub.util.text import isInteger
 
 
 class GETMethod(Component):
@@ -81,70 +82,86 @@ class SchemaResourceMapper(Component):
     mapping_url = '/seishub/schema/browser'
     
     def processGET(self, request):
-        postlen = len(request.postpath)
+        """Process a GET request at the mapping_url."""
         # test if root element - show all packages
-        if postlen==3:
-            ids = request._addBaseToList(self.mapping_url, request.package_ids)
-            return {'mapping': ids}
+        if len(request.postpath)==3:
+            urls = self.registry.getPackageURLs(base=self.mapping_url)
+            return {'mapping': urls}
         # test if package at all
         package_id = request.postpath[3]
-        if package_id not in request.package_ids:
-            raise RequestError(http.NOT_FOUND)
+        if not self.registry.isPackageId(package_id):
+            raise ProcessorError(http.FORBIDDEN, "Invalid package.")
         # package level - show all resource types of this package
-        if postlen==4:
-            ids = self.env.registry.resourcetypes[package_id]
-            ids.sort()
-            ids = request._addBaseToList(self.mapping_url + '/' + package_id, 
-                                         ids)
-            return {'mapping': ids}
+        if len(request.postpath)==4:
+            urls = self.registry.getResourceTypeURLs(package_id, 
+                                                     base=self.mapping_url)
+            return {'mapping': urls}
         # test if valid resource type
         resourcetype_id = request.postpath[4]
-        if not request._checkResourceType(package_id, resourcetype_id):
-            raise RequestError(http.NOT_FOUND)
+        if not self.registry.isResourceTypeId(package_id, resourcetype_id):
+            raise ProcessorError(http.FORBIDDEN, "Invalid resource type.")
         # resource type level - show all schemas named after label
-        if postlen==5:
+        if len(request.postpath)==5:
             # query catalog for schemas
-            reg =  self.env.registry
-            schemas = reg.schemas.get(package_id = package_id,
-                                      resourcetype_id = resourcetype_id)
-            ids = [schema.type for schema in schemas]
+            objs = self.registry.schemas.get(package_id=package_id,
+                                             resourcetype_id=resourcetype_id)
+            ids = [obj.type for obj in objs]
             ids.sort()
             ids = request._addBaseToList(self.mapping_url + '/' + \
                                          package_id + '/' + resourcetype_id, 
                                          ids)
             return {'resource': ids}
         # direct resource request
-        reg =  self.env.registry
-        schema = reg.schemas.get(package_id = package_id,
-                                 resourcetype_id = resourcetype_id,
-                                 type = request.postpath[5])
-        if not schema:
-            raise RequestError(http.NOT_FOUND)
-        return schema[0].getResource().document.data
+        obj = self.registry.schemas.get(package_id=package_id,
+                                        resourcetype_id=resourcetype_id,
+                                        type=request.postpath[5])
+        if not obj:
+            raise ProcessorError(http.NOT_FOUND, "Schema not found.")
+        return obj[0].getResource().document.data
     
     def processDELETE(self, request):
-        rpp = request.postpath
-        if len(rpp)!=6:
-            raise RequestError(http.NOT_ALLOWED)
+        """Process a DELETE request at the mapping_url."""
+        if len(request.postpath)!=6:
+            raise ProcessorError(http.BAD_REQUEST, "Invalid request.")
+        # test if valid resource type
+        if not self.registry.isResourceTypeId(request.postpath[3],
+                                              request.postpath[4]):
+            raise ProcessorError(http.FORBIDDEN, "Invalid resource type.")
         # direct resource request
         try:
-            self.env.registry.schemas.delete(package_id = rpp[3],
-                                             resourcetype_id = rpp[4],
-                                             type = rpp[5])
+            self.registry.schemas.delete(package_id=request.postpath[3],
+                                         resourcetype_id=request.postpath[4],
+                                         type=request.postpath[5])
         except Exception, e:
-            self.env.log.info("Error deleting schemas", e)
-            raise RequestError(http.NOT_FOUND)
+            self.log.info("Error deleting schemas", e)
+            raise ProcessorError(http.INTERNAL_SERVER_ERROR, 
+                                 "Error deleting schema.")
     
     def processPUT(self, request):
-        #import pdb;pdb.set_trace()
-        rpp = request.postpath
-        data = request.content.getvalue()
-        if len(rpp)!=6:
-            raise RequestError(http.NOT_ALLOWED)
+        """Process a PUT request at the mapping_url."""
+        if len(request.postpath)!=6:
+            raise ProcessorError(http.BAD_REQUEST, "Invalid request.")
+        # test if valid resource type
+        if not self.registry.isResourceTypeId(request.postpath[3],
+                                              request.postpath[4]):
+            raise ProcessorError(http.FORBIDDEN, "Invalid resource type.")
+        # check if a non integer id for file name
+        if isInteger(request.postpath[5][0]):
+            raise ProcessorError(http.FORBIDDEN, "Resource name must not " + \
+                                 "start with an integer.")
         # direct resource request
         try:
-            self.env.registry.schemas.register(rpp[3], rpp[4], rpp[5], data)
+            self.registry.schemas.register(request.postpath[3],
+                                           request.postpath[4],
+                                           request.postpath[5],
+                                           request.content.getvalue())
         except Exception, e:
-            self.env.log.error("Error adding schemas", e)
-            raise RequestError(http.INTERNAL_SERVER_ERROR)
-        return self.mapping_url + '/'.join(rpp[3:])
+            self.log.error("Error adding schemas", e)
+            raise ProcessorError(http.INTERNAL_SERVER_ERROR, 
+                                 "Error adding schema.")
+        return self.mapping_url + '/'.join(request.postpath[3:])
+    
+    def processPOST(self, request):
+        """Process a POST request at the mapping_url."""
+        self.processDELETE(request)
+        return self.processPUT(request)

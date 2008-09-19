@@ -12,7 +12,8 @@ from twisted.application import internet
 from seishub import __version__ as SEISHUB_VERSION
 from seishub.services.ssh.interfaces import ISSHCommand
 from seishub.core import ExtensionPoint
-from seishub.defaults import SSH_PORT, SSH_PRIVATE_KEY, SSH_PUBLIC_KEY
+from seishub.defaults import SSH_PORT, SSH_PRIVATE_KEY, SSH_PUBLIC_KEY, \
+                             SSH_AUTOSTART
 from seishub.config import IntOption, Option, BoolOption
 
 
@@ -206,7 +207,8 @@ class SSHServiceFactory(factory.SSHFactory):
 
 class SSHService(internet.TCPServer): #@UndefinedVariable
     """Service for SSH server."""
-    BoolOption('ssh', 'autostart', 'True', "Enable service on start-up.")
+    BoolOption('ssh', 'autostart', SSH_AUTOSTART, 
+               "Enable service on start-up.")
     IntOption('ssh', 'port', SSH_PORT, "SSH port number.")
     Option('ssh', 'public_key_file', SSH_PUBLIC_KEY, 'Public RSA key file.')
     Option('ssh', 'private_key_file', SSH_PRIVATE_KEY, 'Private RSA key file.')

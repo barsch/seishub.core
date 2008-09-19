@@ -7,7 +7,7 @@ from twisted.internet import threads
 from seishub.defaults import REST_PORT
 from seishub import __version__ as SEISHUB_VERSION
 from seishub.config import IntOption, BoolOption
-from seishub.packages.processor import Processor, RequestError
+from seishub.packages.processor import Processor, ProcessorError
 from seishub.util.http import parseAccept, validMediaType
 from seishub.util.path import absPath
 
@@ -51,8 +51,8 @@ class RESTRequest(Processor, http.Request):
     def _processContent(self):
         try:
             content = Processor.process(self)
-        except RequestError, e:
-            self.response_code = int(e.message)
+        except ProcessorError, e:
+            self.response_code = e.code
             content = ''
             self.env.log.error(http.responses.get(self.response_code))
         content=str(content)
@@ -85,8 +85,8 @@ class RESTRequest(Processor, http.Request):
             # XXX: how to fetch that???
             package_id = self.package_id
             resourcetype_id = self.resourcetype_id
-            type = self.format
-            data = self._transformContent(package_id, resourcetype_id, type, 
+            label = self.format
+            data = self._transformContent(package_id, resourcetype_id, label, 
                                           data)
         self.setResponseCode(http.OK)
         return data
@@ -111,9 +111,9 @@ class RESTRequest(Processor, http.Request):
         if self.format:
             package_id = 'seishub'
             resourcetype_id = 'stylesheet'
-            type = 'resourcelist:%s' % self.format
-            result = self._transformContent(package_id, resourcetype_id, type, 
-                                            result)
+            label = 'resourcelist:%s' % self.format
+            result = self._transformContent(package_id, resourcetype_id, 
+                                            label, result)
         # set header
         self._setHeaders(result)
         self.setResponseCode(http.OK)

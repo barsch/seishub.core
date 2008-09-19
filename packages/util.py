@@ -26,13 +26,13 @@ class RegistryDictProxy(object):
 class PackageListProxy(object):
     """provide registry.packages with an updated list on every access"""
     def __get__(self, obj, objtype):
-        return PackageList(obj.getEnabledPackageIds(), obj)
+        return PackageList(obj.getPackageIds(), obj)
     
 
 class ResourceTypeListProxy(object):
     """provide registry.resourcetypes with an updated list on every access"""
     def __get__(self, obj, objtype):
-        return ResourceTypeList(obj.getEnabledResourceTypeIds(), obj)
+        return ResourceTypeList(obj.getAllResourceTypes(), obj)
     
 
 class PackageList(list):
