@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 
-from sqlalchemy import Table, Column, String, MetaData, create_engine
-from sqlalchemy.orm import mapper, sessionmaker
 from zope.interface import implements
+from sqlalchemy import Column, String, create_engine
+from sqlalchemy.orm import  sessionmaker
+from sqlalchemy.ext.declarative import declarative_base
 from twisted.cred import checkers, credentials, error
 from twisted.internet import defer
 
@@ -40,8 +41,18 @@ class PasswordDictChecker:
         return defer.fail(err)
 
 
-class User(object):
+UserBase = declarative_base()
+
+class User(UserBase):
     """A user object."""
+    __tablename__ = 'users'
+    
+    id = Column(String, primary_key=True)
+    name = Column(String)
+    password = Column(String)
+    institution = Column(String)
+    email = Column(String)
+    
     def __init__(self, id, name, password, institution='', email=''):
         self.id = id
         self.name = name
@@ -61,29 +72,26 @@ class AuthenticationManager(object):
     
     def __init__(self, env):
         self.env = env
-        engine = create_engine('sqlite:///db/auth.db', 
-                               echo = False,
-                               encoding = 'utf-8',
-                               convert_unicode = True)
+        # fetch db uri - this is an option primary for the test cases
+        uri = self.env.config.get('seishub', 'auth_uri', 
+                                  'sqlite:///db/auth.db')
+        engine = create_engine(uri, encoding = 'utf-8', convert_unicode = True)
         # Define and create user table
-        metadata = MetaData()
-        users_table = Table('users', metadata,
-                            Column('id', String, primary_key=True),
-                            Column('name', String),
-                            Column('password', String),
-                            Column('institution', String),
-                            Column('email', String))
+        metadata = UserBase.metadata
         metadata.create_all(engine, checkfirst = True)
-        mapper(User, users_table)
         self.Session = sessionmaker(bind=engine)
         self._refresh()
-        # add default admin account - will fail if admin already exists
+        # add admin if no account exists and check for the default password
         if not self.users:
             self.env.log.warn("An administrative account with both username "
                               "and passwort 'admin' has been automatically "
                               "created. You should change the password as "
                               "soon as possible.")
             self.addUser('admin', 'Administrator', 'admin')
+        elif self.checkPassword('admin', 'admin'):
+            self.env.log.warn("The administrative account is accessible via "
+                              "the standard password! Please change this as "
+                              "soon as possible!")
         
     
     def _validatePassword(self, password):

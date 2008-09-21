@@ -72,9 +72,7 @@ class DatabaseManager(object):
         """Return a SQLite engine without a connection pool."""
         # present a big warn message if using SQLite as data backend
         self.env.log.warn("A SQLite database should never be used in a "
-                          "productive environment! Instead try to use any "
-                          "supported database listed at "
-                          "http://www.sqlalchemy.org/trac/wiki/DatabaseNotes.")
+                          "productive environment!")
         # create engine
         return sa.create_engine(self.uri, 
                                 echo = self.echo,

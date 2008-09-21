@@ -25,6 +25,7 @@ class SeisHubEnvironmentTestCase(unittest.TestCase):
 #        self.config.set('db', 'uri', 
 #                        'postgres://seishub:seishub@localhost:5432/seishub')
         self.config.set('db', 'uri', 'sqlite://')
+        self.config.set('seishub', 'auth_uri', 'sqlite://')
         self._config()
         self._start()
         
