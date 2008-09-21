@@ -6,7 +6,7 @@ import sys
 from twisted.internet import defer
 from twisted.application import service
 
-from seishub.auth import UserManager
+from seishub.auth import AuthenticationManager
 from seishub.core import ComponentManager
 from seishub.config import Configuration, Option
 from seishub.loader import ComponentLoader
@@ -57,7 +57,7 @@ class Environment(ComponentManager):
         # set XML catalog
         self.catalog = XmlCatalog(self)
         # User & group management
-        self.auth = UserManager(self)
+        self.auth = AuthenticationManager(self)
         # load plugins
         ComponentLoader(self)
         # Package manager

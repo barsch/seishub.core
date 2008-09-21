@@ -15,6 +15,7 @@ from seishub.core import ExtensionPoint
 from seishub.defaults import SSH_PORT, SSH_PRIVATE_KEY, SSH_PUBLIC_KEY, \
                              SSH_AUTOSTART
 from seishub.config import IntOption, Option, BoolOption
+from seishub.auth import UserGenerationError
 
 
 class SSHServiceProtocol(recvline.HistoricRecvLine):
@@ -23,6 +24,7 @@ class SSHServiceProtocol(recvline.HistoricRecvLine):
         recvline.HistoricRecvLine.__init__(self)
         self.env = env
         self.user = user
+        self.status = {}
         plugins = ExtensionPoint(ISSHCommand).extensions(self.env)
         self.plugin_cmds = dict([(p.getCommandId().upper(), p) 
                                  for p in plugins 
@@ -39,7 +41,25 @@ class SSHServiceProtocol(recvline.HistoricRecvLine):
     def showPrompt(self):
         self.write("$ ")
     
+    def characterReceived(self, ch, mch):
+        if self.mode == 'insert':
+            self.lineBuffer.insert(self.lineBufferIndex, ch)
+        else:
+            self.lineBuffer[self.lineBufferIndex:self.lineBufferIndex+1] = [ch]
+        self.lineBufferIndex += 1
+        if not self.status.has_key('hide'):
+            self.terminal.write(ch)
+    
     def lineReceived(self, line):
+        # check for any internal status
+        if self.status:
+            cmd = self.status.get('cmd', '')
+            try:
+                func = getattr(self, 'cmd_' + cmd, None)
+                func(line)
+            except Exception, e:
+                self.writeln("Error: %s" % e)
+            return
         line = line.strip()
         if not line:
             self.showPrompt()
@@ -54,7 +74,8 @@ class SSHServiceProtocol(recvline.HistoricRecvLine):
                 func(*args)
             except Exception, e:
                 self.writeln("Error: %s" % e)
-            self.showPrompt()
+            if not self.status:
+                self.showPrompt()
             return
         # check if its a user defined command
         # XXX: Thread is not working here!!!!
@@ -78,6 +99,16 @@ class SSHServiceProtocol(recvline.HistoricRecvLine):
     
     def nextLine(self):
         self.write('\r\n')
+    
+    def handle_RETURN(self):
+        if self.lineBuffer and not self.status.has_key('hide'):
+            self.historyLines.append(''.join(self.lineBuffer))
+        self.historyPosition = len(self.historyLines)
+        line = ''.join(self.lineBuffer)
+        self.lineBuffer = []
+        self.lineBufferIndex = 0
+        self.terminal.nextLine()
+        self.lineReceived(line)
     
     def cmd_HELP(self, *args):
         self.writeln('== Build-in keywords ==')
@@ -112,6 +143,50 @@ class SSHServiceProtocol(recvline.HistoricRecvLine):
     def cmd_CLEAR(self):
         """Clears the screen."""
         self.terminal.reset()
+    
+    def cmd_PASSWD(self, line=''):
+        """Changes your password."""
+        uid = self.user.username
+        status = self.status.get('cmd','')
+        current = self.status.has_key('current')
+        password = self.status.get('password','')
+        if not status:
+            # start
+            self.writeln("Changing password for %s" % uid)
+            self.write("Enter current password: ")
+            self.status = dict(cmd='PASSWD', current='', hide=True)
+        elif current:
+            # test current password
+            if not self.env.auth.checkPassword(uid, line):
+                # clean up and exit
+                self.status = {}
+                self.writeln("Authentication failure.")
+                self.showPrompt()
+                return
+            # prompt for new password
+            self.write("Enter new password: ")
+            self.status = dict(cmd='PASSWD', password='', hide=True)
+        elif password=='':
+            # got one new password - ask for confirmation
+            self.write("Retype new password: ")
+            self.status = dict(cmd='PASSWD', password=line, hide=True)
+        elif password!='':
+            # ok, got both password - check them
+            if password!=line:
+                self.writeln("Sorry, passwords do not match.")
+            else:
+                try:
+                    self.env.auth.changePassword(uid, password)
+                except UserGenerationError, e:
+                    self.writeln(e.message)
+                except Exception ,e:
+                    raise e
+                else:
+                    self.writeln("Password has been changed.")
+            # clean up and exit
+            self.status = {}
+            self.showPrompt()
+            return
     
     # XXX: this should be removed in a productive environment
     def cmd_DEBUG(self):

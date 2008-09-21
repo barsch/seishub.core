@@ -1,0 +1,64 @@
+<h1>Users</h1>
+
+<h2>Add new user</h2>
+<form method="post" id="add" action="">
+  <div class="field">
+    <label>User ID</label><br />
+    <input type="text" size="20" name="id" value="$id" />
+  </div>
+  <div class="field">
+    <label>Name</label><br />
+    <input type="text" size="80" name="name" value="$name" />
+  </div>
+  <div class="field">
+    <label>Password</label><br />
+    <input type="password" size="20" name="password" value="" />
+  </div>
+  <div class="field">
+    <label>Password Confirmation</label><br />
+    <input type="password" size="20" name="confirmation" value="" />
+  </div>
+  <div class="field">
+    <label>E-Mail</label><br />
+    <input type="text" size="80" name="email" value="$email" />
+  </div>
+  <div class="field">
+    <label>Institution</label><br />
+    <input type="text" size="80" name="institution" value="$institution" />
+  </div>
+
+  <div class="button">
+    <input type="submit" name="add" value="Add" />
+  </div>
+</form>
+
+<br />
+<br />
+
+<h2>List of all users</h2>
+<form method="post" id="list" action="">
+  <table class="list">
+    <tr>
+      <th></th>
+      <th>User ID</th>
+      <th>Name</th>
+      <th>E-Mail</th>
+      <th>Institution</th>
+    </tr>
+    #for $user in $users
+    <tr> 
+      <td>
+        <input type="radio" name="id" value="$user.id" />
+      </td> 
+      <td>$user.id</td>
+      <td>$user.name</td>
+      <td>$user.email</td>
+      <td>$user.institution</td>
+    </tr>
+    #end for
+  </table>
+  
+  <div class="button">
+    <input type="submit" name="delete" value="Delete" />
+  </div>
+</form>

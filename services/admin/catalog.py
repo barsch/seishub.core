@@ -12,7 +12,6 @@ from seishub.packages.defaults import SCHEMA_TABLE, STYLESHEET_TABLE, \
                                       ALIAS_TABLE, PACKAGES_TABLE, \
                                       RESOURCETYPES_TABLE
 from seishub.xmldb.errors import AddResourceError
-from seishub.db.dbmanager import SQLITE_WARNING 
 
 
 class BasicPanel(Component):
@@ -29,8 +28,13 @@ class BasicPanel(Component):
           'uri': self.config.get('db', 'uri'),
         }
         if db.engine.name=='sqlite':
-            data['info'] = ('SQLite Database enabled!',
-                            SQLITE_WARNING.replace('-',''))
+            data['info'] = ("SQLite Database enabled!", "A SQLite database "
+                            "should never be used in a productive "
+                            "environment!<br />Instead try to use any "
+                            "supported database listed at "
+                            "<a href='http://www.sqlalchemy.org/trac/wiki/"
+                            "DatabaseNotes'>http://www.sqlalchemy.org/trac/"
+                            "wiki/DatabaseNotes</a>.")
         if request.method == 'POST':
             uri = request.args.get('uri',[''])[0]
             verbose = request.args.get('verbose',[''])[0]

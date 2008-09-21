@@ -14,6 +14,7 @@ from seishub.core import Component, implements
 from seishub.services.admin.interfaces import IAdminPanel
 from seishub.defaults import DEFAULT_COMPONENTS
 from seishub.util.text import getFirstSentence
+from seishub.auth import UserGenerationError
 
 
 class BasicPanel(Component):
@@ -105,6 +106,82 @@ class LogsPanel(Component):
           'errorlog': error_logs, 
         }
         return ('general_logs.tmpl', data)
+
+
+class PermissionsPanel(Component):
+    """Administration of users and groups."""
+    implements(IAdminPanel)
+    
+    def getPanelId(self):
+        return ('admin', 'General', 'permissions', 'Permissions')
+    
+    def renderPanel(self, request):
+        data = {}
+        # process POST request
+        if request.method == 'POST':
+            args = request.args
+            if 'delete' in args.keys():
+                data = self._deleteUser(args)
+            elif 'add' in args.keys():
+                data = self._addUser(args)
+        # default values
+        result = {
+            'id': '',
+            'name': '',
+            'email': '',
+            'institution': '',
+            'users': self.auth.users 
+        }
+        result.update(data)
+        return ('general_permissions.tmpl', result)
+    
+    def _addUser(self, args):
+        """Adds a new user."""
+        data = {}
+        id = data['id'] = args.get('id', [''])[0]
+        password = args.get('password', [''])[0]
+        confirmation = args.get('confirmation', [''])[0]
+        name = data['name'] = args.get('name', [''])[0]
+        email = data['email'] = args.get('email', [''])[0]
+        institution = data['institution'] = args.get('institution', [''])[0]
+        if not id:
+            data['error'] = "No user id given."
+        elif not name:
+            data['error'] = "No user name given."
+        elif password != confirmation:
+            data['error'] = "Password and password confirmation are not equal!"
+        else:
+            try:
+                self.auth.addUser(id=id, name=name, password=password, 
+                                  email=email, institution=institution)
+            except UserGenerationError, e:
+                # password checks are made in self.auth.addUser method 
+                data['error'] = e.message
+            except Exception, e:
+                self.log.error("Error adding new user", e)
+                data['error'] = "Error adding new user", e
+            else:
+                data = {'info': "New user has been added."}
+        return data
+    
+    def _deleteUser(self, args):
+        """Deletes on or multiple users."""
+        data = {}
+        id = args.get('id', [''])[0]
+        if not id:
+            data['error'] = "No user selected."
+        else:
+            try:
+                self.auth.deleteUser(id=id)
+            except UserGenerationError, e:
+                # checks are made in self.auth.deleteUser method 
+                data['error'] = e.message
+            except Exception, e:
+                self.log.error("Error deleting user", e)
+                data['error'] = "Error deleting user", e
+            else:
+                data = {'info': "User has been deleted."}
+        return data
 
 
 class PluginsPanel(Component):

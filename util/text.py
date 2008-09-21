@@ -2,6 +2,7 @@
 
 import locale
 import re
+import hashlib
 
 
 def isInteger(data):
@@ -62,6 +63,11 @@ def toUnicode(text, charset=None):
             return unicode(text, 'utf-8')
         except UnicodeError:
             return unicode(text, locale.getpreferredencoding(), 'replace')
+
+
+def hash(text):
+    """Returns a hash of the given string."""
+    return hashlib.sha224(text).hexdigest()
 
 
 def validate_id(str):

@@ -13,7 +13,8 @@ from twisted.web import static, http, util as webutil
 from seishub import __version__ as SEISHUB_VERSION
 from seishub.config import IntOption, Option, BoolOption
 from seishub.core import ExtensionPoint, SeisHubError
-from seishub.defaults import ADMIN_PORT, ADMIN_CERTIFICATE, ADMIN_PRIVATE_KEY
+from seishub.defaults import ADMIN_PORT, ADMIN_CERTIFICATE, \
+                             ADMIN_PRIVATE_KEY, ADMIN_MIN_PASSWORD_LENGTH
 from seishub.packages.processor import Processor, ProcessorError
 from seishub.services.admin.interfaces import IAdminPanel, IAdminTheme, \
                                               IAdminStaticContent
@@ -175,6 +176,8 @@ class AdminRequest(http.Request):
     
     def _renderError(self, data):
         """Render an error or info message."""
+        if not data:
+            return
         if data.get('error', False):
             msg = data.get('error')
             type = 'error'
@@ -339,8 +342,10 @@ class AdminService(internet.SSLServer): #@UndefinedVariable
            'Private key file.')
     Option('webadmin', 'certificate_file', ADMIN_CERTIFICATE, 
            'Certificate file.')
-    Option('webadmin', 'secured', 'True', "Enable HTTPS connection.")
+    BoolOption('webadmin', 'secured', 'True', "Enable HTTPS connection.")
     Option('webadmin', 'theme', 'default', "WebAdmin Theme.")
+    IntOption('webadmin', 'min_password_length', ADMIN_MIN_PASSWORD_LENGTH,
+              'Minimal password length for secured services.')
     
     def __init__(self, env):
         self.env = env

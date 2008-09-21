@@ -31,11 +31,24 @@ INFO = 10
 DEBUG = 20
 
 
+
+
+
 class SeisHubError(Exception):
     """Exception base class for errors in SeisHub."""
     
     def __init__(self, *args, **kwargs):
         Exception.__init__(self, *args, **kwargs)
+
+
+class SeisHubMessageError(SeisHubError):
+    """Exception base class for errors in SeisHub which contains at least a 
+    simple error message.
+    """
+    
+    def __init__(self, message, *args, **kwargs):
+        SeisHubError.__init__(self, message, *args, **kwargs)
+        self.message = message
 
 
 class ExtensionPoint(property):
