@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-from sqlalchemy import Table, Column, ForeignKey  #@UnresolvedImport
-from sqlalchemy import Integer, String, Text, Binary, Boolean #@UnresolvedImport
-from sqlalchemy import UniqueConstraint, PrimaryKeyConstraint #@UnresolvedImport
-from sqlalchemy.sql import text #@UnresolvedImport
+from sqlalchemy import Table, Column
+from sqlalchemy import Integer, String, Text, Binary, DateTime
+from sqlalchemy import UniqueConstraint, PrimaryKeyConstraint
+from sqlalchemy.sql import text
 
 from seishub.db.dbmanager import meta as metadata
 
@@ -18,6 +18,9 @@ RESOURCE_TABLE = 'resource'
 # xmldbms tables:
 data_tab = Table(DEFAULT_PREFIX + DATA_TABLE, metadata,
     Column('id', Integer, primary_key = True, autoincrement = True),
+    Column('size', Integer),
+    Column('datetime', DateTime),
+    Column('author', Integer),
     Column('data', Binary),
     useexisting=True,
     )

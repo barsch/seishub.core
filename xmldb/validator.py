@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from seishub.util.xml import XmlTreeDoc, XmlSchema
+from seishub.util.xmlwrapper import XmlTreeDoc, XmlSchema
 
 class Validator(object):
     def __init__(self,value):

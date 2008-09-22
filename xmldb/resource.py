@@ -3,7 +3,7 @@
 from zope.interface import implements
 
 from seishub.db.util import Serializable, Relation
-from seishub.util.xml import IXmlDoc, XmlTreeDoc
+from seishub.util.xmlwrapper import IXmlDoc, XmlTreeDoc
 from seishub.packages.package import PackageWrapper, ResourceTypeWrapper
 from seishub.xmldb.defaults import resource_tab, data_tab
 from seishub.xmldb.errors import XmlResourceError
