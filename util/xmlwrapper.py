@@ -14,7 +14,7 @@ class IXmlNode(Interface):
 
 class IXmlStylesheet(Interface):
     """Parsed XML Stylesheet document"""
-    def validate(xmltree_doc):
+    def transform(xmltree_doc):
         """Transform given xmltree_doc with the stylesheet.
         @param xml_doc: XML Tree Document
         @type xml_doc: IXmlDoc 
@@ -114,6 +114,10 @@ class XmlStylesheet(object):
         f = StringIO(stylesheet_data)
         xslt_doc = etree.parse(f)
         self.transform_func = etree.XSLT(xslt_doc)
+        # fetch any included media type
+        root = xslt_doc.getroot()
+        self.content_type = root.xpath('.//xsl:output/@media-type', 
+                                       namespaces=root.nsmap)
     
     def transform(self, xmltree_doc):
         if not IXmlDoc.providedBy(xmltree_doc):
