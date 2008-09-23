@@ -16,11 +16,12 @@ from twisted.cred import portal
 from twisted.python import components
 
 #from seishub import __version__ as SEISHUB_VERSION
-from seishub.core import SeisHubError
+from seishub.core import SeisHubMessageError
 from seishub.defaults import SFTP_PORT, SFTP_PRIVATE_KEY, SFTP_PUBLIC_KEY, \
                              SFTP_AUTOSTART
 from seishub.config import IntOption, Option, BoolOption
-from seishub.packages.processor import Processor
+from seishub.packages.processor import Processor, ProcessorError
+from seishub.packages.processor import PUT, POST, DELETE, GET
 from seishub.util.path import absPath
 
 
@@ -46,12 +47,11 @@ FX_NOT_A_DIRECTORY             = FX_FAILURE
 FX_FILE_IS_A_DIRECTORY         = FX_FAILURE
 
 
-class SFTPError(SeisHubError):
-
+class SFTPError(SeisHubMessageError):
+    """A general SFTP exception handler."""
     def __init__(self, code, message=''):
-        SeisHubError.__init__(self)
+        SeisHubMessageError.__init__(self, code=code, message=message)
         self.code = code
-        self.message = message
 
     def __str__(self):
         return 'SFTPError %s: %s' % (self.code, self.message)
@@ -70,7 +70,7 @@ class DirList:
             pass
         
         s = st()
-        attrs['permissions'] = s.st_mode = attrs.get('permissions', 040755)
+        attrs['permissions'] = s.st_mode = attrs.get('permissions', 33188)
         attrs['uid'] = s.st_uid = attrs.get('uid', 0)
         attrs['gid'] = s.st_gid = attrs.get('gid', 0)
         attrs['size'] = s.st_size = attrs.get('size', 0)
@@ -93,7 +93,7 @@ class InMemoryFile:
         self.flags = flags
         self.attrs = attrs
         self.data = StringIO.StringIO()
-        self.request = Processor(self.env)
+        self.proc = Processor(self.env)
         if self.flags & FXF_READ:
             result = self._readResource()
             if result:
@@ -104,10 +104,8 @@ class InMemoryFile:
     def _readResource(self):
         print "-------------file._readResource"
         # check if resource exists
-        self.request.method = 'GET'
-        self.request.path = self.filename
         try:
-            data = self.request.process()
+            data = self.proc.run(GET, self.filename)
         except Exception:
             data = ''
         return data
@@ -131,23 +129,26 @@ class InMemoryFile:
             return
         # check for resource
         result = self._readResource()
-        self.request.content = self.data
-        self.request.path = self.filename
+        self.proc.content = self.data
+        self.proc.path = self.filename
         if result:
             # resource exists
-            self.request.method = 'POST'
+            self.proc.method = 'POST'
         else:
             # new resource
-            self.request.method = 'PUT'
+            self.proc.method = 'PUT'
         try:
-            self.request.process()
+            self.proc.process()
+        except ProcessorError, e:
+            import pdb;pdb.set_trace()
+            
+            raise SFTPError(FX_FAILURE, e.message)
         except Exception, e:
-            self.env.log.error('ProcessorError:', e)
             raise SFTPError(FX_FAILURE, e)
     
     def getAttrs(self):
         print "-------------file.getAttrs"
-        return {'permissions': 020644, 'size': 0, 'uid': 0, 'gid': 0,
+        return {'permissions': 16877, 'size': 0, 'uid': 0, 'gid': 0,
                 'atime': time.time(), 'mtime': time.time()}
     
     def setAttrs(self, attrs):
@@ -183,11 +184,11 @@ class SFTPServiceProtocol:
     
     def openDirectory(self, path):
         print "-------------openDirectory", path
-        request = Processor(self.env)
-        request.method = 'GET'
-        request.path = path
+        # remove trailing slahes
+        path = absPath(path)
+        proc = Processor(self.env)
         try:
-            data = request.process()
+            data = proc.run(GET, path)
         except Exception, e:
             self.env.log.error('ProcessorError:', e)
             raise SFTPError(FX_FAILURE, e)
@@ -210,13 +211,13 @@ class SFTPServiceProtocol:
         # set default file extensions and permissions
         if path == '/seishub/schema':
             ext = '.xsd'
-            perm = 020444
+            perm = 33188
         elif path == '/seishub/stylesheet':
             ext = '.xslt'
-            perm = 020444
+            perm = 33188
         else:
             ext = '.xml'
-            perm = 020644
+            perm = 33188
         # fetch all resources
         for d in resources:
             name = d.split('/')[-1:][0]
@@ -229,19 +230,27 @@ class SFTPServiceProtocol:
         print "-------------getAttrs", filename, followLinks
         # remove file extension 
         filename = self._removeFileExtension(filename)
+        # remove trailing slahes
+        filename = absPath(filename)
         # process resource
-        request = Processor(self.env)
-        request.method = 'GET'
-        # XXX: hier meta ??
-        request.path = filename
+        proc = Processor(self.env)
         try:
-            request.process()
+            data = proc.run(GET, filename)
         except Exception, e:
             self.env.log.error('ProcessorError:', e)
-            raise SFTPError(FX_FAILURE, e)
-        
-        return {'permissions': 020755, 'size': 0, 'uid': 0, 'gid': 0,
-                'atime': time.time(), 'mtime': time.time()}
+            raise SFTPError(FX_FAILURE, e.message)
+        if isinstance(data, basestring):
+            # file
+            # XXX: metadata here!!
+            return {'permissions': 33188, 'size': 0, 'uid': 0, 'gid': 0,
+                    'atime': time.time(), 'mtime': time.time(), 'nlink': 1}
+        else:
+            # directory
+            return {'permissions': 16877, 'size': 0, 'uid': 0, 'gid': 0,
+                    'atime': time.time(), 'mtime': time.time(), 'nlink': 1}
+        # XXX: old - works with windows only
+        #return {'permissions': 020755, 'size': 0, 'uid': 0, 'gid': 0,
+        #        'atime': time.time(), 'mtime': time.time()}
     
     def setAttrs(self, path, attrs):
         print "-------------setAttrs", path, attrs
@@ -257,12 +266,11 @@ class SFTPServiceProtocol:
         # remove file extension 
         filename = self._removeFileExtension(filename)
         # process resource
-        request = Processor(self.env)
-        request.method = 'DELETE'
-        request.path = filename
+        proc = Processor(self.env)
         try:
-            request.process()
+            proc.run(DELETE, filename)
         except Exception, e:
+            
             self.env.log.error('ProcessorError:', e)
             raise SFTPError(FX_FAILURE, e)
     

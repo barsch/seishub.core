@@ -6,6 +6,7 @@ from twisted.web import http
 
 from seishub.test import SeisHubEnvironmentTestCase
 from seishub.packages.processor import Processor, ProcessorError
+from seishub.packages.processor import PUT, POST, DELETE, GET
 from seishub.core import Component, implements
 from seishub.packages.builtins import IResourceType, IPackage
 from seishub.packages.interfaces import IGETMapper, IPUTMapper, \
@@ -35,24 +36,29 @@ XML_VC_DOC = """<?xml version="1.0" encoding="UTF-8"?>
 """
 
 
-
 class AResourceType(Component):
+    """A non versioned test resource type."""
     implements(IResourceType, IPackage)
+    
     package_id = 'test'
     resourcetype_id = 'notvc'
     version_control = False
 
 
 class AVersionControlledResourceType(Component):
+    """A version controlled test resource type."""
     implements(IResourceType, IPackage)
+    
     package_id = 'test'
     resourcetype_id = 'vc'
     version_control = True
 
 
 class TestMapper(Component):
+    """A test mapper."""
     implements(IGETMapper, IPUTMapper, IDELETEMapper, IPOSTMapper)
     
+    package_id = 'test'
     mapping_url = '/test/testmapping'
     
     def processGET(self, request):
@@ -69,8 +75,10 @@ class TestMapper(Component):
 
 
 class TestMapper2(Component):
+    """Another test mapper."""
     implements(IGETMapper)
     
+    package_id = 'test'
     mapping_url = '/test2/testmapping'
     
     def processGET(self, request):
@@ -78,6 +86,7 @@ class TestMapper2(Component):
 
 
 class TestMapper3(Component):
+    """And one more test mapper."""
     implements(IGETMapper)
     
     mapping_url = '/test/vc/muh'
@@ -87,6 +96,7 @@ class TestMapper3(Component):
 
 
 class ProcessorTest(SeisHubEnvironmentTestCase):
+    """Processor test case."""
     def setUp(self):
         self.env.enableComponent(AVersionControlledResourceType)
         self.env.enableComponent(AResourceType)
@@ -96,14 +106,28 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
     
     def test_processRoot(self):
         proc = Processor(self.env)
-        proc.path = '/'
-        # test invalid or forbidden methods
-        self._test_invalid_methods(proc)
-        self._test_forbidden_methods(proc)
+        # test forbidden methods
+        for method in [POST, PUT, DELETE]:
+            try:
+                proc.run(method, '/')
+            except Exception, e:
+                assert isinstance(e, ProcessorError)
+                self.assertEqual(e.code, http.FORBIDDEN)
+        # test invalid methods
+        for method in ['HEAD', 'XXX', 'GETPUT']:
+            try:
+                proc.run(method, '/')
+            except Exception, e:
+                assert isinstance(e, ProcessorError)
+                self.assertEqual(e.code, http.NOT_ALLOWED)
         # test valid GET method
-        data = proc.run('GET', '/')
+        data = proc.run(GET, '/')
+        # data must be a dict
+        self.assertTrue(isinstance(data, dict))
         # should have at least 'package', 'property' and 'mapping' as keys
-        self._test_process_result(data, ['package', 'property', 'mapping'])
+        for field in ['package', 'property', 'mapping']:
+            self.assertTrue(data.has_key(field))
+            self.assertTrue(isinstance(data.get(field), list))
         # check entries in packages
         self.assertTrue('/test' in data.get('package'))
         self.assertTrue('/seishub' in data.get('package'))
@@ -113,15 +137,28 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
     
     def test_processPackage(self):
         proc = Processor(self.env)
-        proc.path = '/test'
-        # test invalid or forbidden methods
-        self._test_invalid_methods(proc)
-        self._test_forbidden_methods(proc)
+        # test forbidden methods
+        for method in [POST, PUT, DELETE]:
+            try:
+                proc.run(method, '/test')
+            except Exception, e:
+                assert isinstance(e, ProcessorError)
+                self.assertEqual(e.code, http.FORBIDDEN)
+        # test invalid methods
+        for method in ['HEAD', 'XXX', 'GETPUT']:
+            try:
+                proc.run(method, '/test')
+            except Exception, e:
+                assert isinstance(e, ProcessorError)
+                self.assertEqual(e.code, http.NOT_ALLOWED)
         # test valid GET method
-        data = proc.run('GET', '/test')
+        data = proc.run(GET, '/test')
+        # data must be a dict
+        self.assertTrue(isinstance(data, dict))
         # should have 'resourcetype', 'alias', 'property' and 'mapping'
-        self._test_process_result(data, ['resourcetype', 'alias', 'property', 
-                                         'mapping'])
+        for field in ['resourcetype', 'alias', 'property', 'mapping']:
+            self.assertTrue(data.has_key(field))
+            self.assertTrue(isinstance(data.get(field), list))
         # check entries in resourcetypes
         self.assertTrue('/test/vc' in data.get('resourcetype'))
         self.assertTrue('/test/notvc' in data.get('resourcetype'))
@@ -136,16 +173,30 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
     def test_processResourceType(self):
         proc = Processor(self.env)
         proc.path = '/test/notvc'
-        # test invalid or forbidden methods
-        self._test_invalid_methods(proc)
-        self._test_forbidden_methods(proc, ['POST', 'DELETE'])
+        # test forbidden methods
+        for method in [POST, DELETE]:
+            try:
+                proc.run(method, '/')
+            except Exception, e:
+                assert isinstance(e, ProcessorError)
+                self.assertEqual(e.code, http.FORBIDDEN)
+        # test invalid methods
+        for method in ['HEAD', 'XXX', 'GETPUT']:
+            try:
+                proc.run(method, '/')
+            except Exception, e:
+                assert isinstance(e, ProcessorError)
+                self.assertEqual(e.code, http.NOT_ALLOWED)
         # test valid GET method
-        data = proc.run('GET', '/test/notvc')
-        # should have at least 'index', 'alias', 'mapping' and 'property'
-        self._test_process_result(data, ['index', 'alias', 'mapping', 
-                                         'property', 'resource'])
+        data = proc.run(GET, '/test/notvc')
+        # data must be a dict
+        self.assertTrue(isinstance(data, dict))
+        # should have at least 'package', 'property' and 'mapping' as keys
+        for field in ['index', 'alias', 'mapping', 'property', 'resource']:
+            self.assertTrue(data.has_key(field))
+            self.assertTrue(isinstance(data.get(field), list))
         # test valid PUT method
-        data = proc.run('PUT', '/test/notvc', StringIO(XML_DOC))
+        data = proc.run(PUT, '/test/notvc', StringIO(XML_DOC))
         # check response; data should be empty; we look into request
         self.assertFalse(data)
         self.assertEqual(proc.response_code, http.CREATED)
@@ -155,16 +206,16 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
         location = response_header.get('Location')
         self.assertTrue(location.startswith(proc.path))
         # fetch all resources via property .all
-        data = proc.run('GET', '/test/notvc')
+        data = proc.run(GET, '/test/notvc')
         # only resources should be there
         self.assertTrue(data.has_key('resource'))
         self.assertTrue(isinstance(data.get('resource'),list))
         self.assertTrue(location in data.get('resource'))
         # fetch resource and compare it with original
-        data = proc.run('GET', location)
+        data = proc.run(GET, location)
         self.assertTrue(data, XML_DOC)
         # delete uploaded resource
-        data = proc.run('DELETE', location)
+        data = proc.run(DELETE, location)
         # check response; data should be empty; we look into request
         self.assertFalse(data)
         self.assertEqual(proc.response_code, http.NO_CONTENT)
@@ -173,132 +224,97 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
         pass
     
     def test_processResource(self):
-        request = Processor(self.env)
+        proc = Processor(self.env)
         # DELETE resource
-        request.method = 'DELETE'
-        # id is no integer
-        request.path = '/test/notvc/idisnointeger'
         try:
-            request.process()
+            proc.run(DELETE, '/test/notvc/idisnointeger')
         except Exception, e:
             assert isinstance(e, ProcessorError)
             self.assertEqual(e.code, http.BAD_REQUEST)
         # package and/or resource type does not exists
-        request.path = '/xxx/yyy/1'
         try:
+            proc.run(DELETE, '/xxx/yyy/1')
             request.process()
         except Exception, e:
             assert isinstance(e, ProcessorError)
             self.assertEqual(e.code, http.FORBIDDEN)
         # id does not exists
-        request.path = '/test/notvc/-1'
         try:
-            request.process()
+            proc.run(DELETE, '/test/notvc/-1')
         except Exception, e:
             assert isinstance(e, ProcessorError)
             self.assertEqual(e.code, http.INTERNAL_SERVER_ERROR)
         # upload a resource via PUT
-        request.path = '/test/notvc'
-        request.method = 'PUT'
-        request.content = StringIO(XML_DOC)
-        data = request.process()
+        data = proc.run(PUT, '/test/notvc', StringIO(XML_DOC))
         # check response; data should be empty; we look into request
         self.assertFalse(data)
-        self.assertEqual(request.response_code, http.CREATED)
-        self.assertTrue(isinstance(request.response_header, dict))
-        response_header = request.response_header
+        self.assertEqual(proc.response_code, http.CREATED)
+        self.assertTrue(isinstance(proc.response_header, dict))
+        response_header = proc.response_header
         self.assertTrue(response_header.has_key('Location'))
         location = response_header.get('Location')
-        self.assertTrue(location.startswith(request.path))
+        self.assertTrue(location.startswith(proc.path))
         # GET resource
-        request.method = 'GET'
-        request.path = location
-        data = request.process()
+        data = proc.run(GET, location)
         self.assertEquals(data, XML_DOC)
         # overwrite this resource via POST request
-        request.path = location
-        request.method = 'POST'
-        request.content = StringIO(XML_DOC2)
-        data = request.process()
+        proc.run(POST, location, StringIO(XML_DOC2))
         # GET resource
-        request.method = 'GET'
-        request.path = location
-        data = request.process()
+        data = proc.run(GET, location)
         self.assertNotEquals(data, XML_DOC)
         self.assertEquals(data, XML_DOC2)
         # DELETE resource
-        request.method = 'DELETE'
-        request.path = location
-        request.process()
+        proc.run(DELETE, location)
         # GET deleted revision
-        request.method = 'GET'
-        request.path = location
         try:
-            data = request.process()
+            proc.run(GET, location)
         except Exception, e:
             assert isinstance(e, ProcessorError)
             self.assertEqual(e.code, http.NOT_FOUND)
     
     def test_processVCResource(self):
         """Test for a version controlled resource."""
-        request = Processor(self.env)
-        request.path = '/test/vc'
+        proc = Processor(self.env)
         # upload a resource via PUT
-        request.method = 'PUT'
-        request.content = StringIO(XML_DOC)
-        data = request.process()
+        data = proc.run(PUT, '/test/vc', StringIO(XML_DOC))
         # check response; data should be empty; we look into request
         self.assertFalse(data)
-        self.assertEqual(request.response_code, http.CREATED)
-        self.assertTrue(isinstance(request.response_header, dict))
-        response_header = request.response_header
+        self.assertEqual(proc.response_code, http.CREATED)
+        self.assertTrue(isinstance(proc.response_header, dict))
+        response_header = proc.response_header
         self.assertTrue(response_header.has_key('Location'))
         location = response_header.get('Location')
-        self.assertTrue(location.startswith(request.path))
+        self.assertTrue(location.startswith(proc.path))
         # overwrite this resource via POST request
-        request.path = location
-        request.method = 'POST'
-        request.content = StringIO(XML_DOC2)
-        data = request.process()
+        data = proc.run(POST, location, StringIO(XML_DOC2))
         # check response; data should be empty; we look into request
         self.assertFalse(data)
-        self.assertEqual(request.response_code, http.NO_CONTENT)
-        self.assertTrue(isinstance(request.response_header, dict))
-        response_header = request.response_header
+        self.assertEqual(proc.response_code, http.NO_CONTENT)
+        self.assertTrue(isinstance(proc.response_header, dict))
+        response_header = proc.response_header
         self.assertTrue(response_header.has_key('Location'))
         location = response_header.get('Location')
-        self.assertTrue(location.startswith(request.path))
+        self.assertTrue(location.startswith(proc.path))
         # GET latest revision
-        request.method = 'GET'
-        data = request.process()
+        data = proc.run(GET, location)
         self.assertEquals(data, XML_DOC2)
         # GET revision #1
-        request.method = 'GET'
-        request.path = location+'/1'
-        data = request.process()
+        data = proc.run(GET, location + '/1')
         self.assertEquals(data, XML_DOC)
         # GET revision #2
-        request.method = 'GET'
-        request.path = location+'/2'
-        data = request.process()
+        data = proc.run(GET, location + '/2')
         self.assertEquals(data, XML_DOC2)
-        # GET revision #3 -> does not exists
-        request.method = 'GET'
-        request.path = location+'/3'
+        # GET not existing revision #3
         try:
-            data = request.process()
+            data = proc.run(GET, location + '/3')
         except Exception, e:
             assert isinstance(e, ProcessorError)
             self.assertEqual(e.code, http.NOT_FOUND)
         # DELETE resource
-        request.method = 'DELETE'
-        request.path = location
-        request.process()
-        # GET deleted revision
-        request.method = 'GET'
-        request.path = location
+        proc.run(DELETE, location)
+        # try to GET deleted revision
         try:
-            data = request.process()
+            proc.run(GET, location)
         except Exception, e:
             assert isinstance(e, ProcessorError)
             self.assertEqual(e.code, http.GONE)
@@ -306,12 +322,12 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
     def test_processVCResourceDeletion(self):
         """Test for deletion behavior of version controlled resources."""
         proc = Processor(self.env)
-        proc.run('PUT', '/test/vc', StringIO(XML_VC_DOC % 1000)) 
+        proc.run(PUT, '/test/vc', StringIO(XML_VC_DOC % 1000)) 
         # upload a test resources via PUT
         loc = proc.response_header.get('Location')
         # modify both resources a few times
         for i in range(20):
-            data = proc.run('POST', loc, StringIO(XML_VC_DOC % i)) 
+            data = proc.run(POST, loc, StringIO(XML_VC_DOC % i)) 
             # check response; data should be empty; we look into request
             self.assertFalse(data)
             self.assertEqual(proc.response_code, http.NO_CONTENT)
@@ -320,59 +336,21 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
             self.assertTrue(response_header.has_key('Location'))
             self.assertEqual(loc, response_header.get('Location'))
         # check latest resource
-        print loc
-        data = proc.run('GET', loc)
-        print data
+        data = proc.run(GET, loc)
         self.assertEqual(data, XML_VC_DOC % 19)
         # check oldest resource -> revision start with 1
-        proc.method = 'GET'
-        proc.path = loc + '/1'
-        data = proc.process()
+        data = proc.run(GET, loc + '/1')
         self.assertEqual(data, XML_VC_DOC % 1000)
         # check all other revisions
-        proc.method = 'GET'
         for i in range(20):
-            proc.path = loc + '/' + str(i+2)
-            data = proc.process()
+            data = proc.run(GET, loc + '/' + str(i+2))
             self.assertEqual(data, XML_VC_DOC % i)
         # delete latest revision
-        proc.method = 'DELETE'
-        proc.path = loc + '/20'
-        proc.process()
+        # XXX: missing yet
+        #proc.run(DELETE, loc + '/20')
         # check latest resource
-        proc.method = 'GET'
-        proc.path = loc
-        data = proc.process()
-        self.assertEqual(data, XML_VC_DOC % 18)
-        
-    
-    def _test_invalid_methods(self, proc, methods=['HEAD', 'XXX', 'GETPUT']):
-        # test invalid methods
-        for method in methods:
-            proc.method = method
-            try:
-                proc.process()
-            except Exception, e:
-                assert isinstance(e, ProcessorError)
-                self.assertEqual(e.code, http.NOT_ALLOWED)
-    
-    def _test_forbidden_methods(self, proc, methods=['POST', 'PUT', 'DELETE']):
-        # test forbidden methods
-        for method in methods:
-            proc.method = method
-            try:
-                proc.process()
-            except Exception, e:
-                assert isinstance(e, ProcessorError)
-                self.assertEqual(e.code, http.FORBIDDEN)
-    
-    def _test_process_result(self, data, fields=[]):
-        # data must be a dict
-        self.assertTrue(isinstance(data, dict))
-        # test for fields
-        for field in fields:
-            self.assertTrue(data.has_key(field))
-            self.assertTrue(isinstance(data.get(field), list))
+        #data = proc.run(GET, loc)
+        #self.assertEqual(data, XML_VC_DOC % 18)
 
 
 def suite():

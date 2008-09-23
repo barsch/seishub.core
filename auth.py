@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+import os
+
 from zope.interface import implements
 from sqlalchemy import Column, String, create_engine
 from sqlalchemy.orm import  sessionmaker
@@ -73,8 +75,7 @@ class AuthenticationManager(object):
     def __init__(self, env):
         self.env = env
         # fetch db uri - this is an option primary for the test cases
-        uri = self.env.config.get('seishub', 'auth_uri', 
-                                  'sqlite:///db/auth.db')
+        uri = 'sqlite:///' + os.path.join(self.env.config.path, 'db', 'auth.db')
         engine = create_engine(uri, encoding = 'utf-8', convert_unicode = True)
         # Define and create user table
         metadata = UserBase.metadata

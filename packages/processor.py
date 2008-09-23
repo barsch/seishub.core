@@ -11,6 +11,12 @@ from seishub.util.path import splitPath
 from seishub.xmldb.errors import GetResourceError, ResourceDeletedError
 
 
+PUT = 'PUT'
+GET = 'GET'
+POST = 'POST'
+DELETE = 'DELETE'
+
+
 class ProcessorError(SeisHubError):
     
     def __init__(self, code, message=''):
@@ -52,13 +58,13 @@ class Processor:
         # read content
         self.content.seek(0)
         self.data=self.content.read()
-        if self.method == 'GET':
+        if self.method == GET:
             return self._processGET()
-        elif self.method == 'POST':
+        elif self.method == POST:
             return self._processPOST()
-        elif self.method == 'PUT':
+        elif self.method == PUT:
             return self._processPUT()
-        elif self.method == 'DELETE':
+        elif self.method == DELETE:
             return self._processDELETE()
         raise ProcessorError(http.NOT_ALLOWED)
     
@@ -434,10 +440,10 @@ class Processor:
                 raise ProcessorError(http.INTERNAL_SERVER_ERROR, 
                                      "Error processing %s mapper for %s." % + \
                                      (self.method, self.path))
-        if self.method in ['DELETE','POST']:
+        if self.method in [DELETE, POST]:
             self.response_code = http.NO_CONTENT
             return ''
-        if self.method=='PUT' :
+        if self.method==PUT :
             self.response_code = http.CREATED
             self.response_header['Location'] = str(result)
             return ''
