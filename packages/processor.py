@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import StringIO
+from StringIO import StringIO
 
 from twisted.web import http
 
@@ -33,8 +33,15 @@ class Processor:
         self.response_code = http.OK
         self.response_header = {}
         # set content
-        self.content = StringIO.StringIO()
-        self.data = StringIO.StringIO()
+        self.content = StringIO()
+        self.data = StringIO()
+    
+    def run(self, method, path='/', content=None):
+        self.method = method
+        self.path = path
+        if content:
+            self.content = content
+        return self.process()
     
     def process(self):
         """Working through the process chain."""
@@ -266,7 +273,7 @@ class Processor:
             raise ProcessorError(http.FORBIDDEN, 
                                  "SeisHub resources may not be deleted " + \
                                  "directly.")
-        # only resource types are accepting PUTs
+        # only resource types are accepted
         if not self.env.registry.isResourceTypeId(self.postpath[0], 
                                                   self.postpath[1]):
             raise ProcessorError(http.FORBIDDEN,
