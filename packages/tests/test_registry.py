@@ -50,10 +50,10 @@ class PackageRegistryTest(SeisHubEnvironmentTestCase):
                          ('package', None, 'type'))
     
     def test_InMemoryRegistry(self):
-        packages = self.env.registry.packages
+        packages = self.env.registry.getPackageIds()
         for p in packages:
-            assert self.env.registry.packages.get(p).package_id == p
-        resourcetypes = self.env.registry.resourcetypes
+            assert self.env.registry.getPackage(p).package_id == p
+        resourcetypes = self.env.registry.getAllPackagesAndResourceTypes()
         rt_ids = resourcetypes.get('seishub')
         for id in rt_ids:
             rt_object = resourcetypes.get('seishub', id)

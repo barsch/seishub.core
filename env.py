@@ -15,7 +15,7 @@ from seishub.xmldb.xmlcatalog import XmlCatalog
 from seishub.db.dbmanager import DatabaseManager
 from seishub.log import Logger
 from seishub.defaults import DEFAULT_COMPONENTS
-from seishub.packages.registry import PackageRegistry
+from seishub.packages.registry import ComponentRegistry
 
 __all__ = ['Environment']
 
@@ -61,9 +61,9 @@ class Environment(ComponentManager):
         # load plugins
         ComponentLoader(self)
         # Package manager
-        # init PackageRegistry after ComponentLoader(), as plugins may 
+        # init ComponentRegistry after ComponentLoader(), as plugins may 
         # provide registry objects
-        self.registry = PackageRegistry(self)
+        self.registry = ComponentRegistry(self)
         # trigger auto installer, install seishub package first
         PackageInstaller.cleanup(self)
         # XXX: ???

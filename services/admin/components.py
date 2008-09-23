@@ -12,8 +12,8 @@ class SchemasPanel(Component):
         return ('components', 'Components', 'edit-schemas', 'Schemas')
     
     def renderPanel(self, request):
-        packages = self.env.registry.packages
-        resourcetypes = self.env.registry.resourcetypes
+        packages = self.env.registry.getPackageIds()
+        resourcetypes = self.env.registry.getAllPackagesAndResourceTypes()
         
         data  = {
             'packages': packages,
@@ -65,8 +65,8 @@ class StylesheetsPanel(Component):
         return ('components', 'Components', 'edit-stylesheets', 'Stylesheets')
     
     def renderPanel(self, request):
-        packages = self.env.registry.packages
-        resourcetypes = self.env.registry.resourcetypes
+        packages = self.env.registry.getPackageIds()
+        resourcetypes = self.env.registry.getAllPackagesAndResourceTypes()
         
         data  = {
             'packages': packages,
@@ -131,8 +131,8 @@ class IndexesPanel(Component):
         return ('components', 'Components', 'edit-indexes', 'Indexes')
     
     def renderPanel(self, request):
-        packages = self.env.registry.packages
-        resourcetypes = self.env.registry.resourcetypes
+        packages = self.env.registry.getPackageIds()
+        resourcetypes = self.env.registry.getAllPackagesAndResourceTypes()
         
         data  = {
             'indexes': [],
@@ -195,13 +195,16 @@ class AliasesPanel(Component):
         return ('components', 'Components', 'edit-aliases', 'Aliases')
     
     def renderPanel(self, request):
+        packages = self.env.registry.getPackageIds()
+        resourcetypes = self.env.registry.getAllPackagesAndResourceTypes()
+        
         data  = {
             'aliases': {},
             'error': '',
             'alias': '',
             'xpath': '',
-            'packages': self.env.registry.packages,
-            'resourcetypes': self.env.registry.resourcetypes,
+            'packages': packages,
+            'resourcetypes': resourcetypes,
             'resturl': self.env.getRestUrl(),
         }
         if request.method=='POST':
@@ -249,8 +252,11 @@ class QuickinstallerPanel(Component):
                 'Quickinstaller')
     
     def renderPanel(self, request):
-        data = {'packages': self.env.registry.packages,
-                'resourcetypes': self.env.registry.resourcetypes,
+        packages = self.env.registry.getPackageIds()
+        resourcetypes = self.env.registry.getAllPackagesAndResourceTypes()
+        
+        data = {'packages': packages,
+                'resourcetypes': resourcetypes,
                 'aliases': self.env.registry.aliases,
                 'mappers': self.env.registry.mappers,
                 'stylesheets': self.env.registry.stylesheets,

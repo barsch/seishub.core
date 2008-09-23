@@ -8,14 +8,12 @@ from seishub.packages.interfaces import IPackage, IResourceType, \
                                         IMapperMethod
 from seishub.packages.package import PackageWrapper, ResourceTypeWrapper, \
                                      Alias, Schema, Stylesheet
-from seishub.packages.util import PackageListProxy, RegistryDictProxy, \
-                                  RegistryListProxy, ResourceTypeListProxy
+from seishub.packages.util import RegistryDictProxy, \
+                                  RegistryListProxy
 
 
-class PackageRegistry(DbStorage):
+class ComponentRegistry(DbStorage):
     """General class to handle all kind of component registration."""
-    packages = PackageListProxy()
-    resourcetypes = ResourceTypeListProxy()
     aliases = RegistryListProxy('_alias_reg')
     schemas = RegistryListProxy('_schema_reg')
     stylesheets = RegistryListProxy('_stylesheet_reg')
@@ -36,12 +34,16 @@ class PackageRegistry(DbStorage):
         components = PackageManager.getComponents(interface, package_id, 
                                                   self.env)
         return components
+    
+    def getPackage(self, package_id):
+        """Returns a single package object."""
+        return self.getComponents(IPackage, package_id)[0]
 
     def getPackageIds(self):
         """Returns sorted list of all enabled package ids."""
         all = PackageManager.getPackageIds()
         enabled = [id for id in all if self.env.isComponentEnabled \
-                                  (PackageManager.getClasses(IPackage, id)[0])]
+                   (PackageManager.getClasses(IPackage, id)[0])]
         enabled.sort()
         return enabled
     
@@ -49,53 +51,54 @@ class PackageRegistry(DbStorage):
         """Returns sorted list of all enabled package URLs.  Optional a base 
         path can be added in front of each URL.
         """
-        return [base + '/' + u for u in self.getPackageIds()]
+        return [base + '/' + id for id in self.getPackageIds()]
     
     def isPackageId(self, package_id):
-        """Checks if the given package is an enabled package."""
-        all = PackageManager.getPackageIds()
-        enabled = [id for id in all if self.env.isComponentEnabled \
-                                  (PackageManager.getClasses(IPackage, id)[0])]
-        return package_id in enabled
+        """Checks if the given package id belongs to an enabled package."""
+        return package_id in self.getPackageIds()
     
     def isPackageURL(self, url):
-        """Checks if the given URL fits to a package URL."""
+        """Checks if the given URL fits to a URL of an enabled package."""
         if not url.startswith('/'):
             return False
         return self.isPackageId(url[1:])
     
-    def getAllResourceTypes(self):
+    def getAllPackagesAndResourceTypes(self):
         """Returns dictionary of enabled resource type ids and package ids, 
         in form of: {'package_id': ['resourcetype_id_1', 'resourcetype_id_2']}.
         """
-        package_ids = self.getPackageIds()
-        rtypes = dict()
-        for p in package_ids:
-            all = PackageManager.getClasses(IResourceType, p)
-            rtypes[p] = [cls.resourcetype_id for cls in all\
-                         if self.env.isComponentEnabled(cls)]
-        return rtypes
-    
-    def getResourceTypes(self, package_id = None):
-        """Returns list of all resource types objects, optionally filtered by a
-        package id.
-        """
-        components = self.getComponents(IResourceType, package_id)
-        resourcetypes = {}
-        for c in components:
-            id = c.resourcetype_id
-            resourcetypes[id] = c
+        ids = self.getPackageIds()
+        resourcetypes = dict()
+        for id in ids:
+            all = PackageManager.getClasses(IResourceType, id)
+            resourcetypes[id] = [cls.resourcetype_id for cls in all \
+                                if self.env.isComponentEnabled(cls)]
         return resourcetypes
     
+    def getResourceType(self, package_id, resourcetype_id):
+        """Returns a single resource type object."""
+        components = self.getComponents(IResourceType, package_id)
+        for obj in components:
+            if obj.resourcetype_id == resourcetype_id:
+                return obj
+        return None
+    
+    def getResourceTypes(self, package_id):
+        """Returns a list of all enabled resource types for a given package id.
+        """
+        all = PackageManager.getClasses(IResourceType, package_id)
+        return [cls for cls in all if self.env.isComponentEnabled(cls)]
+    
     def getResourceTypeIds(self, package_id):
-        """Returns sorted list of all resource type ids filtered by a given 
+        """Returns a sorted list of all enabled resource type ids for a given 
         package id.
         """
         if not self.isPackageId(package_id):
             return []
-        resourcetypes = self.getResourceTypes(package_id).keys()
-        resourcetypes.sort()
-        return resourcetypes
+        all = self.getResourceTypes(package_id)
+        enabled = [cls.resourcetype_id for cls in all]
+        enabled.sort()
+        return enabled
     
     def getResourceTypeURLs(self, package_id, base=''):
         """Returns a sorted list of resource type URLs filtered by a given
@@ -114,6 +117,8 @@ class PackageRegistry(DbStorage):
         if len(parts)!=3 or parts[0]!='':
             return False
         return self.isResourceTypeId(parts[1], parts[2])
+    
+    # XXX: refactor the rest into different module
     
     def objects_from_id(self, package_id, resourcetype_id):
         package = None
@@ -210,7 +215,7 @@ class PackageRegistry(DbStorage):
         
     def _is_package_deletable(self, package_id):
         try:
-            p = self.db_getPackages(package_id)[0]
+            self.db_getPackages(package_id)[0]
         except IndexError:
             raise SeisHubError('Package not present in database: %s', 
                                str(package_id))
@@ -224,7 +229,7 @@ class PackageRegistry(DbStorage):
     
     def _is_resourcetype_deletable(self, package_id, resourcetype_id):
         try:
-            rt = self.db_getResourceTypes(package_id, resourcetype_id)[0] 
+            self.db_getResourceTypes(package_id, resourcetype_id)[0] 
         except IndexError:
             raise SeisHubError("Resourcetype with id '%s' in package '%s' "+\
                                "not present in database!", 
