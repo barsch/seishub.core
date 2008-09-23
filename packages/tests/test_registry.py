@@ -53,12 +53,11 @@ class PackageRegistryTest(SeisHubEnvironmentTestCase):
         packages = self.env.registry.getPackageIds()
         for p in packages:
             assert self.env.registry.getPackage(p).package_id == p
-        resourcetypes = self.env.registry.getAllPackagesAndResourceTypes()
-        rt_ids = resourcetypes.get('seishub')
-        for id in rt_ids:
-            rt_object = resourcetypes.get('seishub', id)
-            assert rt_object.resourcetype_id == id
-            
+            resourcetypes = self.env.registry.getResourceTypeIds(p)
+            for rt in resourcetypes:
+                rt_object = self.env.registry.getResourceType(p ,rt)
+                assert rt_object.resourcetype_id == rt
+    
     def test_DatabaseRegistry(self):
         # regsiter a package
         self.env.registry.db_registerPackage('db_registered_package', '1.0')
