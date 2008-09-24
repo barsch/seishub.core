@@ -8,7 +8,7 @@ from zope.interface import implements
 
 from twisted.application import internet
 from twisted.conch.ssh import factory, keys, common, session
-from twisted.conch.ssh.filetransfer import FileTransferServer
+from twisted.conch.ssh.filetransfer import FileTransferServer, SFTPError
 from twisted.conch.interfaces import ISFTPFile, ISFTPServer, IConchUser
 from twisted.conch import avatar
 from twisted.conch.ls import lsLine
@@ -16,7 +16,6 @@ from twisted.cred import portal
 from twisted.python import components
 
 #from seishub import __version__ as SEISHUB_VERSION
-from seishub.core import SeisHubMessageError
 from seishub.defaults import SFTP_PORT, SFTP_PRIVATE_KEY, SFTP_PUBLIC_KEY, \
                              SFTP_AUTOSTART
 from seishub.config import IntOption, Option, BoolOption
@@ -47,16 +46,6 @@ FX_NOT_A_DIRECTORY             = FX_FAILURE
 FX_FILE_IS_A_DIRECTORY         = FX_FAILURE
 
 
-class SFTPError(SeisHubMessageError):
-    """A general SFTP exception handler."""
-    def __init__(self, code, message=''):
-        SeisHubMessageError.__init__(self, code=code, message=message)
-        self.code = code
-
-    def __str__(self):
-        return 'SFTPError %s: %s' % (self.code, self.message)
-
-
 class DirList:
     def __init__(self, iter):
         self.iter = iter
@@ -70,7 +59,7 @@ class DirList:
             pass
         
         s = st()
-        attrs['permissions'] = s.st_mode = attrs.get('permissions', 33188)
+        attrs['permissions'] = s.st_mode = attrs.get('permissions', 040755)
         attrs['uid'] = s.st_uid = attrs.get('uid', 0)
         attrs['gid'] = s.st_gid = attrs.get('gid', 0)
         attrs['size'] = s.st_size = attrs.get('size', 0)
@@ -104,10 +93,11 @@ class InMemoryFile:
     def _readResource(self):
         print "-------------file._readResource"
         # check if resource exists
+        data = ''
         try:
             data = self.proc.run(GET, self.filename)
         except Exception:
-            data = ''
+            pass
         return data
     
     def readChunk(self, offset, length):
@@ -133,27 +123,24 @@ class InMemoryFile:
         self.proc.path = self.filename
         if result:
             # resource exists
-            self.proc.method = 'POST'
+            self.proc.method = POST
         else:
             # new resource
-            self.proc.method = 'PUT'
+            self.proc.method = PUT
         try:
             self.proc.process()
         except ProcessorError, e:
-            import pdb;pdb.set_trace()
-            
             raise SFTPError(FX_FAILURE, e.message)
         except Exception, e:
             raise SFTPError(FX_FAILURE, e)
     
     def getAttrs(self):
         print "-------------file.getAttrs"
-        return {'permissions': 16877, 'size': 0, 'uid': 0, 'gid': 0,
-                'atime': time.time(), 'mtime': time.time()}
+        pass
     
     def setAttrs(self, attrs):
         print "-------------file.setAttrs", attrs
-        return
+        pass
 
 
 class SFTPServiceProtocol:
@@ -190,7 +177,6 @@ class SFTPServiceProtocol:
         try:
             data = proc.run(GET, path)
         except Exception, e:
-            self.env.log.error('ProcessorError:', e)
             raise SFTPError(FX_FAILURE, e)
         filelist = []
         filelist.append(('.', {}))
@@ -211,13 +197,13 @@ class SFTPServiceProtocol:
         # set default file extensions and permissions
         if path == '/seishub/schema':
             ext = '.xsd'
-            perm = 33188
+            perm = 0100644
         elif path == '/seishub/stylesheet':
             ext = '.xslt'
-            perm = 33188
+            perm = 0100644
         else:
             ext = '.xml'
-            perm = 33188
+            perm = 0100644
         # fetch all resources
         for d in resources:
             name = d.split('/')[-1:][0]
@@ -230,27 +216,25 @@ class SFTPServiceProtocol:
         print "-------------getAttrs", filename, followLinks
         # remove file extension 
         filename = self._removeFileExtension(filename)
-        # remove trailing slahes
+        # remove trailing slashes
         filename = absPath(filename)
         # process resource
         proc = Processor(self.env)
         try:
             data = proc.run(GET, filename)
-        except Exception, e:
-            self.env.log.error('ProcessorError:', e)
+        except ProcessorError, e:
             raise SFTPError(FX_FAILURE, e.message)
+        except Exception, e:
+            raise SFTPError(FX_FAILURE, e)
         if isinstance(data, basestring):
             # file
             # XXX: metadata here!!
-            return {'permissions': 33188, 'size': 0, 'uid': 0, 'gid': 0,
+            return {'permissions': 0100644, 'size': 0, 'uid': 0, 'gid': 0,
                     'atime': time.time(), 'mtime': time.time(), 'nlink': 1}
         else:
             # directory
-            return {'permissions': 16877, 'size': 0, 'uid': 0, 'gid': 0,
+            return {'permissions': 040755, 'size': 0, 'uid': 0, 'gid': 0,
                     'atime': time.time(), 'mtime': time.time(), 'nlink': 1}
-        # XXX: old - works with windows only
-        #return {'permissions': 020755, 'size': 0, 'uid': 0, 'gid': 0,
-        #        'atime': time.time(), 'mtime': time.time()}
     
     def setAttrs(self, path, attrs):
         print "-------------setAttrs", path, attrs
@@ -269,9 +253,9 @@ class SFTPServiceProtocol:
         proc = Processor(self.env)
         try:
             proc.run(DELETE, filename)
+        except ProcessorError, e:
+            raise SFTPError(FX_FAILURE, e.message)
         except Exception, e:
-            
-            self.env.log.error('ProcessorError:', e)
             raise SFTPError(FX_FAILURE, e)
     
     def renameFile(self, oldpath, newpath):
@@ -279,10 +263,12 @@ class SFTPServiceProtocol:
         return
     
     def makeDirectory(self, path, attrs):
-        raise SFTPError(FX_OP_UNSUPPORTED, '')
+        raise SFTPError(FX_OP_UNSUPPORTED, 
+                        "Directories can't be added via SFTP.")
     
     def removeDirectory(self, path):
-        raise SFTPError(FX_OP_UNSUPPORTED, '')
+        raise SFTPError(FX_OP_UNSUPPORTED, 
+                        "Directories can't be deleted via SFTP.")
     
     def readLink(self, path):
         raise SFTPError(FX_OP_UNSUPPORTED, '')
