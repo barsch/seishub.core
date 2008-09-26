@@ -2,7 +2,7 @@
 
 from zope.interface import implements
 
-from seishub.db.util import Serializable, Relation
+from seishub.db.util import Serializable, Relation, db_property
 from seishub.util.xmlwrapper import IXmlDoc, XmlTreeDoc
 from seishub.packages.package import PackageWrapper, ResourceTypeWrapper
 from seishub.xmldb.defaults import resource_tab, data_tab
@@ -138,6 +138,23 @@ class Resource(Serializable, PackageSpecific):
     def _setId(self, id):
         Serializable._setId(self, id)
         self.id = id
+        
+    def getResourceType(self):
+        return self._resourcetype
+     
+    def setResourceType(self, data):
+        self._resourcetype = data
+        
+    resourcetype = db_property(getResourceType, setResourceType, 
+                               "Resource type", attr = '_resourcetype')
+    
+    def getPackage(self):
+        return self._package
+    
+    def setPackage(self, data):
+        self._package = data
+        
+    package = db_property(getPackage, setPackage, "Package", attr = '_package')
     
     def getDocument(self):
         return self._document
@@ -147,7 +164,8 @@ class Resource(Serializable, PackageSpecific):
             raise TypeError("%s is not an IXmlDocument." % str(data))
         self._document = data
     
-    document = property(getDocument, setDocument, "xml document")
+    document = db_property(getDocument, setDocument, "xml document", 
+                            attr = '_document')
     
     def getRevision(self):
         return self._revision

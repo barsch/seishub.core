@@ -2,7 +2,7 @@
 from zope.interface import implements
 
 from seishub.util.text import validate_id, to_uri, to_xpath_query
-from seishub.db.util import Serializable, Relation
+from seishub.db.util import Serializable, Relation, db_property
 from seishub.packages.interfaces import IPackageWrapper, IResourceTypeWrapper
 from seishub.packages.defaults import schema_tab, stylesheet_tab, alias_tab,\
                                       packages_tab, resourcetypes_tab
@@ -95,8 +95,9 @@ class ResourceTypeWrapper(Serializable):
             raise TypeError('%s does not implement IPackageWrapper' %\
                              str(package))
         self._package = package
-        
-    package = property(getPackage, setPackage, "Package")
+    
+    package = db_property(getPackage, setPackage, "Package", 
+                           attr = '_package')
     
     def setVersion(self, version):
         version = version or ''
@@ -151,7 +152,8 @@ class Alias(Serializable):
             raise TypeError("%s is not an IResourceTypeWrapper" % str(data))
         self._resourcetype = data
         
-    resourcetype = property(getResourceType, setResourceType, "Resource type")
+    resourcetype = db_property(getResourceType, setResourceType, 
+                               "Resource type", attr = '_resourcetype')
     
     def getPackage(self):
         return self._package
@@ -161,7 +163,7 @@ class Alias(Serializable):
             raise TypeError("%s is not an IPackageWrapper" % str(data))
         self._package = data
         
-    package = property(getPackage, setPackage, "Package")
+    package = db_property(getPackage, setPackage, "Package", attr = '_package')
     
     def getName(self):
         return self._name
@@ -220,7 +222,8 @@ class Schema(Serializable):
             raise TypeError("%s is not an IResourceTypeWrapper" % str(data))
         self._resourcetype = data
         
-    resourcetype = property(getResourceType, setResourceType, "Resource type")
+    resourcetype = db_property(getResourceType, setResourceType, 
+                               "Resource type", attr = '_resourcetype')
     
     def getPackage(self):
         return self._package
@@ -230,7 +233,7 @@ class Schema(Serializable):
             raise TypeError("%s is not an IPackageWrapper" % str(data))
         self._package = data
         
-    package = property(getPackage, setPackage, "Package")
+    package = db_property(getPackage, setPackage, "Package", attr = '_package')
     
     def getDocument_id(self):
         return self._document_id

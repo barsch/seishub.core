@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
-from zope.interface import implements, Interface
+from zope.interface import implements, Interface, directlyProvides, \
+                           implementedBy
 from zope.interface.exceptions import DoesNotImplement
-from sqlalchemy import select, text, Text #@UnresolvedImport
+from sqlalchemy import select, Text #@UnresolvedImport
 from sqlalchemy.sql.expression import ClauseList #@UnresolvedImport
 
 class DbError(Exception):
@@ -26,6 +27,10 @@ class ISerializable(Interface):
         
 
 class IRelation(Interface):
+    pass
+
+
+class IDbObjectProxy(Interface):
     pass
 
 
@@ -188,7 +193,12 @@ class DbStorage(DbEnabled):
                         val = keys[field]
                     elif res[col.name]:
                         try:
-                            val = self.pickup(col.cls, _id = res[col.name])[0]
+                            if col.lazy:
+                                val = DbObjectProxy(self, col.cls, 
+                                                    _id = res[col.name])
+                            else:
+                                val = self.pickup(col.cls, 
+                                                  _id = res[col.name])[0]
                         except IndexError:
                             raise DbError('A related object could not be '+\
                                           'located in the database. %s: %s' %\
@@ -229,7 +239,7 @@ class DbStorage(DbEnabled):
 class Serializable(object):
     """Subclasses may be serialized into a DbStorage
     Serializable objects should implement serializable attributes via the
-    python property descriptor"""
+    db_property descriptor"""
     
     implements(ISerializable)
     
@@ -253,8 +263,37 @@ class Serializable(object):
     _id = property(_getId, _setId, 'Internal id (integer)')
     
 
+class DbObjectProxy(object):
+    implements(IDbObjectProxy)
+    
+    def __init__(self, db_storage, cls, **kwargs):
+        self.db_storage = db_storage
+        self.cls = cls
+        self.kwargs = kwargs
+        directlyProvides(self, list(implementedBy(cls)))
+        
+    def get(self):
+        return self.db_storage.pickup(self.cls, **self.kwargs)[0]
+    
+
+class db_property(property):
+    def __init__(self, *args, **kwargs):
+        self.attr = kwargs.pop('attr', None)
+        property.__init__(self, *args, **kwargs)
+    
+    def __get__(self, obj, objtype):
+        if not self.attr:
+            return property.__get__(self, obj, objtype)
+        data = obj.__getattribute__(self.attr)
+        if IDbObjectProxy.providedBy(data):
+            obj.__setattr__(self.attr, data.get())
+        return property.__get__(self, obj, objtype)
+    
+
 class Relation(object):
     implements(IRelation)
-    def __init__(self, cls, name):
+    
+    def __init__(self, cls, name, lazy = True):
         self.cls = cls
         self.name = name
+        self.lazy = lazy
