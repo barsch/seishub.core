@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import unittest
+import sha
 
 from seishub.test import SeisHubEnvironmentTestCase
 from seishub.xmldb.errors import AddResourceError, XmlResourceError,\
@@ -79,6 +80,10 @@ class XmlDbManagerTest(SeisHubEnvironmentTestCase):
                                          testres.resourcetype, 
                                          testres.id)
         self.assertEquals(result.document.data, self.test_data)
+        self.assertTrue(result.document.datetime)
+        self.assertEquals(result.document.size, len(self.test_data))
+        self.assertEquals(result.document.hash, 
+                          sha.sha(self.test_data).hexdigest())
         self.assertEquals(result.package.package_id, 
                           self.test_package.package_id)
         self.assertEquals(result.resourcetype.resourcetype_id, 

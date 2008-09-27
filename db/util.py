@@ -273,7 +273,11 @@ class DbObjectProxy(object):
         directlyProvides(self, list(implementedBy(cls)))
         
     def get(self):
-        return self.db_storage.pickup(self.cls, **self.kwargs)[0]
+        try:
+            return self.db_storage.pickup(self.cls, **self.kwargs)[0]
+        except IndexError:
+            raise DbError('A related object could not be located in '+\
+                          'the database. %s: %s' % (self.cls, self.kwargs))
     
 
 class db_property(property):

@@ -4,7 +4,7 @@ from zope.interface import implements
 from sqlalchemy import select #@UnresolvedImport 
 from sqlalchemy.sql import and_ #@UnresolvedImport
 
-from seishub.db.util import DbStorage
+from seishub.db.util import DbStorage, DbError
 from seishub.xmldb.interfaces import IResourceStorage
 from seishub.xmldb.errors import AddResourceError, GetResourceError, \
                                  DeleteResourceError, ResourceDeletedError
@@ -148,8 +148,12 @@ class XmlDbManager(DbStorage):
                   package = package,
                   resourcetype = resourcetype, 
                   id = id)
+        # also delete documents:
         for res in resources:
-            self.drop(XmlDocument, _id = res.document._id)
+            try:
+                self.drop(XmlDocument, _id = res.document._id)
+            except DbError:
+                pass
             
     def revertResource(self, package, resourcetype, id, revision):
         """Add specified revision of a resource as new"""

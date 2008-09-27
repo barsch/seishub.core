@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-
+from datetime import datetime
 from sqlalchemy import Table, Column
 from sqlalchemy import Integer, String, Text, Binary, DateTime
 from sqlalchemy import UniqueConstraint, PrimaryKeyConstraint
@@ -18,10 +18,12 @@ RESOURCE_TABLE = 'resource'
 # xmldbms tables:
 data_tab = Table(DEFAULT_PREFIX + DATA_TABLE, metadata,
     Column('id', Integer, primary_key = True, autoincrement = True),
-    Column('size', Integer),
-    Column('datetime', DateTime),
-    Column('author', Integer),
     Column('data', Binary),
+    Column('size', Integer),
+    Column('datetime', DateTime, default = datetime.now, 
+           onupdate = datetime.now),
+    Column('uid', Integer),
+    Column('hash', String(40)),
     useexisting=True,
     )
 

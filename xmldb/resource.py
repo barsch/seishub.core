@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import sha
 from zope.interface import implements
 
 from seishub.db.util import Serializable, Relation, db_property
@@ -20,24 +21,19 @@ class XmlDocument(Serializable):
     
     db_table = data_tab
     db_mapping = {'data':'data',
-                  '_id':'id'
+                  '_id':'id',
+                  'uid':'uid',
+                  'datetime':'datetime',
+                  'size':'size',
+                  'hash':'hash'
                   }
     
-    def __init__(self, data = None, id = None):
+    def __init__(self, data = None, id = None, uid = None):
         self._xml_doc = None
         self.data = data
+        self.uid = uid
+        self.datetime = None
         Serializable.__init__(self)
-        
-#    # auto update resource id when Serializable id is changed:
-#    def _setId(self, id):
-#        Serializable._setId(self, id)
-#        self.resource_id = id
-    
-#    # pass Resource.id to XmlDocument.id for easy access (read-only)
-#    def getId(self):
-#        return self.id
-#    
-#    id = property(getId, "Integer identification number (external id)")
     
     def setData(self, data):
         # parse and validate xml_data
@@ -64,6 +60,42 @@ class XmlDocument(Serializable):
     data = property(getData, setData, 'Raw xml data as a string')
     
     
+    def getUID(self):
+        return self._uid
+    
+    def setUID(self, value):
+        if value and not isinstance(value, int):
+            raise TypeError('User id has to be integer.')
+        self._uid = value
+    
+    uid = property(getUID, setUID, 'User id of document creator')
+    
+    def getDatetime(self):
+        return self._datetime
+    
+    def setDatetime(self, value):
+        self._datetime = value
+    
+    datetime = property(getDatetime, setDatetime, 
+                        'Last modification date')
+    
+    def getSize(self):
+        return len(self.data)
+    
+    def setSize(self, value):
+        pass
+    
+    size = property(getSize, setSize, 'Size of xml document (read-only)')
+    
+    
+    def getHash(self):
+        return sha.sha(self.data).hexdigest()
+    
+    def setHash(self, value):
+        pass
+    
+    hash = property(getHash, setHash, 'Document hash (read-only)')
+    
     def getXml_doc(self):
         return self._xml_doc
     
@@ -83,29 +115,6 @@ class XmlDocument(Serializable):
         # encode before handing it to parser:
         xml_data = xml_data.encode("utf-8")
         return XmlTreeDoc(xml_data=xml_data, blocking=True)
-    
-#    # XXX: change to document_id
-#    def getResource_Id(self):
-#        return self._id
-#    
-#    def setResource_Id(self,id):
-#        self._id = id
-#    
-#    resource_id = property(getResource_Id, setResource_Id, 'unique id')
-    
-#    def getInfo(self):
-#        try:
-#            return self._info
-#        except:
-#            return None
-#    
-#    def setInfo(self, data):
-#        if not IResource.providedBy(data):
-#            raise TypeError("%s is not a Resource" % str(data))
-#        self._info = data
-#        self._resource = self
-#    
-#    info = property(getInfo, setInfo, 'resource information')
     
 
 class Resource(Serializable, PackageSpecific):
