@@ -49,26 +49,48 @@ class XmlDbManagerTest(SeisHubEnvironmentTestCase):
 #        self.config.set('db', 'verbose', True)
         
     def setUp(self):
-        self.test_package = self.env.registry.db_registerPackage('test')
-        self.test_resourcetype = self.env.registry.db_registerResourceType(
-                                                              'test', 'testml')
-        self.vc_resourcetype = self.env.registry.db_registerResourceType(
-                                                        'test', 'vcresource', 
+        self.test_package = self.env.registry.db_getPackage('test')
+        if not self.test_package:
+            self.test_package = self.env.registry.db_registerPackage('test')
+        self.test_resourcetype = self.env.registry.db_getResourceType('test', 
+                                                                      'testml')
+        if not self.test_resourcetype:
+            self.test_resourcetype = self.env.registry.\
+                                     db_registerResourceType('test', 'testml')
+        self.vc_resourcetype = self.env.registry.\
+                               db_getResourceType('test', 'vcresource')
+        if not self.vc_resourcetype:
+            self.vc_resourcetype = self.env.registry.\
+                                db_registerResourceType('test', 'vcresource', 
                                                         version_control = True)
 
     def tearDown(self):
-        self.env.registry.db_deleteResourceType(self.test_package.package_id,
-                                       self.test_resourcetype.resourcetype_id)
-        self.env.registry.db_deleteResourceType(self.test_package.package_id,
-                                          self.vc_resourcetype.resourcetype_id)
-        self.env.registry.db_deletePackage(self.test_package.package_id)
+        try:
+            self.env.registry.\
+                db_deleteResourceType(self.test_package.package_id,
+                                      self.test_resourcetype.resourcetype_id)
+        except:
+            print "Warning: Resourcetype %s could not be deleted during tear" \
+                  " down." % (self.test_resourcetype.resourcetype_id)
+        try:
+            self.env.registry.\
+                db_deleteResourceType(self.test_package.package_id,
+                                      self.vc_resourcetype.resourcetype_id)
+        except:
+            print "Warning: Resourcetype %s could not be deleted during tear" \
+                  " down." % (self.vc_resourcetype.resourcetype_id)
+        try:
+            self.env.registry.db_deletePackage(self.test_package.package_id)
+        except:
+            print "Warning: Package %s could not be deleted during tear" \
+                  " down." % (self.test_package.package_id)
             
     def testUnversionedResource(self):
         # add empty resource
         empty = Resource(document = XmlDocument())
         self.assertRaises(AddResourceError, self.xmldbm.addResource, empty)
         testres = Resource(self.test_package, self.test_resourcetype, 
-                           document = XmlDocument(self.test_data))
+                           document = XmlDocument(self.test_data, uid = 1000))
         otherpackage = self.env.registry.db_registerPackage("otherpackage")
         othertype = self.env.registry.db_registerResourceType("otherpackage", 
                                                               "testml")
@@ -84,6 +106,7 @@ class XmlDbManagerTest(SeisHubEnvironmentTestCase):
         self.assertEquals(result.document.size, len(self.test_data))
         self.assertEquals(result.document.hash, 
                           sha.sha(self.test_data).hexdigest())
+        self.assertEquals(result.document.uid, 1000)
         self.assertEquals(result.package.package_id, 
                           self.test_package.package_id)
         self.assertEquals(result.resourcetype.resourcetype_id, 
@@ -97,6 +120,8 @@ class XmlDbManagerTest(SeisHubEnvironmentTestCase):
                                          testres.resourcetype, 
                                          testres.id)
         self.assertEquals(result.document.data, self.test_data_mod)
+        # user id is still the same
+        self.assertEquals(result.document.uid, 1000)
         self.assertEquals(result.package.package_id, 
                           self.test_package.package_id)
         self.assertEquals(result.resourcetype.resourcetype_id, 
@@ -115,6 +140,7 @@ class XmlDbManagerTest(SeisHubEnvironmentTestCase):
                                          testres2.resourcetype, 
                                          testres2.id)
         self.assertEquals(result.document.data, self.test_data)
+        self.assertEquals(result.document.uid, None)
         self.assertEquals(result.package.package_id, 
                           otherpackage.package_id)
         self.assertEquals(result.resourcetype.resourcetype_id, 

@@ -263,20 +263,43 @@ class FromFilesystemTest(SeisHubEnvironmentTestCase):
     def __init__(self, *args, **kwargs):
         SeisHubEnvironmentTestCase.__init__(self, *args, **kwargs)
         
+    def setUp(self):
+        self.env.enableComponent(TestMapper)
+        self.env.enableComponent(TestMapper2)
+        self.env.enableComponent(TestMapper3)
+        
+    def tearDown(self):
+        self.env.disableComponent(TestMapper)
+        self.env.disableComponent(TestMapper2)
+        self.env.disableComponent(TestMapper3)
+        
     def testMapperRegistry(self):
-        self.env.registry.mappers._rebuild()
+#        self.env.disableComponent(TestMapper)
+#        self.env.registry.mappers._rebuild()
+#        assert '/test/testmapping' not in self.env.registry.mappers.keys()
+#        self.env.enableComponent(TestMapper)
+#        self.env.registry.mappers._rebuild()
         # get with exact url
-        print self.env.registry.mappers.get('/test/testmapping', 'GET')
-        print self.env.registry.mappers.get('/test/testmapping/two', 'GET')
-        print self.env.registry.mappers.get('/test/three/testmapping', 'GET')
+        m = self.env.registry.mappers.get('/test/testmapping', 'GET')
+        self.assertEquals(type(m[0]), TestMapper)
+        m = self.env.registry.mappers.get('/test/testmapping/two', 'GET')
+        self.assertEquals(type(m[0]), TestMapper2)
+        m = self.env.registry.mappers.get('/test/three/testmapping', 'GET')
+        self.assertEquals(type(m[0]), TestMapper3)
         # url longer than mapper url
-        print self.env.registry.mappers.get('/test/testmapping/nottwo', 'GET')
-        print self.env.registry.mappers.get('/test/testmapping/two/nottwo', 
-                                            'GET')
+        m = self.env.registry.mappers.get('/test/testmapping/nottwo', 'GET')
+        self.assertEquals(type(m[0]), TestMapper)
+        m = self.env.registry.mappers.get('/test/testmapping/two/nottwo', 
+                                           'GET')
+        self.assertEquals(type(m[0]), TestMapper2)
         # no mapper
-        print self.env.registry.mappers.get('/test/three')
+        m = self.env.registry.mappers.get('/test/three')
+        self.assertEquals(len(m), 0)
         # without method
-        print self.env.registry.mappers.get('/test/testmapping/two')
+        m = self.env.registry.mappers.get('/test/testmapping/two')
+        m = map(type, m)
+        assert TestMapper2 in m
+        assert TestMapper in m
         
         all = self.env.registry.mappers
         assert '/test/testmapping' in all
@@ -286,8 +309,9 @@ class FromFilesystemTest(SeisHubEnvironmentTestCase):
         methods = self.env.registry.mappers.getMethods('/test/testmapping')
         self.assertEqual(methods, ['PUT', 'GET'])
         # get mappers of a certain method
-        print self.env.registry.mappers.get(method='GET')
-        print self.env.registry.mappers.getMappings(method='GET')
+        a = self.env.registry.mappers.get(method='GET')
+        b = self.env.registry.mappers.getMappings(method='GET')
+        self.assertEquals(a, b)
     
     def testRegisterStylesheet(self):
         # note: schema registry uses the same functionality and is therefore

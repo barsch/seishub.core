@@ -46,11 +46,14 @@ class XmlDbManager(DbStorage):
         return True
     
     def modifyResource(self, xml_resource = Resource()):
-        self._getResource(xml_resource.package, xml_resource.resourcetype, 
-                          xml_resource.id)
+        old = self._getResource(xml_resource.package, 
+                                xml_resource.resourcetype, 
+                                xml_resource.id)
+        # preserve creator
+        xml_resource.document.uid = old.document.uid
         if xml_resource.resourcetype.version_control:
             return self.addResource(xml_resource)
-        self._deleteResource(xml_resource)
+        self._deleteResource(old)
         self.addResource(xml_resource)
     
     def _getResource(self, package = None, resourcetype = None, id = None, 

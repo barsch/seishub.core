@@ -28,13 +28,13 @@ class XmlCatalog(object):
         return item
         
     # methods from IXmlCatalog
-    
     # xmldbms methods
-    def addResource(self, package_id, resourcetype_id, xml_data):
+    def addResource(self, package_id, resourcetype_id, xml_data, uid = None):
         """@see: L{seishub.xmldb.interfaces.IXmlCatalog}"""
         package, resourcetype = self.env.registry.\
                                    objects_from_id(package_id, resourcetype_id)
-        res = Resource(package, resourcetype, document = XmlDocument(xml_data))
+        res = Resource(package, resourcetype, 
+                       document = XmlDocument(xml_data, uid = uid))
         self.xmldb.addResource(res)
         return res
     
@@ -81,7 +81,6 @@ class XmlCatalog(object):
         package, resourcetype = self.env.registry.\
                                    objects_from_id(package_id, resourcetype_id)
         return self.xmldb.revertResource(package, resourcetype, id, revision)
-        
         
     def resourceExists(self, package_id, resourcetype_id, id):
         """@see: L{seishub.xmldb.interfaces.IXmlCatalog}"""
@@ -194,6 +193,7 @@ class XmlCatalog(object):
         
     def query(self, query, order_by = None, limit = None):
         """@see: L{seishub.xmldb.interfaces.IXmlCatalog}"""
+        # XXX: query by creator, size, hash, timestamp
         # TODO: workaround until indexes support package/resourcetype natively
         try:
             qu = query.get('query')

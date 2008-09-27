@@ -118,9 +118,10 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
     def testIResourceManager(self):
         # add / get / delete a resource
         catalog = self.env.catalog
-        res = catalog.addResource(pid1, rid1, RAW_XML)
+        res = catalog.addResource(pid1, rid1, RAW_XML, uid = 1000)
         r = catalog.getResource(pid1, rid1, res.id)
         self.assertEquals(RAW_XML, r.document.data)
+        self.assertEquals(1000, r.document.uid)
         catalog.deleteResource(pid1, rid1, res.id)
         # list resources
         r = catalog.getResourceList(pid1, rid1)
@@ -155,105 +156,7 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         catalog.deleteAllResources("testpackage", "station")
         r = catalog.getResourceList("testpackage", "station")
         assert len(r) == 0
-        
-#    def testVersionControlledResource(self):
-#        catalog = self.env.catalog
-#        testres = Resource(self.test_package, self.vc_resourcetype, 
-#                           document = XmlDocument(self.test_data))
-#        self.xmldbm.addResource(testres)
-#        result = self.xmldbm.getResource(testres.package, 
-#                                         testres.resourcetype, 
-#                                         testres.id)
-#        self.assertEquals(result.document.data, self.test_data)
-#        self.assertEquals(result.package.package_id, 
-#                          self.test_package.package_id)
-#        self.assertEquals(result.resourcetype.resourcetype_id, 
-#                          self.vc_resourcetype.resourcetype_id)
-#        self.assertEquals(result.resourcetype.version_control, True)
-#        self.assertEquals(result.revision, 1)
-#        # add a new resource with same id
-#        testres_v2 = Resource(self.test_package, self.vc_resourcetype, 
-#                              document = XmlDocument(self.test_data), 
-#                              id = result.id)
-#        self.xmldbm.addResource(testres_v2)
-#        # get latest revision
-#        result = self.xmldbm.getResource(testres.package, 
-#                                         testres.resourcetype, 
-#                                         testres.id)
-#        self.assertEquals(result.revision, 2)
-#        self.assertEquals(result.document._id, 
-#                          testres_v2.document._id)
-#        # get previous revision
-#        result = self.xmldbm.getResource(testres.package, 
-#                                         testres.resourcetype, 
-#                                         testres.id,
-#                                         revision = 1)
-#        self.assertEquals(result.revision, 1)
-#        self.assertEquals(result.document._id, testres.document._id)
-#            
-#        # delete resource
-#        self.xmldbm.deleteResource(testres.package, 
-#                                   testres.resourcetype, 
-#                                   testres.id)
-#        # try to get latest revision (deleted)
-#        self.assertRaises(ResourceDeletedError, self.xmldbm.getResource,
-#                          testres.package, 
-#                          testres.resourcetype, 
-#                          testres.id)
-#        # get previous revision
-#        result = self.xmldbm.getResource(testres.package, 
-#                                         testres.resourcetype, 
-#                                         testres.id,
-#                                         revision = 2)
-#        self.assertEquals(result.revision, 2)
-#        self.assertEquals(result.document._id, testres_v2.document._id)
-#        
-#        # get version history
-#        revisions = self.xmldbm.getResourceList(self.test_package, 
-#                                              self.vc_resourcetype,
-#                                              testres.id)
-#        self.assertEqual(len(revisions), 3)
-#        self.assertEqual(revisions[0].revision, 1)
-#        self.assertEqual(revisions[1].revision, 2)
-#        self.assertEqual(revisions[2].revision, 3)
-#        
-#        # delete revision 2
-#        self.xmldbm.deleteResource(self.test_package, self.vc_resourcetype,
-#                                   testres.id, 2)
-#        revisions = self.xmldbm.getResourceList(self.test_package, 
-#                                              self.vc_resourcetype,
-#                                              testres.id)
-#        self.assertEqual(len(revisions), 2)
-#        self.assertEqual(revisions[0].revision, 1)
-#        self.assertEqual(revisions[1].revision, 3)
-#        
-#        # revert revision 1
-#        self.xmldbm.revertResource(self.test_package, self.vc_resourcetype,
-#                                   testres.id, 1)
-#        newest = self.xmldbm.getResource(self.test_package, 
-#                                         self.vc_resourcetype,
-#                                         testres.id)
-#        self.assertEqual(newest.revision, 4)
-#        self.assertEqual(newest.document._id, testres.document._id)
-#        
-#        # delete revision 3 (resource deleted marker)
-#        self.xmldbm.deleteResource(self.test_package, self.vc_resourcetype,
-#                                   testres.id, 3)
-#        revisions = self.xmldbm.getResourceList(self.test_package, 
-#                                                self.vc_resourcetype,
-#                                                testres.id)
-#        self.assertEqual(len(revisions), 2)
-#        self.assertEqual(revisions[0].revision, 1)
-#        self.assertEqual(revisions[1].revision, 4)
-#        
-#        # delete version history
-#        self.xmldbm.deleteRevisions(self.test_package, 
-#                                    self.vc_resourcetype,
-#                                    testres.id)
-#        self.assertRaises(GetResourceError, self.xmldbm.getResource,
-#                          self.test_package, self.vc_resourcetype, testres.id)
-#                
-#        # XXX: BuG: revision counter is not reset on new resources
+
     
     def testReindex(self):
         # TODO: testReindex
@@ -310,7 +213,6 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         # XXX: rootnode still ignored here!!!
 #        self.assertEqual(res4, [self.res1.document._id,
 #                                self.res2.document._id])
-        print res4
         res5 = self.env.catalog.query('/testpackage/testml/testml')
         self.assertEqual(res5, [self.res3.document._id])
         

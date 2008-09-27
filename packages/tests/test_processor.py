@@ -103,6 +103,12 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
         self.env.enableComponent(TestMapper)
         self.env.enableComponent(TestMapper2)
         PackageInstaller.install(self.env)
+        
+    def tearDown(self):
+        self.env.disableComponent(AVersionControlledResourceType)
+        self.env.disableComponent(AResourceType)
+        self.env.disableComponent(TestMapper)
+        self.env.disableComponent(TestMapper2)
     
     def test_processRoot(self):
         proc = Processor(self.env)

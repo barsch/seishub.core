@@ -416,11 +416,15 @@ class MapperRegistry(dict):
             return {uri[0]:self._parse_uri(uri[1:], cls)}
         else:
             return {uri[0]:{'':cls}}
+        
+    def _getEnabledClasses(self, interface):
+        all = PackageManager.getClasses(interface)
+        return filter(self.env.isComponentEnabled, all)
             
     def _rebuild(self):
         """rebuild the mapper registry"""
         for name, interface in self.methods.iteritems():
-            classes = PackageManager.getClasses(interface)
+            classes = self._getEnabledClasses(interface)
             for cls in classes:
                 uri = cls.mapping_url.split('/')[1:]
                 uri_dict = self._parse_uri(uri, cls)
@@ -430,12 +434,8 @@ class MapperRegistry(dict):
     def _getSupportedMethods(self, cls):
         supported = []
         for method, interface in self.methods.iteritems():
-            # XXX: workaround due to seishub's 'implements' not fully beeing 
-            # compatible with zope interfaces
             if interface.implementedBy(cls):
                 supported.append(method)
-            #if interface in cls._implements:
-            #    supported.append(method)
         return supported
     
     def _tree_find(self, url, subtree):
@@ -453,7 +453,7 @@ class MapperRegistry(dict):
                     return None
         
     def _getMapper(self, interface, url):
-        all = PackageManager.getClasses(interface)
+        all = self._getEnabledClasses(interface)
         mapper = [m for m in all if m.mapping_url == url]
         return mapper
     
@@ -498,7 +498,7 @@ class MapperRegistry(dict):
             base = base + '/'
         mappings = list()
         interface = self.methods[method]
-        mapper_classes = PackageManager.getClasses(interface)
+        mapper_classes = self._getEnabledClasses(interface)
         for cls in mapper_classes:
             if not base or cls.mapping_url.startswith(base):
                 mappings.append(cls.mapping_url)
@@ -510,10 +510,11 @@ class MapperRegistry(dict):
         """
         mappings = dict()
         for method, interface in self.methods.iteritems():
-            mapper_classes = PackageManager.getClasses(interface)
+            mapper_classes = self._getEnabledClasses(interface)
             for cls in mapper_classes:
                 if cls.mapping_url in mappings:
-                    mappings[cls.mapping_url].append(method)
+                    if method not in mappings[cls.mapping_url]: 
+                        mappings[cls.mapping_url].append(method)
                 else:
                     mappings[cls.mapping_url] = [method]
         return mappings
