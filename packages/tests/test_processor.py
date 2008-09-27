@@ -331,11 +331,10 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
             self.assertEqual(loc, response_header.get('Location'))
         # try to modify a revision
         try:
-            proc.run(POST, '/test/vc/4', StringIO(XML_VC_DOC % 4000))
+            proc.run(POST, loc + '/4', StringIO(XML_VC_DOC % 4000))
         except Exception, e:
             assert isinstance(e, ProcessorError)
-            # XXX: not sure about this error
-            self.assertEqual(e.code, http.INTERNAL_SERVER_ERROR)
+            self.assertEqual(e.code, http.FORBIDDEN)
         # check latest resource - should be #20
         data = proc.run(GET, loc)
         self.assertEqual(data, XML_VC_DOC % 20)
@@ -377,6 +376,7 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
         # proc.run(GET, loc)
         # import pdb;pdb.set_trace()
         # XXX: how to get all revisions
+        
 
 
 def suite():
