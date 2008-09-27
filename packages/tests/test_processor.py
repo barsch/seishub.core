@@ -226,15 +226,9 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
     def test_processResource(self):
         proc = Processor(self.env)
         # DELETE resource
-        try:
-            proc.run(DELETE, '/test/notvc/idisnointeger')
-        except Exception, e:
-            assert isinstance(e, ProcessorError)
-            self.assertEqual(e.code, http.BAD_REQUEST)
         # package and/or resource type does not exists
         try:
             proc.run(DELETE, '/xxx/yyy/1')
-            request.process()
         except Exception, e:
             assert isinstance(e, ProcessorError)
             self.assertEqual(e.code, http.FORBIDDEN)
@@ -243,7 +237,7 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
             proc.run(DELETE, '/test/notvc/-1')
         except Exception, e:
             assert isinstance(e, ProcessorError)
-            self.assertEqual(e.code, http.INTERNAL_SERVER_ERROR)
+            self.assertEqual(e.code, http.NOT_FOUND)
         # upload a resource via PUT
         data = proc.run(PUT, '/test/notvc', StringIO(XML_DOC))
         # check response; data should be empty; we look into request
@@ -323,10 +317,10 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
         """Test for deletion behavior of version controlled resources."""
         proc = Processor(self.env)
         proc.run(PUT, '/test/vc', StringIO(XML_VC_DOC % 1000)) 
-        # upload a test resources via PUT
+        # upload a test resources via PUT == version #1
         loc = proc.response_header.get('Location')
-        # modify both resources a few times
-        for i in range(20):
+        # modify resource a few times
+        for i in range(2, 21):
             data = proc.run(POST, loc, StringIO(XML_VC_DOC % i)) 
             # check response; data should be empty; we look into request
             self.assertFalse(data)
@@ -335,22 +329,54 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
             response_header = proc.response_header
             self.assertTrue(response_header.has_key('Location'))
             self.assertEqual(loc, response_header.get('Location'))
-        # check latest resource
+        # try to modify a revision
+        try:
+            proc.run(POST, '/test/vc/4', StringIO(XML_VC_DOC % 4000))
+        except Exception, e:
+            assert isinstance(e, ProcessorError)
+            # XXX: not sure about this error
+            self.assertEqual(e.code, http.INTERNAL_SERVER_ERROR)
+        # check latest resource - should be #20
         data = proc.run(GET, loc)
-        self.assertEqual(data, XML_VC_DOC % 19)
+        self.assertEqual(data, XML_VC_DOC % 20)
         # check oldest resource -> revision start with 1
         data = proc.run(GET, loc + '/1')
         self.assertEqual(data, XML_VC_DOC % 1000)
         # check all other revisions
-        for i in range(20):
-            data = proc.run(GET, loc + '/' + str(i+2))
+        for i in range(2, 21):
+            data = proc.run(GET, loc + '/' + str(i))
             self.assertEqual(data, XML_VC_DOC % i)
         # delete latest revision
-        # XXX: missing yet
-        #proc.run(DELETE, loc + '/20')
-        # check latest resource
-        #data = proc.run(GET, loc)
-        #self.assertEqual(data, XML_VC_DOC % 18)
+        proc.run(DELETE, loc + '/20')
+        # try to delete again
+        try:
+            proc.run(DELETE, loc + '/20')
+        except Exception, e:
+            assert isinstance(e, ProcessorError)
+            self.assertEqual(e.code, http.NOT_FOUND)
+        # check latest resource - should be revision #19
+        data = proc.run(GET, loc)
+        self.assertEqual(data, XML_VC_DOC % 19)
+        # delete two revisions in between
+        proc.run(DELETE, loc + '/18')
+        proc.run(DELETE, loc + '/19')
+        # check latest resource - should be revision #17
+        data = proc.run(GET, loc)
+        self.assertEqual(data, XML_VC_DOC % 17)
+        # delete the whole resource
+        proc.run(DELETE, loc)
+        # try to fetch resource
+        try:
+            proc.run(GET, loc)
+        except Exception, e:
+            assert isinstance(e, ProcessorError)
+            self.assertEqual(e.code, http.GONE)
+        # upload again
+        proc.run(PUT, '/test/vc', StringIO(XML_VC_DOC % 2000))
+        # XXX: how to revert???
+        # proc.run(GET, loc)
+        # import pdb;pdb.set_trace()
+        # XXX: how to get all revisions
 
 
 def suite():

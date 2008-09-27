@@ -36,9 +36,7 @@ DEBUG = 20
 
 class SeisHubError(Exception):
     """Exception base class for errors in SeisHub."""
-    
-    def __init__(self, *args, **kwargs):
-        Exception.__init__(self, *args, **kwargs)
+    pass
 
 
 class SeisHubMessageError(SeisHubError):
@@ -46,8 +44,8 @@ class SeisHubMessageError(SeisHubError):
     simple error message.
     """
     
-    def __init__(self, message, *args, **kwargs):
-        SeisHubError.__init__(self, message, *args, **kwargs)
+    def __init__(self, message):
+        SeisHubError.__init__(self, message)
         self.message = message
 
 

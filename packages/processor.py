@@ -267,13 +267,9 @@ class Processor:
         if self.env.registry.mappers.get(self.path, self.method):
             return self._processMapping()
         # test if the request was called in a resource type directory 
-        if len(self.postpath)!=3:
+        if len(self.postpath) not in (3, 4):
             raise ProcessorError(http.FORBIDDEN, 
-                                 "Deleting resources is not allowed here.")
-        # test if integer as resource id
-        if not isInteger(self.postpath[2]):
-            raise ProcessorError(http.BAD_REQUEST, 
-                                 "Invalid resource identifier.")
+                                 "Only resources may be deleted.")
         # seishub directory is not directly changeable
         if self.postpath[0]=='seishub':
             raise ProcessorError(http.FORBIDDEN, 
@@ -283,11 +279,23 @@ class Processor:
         if not self.env.registry.isResourceTypeId(self.postpath[0], 
                                                   self.postpath[1]):
             raise ProcessorError(http.FORBIDDEN,
-                                 "Deleting resources is not allowed here.")
-        # deleting resource
-        self._deleteResource(self.postpath[0],
-                             self.postpath[1],
-                             self.postpath[2])
+                                 "Only resources may be deleted.")
+        # unversioned or version controlled resource
+        if len(self.postpath) == 4:
+            # test if version controlled resource
+            rt = self.env.registry.getResourceType(self.postpath[0], 
+                                                   self.postpath[1])
+            if not rt.version_control:
+                raise ProcessorError(http.FORBIDDEN)
+            # deleting resource
+            self._deleteResource(self.postpath[0],
+                                 self.postpath[1],
+                                 self.postpath[2],
+                                 self.postpath[3])
+        else:
+            self._deleteResource(self.postpath[0],
+                                 self.postpath[1],
+                                 self.postpath[2])
         self.response_code = http.NO_CONTENT
         return ''
     
@@ -542,13 +550,17 @@ class Processor:
         else:
             return res
     
-    def _deleteResource(self, package_id, resourcetype_id, resource_id):
+    def _deleteResource(self, package_id, resourcetype_id, resource_id, 
+                        revision=None):
         """Deletes a resource."""
         try:
             self.env.catalog.deleteResource(package_id,
                                             resourcetype_id,
-                                            resource_id)
+                                            resource_id,
+                                            revision)
         # XXX: fetch all kind of exception types and return to clients
+        except GetResourceError, e:
+            raise ProcessorError(http.NOT_FOUND, e)
         except Exception, e:
             self.env.log.error(e)
             raise ProcessorError(http.INTERNAL_SERVER_ERROR, e)
