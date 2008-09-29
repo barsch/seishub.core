@@ -378,11 +378,10 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
             self.assertEqual(e.code, http.GONE)
         # upload again
         proc.run(PUT, '/test/vc', StringIO(XML_VC_DOC % 2000))
-        # XXX: how to revert???
-        # proc.run(GET, loc)
+        # XXX: BUG
+        proc.run(GET, loc)
         # import pdb;pdb.set_trace()
         # XXX: how to get all revisions
-        
 
 
 def suite():
