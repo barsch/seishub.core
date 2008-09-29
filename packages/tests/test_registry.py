@@ -5,7 +5,6 @@ import os
 from seishub.core import SeisHubError
 from seishub.test import SeisHubEnvironmentTestCase
 from seishub.core import Component, implements
-from zope.interface import implements as zope_implements
 from seishub.packages.builtins import IResourceType, IPackage
 from seishub.packages.installer import registerStylesheet, registerAlias
 from seishub.packages.interfaces import IGETMapper, IPUTMapper
@@ -259,6 +258,7 @@ class TestMapper3(Component):
     def processGET(self, request):
         pass
 
+
 class FromFilesystemTest(SeisHubEnvironmentTestCase):
     def __init__(self, *args, **kwargs):
         SeisHubEnvironmentTestCase.__init__(self, *args, **kwargs)
@@ -274,11 +274,9 @@ class FromFilesystemTest(SeisHubEnvironmentTestCase):
         self.env.disableComponent(TestMapper3)
         
     def testMapperRegistry(self):
-#        self.env.disableComponent(TestMapper)
-#        self.env.registry.mappers._rebuild()
-#        assert '/test/testmapping' not in self.env.registry.mappers.keys()
-#        self.env.enableComponent(TestMapper)
-#        self.env.registry.mappers._rebuild()
+        self.env.disableComponent(TestMapper)
+        assert '/test/testmapping' not in self.env.registry.mappers.keys()
+        self.env.enableComponent(TestMapper)
         # get with exact url
         m = self.env.registry.mappers.get('/test/testmapping', 'GET')
         self.assertEquals(type(m[0]), TestMapper)

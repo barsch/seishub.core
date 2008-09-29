@@ -192,6 +192,12 @@ class PluginsPanel(Component):
         return ('admin', 'General', 'plugins', 'Plugins')
     
     def renderPanel(self, request):
+#        print "===================================================\n"
+#        print "enabled: \n"
+#        print self.env.enabled
+#        print "ComponentMeta.registry: \n"
+#        from seishub.core import ComponentMeta
+#        print ComponentMeta._registry
         if request.method == 'POST':
             if 'update' in request.args:
                 self._updatePlugins(request)

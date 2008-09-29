@@ -392,6 +392,7 @@ class MapperRegistry(dict):
     
     methods = dict()
     _registry = dict()
+    _uris = dict()
     
     def __init__(self, env):
         self.env = env
@@ -399,8 +400,9 @@ class MapperRegistry(dict):
         methods = PackageManager.getClasses(IMapperMethod)
         for m in methods:
             self.methods[m.id] = m.mapper
-            self._registry[m.id] = dict()
-        self._rebuild()
+#            self._registry[m.id] = dict()
+#            self._uris[m.id] = list()
+        self.update()
     
     def _merge_dicts(self, source, target):
         for key in source:
@@ -419,17 +421,28 @@ class MapperRegistry(dict):
         
     def _getEnabledClasses(self, interface):
         all = PackageManager.getClasses(interface)
-        return filter(self.env.isComponentEnabled, all)
+        return [cls for cls in all if self.env.isComponentEnabled(cls)]
             
-    def _rebuild(self):
+    def update(self):
         """rebuild the mapper registry"""
-        for name, interface in self.methods.iteritems():
+        self._uris = dict()
+        self._registry = dict()
+        for method, interface in self.methods.iteritems():
+            self._uris[method] = list()
+            self._registry[method] = dict()
             classes = self._getEnabledClasses(interface)
             for cls in classes:
+                if cls.mapping_url in self._uris.get(method, list()):
+                    msg = "Registration of a %s mapper failed. A mapping " +\
+                          "with url '%s' already exists." %\
+                          (str(cls.mapping_url))
+                    self.env.log.warn(msg)
+                    continue
+                self._uris[method].append(cls.mapping_url)
                 uri = cls.mapping_url.split('/')[1:]
                 uri_dict = self._parse_uri(uri, cls)
-                self._registry[name] = self._merge_dicts(uri_dict, 
-                                                      self._registry[name])
+                self._registry[method] = self._merge_dicts(uri_dict, 
+                                                      self._registry[method])
                 
     def _getSupportedMethods(self, cls):
         supported = []

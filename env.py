@@ -115,6 +115,7 @@ class Environment(ComponentManager):
         self.config.set('components', fullname, 'enabled')
         self.log.info('Enabling component %s' % fullname)
         self.config.save()
+        self.registry.mappers.update()
         #XXX: PackageInstaller.install(self)
     
     def disableComponent(self, component):
@@ -131,6 +132,7 @@ class Environment(ComponentManager):
         self.config.set('components', fullname, 'disabled')
         self.log.info('Disabling component %s' % fullname)
         self.config.save()
+        self.registry.mappers.update()
         #XXX: PackageInstaller.cleanup(self)
     
     def initOptions(self):
@@ -173,17 +175,22 @@ class Environment(ComponentManager):
         not get activated.
         """
         if not isinstance(cls, basestring):
-            component_name = (cls.__module__ + '.' + cls.__name__).lower()
+            modulename = cls.__module__.lower()
+            classname = (modulename + '.' + cls.__name__).lower()
         else:
-            component_name = cls.lower()
+            modulename = '.'.join(cls.split('.')[:-1])  
+            classname = cls.lower()
         rules = [(name.lower(), value.lower() in ('enabled', 'on'))
                  for name, value in self.config.options('components')]
         rules.sort(lambda a, b: -cmp(len(a[0]), len(b[0])))
         
         for pattern, enabled in rules:
-            if component_name == pattern or pattern.endswith('*') \
-                    and component_name.startswith(pattern[:-1]):
+            if classname == pattern or pattern.endswith('*') \
+                    and classname.startswith(pattern[:-1]):
                 return enabled
         
         # By default, all components in the seishub package are enabled
-        return component_name.startswith('seishub.')
+        #return component_name.startswith('seishub.')
+                
+        return (classname in DEFAULT_COMPONENTS or \
+                modulename in DEFAULT_COMPONENTS)

@@ -18,5 +18,6 @@ class RegistryDictProxy(object):
         
     def __get__(self, obj, objtype):
         registry = obj.__getattribute__(self.registry)
+        registry.clear()
         dict.__init__(registry, registry.get())
         return registry
