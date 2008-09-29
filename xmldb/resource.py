@@ -4,7 +4,8 @@ import sha
 from zope.interface import implements
 
 from seishub.db.util import Serializable, Relation, db_property
-from seishub.util.xmlwrapper import IXmlDoc, XmlTreeDoc
+from seishub.util.xmlwrapper import IXmlDoc, IXmlStylesheet, IXmlSchema, \
+                                    XmlTreeDoc
 from seishub.packages.package import PackageWrapper, ResourceTypeWrapper
 from seishub.xmldb.defaults import resource_tab, data_tab
 from seishub.xmldb.errors import XmlResourceError
@@ -115,7 +116,41 @@ class XmlDocument(Serializable):
         # encode before handing it to parser:
         xml_data = xml_data.encode("utf-8")
         return XmlTreeDoc(xml_data=xml_data, blocking=True)
-    
+
+
+#class XmlStylesheetDocument(XmlDocument):
+#    def getXml_doc(self):
+#        return self._xml_doc
+#    
+#    def setXml_doc(self,xml_doc):
+#        if not IXmlStylesheet.providedBy(xml_doc):
+#            raise TypeError("%s is not an IXmlStylesheet" % str(xml_doc))
+#        else:
+#            self._xml_doc = xml_doc
+#    
+#    xml_doc = property(getXml_doc, setXml_doc, 
+#                       'Parsed xml document (IXmlStylesheet)')
+#    
+#    def transform(self, document):
+#        return self.xml_doc.transform(document.xml_doc)
+#    
+#
+#class XmlSchemaDocument(XmlDocument):
+#    def getXml_doc(self):
+#        return self._xml_doc
+#    
+#    def setXml_doc(self,xml_doc):
+#        if not IXmlSchema.providedBy(xml_doc):
+#            raise TypeError("%s is not an IXmlSchema" % str(xml_doc))
+#        else:
+#            self._xml_doc = xml_doc
+#    
+#    xml_doc = property(getXml_doc, setXml_doc, 
+#                       'Parsed xml document (IXmlSchema)')
+#    
+#    def validate(self, document):
+#        return self.xml_doc.validate(document.xml_doc)
+
 
 class Resource(Serializable, PackageSpecific):
     

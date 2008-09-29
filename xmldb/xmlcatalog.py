@@ -68,6 +68,10 @@ class XmlCatalog(object):
         package, resourcetype = self.env.registry.\
                                    objects_from_id(package_id, resourcetype_id)
         return self.xmldb.getResource(package, resourcetype, id, revision)
+    
+    def getRevisionHistory(self):
+        # TODO: future
+        pass
         
     def getResourceList(self, package_id = None, resourcetype_id = None, 
                         id = None):

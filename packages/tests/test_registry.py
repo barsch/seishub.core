@@ -8,6 +8,7 @@ from seishub.core import Component, implements
 from seishub.packages.builtins import IResourceType, IPackage
 from seishub.packages.installer import registerStylesheet, registerAlias
 from seishub.packages.interfaces import IGETMapper, IPUTMapper
+from seishub.xmldb.resource import XmlDocument, Resource
 
 
 TEST_SCHEMA="""<?xml version="1.0"?>
@@ -31,6 +32,119 @@ TEST_SCHEMA="""<?xml version="1.0"?>
 </xs:schema>
 """
 
+TEST_STYLESHEET = """<?xml version="1.0" encoding="utf-8"?>
+
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" 
+    xmlns:xlink="http://www.w3.org/1999/xlink" exclude-result-prefixes="xlink"
+    version="1.0">
+    
+    <xsl:output method="text" encoding="utf-8"
+        media-type="application/json" />
+    
+    <xsl:template match="/seishub">
+        <xsl:text>{</xsl:text>
+
+            <xsl:if test="//package">
+                <xsl:text>"package":[</xsl:text>
+                <xsl:for-each select="//package">
+
+                    <xsl:text>"</xsl:text>
+                    <xsl:value-of select="@xlink:href" />
+                    <xsl:text>"</xsl:text>
+                    <xsl:if test="not (position()=last())">
+                        <xsl:text>,</xsl:text>
+                    </xsl:if>
+                </xsl:for-each>
+
+                <xsl:text>],</xsl:text>
+            </xsl:if>
+
+            <xsl:if test="//resourcetype">
+                <xsl:text>"resourcetype":[</xsl:text>
+                <xsl:for-each select="//resourcetype">
+                    <xsl:text>"</xsl:text>
+                    <xsl:value-of select="@xlink:href" />
+
+                    <xsl:text>"</xsl:text>
+                    <xsl:if test="not (position()=last())">
+                        <xsl:text>,</xsl:text>
+                    </xsl:if>
+                </xsl:for-each>
+                <xsl:text>],</xsl:text>
+            </xsl:if>
+
+            <xsl:if test="//mapping">
+                <xsl:text>"mapping":[</xsl:text>
+                <xsl:for-each select="//mapping">
+                    <xsl:text>"</xsl:text>
+                    <xsl:value-of select="@xlink:href" />
+                    <xsl:text>"</xsl:text>
+                    <xsl:if test="not (position()=last())">
+
+                        <xsl:text>,</xsl:text>
+                    </xsl:if>
+                </xsl:for-each>
+                <xsl:text>],</xsl:text>
+            </xsl:if>
+
+            <xsl:if test="//alias">
+                <xsl:text>"alias":[</xsl:text>
+
+                <xsl:for-each select="//alias">
+                    <xsl:text>"</xsl:text>
+                    <xsl:value-of select="@xlink:href" />
+                    <xsl:text>"</xsl:text>
+                    <xsl:if test="not (position()=last())">
+                        <xsl:text>,</xsl:text>
+                    </xsl:if>
+
+                </xsl:for-each>
+                <xsl:text>],</xsl:text>
+            </xsl:if>
+
+            <xsl:if test="//index">
+                <xsl:text>"index":[</xsl:text>
+                <xsl:for-each select="//index">
+                    <xsl:text>"</xsl:text>
+
+                    <xsl:value-of select="@xlink:href" />
+                    <xsl:text>"</xsl:text>
+                    <xsl:if test="not (position()=last())">
+                        <xsl:text>,</xsl:text>
+                    </xsl:if>
+                </xsl:for-each>
+                <xsl:text>],</xsl:text>
+
+            </xsl:if>
+
+            <xsl:if test="//resource">
+                <xsl:text>"resource":[</xsl:text>
+                <xsl:for-each select="//resource">
+                    <xsl:text>"</xsl:text>
+                    <xsl:value-of select="@xlink:href" />
+                    <xsl:text>"</xsl:text>
+
+                    <xsl:if test="not (position()=last())">
+                        <xsl:text>,</xsl:text>
+                    </xsl:if>
+                </xsl:for-each>
+                <xsl:text>],</xsl:text>
+            </xsl:if>
+
+        <xsl:text>}</xsl:text>
+
+    </xsl:template>
+
+</xsl:stylesheet>
+"""
+
+TEST_RESLIST = """<?xml version="1.0"?>
+<seishub xml:base="http://localhost:8080" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <mapping xlink:type="simple" xlink:href="/seishub/schema/browser">browser</mapping>
+    <resource xlink:type="simple" xlink:href="/seishub/schema/3">/seishub/schema/3</resource>
+    <resource xlink:type="simple" xlink:href="/seishub/schema/4">/seishub/schema/4</resource>
+</seishub>
+"""
 
 class PackageRegistryTest(SeisHubEnvironmentTestCase):
     def setUp(self):
@@ -154,16 +268,20 @@ class PackageRegistryTest(SeisHubEnvironmentTestCase):
 
     def test_StylesheetRegistry(self):
         self.env.registry.stylesheets.register('testpackage0', 'weapon', 'xhtml', 
-                                               TEST_SCHEMA)
+                                               TEST_STYLESHEET)
         stylesheet = self.env.registry.stylesheets.get\
                                                     (package_id='testpackage0',
                                                     resourcetype_id = 'weapon')
         self.assertEqual(stylesheet[0].package.package_id, 'testpackage0')
         self.assertEqual(stylesheet[0].resourcetype.resourcetype_id, 'weapon')
         self.assertEqual(stylesheet[0].type, 'xhtml')
+        res_list = Resource(document = XmlDocument(TEST_RESLIST))
+        self.assertEquals(stylesheet[0].transform(res_list), 
+                          '{"mapping":["/seishub/schema/browser"],"resource"'+\
+                          ':["/seishub/schema/3","/seishub/schema/4"],}')
         # get stylesheet resource
         res = stylesheet[0].resource
-        self.assertEqual(res.document.data, TEST_SCHEMA)
+        self.assertEqual(res.document.data, TEST_STYLESHEET)
         self.assertEqual(res.package.package_id, 'seishub')
         self.assertEqual(res.resourcetype.resourcetype_id, 'stylesheet')
         self.env.registry.stylesheets.delete(

@@ -2,6 +2,7 @@
 from zope.interface import implements
 
 from seishub.util.text import validate_id, to_uri, to_xpath_query
+from seishub.util.xmlwrapper import XmlSchema, XmlStylesheet
 from seishub.db.util import Serializable, Relation, db_property
 from seishub.packages.interfaces import IPackageWrapper, IResourceTypeWrapper
 from seishub.packages.defaults import schema_tab, stylesheet_tab, alias_tab,\
@@ -191,8 +192,7 @@ class Alias(Serializable):
         return to_xpath_query(self.package.package_id, 
                               self.resourcetype.resourcetype_id, self._expr)
 
-class Schema(Serializable):
-    db_table = schema_tab
+class DocBase(Serializable):
     db_mapping = {'resourcetype':Relation(ResourceTypeWrapper, 
                                           'resourcetype_id'),
                   'package':Relation(PackageWrapper,
@@ -265,6 +265,30 @@ class Schema(Serializable):
         return r
 
     resource = property(getResource, doc = "XmlResource (read only)")
+
+class Schema(DocBase):
+    db_table = schema_tab
     
-class Stylesheet(Schema):
+    def __init__(self, *args, **kwargs):
+        DocBase.__init__(self, *args, **kwargs)
+        self._parsed_doc = None
+    
+    def validate(self, resource):
+        if not self._parsed_doc:
+            self._parsed_doc = XmlSchema(self.resource.document.data)
+        return self._parsed_doc.validate(resource.document.xml_doc)
+        
+
+class Stylesheet(DocBase):
     db_table = stylesheet_tab
+    
+    def __init__(self, *args, **kwargs):
+        DocBase.__init__(self, *args, **kwargs)
+        self._parsed_doc = None
+    
+    def transform(self, resource):
+        """Transform a given Resource with the stylesheet.
+        @return: Transformed xml data as a string"""
+        if not self._parsed_doc:
+            self._parsed_doc = XmlStylesheet(self.resource.document.data)
+        return str(self._parsed_doc.transform(resource.document.xml_doc))
