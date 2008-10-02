@@ -8,7 +8,7 @@ from twisted.application import service
 
 from seishub.auth import AuthenticationManager
 from seishub.core import ComponentManager
-from seishub.config import Configuration, Option
+from seishub.config import Configuration, Option, _TRUE_VALUES
 from seishub.loader import ComponentLoader
 from seishub.packages.installer import PackageInstaller
 from seishub.xmldb.xmlcatalog import XmlCatalog
@@ -174,23 +174,27 @@ class Environment(ComponentManager):
         about to be activated. If this method returns false, the component does
         not get activated.
         """
-        if not isinstance(cls, basestring):
-            modulename = cls.__module__.lower()
-            classname = (modulename + '.' + cls.__name__).lower()
+        if isinstance(cls, basestring):
+            modulename = '.'.join(cls.split('.')[:-1])
+            classname = cls
         else:
-            modulename = '.'.join(cls.split('.')[:-1])  
-            classname = cls.lower()
-        rules = [(name.lower(), value.lower() in ('enabled', 'on'))
+            modulename = cls.__module__
+            classname = modulename + '.' + cls.__name__
+        
+        # all default components are enabled
+        if classname in DEFAULT_COMPONENTS:
+            return True
+        if modulename in DEFAULT_COMPONENTS:
+            return True
+        
+        # parse config file and return state of either class or module
+        rules = [(name, value in _TRUE_VALUES)
                  for name, value in self.config.options('components')]
         rules.sort(lambda a, b: -cmp(len(a[0]), len(b[0])))
         
-        for pattern, enabled in rules:
-            if classname == pattern or pattern.endswith('*') \
-                    and classname.startswith(pattern[:-1]):
-                return enabled
-        
-        # By default, all components in the seishub package are enabled
-        #return component_name.startswith('seishub.')
-                
-        return (classname in DEFAULT_COMPONENTS or \
-                modulename in DEFAULT_COMPONENTS)
+        for pattern, state in rules:
+            if pattern == classname.lower():
+                return state
+            if pattern == modulename.lower():
+                return state
+        return False

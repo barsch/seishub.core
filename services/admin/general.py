@@ -192,12 +192,6 @@ class PluginsPanel(Component):
         return ('admin', 'General', 'plugins', 'Plugins')
     
     def renderPanel(self, request):
-#        print "===================================================\n"
-#        print "enabled: \n"
-#        print self.env.enabled
-#        print "ComponentMeta.registry: \n"
-#        from seishub.core import ComponentMeta
-#        print ComponentMeta._registry
         if request.method == 'POST':
             if 'update' in request.args:
                 self._updatePlugins(request)
@@ -220,13 +214,15 @@ class PluginsPanel(Component):
         from seishub.core import ComponentMeta
         for component in ComponentMeta._components:
             module = sys.modules[component.__module__]
-            modulename = module.__name__ 
+            modulename = module.__name__
             classname = modulename + '.' + component.__name__
             if classname in enabled or classname in DEFAULT_COMPONENTS or \
                modulename in DEFAULT_COMPONENTS:
-                self.env.enableComponent(component)
+                if not self.env.isComponentEnabled(classname):
+                    self.env.enableComponent(component)
             else:
-                self.env.disableComponent(component)
+                if self.env.isComponentEnabled(classname):
+                    self.env.disableComponent(component)
     
     def _viewPlugins(self, request):
         plugins = {}
@@ -234,7 +230,7 @@ class PluginsPanel(Component):
         for component in ComponentMeta._components:
             module = sys.modules[component.__module__]
             description = getFirstSentence(inspect.getdoc(module))
-            modulename = module.__name__ 
+            modulename = module.__name__
             classname = modulename + '.' + component.__name__
             plugin = {
               'name': component.__name__, 
@@ -242,7 +238,7 @@ class PluginsPanel(Component):
               'file': module.__file__,
               'classname': classname,
               'description': getFirstSentence(inspect.getdoc(component)),
-              'enabled': self.env.isComponentEnabled(component),
+              'enabled': self.env.isComponentEnabled(classname),
               'required': classname in DEFAULT_COMPONENTS or \
                           modulename in DEFAULT_COMPONENTS,
             }

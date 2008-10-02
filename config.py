@@ -24,7 +24,7 @@ from seishub.util.text import toUnicode
 __all__ = ['Configuration', 'Option', 'BoolOption', 'IntOption', 'ListOption',
            'ConfigurationError']
 
-_TRUE_VALUES = ('yes', 'true', 'on', '1', 1, True)
+_TRUE_VALUES = ('yes', 'true', 'on', '1', 1, True, 'enabled')
 CRLF = '\r\n'
 
 
