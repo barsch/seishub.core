@@ -150,13 +150,6 @@ class SFTPServiceProtocol:
         self.avatar = avatar
         self.env = avatar.env
     
-    def _removeFileExtension(self, filename):
-        if '.' in filename:
-            parts = filename.split('.')
-            if parts[-1] in ['xml', 'xsd', 'xslt']:
-                filename = '.'.join(parts[0:-1])
-        return filename
-    
     def gotVersion(self, otherVersion, extData):
         return {}
     
@@ -165,13 +158,11 @@ class SFTPServiceProtocol:
     
     def openFile(self, filename, flags, attrs):
         print "-------------openFile", filename, flags, attrs
-        # remove file extension 
-        filename = self._removeFileExtension(filename)
         return InMemoryFile(self.env, filename, flags, attrs)
     
     def openDirectory(self, path):
         print "-------------openDirectory", path
-        # remove trailing slahes
+        # remove trailing slashes
         path = absPath(path)
         proc = Processor(self.env)
         try:
@@ -190,32 +181,28 @@ class SFTPServiceProtocol:
         # properties are XML documents
         # XXX: missing yet
         
-        # stop here if no resources are given
-        resources = data.get('resource',[])
-        if not resources:
-            return DirList(iter(filelist))
-        # set default file extensions and permissions
-        if path == '/seishub/schema':
-            ext = '.xsd'
-            perm = 0100644
-        elif path == '/seishub/stylesheet':
-            ext = '.xslt'
-            perm = 0100644
-        else:
-            ext = '.xml'
-            perm = 0100644
         # fetch all resources
-        for d in resources:
-            name = d.split('/')[-1:][0]
-            # XXX: len should be indexed!! -> metadata ?
-            filelist.append((name + ext, {'permissions': perm,
-                                          'size': len(d)}))
+        resources = data.get('resource',[])
+        for obj in resources:
+            if isinstance(obj, basestring):
+                # XXX: workaround for mappers, should be removed 
+                file_name = obj.split('/')[-1:][0]
+                filelist.append((file_name, {'permissions': 0100644}))
+            else:
+                # resource object
+                file_name = str(obj).split('/')[-1:][0]
+                file_datetime = time.mktime(obj.document.datetime.timetuple())
+                file_size = obj.document.size
+                file_uid = obj.document.uid or 0
+                filelist.append((file_name, {'permissions': 0100644,
+                                             'uid': file_uid,
+                                             'size': file_size,
+                                             'atime': file_datetime,
+                                             'mtime': file_datetime}))
         return DirList(iter(filelist))
     
     def getAttrs(self, filename, followLinks):
         print "-------------getAttrs", filename, followLinks
-        # remove file extension 
-        filename = self._removeFileExtension(filename)
         # remove trailing slashes
         filename = absPath(filename)
         # process resource
@@ -247,8 +234,6 @@ class SFTPServiceProtocol:
         @param filename: the name of the file as a string.
         """
         print "-------------removeFile", filename
-        # remove file extension 
-        filename = self._removeFileExtension(filename)
         # process resource
         proc = Processor(self.env)
         try:

@@ -382,15 +382,15 @@ class Processor:
         # XXX: missing yet
         property_urls = []
         property_urls.sort()
-        # fetching resources
-        res = self.env.catalog.getResourceList(package_id, resourcetype_id)
-        resource_urls = [str(r) for r in res]
+        # fetching resource objects
+        resource_objs = self.env.catalog.getResourceList(package_id, 
+                                                         resourcetype_id)
         
         return self.renderResourceList(property=property_urls,
                                        alias=alias_urls,
                                        mapping=mapping_urls,
                                        index=index_urls,
-                                       resource=resource_urls)
+                                       resource=resource_objs)
     
     def _processResourceTypeProperty(self, package_id, resourcetype_id,
                                      property_id):

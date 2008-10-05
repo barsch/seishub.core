@@ -216,7 +216,9 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
         # only resources should be there
         self.assertTrue(data.has_key('resource'))
         self.assertTrue(isinstance(data.get('resource'),list))
-        self.assertTrue(location in data.get('resource'))
+        # extract all resource urls and test if location exist
+        urls = [str(obj) for obj in data.get('resource')]
+        self.assertTrue(location in urls)
         # fetch resource and compare it with original
         data = proc.run(GET, location)
         self.assertTrue(data, XML_DOC)

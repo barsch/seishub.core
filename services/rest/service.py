@@ -96,7 +96,7 @@ class RESTRequest(Processor, http.Request):
         doc = ''
         # generate a list of standard elements
         for tag in ['package', 'resourcetype', 'property', 'alias', 'mapping']:
-            for uri in kwargs.get(tag,[]):
+            for uri in kwargs.get(tag, []):
                 content = absPath(uri[len(self.path):])[1:]
                 doc += RESOURCELIST_NODE % (tag, uri, content, tag)
         # generate a list of resources

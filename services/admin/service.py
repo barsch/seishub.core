@@ -15,7 +15,7 @@ from seishub.config import IntOption, Option, BoolOption
 from seishub.core import ExtensionPoint, SeisHubError
 from seishub.defaults import ADMIN_PORT, ADMIN_CERTIFICATE, \
                              ADMIN_PRIVATE_KEY, ADMIN_MIN_PASSWORD_LENGTH
-from seishub.packages.processor import Processor, ProcessorError
+from seishub.packages.processor import Processor, ProcessorError, GET
 from seishub.services.admin.interfaces import IAdminPanel, IAdminTheme, \
                                               IAdminStaticContent
 from seishub.util import demjson
@@ -80,26 +80,34 @@ class AdminRequest(http.Request):
     
     def _renderJSONContent(self):
         """Asynchronous calls from JavaScript are only allowed from the same 
-        server (ip and port). So in order to fetch a REST request via the admin
+        server (ip and port). In order to fetch a REST request via the admin
         service, we need to provide a REST fetcher on the server side.
         
-        Uses therefore the package.processor.Processor directly to serve any
-        resource request and returns the resulting XML document.""" 
-        request = Processor(self.env)
-        request.method = 'GET'
-        request.path = self.path[5:]
+        Therefore we use the package.processor.Processor directly to serve any
+        resource request and return the resulting XML document.""" 
+        proc = Processor(self.env)
         try:
-            data = request.process()
+            data = proc.run(GET, self.path[5:])
         except ProcessorError, e:
             self.env.log.info('ProcessorError:', e)
         else:
-            if isinstance(data, dict):
-                # format as json
-                data = str(demjson.encode(data))
-                self.write(data)
-                self.setHeader('content-type', 
-                               'application/json; charset=UTF-8')
-                self.setResponseCode(http.OK)
+            if not isinstance(data, dict):
+                self.finish()
+            # ensure all entries in our dict are strings
+            # XXX: very ugly!
+            temp = {}
+            for i in data.keys():
+                temp[i] = []
+                for j in data.get(i):
+                    temp[i].append(str(j))
+            data = temp
+            # format as json
+            # XXX: use json module for Python 2.6
+            data = str(demjson.encode(data))
+            self.write(data)
+            self.setHeader('content-type', 
+                           'application/json; charset=UTF-8')
+            self.setResponseCode(http.OK)
         self.finish()
     
     def _renderStaticFile(self, filename):
