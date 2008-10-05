@@ -7,48 +7,26 @@ import StringIO
 from zope.interface import implements
 
 from twisted.application import internet
-from twisted.conch.ssh import factory, keys, common, session
-from twisted.conch.ssh.filetransfer import FileTransferServer, SFTPError
+from twisted.conch.ssh import factory, keys, common, session, filetransfer
 from twisted.conch.interfaces import ISFTPFile, ISFTPServer, IConchUser
 from twisted.conch import avatar
 from twisted.conch.ls import lsLine
 from twisted.cred import portal
 from twisted.python import components
 
-#from seishub import __version__ as SEISHUB_VERSION
-from seishub.defaults import SFTP_PORT, SFTP_PRIVATE_KEY, SFTP_PUBLIC_KEY, \
-                             SFTP_AUTOSTART
+from seishub.defaults import SFTP_PORT, SFTP_PRIVATE_KEY, SFTP_PUBLIC_KEY
+from seishub.defaults import SFTP_AUTOSTART
 from seishub.config import IntOption, Option, BoolOption
 from seishub.packages.processor import Processor, ProcessorError
 from seishub.packages.processor import PUT, POST, DELETE, GET
 from seishub.util.path import absPath
 
 
-FXF_READ          = 0x00000001
-FXF_WRITE         = 0x00000002
-FXF_APPEND        = 0x00000004
-FXF_CREAT         = 0x00000008
-FXF_TRUNC         = 0x00000010
-FXF_EXCL          = 0x00000020
-FXF_TEXT          = 0x00000040
-
-FX_OK                          = 0
-FX_EOF                         = 1
-FX_NO_SUCH_FILE                = 2
-FX_PERMISSION_DENIED           = 3
-FX_FAILURE                     = 4
-FX_BAD_MESSAGE                 = 5
-FX_NO_CONNECTION               = 6
-FX_CONNECTION_LOST             = 7
-FX_OP_UNSUPPORTED              = 8
-FX_FILE_ALREADY_EXISTS         = FX_FAILURE
-FX_NOT_A_DIRECTORY             = FX_FAILURE
-FX_FILE_IS_A_DIRECTORY         = FX_FAILURE
-
-
 class DirList:
-    def __init__(self, iter):
+    def __init__(self, env, iter):
         self.iter = iter
+        self.env = env
+    
     def __iter__(self):
         return self
     
@@ -63,8 +41,8 @@ class DirList:
         attrs['uid'] = s.st_uid = attrs.get('uid', 0)
         attrs['gid'] = s.st_gid = attrs.get('gid', 0)
         attrs['size'] = s.st_size = attrs.get('size', 0)
-        attrs['atime'] = s.st_atime = attrs.get('atime', time.time())
-        attrs['mtime'] = s.st_mtime = attrs.get('mtime', time.time())
+        attrs['atime'] = s.st_atime = attrs.get('atime', self.env.startup_time)
+        attrs['mtime'] = s.st_mtime = attrs.get('mtime', self.env.startup_time)
         attrs['nlink'] = s.st_nlink = 1
         return ( name, lsLine(name, s), attrs )
     
@@ -76,22 +54,20 @@ class InMemoryFile:
     implements(ISFTPFile)
     
     def __init__(self, env, filename, flags, attrs):
-        print "-------------file.__init__", filename, flags, attrs
         self.env = env
         self.filename = filename
         self.flags = flags
         self.attrs = attrs
         self.data = StringIO.StringIO()
         self.proc = Processor(self.env)
-        if self.flags & FXF_READ:
+        if self.flags & filetransfer.FXF_READ:
             result = self._readResource()
             if result:
                 self.data.write(result)
             else:
-                raise SFTPError(FX_NO_SUCH_FILE)
+                raise filetransfer.SFTPError(filetransfer.FX_NO_SUCH_FILE)
     
     def _readResource(self):
-        print "-------------file._readResource"
         # check if resource exists
         data = ''
         try:
@@ -101,21 +77,18 @@ class InMemoryFile:
         return data
     
     def readChunk(self, offset, length):
-        print "-------------file.read", offset, length
         self.data.seek(offset)
         return self.data.read(length)
     
     def writeChunk(self, offset, data):
-        print "-------------file.write", offset
         self.data.seek(offset)
         self.data.write(data)
     
     def close(self):
-        print "-------------file.close"
         # write file after close 
         if not self.data:
             return
-        if not (self.flags & FXF_WRITE):
+        if not (self.flags & filetransfer.FXF_WRITE):
             return
         # check for resource
         result = self._readResource()
@@ -130,16 +103,14 @@ class InMemoryFile:
         try:
             self.proc.process()
         except ProcessorError, e:
-            raise SFTPError(FX_FAILURE, e.message)
+            raise filetransfer.SFTPError(filetransfer.FX_FAILURE, e.message)
         except Exception, e:
-            raise SFTPError(FX_FAILURE, e)
+            raise filetransfer.SFTPError(filetransfer.FX_FAILURE, e)
     
     def getAttrs(self):
-        print "-------------file.getAttrs"
         pass
     
     def setAttrs(self, attrs):
-        print "-------------file.setAttrs", attrs
         pass
 
 
@@ -157,18 +128,16 @@ class SFTPServiceProtocol:
         return absPath(path)
     
     def openFile(self, filename, flags, attrs):
-        print "-------------openFile", filename, flags, attrs
         return InMemoryFile(self.env, filename, flags, attrs)
     
     def openDirectory(self, path):
-        print "-------------openDirectory", path
         # remove trailing slashes
         path = absPath(path)
         proc = Processor(self.env)
         try:
             data = proc.run(GET, path)
         except Exception, e:
-            raise SFTPError(FX_FAILURE, e)
+            raise filetransfer.SFTPError(filetransfer.FX_FAILURE, e)
         filelist = []
         filelist.append(('.', {}))
         filelist.append(('..', {}))
@@ -199,10 +168,9 @@ class SFTPServiceProtocol:
                                              'size': file_size,
                                              'atime': file_datetime,
                                              'mtime': file_datetime}))
-        return DirList(iter(filelist))
+        return DirList(self.env, iter(filelist))
     
     def getAttrs(self, filename, followLinks):
-        print "-------------getAttrs", filename, followLinks
         # remove trailing slashes
         filename = absPath(filename)
         # process resource
@@ -210,56 +178,54 @@ class SFTPServiceProtocol:
         try:
             data = proc.run(GET, filename)
         except ProcessorError, e:
-            raise SFTPError(FX_FAILURE, e.message)
+            raise filetransfer.SFTPError(filetransfer.FX_FAILURE, e.message)
         except Exception, e:
-            raise SFTPError(FX_FAILURE, e)
+            raise filetransfer.SFTPError(filetransfer.FX_FAILURE, e)
         if isinstance(data, basestring):
             # file
             # XXX: metadata here!!
-            return {'permissions': 0100644, 'size': 0, 'uid': 0, 'gid': 0,
-                    'atime': time.time(), 'mtime': time.time(), 'nlink': 1}
+            return {'permissions': 0100644, 
+                    'atime': time.time(), 
+                    'mtime': time.time()}
         else:
             # directory
-            return {'permissions': 040755, 'size': 0, 'uid': 0, 'gid': 0,
-                    'atime': time.time(), 'mtime': time.time(), 'nlink': 1}
+            return {'permissions': 040755, 
+                    'atime': self.env.startup_time, 
+                    'mtime': self.env.startup_time}
     
     def setAttrs(self, path, attrs):
-        print "-------------setAttrs", path, attrs
-        return
+        pass
     
     def removeFile(self, filename):
-        """
-        Remove the given file.
+        """Remove the given file.
         
         @param filename: the name of the file as a string.
         """
-        print "-------------removeFile", filename
         # process resource
         proc = Processor(self.env)
         try:
             proc.run(DELETE, filename)
         except ProcessorError, e:
-            raise SFTPError(FX_FAILURE, e.message)
+            raise filetransfer.SFTPError(filetransfer.FX_FAILURE, e.message)
         except Exception, e:
-            raise SFTPError(FX_FAILURE, e)
+            raise filetransfer.SFTPError(filetransfer.FX_FAILURE, e)
     
     def renameFile(self, oldpath, newpath):
-        print "-------------renameFile", oldpath, newpath
-        return
+        pass
     
     def makeDirectory(self, path, attrs):
-        raise SFTPError(FX_OP_UNSUPPORTED, 
-                        "Directories can't be added via SFTP.")
+        raise filetransfer.SFTPError(filetransfer.FX_OP_UNSUPPORTED, 
+                                     "Directories can't be added via SFTP.")
     
     def removeDirectory(self, path):
-        raise SFTPError(FX_OP_UNSUPPORTED, 
-                        "Directories can't be deleted via SFTP.")
+        raise filetransfer.SFTPError(filetransfer.FX_OP_UNSUPPORTED, 
+                                     "Directories can't be deleted via SFTP.")
     
     def readLink(self, path):
-        raise SFTPError(FX_OP_UNSUPPORTED, '')
+        raise filetransfer.SFTPError(filetransfer.FX_OP_UNSUPPORTED, '')
     
     def makeLink(self, linkPath, targetPath):
-        raise SFTPError(FX_OP_UNSUPPORTED, '')
+        raise filetransfer.SFTPError(filetransfer.FX_OP_UNSUPPORTED, '')
 
 
 class SFTPServiceAvatar(avatar.ConchUser):
@@ -270,11 +236,11 @@ class SFTPServiceAvatar(avatar.ConchUser):
         self.env = env
         self.listeners = {}
         self.channelLookup.update({"session": session.SSHSession})
-        self.subsystemLookup.update({"sftp": FileTransferServer})
+        self.subsystemLookup.update({"sftp": filetransfer.FileTransferServer})
     
     def logout(self):
-        self.env.log.info('avatar %s logging out (%i)' % (self.username, 
-                                                          len(self.listeners)))
+        self.env.log.info('User %s logging out (%i)' % (self.username, 
+                                                        len(self.listeners)))
 
 components.registerAdapter(SFTPServiceProtocol, SFTPServiceAvatar, ISFTPServer)
 
@@ -337,6 +303,7 @@ class SFTPServiceFactory(factory.SSHFactory):
 
 class SFTPService(internet.TCPServer): #@UndefinedVariable
     """Service for SFTP server."""
+    
     BoolOption('sftp', 'autostart', SFTP_AUTOSTART, 
                'Enable service on start-up.')
     IntOption('sftp', 'port', SFTP_PORT, "SFTP port number.")

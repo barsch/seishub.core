@@ -2,6 +2,7 @@
 
 import os
 import sys
+import time
 
 from twisted.internet import defer
 from twisted.application import service
@@ -40,6 +41,8 @@ class Environment(ComponentManager):
         # set up component manager
         ComponentManager.__init__(self)
         self.compmgr = self
+        # set a start up timestamp
+        self.startup_time = time.time()
         # get SeisHub path
         path = self.getSeisHubPath()
         if not config_file:
