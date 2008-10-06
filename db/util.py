@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 from zope.interface import implements, Interface, directlyProvides, \
-                           implementedBy
+                           implementedBy, Attribute
 from zope.interface.exceptions import DoesNotImplement
-from sqlalchemy import select, Text #@UnresolvedImport
+from sqlalchemy import select, Text
 from sqlalchemy.sql.expression import ClauseList #@UnresolvedImport
 
 class DbError(Exception):
@@ -18,20 +18,30 @@ class IDbEnabled(Interface):
 
 
 class ISerializable(Interface):
-    """Object providing functionality for serialization"""    
+    """Object providing functionality for serialization"""
+    _id = Attribute("Unique id of Serializable object")
+    
     def _getId():
         """return internal storage id"""
     
-    def _setId(self, id):
+    def _setId(id):
         """set internal storage id"""
         
 
 class IRelation(Interface):
-    pass
+    """marker interface for Relation class"""
+
+
+class ILazyAttribute(Interface):
+    """marker interface for LazyAttribute class"""
 
 
 class IDbObjectProxy(Interface):
-    pass
+    """marker interface for DbObjectProxy class"""
+
+
+class IDbAttributeProxy(Interface):
+    """marker interface for DbAttributeProxy class"""
 
 
 class DbEnabled(object):
@@ -47,6 +57,8 @@ class DbEnabled(object):
         
     def getDb(self):
         return self._db
+    
+    db = property(getDb, setDb, "Database engine")
 
 class DbStorage(DbEnabled):
     """Mixin providing object serialization to a sqlalchemy SQL database.
@@ -76,6 +88,8 @@ class DbStorage(DbEnabled):
                 col = col.name
 #                kwargs = self._to_kwargs(value)
 #                value = self.pickup(col, **kwargs)._id
+            elif ILazyAttribute.providedBy(col):
+                col = col.name
             # convert None to '' on Text columns
             if value is None:
                 if isinstance(table.c[col].type, Text):
@@ -148,9 +162,9 @@ class DbStorage(DbEnabled):
                     raise DoesNotImplement(ISerializable)
                 table = o.db_table
                 kwargs = self._to_kwargs(o)
-                r = conn.execute(table.insert(),
-                                 **kwargs)
+                r = conn.execute(table.insert(), **kwargs)
                 o._id = r.last_inserted_ids()[0]
+                
             txn.commit()
         except:
             txn.rollback()
@@ -172,6 +186,9 @@ class DbStorage(DbEnabled):
         for col in map.values():
             if IRelation.providedBy(col):
                 col = col.name
+            elif ILazyAttribute.providedBy(col):
+                # skip lazy attributes
+                continue
             c.append(table.c[col])
         w, keys = self._to_where_clause(table, map, keys, null)
         ob = self._to_order_by(table, order_by)
@@ -206,7 +223,9 @@ class DbStorage(DbEnabled):
                     else:
                         # TODO: really needed ?
                         val = col.cls()
-                else:
+                elif ILazyAttribute.providedBy(col): # lazy attribute
+                    val = DbAttributeProxy(self, col, table, res)
+                else: # simple / plain attribute
                     val = res[col]
                 if val == '':
                     val = None
@@ -225,7 +244,19 @@ class DbStorage(DbEnabled):
         table = cls.db_table
         try:
             map = cls.db_mapping
-            w, _ = self._to_where_clause(table, map, keys, null)          
+            w, _ = self._to_where_clause(table, map, keys, null)
+            # cascading deletes
+            for rel in map.values():
+                if IRelation.providedBy(rel) and rel.cascading_delete:
+                    q = select([table.c[rel.name]], w)
+                    res = conn.execute(q).fetchall()
+                    ids = [r[rel.name] for r in res]
+#                    raise NotImplementedError("cascading delete, this " +\
+#                                              "feature is not fully " +\
+#                                              "implemented yet")
+                    for id in ids:
+                        self.drop(rel.cls, _id = id)
+            # delete parent
             conn.execute(table.delete(w))
             txn.commit()
         except:
@@ -252,6 +283,7 @@ class Serializable(object):
         self._id = None
         
     def _getId(self):
+        # TODO
         try:
             return self._serializable_id
         except:
@@ -278,9 +310,42 @@ class DbObjectProxy(object):
         except IndexError:
             raise DbError('A related object could not be located in '+\
                           'the database. %s: %s' % (self.cls, self.kwargs))
+            
+
+class DbAttributeProxy(object):
+    """@param attr: LazyAttribute instance
+    @param table: table containing attribute and keys
+    @param keyargs: attribute dict uniquely identifying the object
+    """
+    implements(IDbAttributeProxy)
     
+    def __init__(self, db_storage, attr, table, keyargs):
+        self.db_storage = db_storage
+        self.attr_name = attr.name
+        self.table = table
+        self.keyargs = keyargs
+        
+    def get(self):
+        w = ClauseList()
+        for k in self.keyargs.keys():
+            w.append(self.table.c[k] == self.keyargs[k])
+        try:
+            q = select([self.table.c[self.attr_name]], w)
+            res = self.db_storage.db.execute(q).fetchall()
+            assert len(res) == 1 # sanity check
+            return res[0][self.attr_name]
+        except IndexError:
+            raise DbError('An error occurred while getting related object ' +\
+                          'data %s: %s' % (self.cls, self.kwargs))
+
 
 class db_property(property):
+    """Use this property instead of the python 'property' descriptor to support 
+    lazy object getting.
+    Usage is like standard 'property' descriptor with an additional parameter:
+    @param attr: name of the attribute used by the property 
+    """
+    
     def __init__(self, *args, **kwargs):
         self.attr = kwargs.pop('attr', None)
         property.__init__(self, *args, **kwargs)
@@ -289,15 +354,46 @@ class db_property(property):
         if not self.attr:
             return property.__get__(self, obj, objtype)
         data = obj.__getattribute__(self.attr)
-        if IDbObjectProxy.providedBy(data):
+        if IDbObjectProxy.providedBy(data) or \
+           IDbAttributeProxy.providedBy(data):
             obj.__setattr__(self.attr, data.get())
         return property.__get__(self, obj, objtype)
     
+    def __set__(self, obj, value):
+        if IDbAttributeProxy.providedBy(value):
+            obj.__setattr__(self.attr, value)
+            return
+        return property.__set__(self, obj, value)
+            
 
 class Relation(object):
+    """Defines a relation between Serializable objects
+    
+    @param cls: class of target object type
+    @param name: name of the referencing column in database table
+    @param lazy: lazy getting of related objects (True by default)
+    @param cascading_delete: automatically delete related objects, when parent
+    is deleted (False by default)"""
+    
     implements(IRelation)
     
-    def __init__(self, cls, name, lazy = True):
+    def __init__(self, cls, name, lazy = True, cascading_delete = False):
         self.cls = cls
         self.name = name
         self.lazy = lazy
+        # TODO: not implemented yet
+        self.cascading_delete = cascading_delete
+        
+
+class LazyAttribute(object):
+    """Defines a lazy object attribute.
+    Loads a propertie's data not until attribute is accessed for the first 
+    time.
+    
+    @param name: name of the database column holding attribute data 
+    """
+
+    implements(ILazyAttribute)
+    
+    def __init__(self, name):
+        self.name = name

@@ -98,6 +98,9 @@ class IResource(Interface):
     version_control = Attribute("Boolean, specifies if version control is"+\
                                 "enabled or disabled for related resource")
     
+class IDocumentMeta(Interface):
+    pass
+    
         
 
 class IXmlDocument(Interface):

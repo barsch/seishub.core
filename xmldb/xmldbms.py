@@ -1,15 +1,12 @@
 # -*- coding: utf-8 -*-
 
 from zope.interface import implements
-from sqlalchemy import select #@UnresolvedImport 
-from sqlalchemy.sql import and_ #@UnresolvedImport
 
 from seishub.db.util import DbStorage, DbError
 from seishub.xmldb.interfaces import IResourceStorage
 from seishub.xmldb.errors import AddResourceError, GetResourceError, \
                                  DeleteResourceError, ResourceDeletedError
-from seishub.xmldb.resource import XmlDocument, Resource
-from seishub.xmldb.defaults import resource_tab
+from seishub.xmldb.resource import XmlDocument, Resource, DocumentMeta
 
 class XmlDbManager(DbStorage):
     """XmlDocument layer, connects Resources to relational db storage"""
@@ -38,7 +35,9 @@ class XmlDbManager(DbStorage):
         
         try:
             if not xml_resource.document._id:
-                self.store(xml_resource.document, xml_resource)
+                self.store(xml_resource.document.meta,
+                           xml_resource.document, 
+                           xml_resource)
             else:
                 self.store(xml_resource)
         except Exception, e:
@@ -50,7 +49,7 @@ class XmlDbManager(DbStorage):
                                 xml_resource.resourcetype, 
                                 xml_resource.id)
         # preserve creator
-        xml_resource.document.uid = old.document.uid
+        xml_resource.document.meta.uid = old.document.meta.uid
         if xml_resource.resourcetype.version_control:
             return self.addResource(xml_resource)
         self._deleteResource(old)

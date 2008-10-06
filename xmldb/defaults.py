@@ -9,6 +9,7 @@ from seishub.db.dbmanager import meta as metadata
 
 DEFAULT_PREFIX = 'default_'
 DATA_TABLE = 'data'
+DATA_META_TABLE = 'data_meta'
 INDEX_TABLE = 'index'
 INDEX_DEF_TABLE = 'index_def'
 METADATA_TABLE = 'meta'
@@ -19,6 +20,11 @@ RESOURCE_TABLE = 'resource'
 data_tab = Table(DEFAULT_PREFIX + DATA_TABLE, metadata,
     Column('id', Integer, primary_key = True, autoincrement = True),
     Column('data', Binary),
+    useexisting = True,
+    )
+
+data_meta_tab = Table(DEFAULT_PREFIX + DATA_META_TABLE, metadata,
+    Column('id', Integer, primary_key = True), 
     Column('size', Integer),
     Column('datetime', DateTime, default = datetime.now, 
            onupdate = datetime.now),

@@ -69,6 +69,9 @@ IDX2 = "/testml/blah1/@id"
 IDX3 = "/weapon/damage"
 
 class XmlCatalogTest(SeisHubEnvironmentTestCase):
+#    def _config(self):
+#        self.config.set('db', 'verbose', True)
+
     def setUp(self):
         # register packages
         self.pkg1 = self.env.registry.db_registerPackage(pid1)
@@ -121,7 +124,7 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         res = catalog.addResource(pid1, rid1, RAW_XML, uid = 1000)
         r = catalog.getResource(pid1, rid1, res.id)
         self.assertEquals(RAW_XML, r.document.data)
-        self.assertEquals(1000, r.document.uid)
+        self.assertEquals(1000, r.document.meta.uid)
         catalog.deleteResource(pid1, rid1, res.id)
         # list resources
         r = catalog.getResourceList(pid1, rid1)

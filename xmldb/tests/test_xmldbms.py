@@ -4,6 +4,7 @@ import unittest
 import sha
 
 from seishub.test import SeisHubEnvironmentTestCase
+from seishub.db.util import DbAttributeProxy
 from seishub.xmldb.errors import AddResourceError, XmlResourceError,\
                                  GetResourceError, ResourceDeletedError
 from seishub.xmldb.xmldbms import XmlDbManager
@@ -32,9 +33,9 @@ class XmlDocumentTest(SeisHubEnvironmentTestCase):
         test_res = XmlDocument(TEST_XML)
         xml_data = test_res.getData()
         self.assertEquals(xml_data, TEST_XML)
+        test_res.data = TEST_BAD_XML
         self.assertRaises(XmlResourceError,
-                          test_res.setData,
-                          TEST_BAD_XML)
+                          test_res.getXml_doc)
 
 
 class XmlDbManagerTest(SeisHubEnvironmentTestCase):
@@ -101,12 +102,14 @@ class XmlDbManagerTest(SeisHubEnvironmentTestCase):
         result = self.xmldbm.getResource(testres.package, 
                                          testres.resourcetype, 
                                          testres.id)
+        # check lazyness of Resource.data:
+        assert isinstance(result.document._data, DbAttributeProxy)
         self.assertEquals(result.document.data, self.test_data)
-        self.assertTrue(result.document.datetime)
-        self.assertEquals(result.document.size, len(self.test_data))
-        self.assertEquals(result.document.hash, 
+        self.assertTrue(result.document.meta.datetime)
+        self.assertEquals(result.document.meta.size, len(self.test_data))
+        self.assertEquals(result.document.meta.hash, 
                           sha.sha(self.test_data).hexdigest())
-        self.assertEquals(result.document.uid, 1000)
+        self.assertEquals(result.document.meta.uid, 1000)
         self.assertEquals(result.package.package_id, 
                           self.test_package.package_id)
         self.assertEquals(result.resourcetype.resourcetype_id, 
@@ -121,7 +124,7 @@ class XmlDbManagerTest(SeisHubEnvironmentTestCase):
                                          testres.id)
         self.assertEquals(result.document.data, self.test_data_mod)
         # user id is still the same
-        self.assertEquals(result.document.uid, 1000)
+        self.assertEquals(result.document.meta.uid, 1000)
         self.assertEquals(result.package.package_id, 
                           self.test_package.package_id)
         self.assertEquals(result.resourcetype.resourcetype_id, 
@@ -140,7 +143,7 @@ class XmlDbManagerTest(SeisHubEnvironmentTestCase):
                                          testres2.resourcetype, 
                                          testres2.id)
         self.assertEquals(result.document.data, self.test_data)
-        self.assertEquals(result.document.uid, None)
+        self.assertEquals(result.document.meta.uid, None)
         self.assertEquals(result.package.package_id, 
                           otherpackage.package_id)
         self.assertEquals(result.resourcetype.resourcetype_id, 
