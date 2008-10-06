@@ -22,6 +22,9 @@ from seishub.packages.processor import PUT, POST, DELETE, GET
 from seishub.util.path import absPath
 
 
+DEFAULT_GID = 1000
+
+
 class DirList:
     def __init__(self, env, iter):
         self.iter = iter
@@ -39,7 +42,7 @@ class DirList:
         s = st()
         attrs['permissions'] = s.st_mode = attrs.get('permissions', 040755)
         attrs['uid'] = s.st_uid = attrs.get('uid', 0)
-        attrs['gid'] = s.st_gid = attrs.get('gid', 0)
+        attrs['gid'] = s.st_gid = attrs.get('gid', DEFAULT_GID)
         attrs['size'] = s.st_size = attrs.get('size', 0)
         attrs['atime'] = s.st_atime = attrs.get('atime', self.env.startup_time)
         attrs['mtime'] = s.st_mtime = attrs.get('mtime', self.env.startup_time)
@@ -184,18 +187,20 @@ class SFTPServiceProtocol:
             raise filetransfer.SFTPError(filetransfer.FX_FAILURE, e)
         if isinstance(data, basestring):
             # file
-            # XXX: metadata here!!
-            return {'permissions': 0100644, 
-                    'atime': time.time(), 
-                    'mtime': time.time()}
+            perm = 0100644
         else:
             # directory
-            return {'permissions': 040755, 
-                    'atime': self.env.startup_time, 
-                    'mtime': self.env.startup_time}
+            perm = 040755
+        return {'permissions': perm, 
+                'size': 0, 
+                'uid': 0, 
+                'gid': DEFAULT_GID, 
+                'atime': self.env.startup_time, 
+                'mtime': self.env.startup_time, 
+                'nlink': 1} 
     
     def setAttrs(self, path, attrs):
-        pass
+        return
     
     def removeFile(self, filename):
         """Remove the given file.
