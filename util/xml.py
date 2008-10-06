@@ -7,6 +7,8 @@ def toUnicode(data):
     encoding = detectXMLEncoding(data)
     if encoding:
         data = unicode(data, encoding)
+    else:
+        data = unicode(data, 'utf-8')
     return data
 
 
@@ -44,10 +46,7 @@ def detectXMLEncoding(data):
              (0xEF, 0xBB, 0xBF, None) : "utf-8",
             }
     ## go to beginning of file and get the first 4 bytes
-    try:
-        (byte1, byte2, byte3, byte4) = tuple(map(ord, data[0:4]))
-    except:
-        return None
+    (byte1, byte2, byte3, byte4) = tuple(map(ord, data[0:4]))
     
     ## try bom detection using 4 bytes, 3 bytes, or 2 bytes
     bomDetection = bomDict.get((byte1, byte2, byte3, byte4))

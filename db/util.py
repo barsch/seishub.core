@@ -96,9 +96,6 @@ class DbStorage(DbEnabled):
                     value = ''
                 else:
                     continue
-            # convert to byte strings
-            if isinstance(value, unicode):
-                value = value.encode("utf-8")
             d[col] = value
         return d
     

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from datetime import datetime
 from sqlalchemy import Table, Column
-from sqlalchemy import Integer, String, Text, Binary, DateTime
+from sqlalchemy import Integer, String, Text, Unicode, DateTime
 from sqlalchemy import UniqueConstraint, PrimaryKeyConstraint
 from sqlalchemy.sql import text
 
@@ -19,7 +19,7 @@ RESOURCE_TABLE = 'resource'
 # xmldbms tables:
 data_tab = Table(DEFAULT_PREFIX + DATA_TABLE, metadata,
     Column('id', Integer, primary_key = True, autoincrement = True),
-    Column('data', Binary),
+    Column('data', Unicode),
     useexisting = True,
     )
 

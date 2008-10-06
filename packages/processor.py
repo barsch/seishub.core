@@ -524,7 +524,7 @@ class Processor:
             raise ProcessorError(http.INTERNAL_SERVER_ERROR, e)
         else:
             # return resource content
-            return result.document.data
+            return result.document.data.encode('utf-8')
     
     def _modifyResource(self, package_id, resourcetype_id, resource_id):
         """Modifies the content of an existing resource."""
