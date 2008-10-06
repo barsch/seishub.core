@@ -160,9 +160,10 @@ class SFTPServiceProtocol:
             else:
                 # resource object
                 file_name = str(obj).split('/')[-1:][0]
-                file_datetime = time.mktime(obj.document.datetime.timetuple())
-                file_size = obj.document.size
-                file_uid = obj.document.uid or 0
+                temp = obj.document.meta.datetime
+                file_datetime = time.mktime(temp.timetuple())
+                file_size = obj.document.meta.size
+                file_uid = obj.document.meta.uid or 0
                 filelist.append((file_name, {'permissions': 0100644,
                                              'uid': file_uid,
                                              'size': file_size,
