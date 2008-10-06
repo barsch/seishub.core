@@ -29,7 +29,7 @@ data_meta_tab = Table(DEFAULT_PREFIX + DATA_META_TABLE, metadata,
     Column('datetime', DateTime, default = datetime.now, 
            onupdate = datetime.now),
     Column('uid', Integer),
-    Column('hash', String(40)),
+    Column('hash', String(56)),
     useexisting=True,
     )
 
@@ -44,7 +44,12 @@ resource_tab = Table(DEFAULT_PREFIX + RESOURCE_TABLE, metadata,
            ),
     Column('package_id', Integer),
     Column('resourcetype_id', Integer),
+    Column('name', String(255), 
+           default = text('(SELECT coalesce(max(id), 0) + 1 FROM '+\
+                          DEFAULT_PREFIX + RESOURCE_TABLE +')')
+           ),
     # Column('hash', Integer),
+    UniqueConstraint('package_id', 'resourcetype_id', 'name', 'revision'),
     PrimaryKeyConstraint('id', 'revision'),
     useexisting=True,
     )

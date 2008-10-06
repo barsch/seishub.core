@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import unittest
-import sha
 
+from seishub.util.text import hash
 from seishub.test import SeisHubEnvironmentTestCase
 from seishub.db.util import DbAttributeProxy
 from seishub.xmldb.errors import AddResourceError, XmlResourceError,\
@@ -104,11 +104,12 @@ class XmlDbManagerTest(SeisHubEnvironmentTestCase):
                                          testres.id)
         # check lazyness of Resource.data:
         assert isinstance(result.document._data, DbAttributeProxy)
+        self.assertEquals(result.name, str(testres.id))
         self.assertEquals(result.document.data, self.test_data)
         self.assertTrue(result.document.meta.datetime)
         self.assertEquals(result.document.meta.size, len(self.test_data))
         self.assertEquals(result.document.meta.hash, 
-                          sha.sha(self.test_data).hexdigest())
+                          hash(self.test_data))
         self.assertEquals(result.document.meta.uid, 1000)
         self.assertEquals(result.package.package_id, 
                           self.test_package.package_id)
@@ -121,7 +122,7 @@ class XmlDbManagerTest(SeisHubEnvironmentTestCase):
         self.xmldbm.modifyResource(modres)
         result = self.xmldbm.getResource(testres.package, 
                                          testres.resourcetype, 
-                                         testres.id)
+                                         id = testres.id)
         self.assertEquals(result.document.data, self.test_data_mod)
         # user id is still the same
         self.assertEquals(result.document.meta.uid, 1000)
@@ -133,7 +134,7 @@ class XmlDbManagerTest(SeisHubEnvironmentTestCase):
         # delete resource
         self.xmldbm.deleteResource(testres.package, 
                                    testres.resourcetype, 
-                                   testres.id)
+                                   id = testres.id)
         self.assertRaises(GetResourceError, self.xmldbm.getResource, 
                           testres.package, 
                           testres.resourcetype, 
@@ -186,7 +187,7 @@ class XmlDbManagerTest(SeisHubEnvironmentTestCase):
         # get latest revision
         result = self.xmldbm.getResource(testres.package, 
                                          testres.resourcetype, 
-                                         testres.id)
+                                         id = testres.id)
         self.assertEquals(result.revision, 2)
         self.assertEquals(result.document._id, 
                           testres_v2.document._id)
@@ -201,16 +202,16 @@ class XmlDbManagerTest(SeisHubEnvironmentTestCase):
         # delete resource
         self.xmldbm.deleteResource(testres.package, 
                                    testres.resourcetype, 
-                                   testres.id)
+                                   id = testres.id)
         # try to get latest revision (deleted)
         self.assertRaises(ResourceDeletedError, self.xmldbm.getResource,
                           testres.package, 
                           testres.resourcetype, 
-                          testres.id)
+                          id = testres.id)
         # get previous revision
         result = self.xmldbm.getResource(testres.package, 
                                          testres.resourcetype, 
-                                         testres.id,
+                                         id = testres.id,
                                          revision = 2)
         self.assertEquals(result.revision, 2)
         self.assertEquals(result.document._id, testres_v2.document._id)
@@ -218,7 +219,7 @@ class XmlDbManagerTest(SeisHubEnvironmentTestCase):
         # get version history
         revisions = self.xmldbm.getResourceList(self.test_package, 
                                                 self.vc_resourcetype,
-                                                testres.id)
+                                                id = testres.id)
         self.assertEqual(len(revisions), 3)
         self.assertEqual(revisions[0].revision, 1)
         self.assertEqual(revisions[1].revision, 2)
@@ -226,20 +227,20 @@ class XmlDbManagerTest(SeisHubEnvironmentTestCase):
         
         # delete revision 2
         self.xmldbm.deleteResource(self.test_package, self.vc_resourcetype,
-                                   testres.id, 2)
+                                   id = testres.id, revision = 2)
         revisions = self.xmldbm.getResourceList(self.test_package, 
                                               self.vc_resourcetype,
-                                              testres.id)
+                                              id = testres.id)
         self.assertEqual(len(revisions), 2)
         self.assertEqual(revisions[0].revision, 1)
         self.assertEqual(revisions[1].revision, 3)
         
         # revert revision 1
         self.xmldbm.revertResource(self.test_package, self.vc_resourcetype,
-                                   testres.id, 1)
+                                   revision = 1, id = testres.id, name = None)
         newest = self.xmldbm.getResource(self.test_package, 
                                          self.vc_resourcetype,
-                                         testres.id)
+                                         id = testres.id)
         self.assertEqual(newest.revision, 4)
         self.assertEqual(newest.document._id, testres.document._id)
         
@@ -262,8 +263,11 @@ class XmlDbManagerTest(SeisHubEnvironmentTestCase):
                 
         # XXX: BuG: revision counter is not reset on new resources
 
-#    def testGetResourceList(self):
-#        # add some test resources first:
+    def testGetResourceList(self):
+        blah = self.env.catalog.getResourceList('seishub')
+        #import pdb;pdb.set_trace()
+        #print blah
+        # add some test resources first:
 #        testres1 = XmlDocument(self.test_package, self.test_resourcetype, 
 #                               data = self.test_data)
 #        testres2 = XmlDocument(self.test_package, self.test_resourcetype,

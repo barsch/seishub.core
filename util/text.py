@@ -72,8 +72,8 @@ def hash(text):
 
 def validate_id(str):
     """ids have to be alphanumeric, start with a character"""
-    id_pt = """^[a-zA-Z]    # leading character
-    \w*                     # alphanumeric or '_'
+    id_pt = """^\w        # leading character
+    [A-Za-z0-9_.-]*       # alphanumeric or '_','.','-'
     """
     # XXX: not here!
     if str is None:

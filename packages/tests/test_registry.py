@@ -32,8 +32,7 @@ TEST_SCHEMA="""<?xml version="1.0"?>
 </xs:schema>
 """
 
-TEST_STYLESHEET = """<?xml version="1.0" encoding="utf-8"?>
-
+TEST_STYLESHEET = """
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" 
     xmlns:xlink="http://www.w3.org/1999/xlink" exclude-result-prefixes="xlink"
     version="1.0">

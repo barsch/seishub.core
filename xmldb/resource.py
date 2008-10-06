@@ -5,6 +5,7 @@ from zope.interface import implements
 
 from seishub.db.util import Serializable, Relation, db_property, LazyAttribute
 from seishub.util.xmlwrapper import IXmlDoc, XmlTreeDoc
+from seishub.util.text import validate_id
 from seishub.util.xml import toUnicode 
 from seishub.util.text import hash
 from seishub.packages.package import PackageWrapper, ResourceTypeWrapper
@@ -196,24 +197,26 @@ class Resource(Serializable, PackageSpecific):
     db_table = resource_tab
     db_mapping = {'id':'id',  # external id
                   'revision':'revision',
-                  'document':Relation(XmlDocument, 'resource_id'),
+                  'document':Relation(XmlDocument, 'resource_id', lazy = False),
                   'package':Relation(PackageWrapper,'package_id'),
                   'resourcetype':Relation(ResourceTypeWrapper,
-                                          'resourcetype_id')
+                                          'resourcetype_id'),
+                  'name':'name'
                   }
     
     def __init__(self, package = PackageWrapper(), 
                  resourcetype = ResourceTypeWrapper(), id = None, 
-                 revision = None, document = None):
+                 revision = None, document = None, name = None):
         self.id = id
         self.revision = revision
         self.document = document
         self.package = package
         self.resourcetype = resourcetype
+        self.name = name
         
     def __str__(self):
         return '/' + self.package.package_id + '/' +\
-               self.resourcetype.resourcetype_id + '/' + str(self.id)
+               self.resourcetype.resourcetype_id + '/' + str(self.name)
     
     # auto update id when _Serializable__id is changed:
     def _setId(self, id):
@@ -265,3 +268,13 @@ class Resource(Serializable, PackageSpecific):
         self._id = data
         
     id = property(getId, setId, "Integer identification number (external id)")
+    
+    def getName(self):
+        if not self._name:
+            return self.id
+        return self._name
+    
+    def setName(self, data):
+        self._name = validate_id(data)        
+        
+    name = property(getName, setName, "Alphanumeric name (optional)")
