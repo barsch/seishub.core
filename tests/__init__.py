@@ -16,8 +16,7 @@ def suite():
     suite.addTest(doctest.DocFileSuite('test_core_twisted_compatibility.txt'))
     suite.addTest(test_config.suite())
     suite.addTest(doctest.DocFileSuite('test_config.txt'))
-    # XXX: add later
-    #suite.addTest(test_xmlconformance.suite())
+    suite.addTest(test_xmlconformance.suite())
     return suite
 
 

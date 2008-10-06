@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import sha
 from zope.interface import implements
 
 from seishub.db.util import Serializable, Relation, db_property, LazyAttribute
@@ -104,6 +103,7 @@ class XmlDocument(Serializable):
         #    data = str(data)
         if not isinstance(data, unicode):
             data = toUnicode(data)
+            
         raw_data = data.encode("utf-8")
         self._data = data
         self.meta._size = len(raw_data)
@@ -116,6 +116,7 @@ class XmlDocument(Serializable):
     def getData(self):
         """Returns data as unicode object."""
         data = self._data
+        assert isinstance(data, unicode)
         return data
     
     data = db_property(getData, setData, 'Raw xml data as a string', 

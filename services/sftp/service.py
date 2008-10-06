@@ -18,7 +18,7 @@ from seishub.defaults import SFTP_PORT, SFTP_PRIVATE_KEY, SFTP_PUBLIC_KEY
 from seishub.defaults import SFTP_AUTOSTART
 from seishub.config import IntOption, Option, BoolOption
 from seishub.packages.processor import Processor, ProcessorError
-from seishub.packages.processor import PUT, POST, DELETE, GET
+from seishub.packages.processor import PUT, POST, DELETE, GET, MOVE
 from seishub.util.path import absPath
 
 
@@ -68,14 +68,14 @@ class InMemoryFile:
             if result:
                 self.data.write(result)
             else:
-                raise filetransfer.SFTPError(filetransfer.FX_NO_SUCH_FILE)
+                raise filetransfer.SFTPError(filetransfer.FX_NO_SUCH_FILE, '')
     
     def _readResource(self):
         # check if resource exists
         data = ''
         try:
             data = self.proc.run(GET, self.filename)
-        except Exception:
+        except:
             pass
         return data
     
@@ -107,8 +107,6 @@ class InMemoryFile:
             self.proc.process()
         except ProcessorError, e:
             raise filetransfer.SFTPError(filetransfer.FX_FAILURE, e.message)
-        except Exception, e:
-            raise filetransfer.SFTPError(filetransfer.FX_FAILURE, e)
     
     def getAttrs(self):
         pass
@@ -140,7 +138,7 @@ class SFTPServiceProtocol:
         try:
             data = proc.run(GET, path)
         except Exception, e:
-            raise filetransfer.SFTPError(filetransfer.FX_FAILURE, e)
+            raise filetransfer.SFTPError(filetransfer.FX_FAILURE, e.message)
         filelist = []
         filelist.append(('.', {}))
         filelist.append(('..', {}))
@@ -179,12 +177,13 @@ class SFTPServiceProtocol:
         filename = absPath(filename)
         # process resource
         proc = Processor(self.env)
+        data = None
         try:
             data = proc.run(GET, filename)
         except ProcessorError, e:
-            raise filetransfer.SFTPError(filetransfer.FX_FAILURE, e.message)
+            return
         except Exception, e:
-            raise filetransfer.SFTPError(filetransfer.FX_FAILURE, e)
+            raise filetransfer.SFTPError(filetransfer.FX_FAILURE, e.message)
         if isinstance(data, basestring):
             # file
             perm = 0100644
@@ -194,9 +193,9 @@ class SFTPServiceProtocol:
         return {'permissions': perm, 
                 'size': 0, 
                 'uid': 0, 
-                'gid': DEFAULT_GID, 
-                'atime': self.env.startup_time, 
-                'mtime': self.env.startup_time, 
+                'gid': 0, #DEFAULT_GID, 
+                'atime': time.time(), #self.env.startup_time, 
+                'mtime': time.time(), #self.env.startup_time, 
                 'nlink': 1} 
     
     def setAttrs(self, path, attrs):
@@ -211,13 +210,19 @@ class SFTPServiceProtocol:
         proc = Processor(self.env)
         try:
             proc.run(DELETE, filename)
-        except ProcessorError, e:
-            raise filetransfer.SFTPError(filetransfer.FX_FAILURE, e.message)
         except Exception, e:
-            raise filetransfer.SFTPError(filetransfer.FX_FAILURE, e)
+            raise filetransfer.SFTPError(filetransfer.FX_FAILURE, e.message)
     
     def renameFile(self, oldpath, newpath):
-        pass
+        # process resource
+        proc = Processor(self.env)
+        destination = self.env.getRestUrl() + newpath
+        try:
+            proc.run(MOVE, oldpath, 
+                     received_headers={'Destination': destination})
+        except Exception, e:
+            raise filetransfer.SFTPError(filetransfer.FX_FAILURE, e.message)
+        return
     
     def makeDirectory(self, path, attrs):
         raise filetransfer.SFTPError(filetransfer.FX_OP_UNSUPPORTED, 

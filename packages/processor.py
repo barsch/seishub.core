@@ -15,6 +15,7 @@ PUT = 'PUT'
 GET = 'GET'
 POST = 'POST'
 DELETE = 'DELETE'
+MOVE = 'MOVE'
 
 
 class ProcessorError(SeisHubError):
@@ -42,11 +43,13 @@ class Processor:
         self.content = StringIO()
         self.data = StringIO()
     
-    def run(self, method, path='/', content=None):
+    def run(self, method, path='/', content=None, received_headers={}):
         self.method = method
         self.path = path
         if content:
             self.content = content
+        if received_headers:
+            self.received_headers = received_headers
         return self.process()
     
     def process(self):
@@ -66,6 +69,8 @@ class Processor:
             return self._processPUT()
         elif self.method == DELETE:
             return self._processDELETE()
+        elif self.method == MOVE:
+            return self._processMOVE()
         raise ProcessorError(http.NOT_ALLOWED)
     
     def _processGET(self):
@@ -76,18 +81,15 @@ class Processor:
         # test if root property
         if self.postpath[0].startswith('.'):
             return self._processRootProperty(self.postpath[0:])
-        
-        # test if it fits directly to a valid mapping
-        if self.env.registry.mappers.get(self.path, self.method):
+        # test if root mapping
+        if self.postpath[0].startswith('~'):
             return self._processMapping()
-        
-        # test if package at all
-        if not self.env.registry.isPackageId(self.postpath[0]):
-            # finally it could be a sub path of a mapping
-            return self._checkForMappingSubPath()
         
         ### from here on we have a valid package_id
         package_id = self.postpath[0]
+        # test if valid package at all
+        if not self.env.registry.isPackageId(package_id):
+            raise ProcessorError(http.NOT_FOUND)
         # test if only package is requested
         if len(self.postpath)==1:
             return self._processPackage(package_id)
@@ -97,14 +99,15 @@ class Processor:
         # test if package alias
         if self.postpath[1].startswith('@'):
             return self._processAlias(package_id, None, self.postpath[1:])
-        # test if valid resource type at all
-        if not self.env.registry.isResourceTypeId(package_id, 
-                                                  self.postpath[1]):
-            # finally it could be a sub path of a mapping
-            return self._checkForMappingSubPath()
+        # test if package mapping
+        if self.postpath[1].startswith('~'):
+            return self._processMapping()
         
         ### from here on we can rely on a valid resourcetype_id
         resourcetype_id = self.postpath[1]
+        # test if valid resource type at all
+        if not self.env.registry.isResourceTypeId(package_id, resourcetype_id):
+            raise ProcessorError(http.NOT_FOUND)
         # test if only resource type is requested
         if len(self.postpath)==2:
             return self._processResourceType(package_id, resourcetype_id)
@@ -117,38 +120,41 @@ class Processor:
         if self.postpath[2].startswith('@'):
             return self._processAlias(package_id, resourcetype_id, 
                                       self.postpath[2:])
-        # test if a resource at all
-        if not isInteger(self.postpath[2]):
-            # finally it could be a sub path of a mapping
-            return self._checkForMappingSubPath()
+        # test if resource type mapper
+        if self.postpath[2].startswith('~'):
+            return self._processMapping()
         
-        ### from here on we can rely on a valid resource_id
-        resource_id = self.postpath[2]
+        ### from here on we can rely on a valid resource_name
+        resource_name = self.postpath[2]
         # test if only resource is requested
         if len(self.postpath)==3:
-            return self._getResource(package_id, resourcetype_id, resource_id)
+            return self._getResource(package_id, resourcetype_id, 
+                                     resource_name)
         # test if resource property
         if self.postpath[3].startswith('.'):
             return self._processResourceProperty(package_id, 
                                                  resourcetype_id,
-                                                 resource_id, 
+                                                 resource_name, 
                                                  None,
                                                  self.postpath[4:])
-        # test if a version controlled resource at all
-        if not isInteger(self.postpath[3]):
-            raise ProcessorError(http.NOT_FOUND)
+        # test if resource mapper
+        if self.postpath[3].startswith('~'):
+            return self._processMapping()
         
         ### from here on we can rely on a valid version_id
         version_id = self.postpath[3]
+        # test if a version controlled resource at all
+        if not isInteger(version_id):
+            raise ProcessorError(http.NOT_FOUND)
         # test if only version controlled resource is requested
         if len(self.postpath)==4:
-            return self._getResource(package_id, resourcetype_id, resource_id,
-                                     version_id)
+            return self._getResource(package_id, resourcetype_id, 
+                                     resource_name, version_id)
         # test if version controlled resource property
         if self.postpath[3].startswith('.'):
             return self._processResourceProperty(package_id, 
                                                  resourcetype_id,
-                                                 resource_id,
+                                                 resource_name,
                                                  version_id,
                                                  self.postpath[4:])
         raise ProcessorError(http.NOT_FOUND)
@@ -192,8 +198,13 @@ class Processor:
                                                   self.postpath[1]):
             raise ProcessorError(http.FORBIDDEN,
                                  "Adding resources is not allowed here.")
+        if len(self.postpath)==3:
+            res = self._addResource(self.postpath[0], self.postpath[1], 
+                                    self.postpath[2])
+        else:
+            res = self._addResource(self.postpath[0], self.postpath[1])
         # create resource
-        res = self._addResource(self.postpath[0], self.postpath[1])
+        
         self.response_code = http.CREATED
         self.response_header['Location'] = str(res)
         return ''
@@ -225,16 +236,12 @@ class Processor:
         if len(self.postpath)!=3:
             raise ProcessorError(http.FORBIDDEN, 
                                  "Modifying resources is not allowed here.")
-        # test if integer as resource id
-        if not isInteger(self.postpath[2]):
-            raise ProcessorError(http.BAD_REQUEST, 
-                                 "Invalid resource identifier.")
         # seishub directory is not directly changeable
         if self.postpath[0]=='seishub':
             raise ProcessorError(http.FORBIDDEN, 
                                  "SeisHub resources may not be modified " + \
                                  "directly.")
-        # only resource types are accepting PUTs
+        # only resource types are accepting POSTs
         if not self.env.registry.isResourceTypeId(self.postpath[0], 
                                                   self.postpath[1]):
             raise ProcessorError(http.FORBIDDEN,
@@ -258,7 +265,6 @@ class Processor:
         entity describing the status, 202 (Accepted) if the action has not yet 
         been enacted, or 204 (No Content) if the action has been enacted but 
         the response does not include an entity."
-        
         
         Deleting a document always needs a valid path to a resource or may use 
         a user defined mapping.
@@ -297,6 +303,47 @@ class Processor:
                                  self.postpath[1],
                                  self.postpath[2])
         self.response_code = http.NO_CONTENT
+        return ''
+    
+    def _processMOVE(self):
+        """Processes a resource rename request.
+        
+        @see: http://msdn.microsoft.com/en-us/library/aa142926(EXCHG.65).aspx
+        """
+        # test if the request was called in a resource type directory 
+        if len(self.postpath) != 3:
+            raise ProcessorError(http.FORBIDDEN, 
+                                 "Only resources may be renamed.")
+        # seishub directory is not directly changeable
+        if self.postpath[0]=='seishub':
+            raise ProcessorError(http.FORBIDDEN, 
+                                 "SeisHub resources may not be renamed " + \
+                                 "directly.")
+        # only resource types are accepted
+        if not self.env.registry.isResourceTypeId(self.postpath[0], 
+                                                  self.postpath[1]):
+            raise ProcessorError(http.FORBIDDEN,
+                                 "Only resources may be renamed.")
+        # check if destination is set
+        destination = self.received_headers.get('Destination', False) 
+        if not destination:
+            raise ProcessorError(http.INTERNAL_SERVER_ERROR,
+                                 "Expected a destination header.")
+        # destination must be an absolute path
+        if not destination.startswith(self.env.getRestUrl()):
+            raise ProcessorError(http.INTERNAL_SERVER_ERROR, "Destination " + \
+                                 "header must be an absolute path.")
+        destination = destination[len(self.env.getRestUrl()):]
+        destination_part = destination.split('/')
+        if len(destination_part)!=4 or \
+           destination_part[1]!=self.postpath[0] or \
+           destination_part[2]!=self.postpath[1]:
+            raise ProcessorError(http.FORBIDDEN, "Destination " + \
+                                 "%s is not allowed." % destination)
+        self._moveResource(self.postpath[0],
+                           self.postpath[1],
+                           self.postpath[2], destination_part[3])
+        self.response_code = http.CREATED
         return ''
     
     def _processRoot(self):
@@ -495,8 +542,7 @@ class Processor:
         # XXX: missing yet
         raise ProcessorError(http.NOT_IMPLEMENTED)
     
-    def _getResource(self, package_id, resourcetype_id, resource_id, 
-                     version_id=None):
+    def _getResource(self, package_id, resourcetype_id, name, revision=None):
         """Fetches the content of an existing resource.
         
         @see: http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.4.1
@@ -505,8 +551,8 @@ class Processor:
         try:
             result = self.env.catalog.getResource(package_id,
                                                   resourcetype_id,
-                                                  resource_id,
-                                                  version_id)
+                                                  name,
+                                                  revision)
         # XXX: 401 Unauthorized
         # XXX: 409 Conflict/415 Unsupported Media Type 
         # XSD not valid - here we need additional info why
@@ -523,26 +569,27 @@ class Processor:
             self.env.log.error(e)
             raise ProcessorError(http.INTERNAL_SERVER_ERROR, e)
         else:
+            # XXX: set utf-8 encoding header
             # return resource content
             return result.document.data.encode('utf-8')
     
-    def _modifyResource(self, package_id, resourcetype_id, resource_id):
+    def _modifyResource(self, package_id, resourcetype_id, name):
         """Modifies the content of an existing resource."""
         try:
             self.env.catalog.modifyResource(package_id,
                                             resourcetype_id,
-                                            resource_id,
+                                            name,
                                             self.data)
         # XXX: fetch all kind of exception types and return to clients
         except Exception, e:
             self.env.log.error(e)
             raise ProcessorError(http.INTERNAL_SERVER_ERROR, e)
     
-    def _addResource(self, package_id, resourcetype_id):
+    def _addResource(self, package_id, resourcetype_id, name=None):
         """Adds a new resource."""
         try:
             res = self.env.catalog.addResource(package_id, resourcetype_id,
-                                               self.data)
+                                               self.data, name=name)
         # XXX: fetch all kind of exception types and return to clients
         except Exception, e:
             self.env.log.error(e)
@@ -550,17 +597,29 @@ class Processor:
         else:
             return res
     
-    def _deleteResource(self, package_id, resourcetype_id, resource_id, 
+    def _deleteResource(self, package_id, resourcetype_id, name, 
                         revision=None):
         """Deletes a resource."""
         try:
             self.env.catalog.deleteResource(package_id,
                                             resourcetype_id,
-                                            resource_id,
+                                            name,
                                             revision)
         # XXX: fetch all kind of exception types and return to clients
         except GetResourceError, e:
             raise ProcessorError(http.NOT_FOUND, e)
+        except Exception, e:
+            self.env.log.error(e)
+            raise ProcessorError(http.INTERNAL_SERVER_ERROR, e)
+    
+    def _moveResource(self, package_id, resourcetype_id, oldname, newname):
+        """Deletes a resource."""
+        try:
+            self.env.catalog.moveResource(package_id,
+                                          resourcetype_id,
+                                          oldname,
+                                          newname)
+        # XXX: fetch all kind of exception types and return to clients
         except Exception, e:
             self.env.log.error(e)
             raise ProcessorError(http.INTERNAL_SERVER_ERROR, e)

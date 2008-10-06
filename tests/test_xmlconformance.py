@@ -3,12 +3,10 @@
 import unittest
 import os
 import inspect
-from xml.dom import minidom
 
 from lxml import etree
 
 from seishub.test import SeisHubEnvironmentTestCase
-from seishub.util.xml import detectXMLEncoding, toUnicode
 
 
 class XMLConformanceTestCase(SeisHubEnvironmentTestCase):
@@ -27,42 +25,49 @@ class XMLConformanceTestCase(SeisHubEnvironmentTestCase):
         self.env.registry.db_deleteResourceType('test', 'xml')
         self.env.registry.db_deletePackage('test')
         
-    
-    def testXmltest(self):
+    def test_IBMInvalid(self):
         path = self.test_path
-        testcase = 'xmltest'
-        filename = 'xmltest.xml'
+        testcase = 'ibm'
+        filename = 'ibm_oasis_invalid.xml'
         self._runXMLTestCase(path, testcase, filename)
     
-    def testJapanese(self):
-        path = self.test_path
-        testcase = 'japanese'
-        filename = 'japanese.xml'
-        self._runXMLTestCase(path, testcase, filename)
-    
-    def testOasis(self):
-        path = self.test_path
-        testcase = 'oasis'
-        filename = 'oasis.xml'
-        self._runXMLTestCase(path, testcase, filename)
-    
-    def testEduniXML11(self):
-        path = self.test_path
-        testcase = os.path.join('eduni', 'xml-1.1')
-        filename = 'xml11.xml'
-        self._runXMLTestCase(path, testcase, filename)
-    
-    def testEduniErrata4e(self):
-        path = self.test_path
-        testcase = os.path.join('eduni', 'errata-4e')
-        filename = 'errata4e.xml'
-        self._runXMLTestCase(path, testcase, filename)
+#    def test_Xmltest(self):
+#        path = self.test_path
+#        testcase = 'xmltest'
+#        filename = 'xmltest.xml'
+#        self._runXMLTestCase(path, testcase, filename)
+#    
+#    def test_Japanese(self):
+#        path = self.test_path
+#        testcase = 'japanese'
+#        filename = 'japanese.xml'
+#        self._runXMLTestCase(path, testcase, filename)
+#    
+#    def test_Oasis(self):
+#        path = self.test_path
+#        testcase = 'oasis'
+#        filename = 'oasis.xml'
+#        self._runXMLTestCase(path, testcase, filename)
+#    
+#    def test_EduniXML11(self):
+#        path = self.test_path
+#        testcase = os.path.join('eduni', 'xml-1.1')
+#        filename = 'xml11.xml'
+#        self._runXMLTestCase(path, testcase, filename)
+#    
+#    def test_EduniErrata4e(self):
+#        path = self.test_path
+#        testcase = os.path.join('eduni', 'errata-4e')
+#        filename = 'errata4e.xml'
+#        self._runXMLTestCase(path, testcase, filename)
     
     def _runXMLTestCase(self, path, testcase, filename):
         """Parse and evaluate a given test case."""
         testcase_file = os.path.join(path, testcase, filename)
         xml_doc = etree.parse(testcase_file) 
-        tests = xml_doc.xpath('/TESTCASES/TEST')
+        tests = xml_doc.xpath('/TESTCASES/TEST') or []
+        subtests = xml_doc.xpath('/TESTCASES/TESTCASES/TEST') or []
+        tests.extend(subtests)
         for test in tests:
             # skip not standalone documents
             if test.get('ENTITIES') not in ['none', 'parameter']:
@@ -75,63 +80,14 @@ class XMLConformanceTestCase(SeisHubEnvironmentTestCase):
             self._runXMLTest(path, testcase, filename, props)
     
     def _runXMLTest(self, path, testcase, filename, props):
-        test_file = os.path.join(path, testcase, filename)
-        test_id = os.path.join(testcase, filename)
-        
-        data = file(test_file, 'r').read()
-        
-        
-        encoding = detectXMLEncoding(data)
-        if not encoding:
-            encoding = 'utf-8'
-        
-        try:
-            doc = minidom.parseString(data)
-        except Exception, e:
-            if props['type']!='valid':
-                return
-            print test_file, e
-        
-        
-#        #check if well formed and valid
-#        print encoding
-#        parser = etree.XMLParser(encoding=encoding)
-#        try:
-#            etree.parse(test_file, parser)
-#            if props['type']=='valid':
-#                return
-#            print test_file, props['type']
-#        except Exception, e:
-#            #if props['type']!='valid':
-#            #    return
-#            print test_file, props['type'], e
-#        #    print 'INVALID:', test_id, '-', e
-#        #    return
-        
-        #test if still invalid or error doc exists at this point
-        #if props['type']!='valid':
-            #print 'VALID:', test_id, '-',
-            #print 'document should not be marked valid:', props['type']
-        #    return
-        
-        # try to add resources
-        #try:
-        #    res = self.env.catalog.addResource('test', 'xml', toUnicode(data))
-        #    if props['type']!='valid':
-        #        print test_file, props['type']
-        #except Exception, e:
-        #    #if props['type']!='valid':
-        #    #    return
-        #    #print 'ADD RESOURCE:', test_id, '-', e, props['type']
-        #    return
-        
-        
-        data = file(test_file, 'r').read()
-        try:
-            _ = self.env.catalog.addResource('test', 'xml', data)
-        except Exception, e:
-            print 'ADD RESOURCE:', test_id, '-', e
+        # skip invalid or not well-formed files
+        if props['type'] not in ['valid', 'invalid']:
             return
+        test_file = os.path.join(path, testcase, filename)
+        data = file(test_file, 'rb').read()
+        # XXX: raise invalid
+        res = self.env.catalog.addResource('test', 'xml', data)
+        self.assertTrue(isinstance(res.document.data, unicode))
 
 
 def suite():
