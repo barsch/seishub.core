@@ -2,9 +2,9 @@
 
 import re
 
-def toUnicode(data):
+def toUnicode(data, remove_decl = False):
     """Convert XML string to unicode by detecting the encoding."""
-    encoding = detectXMLEncoding(data)
+    encoding = detectXMLEncoding(*parseXMLDeclaration(data, remove_decl))
     if encoding:
         data = unicode(data, encoding)
     else:
@@ -12,7 +12,42 @@ def toUnicode(data):
     return data
 
 
-def detectXMLEncoding(data):
+def parseXMLDeclaration(data, remove_decl = False):
+    """Parse XML declaration and return (data, encoding). 
+    
+    If remove is True, data without the XML declaration is returned. 
+    If no declaration can be found, (None, None) is returned.
+    """
+    
+    ## set up regular expression
+    xmlDeclPattern = r"""
+    ^<\?xml             # w/o BOM, xmldecl starts with <?xml at the first byte
+    .+?                 # some chars (version info), matched minimal
+    encoding=           # encoding attribute begins
+    ["']                # attribute start delimiter
+    (?P<encstr>         # what's matched in the brackets will be named encstr
+     [^"']+              # every character not delimiter (not overly exact!)
+    )                   # closes the brackets pair for the named group
+    ["']                # attribute end delimiter
+    .*?                 # some chars optionally (standalone decl or whitespace)
+    \?>                 # xmldecl end
+    """
+    
+    xmlDeclRE = re.compile(xmlDeclPattern, re.VERBOSE)
+    
+    ## search and extract encoding string
+    match = xmlDeclRE.search(data)
+    if match :
+        enc = match.group("encstr")
+    else:
+        enc = None
+    
+    if remove_decl:
+        data = xmlDeclRE.sub('', data)
+    
+    return data, enc
+
+def detectXMLEncoding(data, enc_string):
     """Attempts to detect the character encoding of the given XML string.
     
     The return value can be:
@@ -64,29 +99,5 @@ def detectXMLEncoding(data):
     ##  now that BOM detection has failed we assume one byte character
     ##  encoding behaving ASCII - of course one could think of nice
     ##  algorithms further investigating on that matter, but I won't for now.
-    
-    
-    ### search xml declaration for encoding attribute
-    
-    ## set up regular expression
-    xmlDeclPattern = r"""
-    ^<\?xml             # w/o BOM, xmldecl starts with <?xml at the first byte
-    .+?                 # some chars (version info), matched minimal
-    encoding=           # encoding attribute begins
-    ["']                # attribute start delimiter
-    (?P<encstr>         # what's matched in the brackets will be named encstr
-     [^"']+              # every character not delimiter (not overly exact!)
-    )                   # closes the brackets pair for the named group
-    ["']                # attribute end delimiter
-    .*?                 # some chars optionally (standalone decl or whitespace)
-    \?>                 # xmldecl end
-    """
-    
-    xmlDeclRE = re.compile(xmlDeclPattern, re.VERBOSE)
-    
-    ## search and extract encoding string
-    match = xmlDeclRE.search(data)
-    if match :
-        return match.group("encstr")
-    else :
-        return None
+
+    return enc_string

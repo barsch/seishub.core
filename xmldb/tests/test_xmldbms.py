@@ -8,7 +8,7 @@ from seishub.db.util import DbAttributeProxy
 from seishub.xmldb.errors import AddResourceError, XmlResourceError,\
                                  GetResourceError, ResourceDeletedError
 from seishub.xmldb.xmldbms import XmlDbManager
-from seishub.xmldb.resource import XmlDocument, Resource
+from seishub.xmldb.resource import XmlDocument, Resource, newXMLDocument
 
 
 TEST_XML="""<?xml version="1.0"?>
@@ -22,7 +22,7 @@ TEST_XML_MOD="""<?xml version="1.0"?>
 <newblah>newblah</newblah>
 </testml>
 """
-TEST_BAD_XML="""<?xml version="1.0"?>
+TEST_BAD_XML = u"""<?xml version="1.0"?>
 <testml>
 <blah1 id="3"></blah1><blahblah1>blahblahblah<foo></blahblah1></foo></blah1>
 </testml>
@@ -30,7 +30,7 @@ TEST_BAD_XML="""<?xml version="1.0"?>
 
 class XmlDocumentTest(SeisHubEnvironmentTestCase):
     def testXml_data(self):
-        test_res = XmlDocument(TEST_XML)
+        test_res = newXMLDocument(TEST_XML)
         xml_data = test_res.getData()
         self.assertEquals(xml_data, TEST_XML)
         test_res.data = TEST_BAD_XML
@@ -91,12 +91,13 @@ class XmlDbManagerTest(SeisHubEnvironmentTestCase):
         empty = Resource(document = XmlDocument())
         self.assertRaises(AddResourceError, self.xmldbm.addResource, empty)
         testres = Resource(self.test_package, self.test_resourcetype, 
-                           document = XmlDocument(self.test_data, uid = 1000))
+                           document = newXMLDocument(self.test_data, 
+                                                     uid = 1000))
         otherpackage = self.env.registry.db_registerPackage("otherpackage")
         othertype = self.env.registry.db_registerResourceType("otherpackage", 
                                                               "testml")
         testres2 = Resource(otherpackage, othertype,
-                            document = XmlDocument(self.test_data))
+                            document = newXMLDocument(self.test_data))
         self.xmldbm.addResource(testres)
         self.xmldbm.addResource(testres2)
         result = self.xmldbm.getResource(testres.package, 
@@ -118,7 +119,7 @@ class XmlDbManagerTest(SeisHubEnvironmentTestCase):
         self.assertEquals(result.resourcetype.version_control, False)
         # modify resource
         modres = Resource(result.package, result.resourcetype, result.id,
-                          document = XmlDocument(self.test_data_mod))
+                          document = newXMLDocument(self.test_data_mod))
         self.xmldbm.modifyResource(modres)
         result = self.xmldbm.getResource(testres.package, 
                                          testres.resourcetype, 
@@ -152,7 +153,7 @@ class XmlDbManagerTest(SeisHubEnvironmentTestCase):
         self.assertEquals(result.resourcetype.version_control, False)
         # try to add a resource with same id
         testres_v = Resource(self.test_package, self.test_resourcetype, 
-                                 document = XmlDocument(self.test_data),
+                                 document = newXMLDocument(self.test_data),
                                  id = result.id)
         self.assertRaises(AddResourceError, self.xmldbm.addResource, 
                           testres_v)
@@ -167,7 +168,7 @@ class XmlDbManagerTest(SeisHubEnvironmentTestCase):
         
     def testVersionControlledResource(self):
         testres = Resource(self.test_package, self.vc_resourcetype, 
-                           document = XmlDocument(self.test_data))
+                           document = newXMLDocument(self.test_data))
         self.xmldbm.addResource(testres)
         result = self.xmldbm.getResource(testres.package, 
                                          testres.resourcetype, 
@@ -181,7 +182,7 @@ class XmlDbManagerTest(SeisHubEnvironmentTestCase):
         self.assertEquals(result.revision, 1)
         # modify resource /  a new resource with same id
         testres_v2 = Resource(self.test_package, self.vc_resourcetype, 
-                              document = XmlDocument(self.test_data), 
+                              document = newXMLDocument(self.test_data), 
                               id = result.id)
         self.xmldbm.modifyResource(testres_v2)
         # get latest revision

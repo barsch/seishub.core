@@ -7,7 +7,7 @@ from seishub.db.util import DbStorage, DbError
 from seishub.xmldb.interfaces import IResourceStorage
 from seishub.xmldb.errors import AddResourceError, GetResourceError, \
                                  DeleteResourceError, ResourceDeletedError
-from seishub.xmldb.resource import XmlDocument, Resource, DocumentMeta
+from seishub.xmldb.resource import XmlDocument, Resource
 
 class XmlDbManager(DbStorage):
     """XmlDocument layer, connects Resources to relational db storage"""

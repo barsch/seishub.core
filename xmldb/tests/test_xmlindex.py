@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
 
 import unittest
-from zope.interface.exceptions import DoesNotImplement
 
 from seishub.test import SeisHubEnvironmentTestCase
 from seishub.core import SeisHubError
-from seishub.xmldb.resource import XmlDocument, Resource
-from seishub.xmldb.index import XmlIndex, TEXT_INDEX
+from seishub.xmldb.resource import XmlDocument, Resource, newXMLDocument
+from seishub.xmldb.index import XmlIndex
 
 
 RAW_XML1="""<station rel_uri="bern">
@@ -47,7 +46,7 @@ class XmlIndexTest(SeisHubEnvironmentTestCase):
         
         empty_resource = Resource(document = XmlDocument())
         test_resource = Resource(self.pkg1,self.rt1,
-                                 document = XmlDocument(RAW_XML1))
+                                 document = newXMLDocument(RAW_XML1))
         
         class Foo(object):
             pass

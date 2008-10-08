@@ -8,7 +8,7 @@ from seishub.core import Component, implements
 from seishub.packages.builtins import IResourceType, IPackage
 from seishub.packages.installer import registerStylesheet, registerAlias
 from seishub.packages.interfaces import IGETMapper, IPUTMapper
-from seishub.xmldb.resource import XmlDocument, Resource
+from seishub.xmldb.resource import Resource, newXMLDocument
 
 
 TEST_SCHEMA="""<?xml version="1.0"?>
@@ -274,7 +274,7 @@ class PackageRegistryTest(SeisHubEnvironmentTestCase):
         self.assertEqual(stylesheet[0].package.package_id, 'testpackage0')
         self.assertEqual(stylesheet[0].resourcetype.resourcetype_id, 'weapon')
         self.assertEqual(stylesheet[0].type, 'xhtml')
-        res_list = Resource(document = XmlDocument(TEST_RESLIST))
+        res_list = Resource(document = newXMLDocument(TEST_RESLIST))
         self.assertEquals(stylesheet[0].transform(res_list), 
                           '{"mapping":["/seishub/schema/browser"],"resource"'+\
                           ':["/seishub/schema/3","/seishub/schema/4"],}')

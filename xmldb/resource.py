@@ -5,7 +5,7 @@ from zope.interface import implements
 from seishub.db.util import Serializable, Relation, db_property, LazyAttribute
 from seishub.util.xmlwrapper import IXmlDoc, XmlTreeDoc
 from seishub.util.text import validate_id
-from seishub.util.xml import toUnicode 
+from seishub.util.xml import toUnicode, parseXMLDeclaration
 from seishub.util.text import hash
 from seishub.packages.package import PackageWrapper, ResourceTypeWrapper
 from seishub.xmldb.defaults import resource_tab, data_tab, data_meta_tab
@@ -93,30 +93,22 @@ class XmlDocument(Serializable):
         Serializable.__init__(self)
     
     def setData(self, data):
-        # parse and validate xml_data
-        # decode raw data to utf-8 unicode string
+        """set data, convert to unicode and remove XML declaration"""
         if not data or data == "":
             self._data = None
             return
-        # sometimes DB delivers a buffer 
-        #if isinstance(data, buffer):
-        #    data = str(data)
         if not isinstance(data, unicode):
-            data = toUnicode(data)
-            
+            raise TypeError("Data has to be unicode!")
+        # encode "utf-8" to determine hash and size
         raw_data = data.encode("utf-8")
         self._data = data
         self.meta._size = len(raw_data)
         self.meta._hash = hash(raw_data)
-#        try:
-#            self._xml_doc = self._validateXml_data(self._data)
-#        except Exception, e:
-#            raise XmlResourceError(e)
     
     def getData(self):
         """Returns data as unicode object."""
         data = self._data
-        assert isinstance(data, unicode)
+        assert not data or isinstance(data, unicode)
         return data
     
     data = db_property(getData, setData, 'Raw xml data as a string', 
@@ -279,3 +271,22 @@ class Resource(Serializable, PackageSpecific):
         self._name = validate_id(data)        
         
     name = property(getName, setName, "Alphanumeric name (optional)")
+
+
+def _prepare_xml_data(data):
+    """Prepare xml data for use with the database"""
+    # convert data to unicode and remove xml declaration
+    if isinstance(data, unicode):
+        data, _ = parseXMLDeclaration(data, remove_decl = True)
+    else:
+        data = toUnicode(data, remove_decl = True)
+    return data
+
+def newXMLDocument(data, id = None, uid = None):
+    """Return a new XmlDocument. 
+    Data will be converted to unicode and a possible XML declaration will be 
+    removed. 
+    Use this method whenever you wish to create a XmlDocument manually!
+    """
+    data = _prepare_xml_data(data)
+    return XmlDocument(data, id, uid)

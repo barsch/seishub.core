@@ -11,7 +11,7 @@ from seishub.xmldb.xmlindexcatalog import XmlIndexCatalog
 from seishub.xmldb.xmlindexcatalog import XmlIndexCatalogError
 from seishub.xmldb.xmldbms import XmlDbManager
 from seishub.xmldb.index import XmlIndex
-from seishub.xmldb.resource import XmlDocument, Resource
+from seishub.xmldb.resource import Resource, newXMLDocument
 from seishub.xmldb.defaults import index_def_tab, DEFAULT_PREFIX, \
                                    INDEX_DEF_TABLE
 from seishub.xmldb.xpath import XPathQuery
@@ -235,7 +235,7 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         
         # register a test resource:
         test_res = Resource(self.pkg1,self.rt3, 
-                            document = XmlDocument(RAW_XML1))
+                            document = newXMLDocument(RAW_XML1))
         dbmgr.addResource(test_res)
 
         # register a test index:
@@ -275,7 +275,7 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
             print "Error registering index."
         
         test_res = Resource(self.pkg1, self.rt3, 
-                            document = XmlDocument(RAW_XML1))
+                            document = newXMLDocument(RAW_XML1))
         try:
             dbmgr.addResource(test_res)
         except:
