@@ -39,6 +39,7 @@ class Processor:
         # response code and header for a request
         self.response_code = http.OK
         self.response_header = {}
+        self.received_headers = {}
         # set content
         self.content = StringIO()
         self.data = StringIO()
@@ -306,34 +307,42 @@ class Processor:
         return ''
     
     def _processMOVE(self):
-        """Processes a resource rename request.
+        """Processes a resource move/rename request.
         
         @see: http://msdn.microsoft.com/en-us/library/aa142926(EXCHG.65).aspx
         """
         # test if the request was called in a resource type directory 
         if len(self.postpath) != 3:
             raise ProcessorError(http.FORBIDDEN, 
-                                 "Only resources may be renamed.")
+                                 "Only resources may be moved or renamed.")
         # seishub directory is not directly changeable
         if self.postpath[0]=='seishub':
-            raise ProcessorError(http.FORBIDDEN, 
-                                 "SeisHub resources may not be renamed " + \
-                                 "directly.")
-        # only resource types are accepted
+            raise ProcessorError(http.FORBIDDEN, "SeisHub resources may not "
+                                 "be renamed directly.")
+        # test if resource types at all
         if not self.env.registry.isResourceTypeId(self.postpath[0], 
                                                   self.postpath[1]):
-            raise ProcessorError(http.FORBIDDEN,
-                                 "Only resources may be renamed.")
-        # check if destination is set
+            raise ProcessorError(http.FORBIDDEN, 
+                                 "Only resources may be moved or renamed.")
+        # test if destination is set
         destination = self.received_headers.get('Destination', False) 
         if not destination:
-            raise ProcessorError(http.INTERNAL_SERVER_ERROR,
+            raise ProcessorError(http.BAD_REQUEST,
                                  "Expected a destination header.")
-        # destination must be an absolute path
         if not destination.startswith(self.env.getRestUrl()):
-            raise ProcessorError(http.INTERNAL_SERVER_ERROR, "Destination " + \
-                                 "header must be an absolute path.")
+            if destination.startswith('http'):
+                raise ProcessorError(http.BAD_GATEWAY, "Destination URI is "
+                                     "located on a different server.")
+            else:
+                raise ProcessorError(http.BAD_REQUEST,
+                                     "Expected a complete destination path.")
+        # strip host
         destination = destination[len(self.env.getRestUrl()):]
+        # source uri and destination uri must not be the same value
+        if destination == self.path:
+            raise ProcessorError(http.FORBIDDEN, "Source uri and destination "
+                                 "uri must not be the same value.")
+        # split and test destination path
         destination_part = destination.split('/')
         if len(destination_part)!=4 or \
            destination_part[1]!=self.postpath[0] or \
@@ -343,6 +352,7 @@ class Processor:
         self._moveResource(self.postpath[0],
                            self.postpath[1],
                            self.postpath[2], destination_part[3])
+        # on successful creation
         self.response_code = http.CREATED
         return ''
     
@@ -613,7 +623,7 @@ class Processor:
             raise ProcessorError(http.INTERNAL_SERVER_ERROR, e)
     
     def _moveResource(self, package_id, resourcetype_id, oldname, newname):
-        """Deletes a resource."""
+        """Moves or renames a resource."""
         try:
             self.env.catalog.moveResource(package_id,
                                           resourcetype_id,
