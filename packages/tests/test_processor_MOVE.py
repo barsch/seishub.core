@@ -27,7 +27,7 @@ class AResourceType(Component):
     """A non version controlled test resource type."""
     implements(IResourceType, IPackage)
     
-    package_id = 'test'
+    package_id = 'move-test'
     resourcetype_id = 'notvc'
     version_control = False
 
@@ -36,7 +36,7 @@ class AVersionControlledResourceType(Component):
     """A version controlled test resource type."""
     implements(IResourceType, IPackage)
     
-    package_id = 'test'
+    package_id = 'move-test'
     resourcetype_id = 'vc'
     version_control = True
 
@@ -57,7 +57,7 @@ class ProcessorMOVETest(SeisHubEnvironmentTestCase):
         """WebDAV HTTP MOVE request must submit a Destination header."""
         proc = Processor(self.env)
         try:
-            proc.run(MOVE, '/test/notvc/test.xml')
+            proc.run(MOVE, '/move-test/notvc/test.xml')
             self.fail("Expected ProcessorError")
         except ProcessorError, e:
             self.assertEqual(e.code, http.BAD_REQUEST)
@@ -66,7 +66,7 @@ class ProcessorMOVETest(SeisHubEnvironmentTestCase):
         """Destination header must be the complete path to new destination."""
         proc = Processor(self.env)
         try:
-            proc.run(MOVE, '/test/notvc/test.xml', 
+            proc.run(MOVE, '/move-test/notvc/test.xml', 
                      received_headers = {'Destination': '/test/notvc/muh.xml'})
             self.fail("Expected ProcessorError")
         except ProcessorError, e:
@@ -75,9 +75,10 @@ class ProcessorMOVETest(SeisHubEnvironmentTestCase):
     def test_moveWithOversizedDestinationPath(self):
         """Destination path is restricted by MAX_URI_LENGTH."""
         proc = Processor(self.env)
-        uri = self.env.getRestUrl() + '/test/notvc/' + 'a'*(MAX_URI_LENGTH+1)
+        uri = self.env.getRestUrl() + '/move-test/notvc/' + \
+              'a' * (MAX_URI_LENGTH + 1)
         try:
-            proc.run(MOVE, '/test/notvc/test.xml', 
+            proc.run(MOVE, '/move-test/notvc/test.xml', 
                      received_headers = {'Destination': uri})
             self.fail("Expected ProcessorError")
         except ProcessorError, e:
@@ -87,9 +88,9 @@ class ProcessorMOVETest(SeisHubEnvironmentTestCase):
         """SeisHub allows moving resources only in the same directory."""
         proc = Processor(self.env)
         # try different resource type
-        uri = self.env.getRestUrl() + '/test/vc/test2.xml'
+        uri = self.env.getRestUrl() + '/move-test/vc/test2.xml'
         try:
-            proc.run(MOVE, '/test/notvc/test.xml', 
+            proc.run(MOVE, '/move-test/notvc/test.xml', 
                      received_headers = {'Destination': uri})
             self.fail("Expected ProcessorError")
         except ProcessorError, e:
@@ -97,7 +98,7 @@ class ProcessorMOVETest(SeisHubEnvironmentTestCase):
         # try non existing resource type
         uri = self.env.getRestUrl() + '/muh/kuh/test2.xml'
         try:
-            proc.run(MOVE, '/test/notvc/test.xml', 
+            proc.run(MOVE, '/move-test/notvc/test.xml', 
                      received_headers = {'Destination': uri})
             self.fail("Expected ProcessorError")
         except ProcessorError, e:
@@ -107,17 +108,17 @@ class ProcessorMOVETest(SeisHubEnvironmentTestCase):
         """SeisHub expects as destination a full filename."""
         proc = Processor(self.env)
         # directory only with trailing slash
-        uri = self.env.getRestUrl() + '/test/vc/'
+        uri = self.env.getRestUrl() + '/move-test/vc/'
         try:
-            proc.run(MOVE, '/test/notvc/test.xml', 
+            proc.run(MOVE, '/move-test/notvc/test.xml', 
                      received_headers = {'Destination': uri})
             self.fail("Expected ProcessorError")
         except ProcessorError, e:
             self.assertEqual(e.code, http.FORBIDDEN)
         # without trailing slash
-        uri = self.env.getRestUrl() + '/test/vc'
+        uri = self.env.getRestUrl() + '/move-test/vc'
         try:
-            proc.run(MOVE, '/test/notvc/test.xml', 
+            proc.run(MOVE, '/move-test/notvc/test.xml', 
                      received_headers = {'Destination': uri})
             self.fail("Expected ProcessorError")
         except ProcessorError, e:
@@ -129,10 +130,10 @@ class ProcessorMOVETest(SeisHubEnvironmentTestCase):
         """
         proc = Processor(self.env)
         # create a default document
-        proc.run(PUT, '/test/notvc/test.xml', StringIO(XML_DOC))
+        proc.run(PUT, '/move-test/notvc/test.xml', StringIO(XML_DOC))
         # move
-        uri = self.env.getRestUrl() + '/test/notvc/new.xml'
-        data = proc.run(MOVE, '/test/notvc/test.xml', 
+        uri = self.env.getRestUrl() + '/move-test/notvc/new.xml'
+        data = proc.run(MOVE, '/move-test/notvc/test.xml', 
                         received_headers = {'Destination': uri})
         # test if right response code
         self.assertFalse(data)
@@ -145,26 +146,26 @@ class ProcessorMOVETest(SeisHubEnvironmentTestCase):
         self.assertEquals(location, uri)
         # get original resource
         try:
-            proc.run(GET, '/test/notvc/test.xml')
+            proc.run(GET, '/move-test/notvc/test.xml')
             self.fail("Expected ProcessorError")
         except ProcessorError, e:
             self.assertEqual(e.code, http.NOT_FOUND)
         # get new resource
-        proc.run(GET, '/test/notvc/new.xml')
+        proc.run(GET, '/move-test/notvc/new.xml')
         # revert move
-        uri = self.env.getRestUrl() + '/test/notvc/test.xml'
-        proc.run(MOVE, '/test/notvc/new.xml', 
+        uri = self.env.getRestUrl() + '/move-test/notvc/test.xml'
+        proc.run(MOVE, '/move-test/notvc/new.xml', 
                  received_headers = {'Destination': uri})
         # get original resource
-        proc.run(GET, '/test/notvc/test.xml')
+        proc.run(GET, '/move-test/notvc/test.xml')
         # get new resource 
         try:
-            proc.run(GET, '/test/notvc/new.xml')
+            proc.run(GET, '/move-test/notvc/new.xml')
             self.fail("Expected ProcessorError")
         except ProcessorError, e:
             self.assertEqual(e.code, http.NOT_FOUND)
         # remove default document
-        proc.run(DELETE, '/test/notvc/test.xml')
+        proc.run(DELETE, '/move-test/notvc/test.xml')
         
     
     def test_moveRevision(self):
@@ -178,9 +179,9 @@ class ProcessorMOVETest(SeisHubEnvironmentTestCase):
     def test_moveToSameURI(self):
         """The source URI and the destination URI must not be the same."""
         proc = Processor(self.env)
-        uri = self.env.getRestUrl() + '/test/notvc/test.xml'
+        uri = self.env.getRestUrl() + '/move-test/notvc/test.xml'
         try:
-            proc.run(MOVE, '/test/notvc/test.xml', 
+            proc.run(MOVE, '/move-test/notvc/test.xml', 
                      received_headers = {'Destination': uri})
             self.fail("Expected ProcessorError")
         except ProcessorError, e:
@@ -193,52 +194,52 @@ class ProcessorMOVETest(SeisHubEnvironmentTestCase):
         proc = Processor(self.env)
         # XXX: not working yet - no exception raised from catalog!
         # starting tilde (~)
-        uri = self.env.getRestUrl() + '/test/notvc/~test'
+        uri = self.env.getRestUrl() + '/move-test/notvc/~test'
         try:
-            proc.run(MOVE, '/test/notvc/test.xml', 
+            proc.run(MOVE, '/move-test/notvc/test.xml', 
                      received_headers = {'Destination': uri})
             self.fail("Expected ProcessorError")
         except ProcessorError, e:
             self.assertEqual(e.code, http.CONFLICT)
         # starting dot (.)
-        uri = self.env.getRestUrl() + '/test/notvc/.test'
+        uri = self.env.getRestUrl() + '/move-test/notvc/.test'
         try:
-            proc.run(MOVE, '/test/notvc/test.xml', 
+            proc.run(MOVE, '/move-test/notvc/test.xml', 
                      received_headers = {'Destination': uri})
             self.fail("Expected ProcessorError")
         except ProcessorError, e:
             self.assertEqual(e.code, http.CONFLICT)
         # starting at sign (@)
-        uri = self.env.getRestUrl() + '/test/notvc/@test'
+        uri = self.env.getRestUrl() + '/move-test/notvc/@test'
         try:
-            proc.run(MOVE, '/test/notvc/test.xml', 
+            proc.run(MOVE, '/move-test/notvc/test.xml', 
                      received_headers = {'Destination': uri})
             self.fail("Expected ProcessorError")
         except ProcessorError, e:
             self.assertEqual(e.code, http.CONFLICT)
         # starting underscore (_)
-        uri = self.env.getRestUrl() + '/test/notvc/_test'
+        uri = self.env.getRestUrl() + '/move-test/notvc/_test'
         try:
-            proc.run(MOVE, '/test/notvc/test.xml', 
+            proc.run(MOVE, '/move-test/notvc/test.xml', 
                      received_headers = {'Destination': uri})
             self.fail("Expected ProcessorError")
         except ProcessorError, e:
             self.assertEqual(e.code, http.CONFLICT)
         # starting minus (-)
-        uri = self.env.getRestUrl() + '/test/notvc/-test'
+        uri = self.env.getRestUrl() + '/move-test/notvc/-test'
         try:
-            proc.run(MOVE, '/test/notvc/test.xml', 
+            proc.run(MOVE, '/move-test/notvc/test.xml', 
                      received_headers = {'Destination': uri})
             self.fail("Expected ProcessorError")
         except ProcessorError, e:
             self.assertEqual(e.code, http.CONFLICT)
         # but this should go
-        uri = self.env.getRestUrl() + '/test/notvc/Aaz09_-.xml'
-        proc.run(MOVE, '/test/notvc/test.xml', 
+        uri = self.env.getRestUrl() + '/move-test/notvc/Aaz09_-.xml'
+        proc.run(MOVE, '/move-test/notvc/test.xml', 
                  received_headers = {'Destination': uri})
         # and revert again
-        uri = self.env.getRestUrl() + '/test/notvc/test.xml'
-        proc.run(MOVE, '/test/notvc/Aaz09_-.xml', 
+        uri = self.env.getRestUrl() + '/move-test/notvc/test.xml'
+        proc.run(MOVE, '/move-test/notvc/Aaz09_-.xml', 
                  received_headers = {'Destination': uri})
     
     def test_canNotCreateResource(self):
@@ -256,9 +257,9 @@ class ProcessorMOVETest(SeisHubEnvironmentTestCase):
     def test_moveToDifferentServer(self):
         """The destination URI is located on a different server."""
         proc = Processor(self.env)
-        uri = 'http://somewhere:8080/test/notvc/test.xml'
+        uri = 'http://somewhere:8080/move-test/notvc/test.xml'
         try:
-            proc.run(MOVE, '/test/notvc/test.xml', 
+            proc.run(MOVE, '/move-test/notvc/test.xml', 
                      received_headers = {'Destination': uri})
             self.fail("Expected ProcessorError")
         except ProcessorError, e:

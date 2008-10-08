@@ -192,7 +192,7 @@ class Processor:
 #        # XXX: test if it fits to a valid mapping
 #        if self.env.registry.mappers.get(self.path, self.method):
 #            return self._processMapping()
-#        # test if the request was called in a resource type directory 
+        # test if the request was called in a resource type directory
         if not len(self.postpath) in [2, 3]:
             raise ProcessorError(http.FORBIDDEN, 
                                  "Adding resources is not allowed here.")
@@ -316,16 +316,24 @@ class Processor:
             rt = self.env.registry.getResourceType(self.postpath[0], 
                                                    self.postpath[1])
             if not rt.version_control:
-                raise ProcessorError(http.FORBIDDEN)
-            # deleting resource
-            self._deleteResource(self.postpath[0],
-                                 self.postpath[1],
-                                 self.postpath[2],
-                                 self.postpath[3])
+                raise ProcessorError(http.FORBIDDEN, 
+                                     "Not a version controlled resource.")
+            revision = self.postpath[3]
         else:
-            self._deleteResource(self.postpath[0],
-                                 self.postpath[1],
-                                 self.postpath[2])
+            revision = None
+        # delete resource
+        try:
+            self.env.catalog.deleteResource(self.postpath[0],
+                                            self.postpath[1],
+                                            self.postpath[2],
+                                            revision)
+        # XXX: fetch all kind of exception types and return to clients
+        except GetResourceError, e:
+            raise ProcessorError(http.NOT_FOUND, e)
+        except Exception, e:
+            self.env.log.error(e)
+            raise ProcessorError(http.INTERNAL_SERVER_ERROR, e)
+        # resource deleted - set status code
         self.response_code = http.NO_CONTENT
         return ''
     
@@ -615,21 +623,6 @@ class Processor:
             # XXX: set utf-8 encoding header
             # return resource content
             return result.document.data.encode('utf-8')
-    
-    def _deleteResource(self, package_id, resourcetype_id, name, 
-                        revision=None):
-        """Deletes a resource."""
-        try:
-            self.env.catalog.deleteResource(package_id,
-                                            resourcetype_id,
-                                            name,
-                                            revision)
-        # XXX: fetch all kind of exception types and return to clients
-        except GetResourceError, e:
-            raise ProcessorError(http.NOT_FOUND, e)
-        except Exception, e:
-            self.env.log.error(e)
-            raise ProcessorError(http.INTERNAL_SERVER_ERROR, e)
     
     def renderResource(self, data):
         """Resource handler. Returns a content of this resource as string.
