@@ -10,6 +10,8 @@ from seishub.util.text import isInteger
 from seishub.util.path import splitPath
 from seishub.xmldb.errors import GetResourceError, ResourceDeletedError
 
+# @see: http://www.boutell.com/newfaq/misc/urllength.html
+MAX_URI_LENGTH = 1000
 
 PUT = 'PUT'
 GET = 'GET'
@@ -55,6 +57,9 @@ class Processor:
     
     def process(self):
         """Working through the process chain."""
+        # check for URI length
+        if len(self.path) >= MAX_URI_LENGTH:
+            raise ProcessorError(http.REQUEST_URI_TOO_LONG)
         # post process self.path
         self.postpath = splitPath(self.path)
         # check if correct method
@@ -72,6 +77,7 @@ class Processor:
             return self._processDELETE()
         elif self.method == MOVE:
             return self._processMOVE()
+        # if known method raise ProcessorError(http.NOT_IMPLEMENTED) 
         raise ProcessorError(http.NOT_ALLOWED)
     
     def _processGET(self):
@@ -164,6 +170,7 @@ class Processor:
         """Process a resource creation request.
         
         @see: http://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html#sec9.6
+        @see: http://thoughtpad.net/alan-dean/http-headers-status.gif
         
         "The PUT method requests that the enclosed entity be stored under the 
         supplied Request-URI. If the Request-URI refers to an already existing 
@@ -182,10 +189,10 @@ class Processor:
         Adding documents can be done directly on an existing resource type or 
         via user defined mapping.
         """
-        # test if it fits to a valid mapping
-        if self.env.registry.mappers.get(self.path, self.method):
-            return self._processMapping()
-        # test if the request was called in a resource type directory 
+#        # XXX: test if it fits to a valid mapping
+#        if self.env.registry.mappers.get(self.path, self.method):
+#            return self._processMapping()
+#        # test if the request was called in a resource type directory 
         if not len(self.postpath) in [2, 3]:
             raise ProcessorError(http.FORBIDDEN, 
                                  "Adding resources is not allowed here.")
@@ -200,14 +207,23 @@ class Processor:
             raise ProcessorError(http.FORBIDDEN,
                                  "Adding resources is not allowed here.")
         if len(self.postpath)==3:
-            res = self._addResource(self.postpath[0], self.postpath[1], 
-                                    self.postpath[2])
+            name = self.postpath[2]
         else:
-            res = self._addResource(self.postpath[0], self.postpath[1])
-        # create resource
-        
+            name = None
+            
+        # add a new resource
+        try:
+            res = self.env.catalog.addResource(self.postpath[0], 
+                                               self.postpath[1],
+                                               self.data, 
+                                               name=name)
+        # XXX: fetch all kind of exception types and return to clients
+        except Exception, e:
+            self.env.log.error(e)
+            raise ProcessorError(http.INTERNAL_SERVER_ERROR, e)
+        # resource created - set status code and location header
         self.response_code = http.CREATED
-        self.response_header['Location'] = str(res)
+        self.response_header['Location'] = self.env.getRestUrl() + str(res)
         return ''
     
     def _processPOST(self):
@@ -248,9 +264,16 @@ class Processor:
             raise ProcessorError(http.FORBIDDEN,
                                  "Modifying resources is not allowed here.")
         # modify resource
-        self._modifyResource(self.postpath[0],
-                             self.postpath[1],
-                             self.postpath[2])
+        try:
+            self.env.catalog.modifyResource(self.postpath[0],
+                                            self.postpath[1],
+                                            self.postpath[2],
+                                            self.data)
+        # XXX: fetch all kind of exception types and return to clients
+        except Exception, e:
+            self.env.log.error(e)
+            raise ProcessorError(http.INTERNAL_SERVER_ERROR, e)
+        # resource successfully modified - set status code
         self.response_code = http.NO_CONTENT
         return ''
     
@@ -333,9 +356,12 @@ class Processor:
             if destination.startswith('http'):
                 raise ProcessorError(http.BAD_GATEWAY, "Destination URI is "
                                      "located on a different server.")
-            else:
-                raise ProcessorError(http.BAD_REQUEST,
-                                     "Expected a complete destination path.")
+            raise ProcessorError(http.BAD_REQUEST,
+                                 "Expected a complete destination path.")
+        # test size of destination URI
+        if len(destination)>=MAX_URI_LENGTH:
+            raise ProcessorError(http.REQUEST_URI_TOO_LONG, 
+                                 "Destination URI is to long.")
         # strip host
         destination = destination[len(self.env.getRestUrl()):]
         # source uri and destination uri must not be the same value
@@ -347,13 +373,22 @@ class Processor:
         if len(destination_part)!=4 or \
            destination_part[1]!=self.postpath[0] or \
            destination_part[2]!=self.postpath[1]:
-            raise ProcessorError(http.FORBIDDEN, "Destination " + \
-                                 "%s is not allowed." % destination)
-        self._moveResource(self.postpath[0],
-                           self.postpath[1],
-                           self.postpath[2], destination_part[3])
-        # on successful creation
+            raise ProcessorError(http.FORBIDDEN,
+                                 "Destination %s not allowed." % destination)
+            
+        # moves or rename resource
+        try:
+            self.env.catalog.moveResource(self.postpath[0],
+                                          self.postpath[1],
+                                          self.postpath[2], 
+                                          destination_part[3])
+        # XXX: fetch all kind of exception types and return to clients
+        except Exception, e:
+            self.env.log.error(e)
+            raise ProcessorError(http.INTERNAL_SERVER_ERROR, e)
+        # on successful creation - set status code and location header
         self.response_code = http.CREATED
+        self.response_header['Location'] = self.env.getRestUrl() + destination
         return ''
     
     def _processRoot(self):
@@ -537,15 +572,13 @@ class Processor:
         aliases = self.env.registry.aliases.get(package_id, resourcetype_id,
                                                 alias_id)
         try:
-            res = self.env.catalog.query(aliases[0].getQuery())
+            resource_objs = self.env.catalog.query(aliases[0].getQuery())
         except Exception, e:
             self.env.log.error(e)
             raise ProcessorError(http.INTERNAL_SERVER_ERROR, e)
             return
         else:
-            resource_ids = [str(r) for r in res]
-            resource_ids.sort()
-            return self.renderResourceList(resource=resource_ids)
+            return self.renderResourceList(resource=resource_objs)
     
     def _processResourceProperty(self, package_id, resourcetype_id, 
                                  resource_id, version_id, property_id):
@@ -583,30 +616,6 @@ class Processor:
             # return resource content
             return result.document.data.encode('utf-8')
     
-    def _modifyResource(self, package_id, resourcetype_id, name):
-        """Modifies the content of an existing resource."""
-        try:
-            self.env.catalog.modifyResource(package_id,
-                                            resourcetype_id,
-                                            name,
-                                            self.data)
-        # XXX: fetch all kind of exception types and return to clients
-        except Exception, e:
-            self.env.log.error(e)
-            raise ProcessorError(http.INTERNAL_SERVER_ERROR, e)
-    
-    def _addResource(self, package_id, resourcetype_id, name=None):
-        """Adds a new resource."""
-        try:
-            res = self.env.catalog.addResource(package_id, resourcetype_id,
-                                               self.data, name=name)
-        # XXX: fetch all kind of exception types and return to clients
-        except Exception, e:
-            self.env.log.error(e)
-            raise ProcessorError(http.INTERNAL_SERVER_ERROR, e)
-        else:
-            return res
-    
     def _deleteResource(self, package_id, resourcetype_id, name, 
                         revision=None):
         """Deletes a resource."""
@@ -618,18 +627,6 @@ class Processor:
         # XXX: fetch all kind of exception types and return to clients
         except GetResourceError, e:
             raise ProcessorError(http.NOT_FOUND, e)
-        except Exception, e:
-            self.env.log.error(e)
-            raise ProcessorError(http.INTERNAL_SERVER_ERROR, e)
-    
-    def _moveResource(self, package_id, resourcetype_id, oldname, newname):
-        """Moves or renames a resource."""
-        try:
-            self.env.catalog.moveResource(package_id,
-                                          resourcetype_id,
-                                          oldname,
-                                          newname)
-        # XXX: fetch all kind of exception types and return to clients
         except Exception, e:
             self.env.log.error(e)
             raise ProcessorError(http.INTERNAL_SERVER_ERROR, e)

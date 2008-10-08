@@ -7,6 +7,7 @@ from twisted.web import http
 from seishub.test import SeisHubEnvironmentTestCase
 from seishub.packages.processor import Processor, ProcessorError
 from seishub.packages.processor import PUT, POST, DELETE, GET
+from seishub.packages.processor import MAX_URI_LENGTH
 from seishub.core import Component, implements
 from seishub.packages.builtins import IResourceType, IPackage
 from seishub.packages.interfaces import IGETMapper, IPUTMapper, \
@@ -110,6 +111,24 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
         self.env.disableComponent(TestMapper)
         self.env.disableComponent(TestMapper2)
     
+    def test_failes(self):
+        proc = Processor(self.env)
+        proc.run(PUT, '/test/vc/test.xml', StringIO(XML_DOC))
+        proc.run(POST, '/test/vc/test.xml', StringIO(XML_DOC))
+        proc.run(POST, '/test/vc/test.xml', StringIO(XML_DOC))
+        proc.run(PUT, '/test/notvc/test.xml', StringIO(XML_DOC))
+        proc.run(DELETE, '/test/vc/test.xml')
+        proc.run(DELETE, '/test/notvc/test.xml')
+    
+    def test_oversizedURI(self):
+        """Request URI ist restricted by MAX_URI_LENGTH."""
+        proc = Processor(self.env)
+        try:
+            proc.run(GET, 'a' * MAX_URI_LENGTH)
+            self.fail("Expected ProcessorError")
+        except ProcessorError, e:
+            self.assertEqual(e.code, http.REQUEST_URI_TOO_LONG)
+    
     def test_processRoot(self):
         proc = Processor(self.env)
         # test forbidden methods
@@ -210,7 +229,7 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
         response_header = proc.response_header
         self.assertTrue(response_header.has_key('Location'))
         location = response_header.get('Location')
-        self.assertTrue(location.startswith(proc.path))
+        self.assertTrue(location.startswith(self.env.getRestUrl() + proc.path))
         # fetch all resources via property .all
         data = proc.run(GET, '/test/notvc')
         # only resources should be there
@@ -218,6 +237,7 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
         self.assertTrue(isinstance(data.get('resource'),list))
         # extract all resource urls and test if location exist
         urls = [str(obj) for obj in data.get('resource')]
+        location = location[len(self.env.getRestUrl()):]
         self.assertTrue(location in urls)
         # fetch resource and compare it with original
         data = proc.run(GET, location)
@@ -255,8 +275,9 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
         response_header = proc.response_header
         self.assertTrue(response_header.has_key('Location'))
         location = response_header.get('Location')
-        self.assertTrue(location.startswith(proc.path))
+        self.assertTrue(location.startswith(self.env.getRestUrl() + proc.path))
         # GET resource
+        location = location[len(self.env.getRestUrl()):]
         data = proc.run(GET, location)
         self.assertEquals(data, XML_DOC)
         # overwrite this resource via POST request
@@ -286,8 +307,9 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
         response_header = proc.response_header
         self.assertTrue(response_header.has_key('Location'))
         location = response_header.get('Location')
-        self.assertTrue(location.startswith(proc.path))
+        self.assertTrue(location.startswith(self.env.getRestUrl() + proc.path))
         # overwrite this resource via POST request
+        location = location[len(self.env.getRestUrl()):]
         data = proc.run(POST, location, StringIO(XML_DOC2))
         # check response; data should be empty; we look into request
         self.assertFalse(data)
@@ -296,8 +318,9 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
         response_header = proc.response_header
         self.assertTrue(response_header.has_key('Location'))
         location = response_header.get('Location')
-        self.assertTrue(location.startswith(proc.path))
+        self.assertTrue(location.startswith(self.env.getRestUrl() + proc.path))
         # GET latest revision
+        location = location[len(self.env.getRestUrl()):]
         data = proc.run(GET, location)
         self.assertEquals(data, XML_DOC2)
         # GET revision #1
@@ -327,9 +350,10 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
         proc.run(PUT, '/test/vc', StringIO(XML_VC_DOC % 1000)) 
         # upload a test resources via PUT == version #1
         loc = proc.response_header.get('Location')
+        rel_loc = loc[len(self.env.getRestUrl()):]
         # modify resource a few times
         for i in range(2, 21):
-            data = proc.run(POST, loc, StringIO(XML_VC_DOC % i)) 
+            data = proc.run(POST, rel_loc, StringIO(XML_VC_DOC % i)) 
             # check response; data should be empty; we look into request
             self.assertFalse(data)
             self.assertEqual(proc.response_code, http.NO_CONTENT)
@@ -339,49 +363,49 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
             self.assertEqual(loc, response_header.get('Location'))
         # try to modify a revision
         try:
-            proc.run(POST, loc + '/4', StringIO(XML_VC_DOC % 4000))
+            proc.run(POST, rel_loc + '/4', StringIO(XML_VC_DOC % 4000))
         except Exception, e:
             assert isinstance(e, ProcessorError)
             self.assertEqual(e.code, http.FORBIDDEN)
         # check latest resource - should be #20
-        data = proc.run(GET, loc)
+        data = proc.run(GET, rel_loc)
         self.assertEqual(data, XML_VC_DOC % 20)
         # check oldest resource -> revision start with 1
-        data = proc.run(GET, loc + '/1')
+        data = proc.run(GET, rel_loc + '/1')
         self.assertEqual(data, XML_VC_DOC % 1000)
         # check all other revisions
         for i in range(2, 21):
-            data = proc.run(GET, loc + '/' + str(i))
+            data = proc.run(GET, rel_loc + '/' + str(i))
             self.assertEqual(data, XML_VC_DOC % i)
         # delete latest revision
-        proc.run(DELETE, loc + '/20')
+        proc.run(DELETE, rel_loc + '/20')
         # try to delete again
         try:
-            proc.run(DELETE, loc + '/20')
+            proc.run(DELETE, rel_loc + '/20')
         except Exception, e:
             assert isinstance(e, ProcessorError)
             self.assertEqual(e.code, http.NOT_FOUND)
         # check latest resource - should be revision #19
-        data = proc.run(GET, loc)
+        data = proc.run(GET, rel_loc)
         self.assertEqual(data, XML_VC_DOC % 19)
         # delete two revisions in between
-        proc.run(DELETE, loc + '/18')
-        proc.run(DELETE, loc + '/19')
+        proc.run(DELETE, rel_loc + '/18')
+        proc.run(DELETE, rel_loc + '/19')
         # check latest resource - should be revision #17
-        data = proc.run(GET, loc)
+        data = proc.run(GET, rel_loc)
         self.assertEqual(data, XML_VC_DOC % 17)
         # delete the whole resource
-        proc.run(DELETE, loc)
+        proc.run(DELETE, rel_loc)
         # try to fetch resource
         try:
-            proc.run(GET, loc)
+            proc.run(GET, rel_loc)
         except Exception, e:
             assert isinstance(e, ProcessorError)
             self.assertEqual(e.code, http.GONE)
         # upload again
         proc.run(PUT, '/test/vc', StringIO(XML_VC_DOC % 2000))
         # XXX: BUG
-        proc.run(GET, loc)
+        proc.run(GET, rel_loc)
         # import pdb;pdb.set_trace()
         # XXX: how to get all revisions
 
