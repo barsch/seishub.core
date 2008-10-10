@@ -181,7 +181,7 @@ class SFTPServiceProtocol:
         try:
             data = proc.run(GET, filename)
         except ProcessorError, e:
-            return
+            pass
         except Exception, e:
             raise filetransfer.SFTPError(filetransfer.FX_FAILURE, e.message)
         if isinstance(data, basestring):

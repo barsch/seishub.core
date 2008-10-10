@@ -96,7 +96,7 @@ class ProcessorMOVETest(SeisHubEnvironmentTestCase):
         except ProcessorError, e:
             self.assertEqual(e.code, http.FORBIDDEN)
     
-    def test_moveToNotExistingResourceType(self):
+    def test_moveToNonExistingResourceType(self):
         """SeisHub allows moving resources only to existing resource types."""
         proc = Processor(self.env)
         uri = self.env.getRestUrl() + '/muh/kuh/test2.xml'
@@ -248,7 +248,7 @@ class ProcessorMOVETest(SeisHubEnvironmentTestCase):
         proc.run(DELETE, '/move-test/vc/test2.xml')
     
     def test_moveToExistingResource(self):
-        """SeisHub does not allow to overwrite existing resources."""
+        """XXX: SeisHub does not allow to overwrite existing resources."""
         proc = Processor(self.env)
         # create resources
         proc.run(PUT, '/move-test/notvc/test1.xml', StringIO(XML_DOC))
@@ -260,10 +260,24 @@ class ProcessorMOVETest(SeisHubEnvironmentTestCase):
                      received_headers = {'Destination': uri})
             self.fail("Expected ProcessorError")
         except ProcessorError, e:
+            # XXX: BUG - see ticket #61 - processor should raise FORBIDDEN
             self.assertEqual(e.code, http.FORBIDDEN)
         # delete resources
         proc.run(DELETE, '/move-test/vc/test1.xml')
         proc.run(DELETE, '/move-test/vc/test2.xml')
+    
+    def test_moveBuiltinResource(self):
+        """SeisHub builtin resources can't be renamed or moved."""
+        proc = Processor(self.env)
+        # fetch a seishub stylesheet
+        data = proc.run(GET, '/seishub/stylesheet')
+        uri = str(data.get('resource')[0])
+        to_uri = self.env.getRestUrl() + '/seishub/stylesheet/test.xml' 
+        try:
+            proc.run(MOVE, uri, received_headers = {'Destination': to_uri})
+            self.fail("Expected ProcessorError")
+        except ProcessorError, e:
+            self.assertEqual(e.code, http.FORBIDDEN)
     
     def test_moveToSameURI(self):
         """The source URI and the destination URI must not be the same."""
@@ -277,13 +291,13 @@ class ProcessorMOVETest(SeisHubEnvironmentTestCase):
             self.assertEqual(e.code, http.FORBIDDEN)
     
     def test_moveToInvalidResourcename(self):
-        """Destination file name may not start with '~', '@', '.', '_' or '-'.
+        """XXX: Destination file name may not start with '~', '@', '.', '_' or '-'.
         
         SeisHub restricts the destination filename to distinct between 
         ~mappers, @aliases and .properties.
         """
         proc = Processor(self.env)
-        # XXX: not working yet - no exception raised from catalog!
+        # XXX: BUG see ticket #36 - no exception raised from catalog!
         # starting tilde (~)
         uri = self.env.getRestUrl() + '/move-test/notvc/~test'
         try:
@@ -333,19 +347,8 @@ class ProcessorMOVETest(SeisHubEnvironmentTestCase):
         proc.run(MOVE, '/move-test/notvc/Aaz09_-.xml', 
                  received_headers = {'Destination': uri})
     
-    def test_canNotCreateResource(self):
-        # 409 (Conflict)    A resource cannot be created at the destination URI
-        # until one or more intermediate collections are created.
-        pass
-    
-    def test_failingPrecondition(self):
-        # 412 (Precondition Failed)    Either the Overwrite header is "F" and
-        # the state of the destination resource is not null, or the method was
-        # used in a Depth: 0 transaction.
-        pass
-    
     def test_moveLockedResource(self):
-        # XXX: not implemented yet
+        # XXX: see ticket #38 - not implemented yet
         #423 (Locked)    The destination resource is locked.
         pass
     

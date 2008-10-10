@@ -11,6 +11,7 @@ from seishub.util.path import splitPath
 from seishub.util.xml import addXMLDeclaration 
 from seishub.xmldb.errors import GetResourceError, ResourceDeletedError
 
+
 # @see: http://www.boutell.com/newfaq/misc/urllength.html
 MAX_URI_LENGTH = 1000
 
@@ -20,8 +21,12 @@ POST = 'POST'
 DELETE = 'DELETE'
 MOVE = 'MOVE'
 
+ALLOWED_HTTP_METHODS = [GET, PUT, POST, DELETE, MOVE]
+NOT_IMPLEMENTED_HTTP_METHODS = ['TRACE', 'OPTIONS', 'COPY']
+
 
 class ProcessorError(SeisHubError):
+    """The processor error class."""
     
     def __init__(self, code, message=''):
         SeisHubError.__init__(self)
@@ -33,8 +38,9 @@ class ProcessorError(SeisHubError):
 
 
 class Processor:
-    """General class for processing a resource request used by services, like
-    REST and SFTP.
+    """General class for processing a resource request.
+    
+    This class is the layer underneath services like REST, SFTP and WebDAV.
     """
     
     def __init__(self, env):
@@ -48,6 +54,7 @@ class Processor:
         self.data = StringIO()
     
     def run(self, method, path='/', content=None, received_headers={}):
+        """A shortcut to call Processor.process with default arguments."""
         self.method = method
         self.path = path
         if content:
@@ -63,11 +70,14 @@ class Processor:
             raise ProcessorError(http.REQUEST_URI_TOO_LONG)
         # post process self.path
         self.postpath = splitPath(self.path)
-        # check if correct method
+        # postpath_startchar contains the first letter of each path part
+        self.postpath_startchar = [s[0] for s in self.postpath]
+        # we like upper case method names
         self.method = self.method.upper()
         # read content
         self.content.seek(0)
         self.data=self.content.read()
+        # check for method
         if self.method == GET:
             return self._processGET()
         elif self.method == POST:
@@ -78,7 +88,9 @@ class Processor:
             return self._processDELETE()
         elif self.method == MOVE:
             return self._processMOVE()
-        # if known method raise ProcessorError(http.NOT_IMPLEMENTED) 
+        # check for known HTTP methods
+        if self.method in NOT_IMPLEMENTED_HTTP_METHODS:
+            raise ProcessorError(http.NOT_IMPLEMENTED)
         raise ProcessorError(http.NOT_ALLOWED)
     
     def _processGET(self):
@@ -87,13 +99,13 @@ class Processor:
         if len(self.postpath)==0:
             return self._processRoot()
         # test if root property
-        if self.postpath[0].startswith('.'):
+        if self.postpath_startchar[0] == '.':
             return self._processRootProperty(self.postpath[0:])
-        # test if root mapping
-        if self.postpath[0].startswith('~'):
+        # filter out mappings
+        if '~' in self.postpath_startchar:
             return self._processMapping()
         
-        ### from here on we have a valid package_id
+        ### from here on we have a package_id
         package_id = self.postpath[0]
         # test if valid package at all
         if not self.env.registry.isPackageId(package_id):
@@ -102,16 +114,13 @@ class Processor:
         if len(self.postpath)==1:
             return self._processPackage(package_id)
         # test if package property
-        if self.postpath[1].startswith('.'):
+        if self.postpath_startchar[1] == '.':
             return self._processPackageProperty(package_id, self.postpath[1:])
         # test if package alias
-        if self.postpath[1].startswith('@'):
+        if self.postpath_startchar[1] == '@':
             return self._processAlias(package_id, None, self.postpath[1:])
-        # test if package mapping
-        if self.postpath[1].startswith('~'):
-            return self._processMapping()
         
-        ### from here on we can rely on a valid resourcetype_id
+        ### from here on we can rely on a resourcetype_id
         resourcetype_id = self.postpath[1]
         # test if valid resource type at all
         if not self.env.registry.isResourceTypeId(package_id, resourcetype_id):
@@ -120,46 +129,40 @@ class Processor:
         if len(self.postpath)==2:
             return self._processResourceType(package_id, resourcetype_id)
         # test if resource type property
-        if self.postpath[2].startswith('.'):
+        if self.postpath_startchar[2] == '.':
             return self._processResourceTypeProperty(package_id, 
                                                      resourcetype_id, 
                                                      self.postpath[2:])
         # test if resource type alias
-        if self.postpath[2].startswith('@'):
+        if self.postpath_startchar[2] == '@':
             return self._processAlias(package_id, resourcetype_id, 
                                       self.postpath[2:])
-        # test if resource type mapper
-        if self.postpath[2].startswith('~'):
-            return self._processMapping()
         
-        ### from here on we can rely on a valid resource_name
+        ### from here on we can rely on a resource_name
         resource_name = self.postpath[2]
         # test if only resource is requested
         if len(self.postpath)==3:
             return self._getResource(package_id, resourcetype_id, 
                                      resource_name)
         # test if resource property
-        if self.postpath[3].startswith('.'):
+        if self.postpath_startchar[3] == '.':
             return self._processResourceProperty(package_id, 
                                                  resourcetype_id,
                                                  resource_name, 
                                                  None,
                                                  self.postpath[4:])
-        # test if resource mapper
-        if self.postpath[3].startswith('~'):
-            return self._processMapping()
         
-        ### from here on we can rely on a valid version_id
+        ### from here on we can rely on a revision
         version_id = self.postpath[3]
         # test if a version controlled resource at all
         if not isInteger(version_id):
             raise ProcessorError(http.NOT_FOUND)
-        # test if only version controlled resource is requested
+        # test if revision is requested
         if len(self.postpath)==4:
             return self._getResource(package_id, resourcetype_id, 
                                      resource_name, version_id)
-        # test if version controlled resource property
-        if self.postpath[3].startswith('.'):
+        # test if revision property
+        if self.postpath_startchar[4] == '.':
             return self._processResourceProperty(package_id, 
                                                  resourcetype_id,
                                                  resource_name,
@@ -190,9 +193,9 @@ class Processor:
         Adding documents can be done directly on an existing resource type or 
         via user defined mapping.
         """
-#        # XXX: test if it fits to a valid mapping
-#        if self.env.registry.mappers.get(self.path, self.method):
-#            return self._processMapping()
+        # test if a valid mapping
+        if '~' in self.postpath_startchar:
+            return self._processMapping()
         # test if the request was called in a resource type directory
         if not len(self.postpath) in [2, 3]:
             raise ProcessorError(http.FORBIDDEN, 
@@ -218,7 +221,6 @@ class Processor:
                                                self.postpath[1],
                                                self.data, 
                                                name=name)
-        # XXX: fetch all kind of exception types and return to clients
         except Exception, e:
             self.env.log.error(e)
             raise ProcessorError(http.INTERNAL_SERVER_ERROR, e)
@@ -247,8 +249,8 @@ class Processor:
         Modifying a document always needs a valid path to a resource or uses a 
         user defined mapping.
         """
-        # test if it fits to a valid mapping
-        if self.env.registry.mappers.get(self.path, self.method):
+        # test if a valid mapping
+        if '~' in self.postpath_startchar:
             return self._processMapping()
         # test if the request was called in a resource type directory 
         if len(self.postpath)!=3:
@@ -270,7 +272,6 @@ class Processor:
                                             self.postpath[1],
                                             self.postpath[2],
                                             self.data)
-        # XXX: fetch all kind of exception types and return to clients
         except Exception, e:
             self.env.log.error(e)
             raise ProcessorError(http.INTERNAL_SERVER_ERROR, e)
@@ -294,41 +295,27 @@ class Processor:
         Deleting a document always needs a valid path to a resource or may use 
         a user defined mapping.
         """
-        # test if it fits to a valid mapping
-        if self.env.registry.mappers.get(self.path, self.method):
+        # test if a valid mapping
+        if '~' in self.postpath_startchar:
             return self._processMapping()
         # test if the request was called in a resource type directory 
-        if len(self.postpath) not in (3, 4):
+        if len(self.postpath)!=3:
             raise ProcessorError(http.FORBIDDEN, 
                                  "Only resources may be deleted.")
-        # seishub directory is not directly changeable
+        # resource in SeisHub directory are not directly deletable
         if self.postpath[0]=='seishub':
-            raise ProcessorError(http.FORBIDDEN, 
-                                 "SeisHub resources may not be deleted " + \
-                                 "directly.")
+            raise ProcessorError(http.FORBIDDEN, "SeisHub resources may not "
+                                 "be deleted directly.")
         # only resource types are accepted
         if not self.env.registry.isResourceTypeId(self.postpath[0], 
                                                   self.postpath[1]):
             raise ProcessorError(http.FORBIDDEN,
                                  "Only resources may be deleted.")
-        # unversioned or version controlled resource
-        if len(self.postpath) == 4:
-            # test if version controlled resource
-            rt = self.env.registry.getResourceType(self.postpath[0], 
-                                                   self.postpath[1])
-            if not rt.version_control:
-                raise ProcessorError(http.FORBIDDEN, 
-                                     "Not a version controlled resource.")
-            revision = self.postpath[3]
-        else:
-            revision = None
         # delete resource
         try:
             self.env.catalog.deleteResource(self.postpath[0],
                                             self.postpath[1],
-                                            self.postpath[2],
-                                            revision)
-        # XXX: fetch all kind of exception types and return to clients
+                                            self.postpath[2])
         except GetResourceError, e:
             raise ProcessorError(http.NOT_FOUND, e)
         except Exception, e:
@@ -350,7 +337,7 @@ class Processor:
         # seishub directory is not directly changeable
         if self.postpath[0]=='seishub':
             raise ProcessorError(http.FORBIDDEN, "SeisHub resources may not "
-                                 "be renamed directly.")
+                                 "be moved or renamed directly.")
         # test if resource types at all
         if not self.env.registry.isResourceTypeId(self.postpath[0], 
                                                   self.postpath[1]):
@@ -391,7 +378,8 @@ class Processor:
                                           self.postpath[1],
                                           self.postpath[2], 
                                           destination_part[3])
-        # XXX: fetch all kind of exception types and return to clients
+        # XXX: BUG - see ticket #61
+        # processor should raise FORBIDDEN if resource already exists
         except Exception, e:
             self.env.log.error(e)
             raise ProcessorError(http.INTERNAL_SERVER_ERROR, e)
@@ -401,7 +389,9 @@ class Processor:
         return ''
     
     def _processRoot(self):
-        """The root element can be only accessed via the GET method and shows 
+        """Process the root element of SeisHub.
+        
+        The root element can be only accessed via the GET method and shows 
         only a list of all available packages, root mappings and properties.
         """
         package_urls = self.env.registry.getPackageURLs()
@@ -426,9 +416,11 @@ class Processor:
         raise NotImplementedError
     
     def _processPackage(self, package_id):
-        """Request on a package root. Now we search for all allowed sub types 
-        of this package (e.g., resource types, package aliases and mappings) 
-        and return a resource list.
+        """Request on a package root. 
+        
+        Now we search for all allowed sub types of this package (e.g., 
+        resource types, package aliases and mappings) and return a resource 
+        list in form of a dictionary.
         """
         # fetch resource types
         resourcetype_urls = self.env.registry.getResourceTypeURLs(package_id)
@@ -460,8 +452,10 @@ class Processor:
         raise NotImplementedError
     
     def _processResourceType(self, package_id, resourcetype_id):
-        """Request on a resource type root of a package. Now we search for 
-        resource type aliases, indexes or package mappings defined by the user.
+        """Request on a resource type root of a package. 
+        
+        Now we search for resource type aliases, indexes or package mappings 
+        defined by the user.
         """
         # fetch resource type aliases
         aliases = self.env.registry.aliases.get(package_id, resourcetype_id)
@@ -486,7 +480,6 @@ class Processor:
         # fetching resource objects
         resource_objs = self.env.catalog.getResourceList(package_id, 
                                                          resourcetype_id)
-        
         return self.renderResourceList(property=property_urls,
                                        alias=alias_urls,
                                        mapping=mapping_urls,
@@ -499,20 +492,8 @@ class Processor:
         # XXX: missing yet
         raise ProcessorError(http.NOT_IMPLEMENTED)
     
-    def _checkForMappingSubPath(self):
-        """This method checks if we can find at least some sub paths of 
-        registered mappings and returns it as resource list.
-        """
-        urls = self.env.registry.mappers.getMappings(method=self.method,
-                                                     base=self.path)
-        if not urls:
-            raise ProcessorError(http.NOT_FOUND)
-        pos = len(self.postpath)+2
-        mapping_ids = ['/'.join(url.split('/')[0:pos]) for url in urls]
-        return self.renderResourceList(mapping=mapping_ids)
-    
     def _processMapping(self):
-        """Here we processing a registered mapping. 
+        """XXX: Here we processing a registered mapping. 
         
         The result a HTTP GET request is either a basestring containing a XML
         resource document or a resource list consisting of further mappings and
@@ -523,51 +504,50 @@ class Processor:
         raising a ProcessError with an proper error code and message defined
         in twisted.web.http.
         """
-        mapper = self.env.registry.mappers.get(url=self.path, 
-                                               method=self.method) 
-        if not mapper:
-            raise ProcessorError(http.NOT_FOUND, 
-                                 "There is no %s mapper defined for %s." % + \
-                                 (self.method, self.path))
-        # XXX: is this possible anymore??
-        # only use first found object, but warn if multiple implementations
-        #if len(mapper)>1:
-        #    self.log.error('Multiple %s mappings found for %s' % 
-        #                   (self.method, self.path))
-        func = getattr(mapper[0], 'process'+self.method)
-        if not func:
-            raise ProcessorError(http.NOT_IMPLEMENTED, "Function process%s" + \
-                                 "is not implemented." % self.method)
-        # general error handling should be done by the mapper functions
-        try:
-            result = func(self)
-        except Exception, e:
-            print e
-            if isinstance(e, ProcessorError):
-                raise
-            else:
-                raise ProcessorError(http.INTERNAL_SERVER_ERROR, 
-                                     "Error processing %s mapper for %s." % + \
-                                     (self.method, self.path))
-        if self.method in [DELETE, POST]:
-            self.response_code = http.NO_CONTENT
-            return ''
-        if self.method==PUT :
-            self.response_code = http.CREATED
-            self.response_header['Location'] = str(result)
-            return ''
-        # test if basestring -> could be a resource
-        if isinstance(result, basestring):
-            return self.renderResource(result)
-        # result must be a dictionary with either mapping or resource entries
-        if not isinstance(result, dict):
-            raise ProcessorError(http.INTERNAL_SERVER_ERROR, 
-                                 "A mapper must return a dictionary " + \
-                                 "containing mapping or resource elements.")
-        mapping_urls = result.get('mapping', [])
-        resource_urls = result.get('resource', [])
-        return self.renderResourceList(mapping=mapping_urls, 
-                                       resource=resource_urls)
+        raise ProcessorError(http.NOT_IMPLEMENTED)
+#        mapper = self.env.registry.mappers.get(url=self.path, 
+#                                               method=self.method) 
+#        if not mapper:
+#            raise ProcessorError(http.NOT_FOUND, 
+#                                 "There is no %s mapper defined for %s." % + \
+#                                 (self.method, self.path))
+#        # only use first found object, but warn if multiple implementations
+#        #if len(mapper)>1:
+#        #    self.log.error('Multiple %s mappings found for %s' % 
+#        #                   (self.method, self.path))
+#        func = getattr(mapper[0], 'process'+self.method)
+#        if not func:
+#            raise ProcessorError(http.NOT_IMPLEMENTED, "Function process%s" + \
+#                                 "is not implemented." % self.method)
+#        # general error handling should be done by the mapper functions
+#        try:
+#            result = func(self)
+#        except Exception, e:
+#            if isinstance(e, ProcessorError):
+#                raise
+#            else:
+#                raise ProcessorError(http.INTERNAL_SERVER_ERROR, 
+#                                     "Error processing %s mapper for %s." % + \
+#                                     (self.method, self.path))
+#        if self.method in [DELETE, POST]:
+#            self.response_code = http.NO_CONTENT
+#            return ''
+#        if self.method==PUT :
+#            self.response_code = http.CREATED
+#            self.response_header['Location'] = str(result)
+#            return ''
+#        # test if basestring -> could be a resource
+#        if isinstance(result, basestring):
+#            return self.renderResource(result)
+#        # result must be a dictionary with either mapping or resource entries
+#        if not isinstance(result, dict):
+#            raise ProcessorError(http.INTERNAL_SERVER_ERROR, 
+#                                 "A mapper must return a dictionary " + \
+#                                 "containing mapping or resource elements.")
+#        mapping_urls = result.get('mapping', [])
+#        resource_urls = result.get('resource', [])
+#        return self.renderResourceList(mapping=mapping_urls, 
+#                                       resource=resource_urls)
     
     def _processAlias(self, package_id, resourcetype_id, alias):
         """Generates a list of resources from an alias query."""
@@ -588,11 +568,6 @@ class Processor:
             return
         else:
             return self.renderResourceList(resource=resource_objs)
-    
-    def _processResourceProperty(self, package_id, resourcetype_id, 
-                                 resource_id, version_id, property_id):
-        # XXX: missing yet
-        raise ProcessorError(http.NOT_IMPLEMENTED)
     
     def _getResource(self, package_id, resourcetype_id, name, revision=None):
         """Fetches the content of an existing resource.
@@ -621,14 +596,22 @@ class Processor:
             self.env.log.error(e)
             raise ProcessorError(http.INTERNAL_SERVER_ERROR, e)
         else:
+            data = result.document.data
+            # ensure its an string not an unicode object
+            if isinstance(data, unicode):
+                data = data.encode('utf-8')
             # set XML declaration inclusive UTF-8 encoding string
-            data = result.document.data.encode('utf-8')
-            data = addXMLDeclaration(data, 'utf-8')
-            # return resource content
+            if not data.startswith('<xml'):
+                data = addXMLDeclaration(data, 'utf-8')
             return data
     
+    def _processResourceProperty(self, package_id, resourcetype_id, 
+                                 resource_id, version_id, property_id):
+        # XXX: missing yet
+        raise ProcessorError(http.NOT_IMPLEMENTED)
+    
     def renderResource(self, data):
-        """Resource handler. Returns a content of this resource as string.
+        """Resource handler. Returns content of this resource as utf-8 string.
         
         This method should be overwritten by the inheriting class in order to
         further validate and format the output of this document.
@@ -636,8 +619,16 @@ class Processor:
         return data
     
     def renderResourceList(self, **kwargs):
-        """Resource list handler. Here we return a dict of objects. Each object
-        contains a list of valid url's, e.g. {'package':['/quakeml','/resp']}.
+        """Resource list handler. 
+        
+        Here we return a dict of objects. Each object contains a list of valid 
+        absolute URI's, e.g.
+        {'package': ['/quakeml', '/resp'], 'properties': ['/.version']}.
+        
+        Exception of this rule above is the list of resources as they are 
+        returned as full resource objects, e.g. 
+        {'resource': [<seishub.xmldb.resource.Resource object at 0x0365EA90>, 
+                      <seishub.xmldb.resource.Resource object at 0x0365EA91>]}.
         
         This method should be overwritten by the inheriting class in order to
         further validate and format the output of this resource list.
