@@ -14,13 +14,13 @@ from seishub.packages.builtins import IResourceType, IPackage
 from seishub.packages.installer import PackageInstaller
 
 
-XML_DOC = """<?xml version="1.0" encoding="UTF-8"?>
+XML_DOC = """<?xml version="1.0" encoding="utf-8"?>
+
 <testml>
   <blah1 id="3">
     <blahblah1>üöäß</blahblah1>
   </blah1>
-</testml>
-"""
+</testml>"""
 
 
 class AResourceType(Component):
@@ -62,8 +62,8 @@ class ProcessorMOVETest(SeisHubEnvironmentTestCase):
         except ProcessorError, e:
             self.assertEqual(e.code, http.BAD_REQUEST)
     
-    def test_moveWithoutCompleteDestinationPath(self):
-        """Destination header must be the complete path to new destination."""
+    def test_moveWithoutAbsoluteDestination(self):
+        """Destination header must be the absolute path to new destination."""
         proc = Processor(self.env)
         try:
             proc.run(MOVE, '/move-test/notvc/test.xml', 
@@ -72,8 +72,8 @@ class ProcessorMOVETest(SeisHubEnvironmentTestCase):
         except ProcessorError, e:
             self.assertEqual(e.code, http.BAD_REQUEST)
     
-    def test_moveWithOversizedDestinationPath(self):
-        """Destination path is restricted by MAX_URI_LENGTH."""
+    def test_moveWithOversizedDestination(self):
+        """Destination path is restricted to MAX_URI_LENGTH chars."""
         proc = Processor(self.env)
         uri = self.env.getRestUrl() + '/move-test/notvc/' + \
               'a' * (MAX_URI_LENGTH + 1)
@@ -84,8 +84,8 @@ class ProcessorMOVETest(SeisHubEnvironmentTestCase):
         except ProcessorError, e:
             self.assertEqual(e.code, http.REQUEST_URI_TOO_LONG)
     
-    def test_moveToDifferentDirectory(self):
-        """SeisHub allows moving resources only in the same directory."""
+    def test_moveToOtherResourceType(self):
+        """SeisHub allows moving resources only to the same resource type."""
         proc = Processor(self.env)
         # try different resource type
         uri = self.env.getRestUrl() + '/move-test/vc/test2.xml'
@@ -95,7 +95,10 @@ class ProcessorMOVETest(SeisHubEnvironmentTestCase):
             self.fail("Expected ProcessorError")
         except ProcessorError, e:
             self.assertEqual(e.code, http.FORBIDDEN)
-        # try non existing resource type
+    
+    def test_moveToNotExistingResourceType(self):
+        """SeisHub allows moving resources only to existing resource types."""
+        proc = Processor(self.env)
         uri = self.env.getRestUrl() + '/muh/kuh/test2.xml'
         try:
             proc.run(MOVE, '/move-test/notvc/test.xml', 
@@ -104,7 +107,7 @@ class ProcessorMOVETest(SeisHubEnvironmentTestCase):
         except ProcessorError, e:
             self.assertEqual(e.code, http.FORBIDDEN)
     
-    def test_moveToDirectory(self):
+    def test_moveWithoutFilename(self):
         """SeisHub expects as destination a full filename."""
         proc = Processor(self.env)
         # directory only with trailing slash
@@ -125,11 +128,9 @@ class ProcessorMOVETest(SeisHubEnvironmentTestCase):
             self.assertEqual(e.code, http.FORBIDDEN)
     
     def test_moveToNewResource(self):
-        """The resource was moved successfully and a new resource was created 
-        at the specified destination URI.
-        """
+        """Resource was moved successfully to the specified destination URI."""
         proc = Processor(self.env)
-        # create a default document
+        # create resource
         proc.run(PUT, '/move-test/notvc/test.xml', StringIO(XML_DOC))
         # move
         uri = self.env.getRestUrl() + '/move-test/notvc/new.xml'
@@ -151,7 +152,8 @@ class ProcessorMOVETest(SeisHubEnvironmentTestCase):
         except ProcessorError, e:
             self.assertEqual(e.code, http.NOT_FOUND)
         # get new resource
-        proc.run(GET, '/move-test/notvc/new.xml')
+        data = proc.run(GET, '/move-test/notvc/new.xml')
+        self.assertEqual(data, XML_DOC)
         # revert move
         uri = self.env.getRestUrl() + '/move-test/notvc/test.xml'
         proc.run(MOVE, '/move-test/notvc/new.xml', 
@@ -164,17 +166,104 @@ class ProcessorMOVETest(SeisHubEnvironmentTestCase):
             self.fail("Expected ProcessorError")
         except ProcessorError, e:
             self.assertEqual(e.code, http.NOT_FOUND)
-        # remove default document
+        # remove resource
         proc.run(DELETE, '/move-test/notvc/test.xml')
-        
     
-    def test_moveRevision(self):
-        # FORBIDDEN
-        pass
+    def test_moveRevisionToRevision(self):
+        """SeisHub does not allow to move revisions to revisions."""
+        proc = Processor(self.env)
+        # create resource
+        proc.run(PUT, '/move-test/vc/test.xml', StringIO(XML_DOC))
+        proc.run(POST, '/move-test/vc/test.xml', StringIO(XML_DOC))
+        proc.run(POST, '/move-test/vc/test.xml', StringIO(XML_DOC))
+        proc.run(POST, '/move-test/vc/test.xml', StringIO(XML_DOC))
+        # try to move revision 2 to revision 1 
+        uri = self.env.getRestUrl() + '/move-test/vc/test.xml/1'
+        try:
+            proc.run(MOVE, '/move-test/vc/test.xml/2', 
+                     received_headers = {'Destination': uri})
+            self.fail("Expected ProcessorError")
+        except ProcessorError, e:
+            self.assertEqual(e.code, http.FORBIDDEN)
+        # delete resource
+        proc.run(DELETE, '/move-test/vc/test.xml')
+    
+    def test_moveRevisionToNewResource(self):
+        """SeisHub does not allow to move revisions to resources."""
+        proc = Processor(self.env)
+        # create resource
+        proc.run(PUT, '/move-test/vc/test.xml', StringIO(XML_DOC))
+        proc.run(POST, '/move-test/vc/test.xml', StringIO(XML_DOC))
+        # try to move revision 1 to another uri 
+        uri = self.env.getRestUrl() + '/move-test/vc/muh.xml'
+        try:
+            proc.run(MOVE, '/move-test/vc/test.xml/1', 
+                     received_headers = {'Destination': uri})
+            self.fail("Expected ProcessorError")
+        except ProcessorError, e:
+            self.assertEqual(e.code, http.FORBIDDEN)
+        # delete resource
+        proc.run(DELETE, '/move-test/vc/test.xml')
+    
+    def test_moveToExistingRevision(self):
+        """SeisHub does not allow to move resources to revisions."""
+        proc = Processor(self.env)
+        # create resources
+        proc.run(PUT, '/move-test/vc/test1.xml', StringIO(XML_DOC))
+        proc.run(PUT, '/move-test/vc/test2.xml', StringIO(XML_DOC))
+        proc.run(POST, '/move-test/vc/test2.xml', StringIO(XML_DOC))
+        proc.run(POST, '/move-test/vc/test2.xml', StringIO(XML_DOC))
+        proc.run(POST, '/move-test/vc/test2.xml', StringIO(XML_DOC))
+        # try to overwrite the existing revision 1
+        uri = self.env.getRestUrl() + '/move-test/vc/test2.xml/1'
+        try:
+            proc.run(MOVE, '/move-test/vc/test1.xml', 
+                     received_headers = {'Destination': uri})
+            self.fail("Expected ProcessorError")
+        except ProcessorError, e:
+            self.assertEqual(e.code, http.FORBIDDEN)
+        # delete resources
+        proc.run(DELETE, '/move-test/vc/test1.xml')
+        proc.run(DELETE, '/move-test/vc/test2.xml')
+    
+    def test_moveToNewRevision(self):
+        """SeisHub does not allow to move a resource to a new revision."""
+        proc = Processor(self.env)
+        # create resources
+        proc.run(PUT, '/move-test/vc/test1.xml', StringIO(XML_DOC))
+        proc.run(PUT, '/move-test/vc/test2.xml', StringIO(XML_DOC))
+        proc.run(POST, '/move-test/vc/test2.xml', StringIO(XML_DOC))
+        proc.run(POST, '/move-test/vc/test2.xml', StringIO(XML_DOC))
+        proc.run(POST, '/move-test/vc/test2.xml', StringIO(XML_DOC))
+        # try to create a new revision 4
+        uri = self.env.getRestUrl() + '/move-test/vc/test2.xml/4'
+        try:
+            proc.run(MOVE, '/move-test/vc/test1.xml', 
+                     received_headers = {'Destination': uri})
+            self.fail("Expected ProcessorError")
+        except ProcessorError, e:
+            self.assertEqual(e.code, http.FORBIDDEN)
+        # delete resources
+        proc.run(DELETE, '/move-test/vc/test1.xml')
+        proc.run(DELETE, '/move-test/vc/test2.xml')
     
     def test_moveToExistingResource(self):
-        #204 (No Content)    The resource was moved successfully to a pre-existing destination URI.
-        pass
+        """SeisHub does not allow to overwrite existing resources."""
+        proc = Processor(self.env)
+        # create resources
+        proc.run(PUT, '/move-test/notvc/test1.xml', StringIO(XML_DOC))
+        proc.run(PUT, '/move-test/notvc/test2.xml', StringIO(XML_DOC))
+        # try to overwrite test2.xml 
+        uri = self.env.getRestUrl() + '/move-test/notvc/test2.xml'
+        try:
+            proc.run(MOVE, '/move-test/notvc/test1.xml', 
+                     received_headers = {'Destination': uri})
+            self.fail("Expected ProcessorError")
+        except ProcessorError, e:
+            self.assertEqual(e.code, http.FORBIDDEN)
+        # delete resources
+        proc.run(DELETE, '/move-test/vc/test1.xml')
+        proc.run(DELETE, '/move-test/vc/test2.xml')
     
     def test_moveToSameURI(self):
         """The source URI and the destination URI must not be the same."""
@@ -188,7 +277,9 @@ class ProcessorMOVETest(SeisHubEnvironmentTestCase):
             self.assertEqual(e.code, http.FORBIDDEN)
     
     def test_moveToInvalidResourcename(self):
-        """SeisHub restricts the destination filenames to distinct between 
+        """Destination file name may not start with '~', '@', '.', '_' or '-'.
+        
+        SeisHub restricts the destination filename to distinct between 
         ~mappers, @aliases and .properties.
         """
         proc = Processor(self.env)
@@ -243,14 +334,18 @@ class ProcessorMOVETest(SeisHubEnvironmentTestCase):
                  received_headers = {'Destination': uri})
     
     def test_canNotCreateResource(self):
-        #409 (Conflict)    A resource cannot be created at the destination URI until one or more intermediate collections are created.
+        # 409 (Conflict)    A resource cannot be created at the destination URI
+        # until one or more intermediate collections are created.
         pass
     
     def test_failingPrecondition(self):
-        #412 (Precondition Failed)    Either the Overwrite header is "F" and the state of the destination resource is not null, or the method was used in a Depth: 0 transaction.
+        # 412 (Precondition Failed)    Either the Overwrite header is "F" and
+        # the state of the destination resource is not null, or the method was
+        # used in a Depth: 0 transaction.
         pass
     
     def test_moveLockedResource(self):
+        # XXX: not implemented yet
         #423 (Locked)    The destination resource is locked.
         pass
     

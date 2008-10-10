@@ -15,14 +15,16 @@ from seishub.packages.interfaces import IGETMapper, IPUTMapper, \
 from seishub.packages.installer import PackageInstaller
 
 
-XML_DOC = """<?xml version="1.0" encoding="UTF-8"?>
+XML_DOC = """<?xml version="1.0" encoding="utf-8"?>
+
 <testml>
   <blah1 id="3">
     <blahblah1>üöäß</blahblah1>
   </blah1>
 </testml>"""
 
-XML_DOC2 = """<?xml version="1.0" encoding="UTF-8"?>
+XML_DOC2 = """<?xml version="1.0" encoding="utf-8"?>
+
 <testml>
   <blah1 id="3">
     <blahblah1>üöäß</blahblah1>
@@ -30,7 +32,8 @@ XML_DOC2 = """<?xml version="1.0" encoding="UTF-8"?>
   <hallowelt />
 </testml>"""
 
-XML_VC_DOC = """<?xml version="1.0" encoding="UTF-8"?>
+XML_VC_DOC = """<?xml version="1.0" encoding="utf-8"?>
+
 <testml>%d</testml>"""
 
 
@@ -109,6 +112,7 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
         self.env.disableComponent(TestMapper2)
     
     def test_failes(self):
+        """XXX: This test should not fail!""" 
         proc = Processor(self.env)
         proc.run(PUT, '/test/vc/test.xml', StringIO(XML_DOC))
         proc.run(POST, '/test/vc/test.xml', StringIO(XML_DOC))
