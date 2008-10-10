@@ -4,6 +4,8 @@ from zope.interface import implements
 from seishub.util.text import validate_id, to_uri, to_xpath_query
 from seishub.util.xmlwrapper import XmlSchema, XmlStylesheet
 from seishub.db.util import Serializable, Relation, db_property
+from seishub.xmldb.interfaces import IResource
+import seishub.xmldb.resource
 from seishub.packages.interfaces import IPackageWrapper, IResourceTypeWrapper
 from seishub.packages.defaults import schema_tab, stylesheet_tab, alias_tab,\
                                       packages_tab, resourcetypes_tab
@@ -288,7 +290,13 @@ class Stylesheet(DocBase):
     
     def transform(self, resource):
         """Transform a given Resource with the stylesheet.
-        @return: Transformed xml data as a string"""
+        @type resource: IResource or basestring 
+        @return: Transformed xml data as a string
+        """
+        if IResource.providedBy(resource):
+            doc = resource.document.xml_doc
+        else:
+            doc = seishub.xmldb.resource.newXMLDocument(resource).xml_doc
         if not self._parsed_doc:
             self._parsed_doc = XmlStylesheet(self.resource.document.data)
-        return str(self._parsed_doc.transform(resource.document.xml_doc))
+        return str(self._parsed_doc.transform(doc))

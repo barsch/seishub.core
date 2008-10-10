@@ -5,13 +5,16 @@ from zope.interface import implements
 from seishub.db.util import Serializable, Relation, db_property, LazyAttribute
 from seishub.util.xmlwrapper import IXmlDoc, XmlTreeDoc
 from seishub.util.text import validate_id
-from seishub.util.xml import toUnicode, parseXMLDeclaration
+from seishub.util.xml import toUnicode, parseXMLDeclaration, addXMLDeclaration 
 from seishub.util.text import hash
 from seishub.packages.package import PackageWrapper, ResourceTypeWrapper
 from seishub.xmldb.defaults import resource_tab, data_tab, data_meta_tab
 from seishub.xmldb.errors import XmlResourceError
 from seishub.xmldb.interfaces import IResource, IXmlDocument, IDocumentMeta
-from seishub.xmldb.package import PackageSpecific
+from seishub.xmldb.package import PackageSpecific 
+
+
+XML_DECLARATION_LENGTH = len(addXMLDeclaration(""))
 
 
 class DocumentMeta(Serializable):
@@ -102,7 +105,7 @@ class XmlDocument(Serializable):
         # encode "utf-8" to determine hash and size
         raw_data = data.encode("utf-8")
         self._data = data
-        self.meta._size = len(raw_data)
+        self.meta._size = len(raw_data) + XML_DECLARATION_LENGTH
         self.meta._hash = hash(raw_data)
     
     def getData(self):

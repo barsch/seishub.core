@@ -2,9 +2,11 @@
 
 import re
 
+
 def toUnicode(data, remove_decl = False):
     """Convert XML string to unicode by detecting the encoding."""
-    encoding = detectXMLEncoding(*parseXMLDeclaration(data, remove_decl))
+    data, enc = parseXMLDeclaration(data, remove_decl)
+    encoding = detectXMLEncoding(*(data, enc))
     if encoding:
         data = unicode(data, encoding)
     else:
@@ -21,15 +23,15 @@ def parseXMLDeclaration(data, remove_decl = False):
     
     ## set up regular expression
     xmlDeclPattern = r"""
-    ^<\?xml             # w/o BOM, xmldecl starts with <?xml at the first byte
-    .+?                 # some chars (version info), matched minimal
-    encoding=           # encoding attribute begins
+    ^<\?xml\s+             # w/o BOM, xmldecl starts with <?xml at the first byte
+        ([^>]*?                 # some chars (version info), matched minimal
+    (encoding(\s*)=(\s*)           # encoding attribute begins
     ["']                # attribute start delimiter
     (?P<encstr>         # what's matched in the brackets will be named encstr
      [^"']+              # every character not delimiter (not overly exact!)
     )                   # closes the brackets pair for the named group
-    ["']                # attribute end delimiter
-    .*?                 # some chars optionally (standalone decl or whitespace)
+    ["']))?               # attribute end delimiter
+    [^>]*                 # some chars optionally (standalone decl or whitespace)
     \?>                 # xmldecl end
     """
     
@@ -37,15 +39,15 @@ def parseXMLDeclaration(data, remove_decl = False):
     
     ## search and extract encoding string
     match = xmlDeclRE.search(data)
-    if match :
-        enc = match.group("encstr")
-    else:
-        enc = None
-    
+    # @see: http://www.w3.org/TR/2006/REC-xml11-20060816/#charencoding
+    enc = "UTF-8"
+    if match:
+        enc = match.group("encstr") or "UTF-8"
+
     if remove_decl:
         data = xmlDeclRE.sub('', data)
     
-    return data, enc
+    return data.strip(), enc
 
 def detectXMLEncoding(data, enc_string):
     """Attempts to detect the character encoding of the given XML string.
@@ -101,3 +103,8 @@ def detectXMLEncoding(data, enc_string):
     ##  algorithms further investigating on that matter, but I won't for now.
 
     return enc_string
+
+
+def addXMLDeclaration(data, encoding = "UTF-8", version = "1.0"):
+    decl = '<?xml version="%s" encoding="%s"?>\n\n'
+    return decl % (version, encoding) + data

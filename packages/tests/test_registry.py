@@ -11,8 +11,7 @@ from seishub.packages.interfaces import IGETMapper, IPUTMapper
 from seishub.xmldb.resource import Resource, newXMLDocument
 
 
-TEST_SCHEMA="""<?xml version="1.0"?>
-<xs:schema elementFormDefault="qualified"
+TEST_SCHEMA="""<xs:schema elementFormDefault="qualified"
     xmlns:xs="http://www.w3.org/2001/XMLSchema">
 
     <xs:element name="armor">
@@ -29,11 +28,9 @@ TEST_SCHEMA="""<?xml version="1.0"?>
         </xs:complexType>
     </xs:element>
 
-</xs:schema>
-"""
+</xs:schema>"""
 
-TEST_STYLESHEET = """
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" 
+TEST_STYLESHEET = """<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" 
     xmlns:xlink="http://www.w3.org/1999/xlink" exclude-result-prefixes="xlink"
     version="1.0">
     
@@ -134,16 +131,13 @@ TEST_STYLESHEET = """
 
     </xsl:template>
 
-</xsl:stylesheet>
-"""
+</xsl:stylesheet>"""
 
-TEST_RESLIST = """<?xml version="1.0"?>
-<seishub xml:base="http://localhost:8080" xmlns:xlink="http://www.w3.org/1999/xlink">
+TEST_RESLIST = """<seishub xml:base="http://localhost:8080" xmlns:xlink="http://www.w3.org/1999/xlink">
     <mapping xlink:type="simple" xlink:href="/seishub/schema/browser">browser</mapping>
     <resource xlink:type="simple" xlink:href="/seishub/schema/3">/seishub/schema/3</resource>
     <resource xlink:type="simple" xlink:href="/seishub/schema/4">/seishub/schema/4</resource>
-</seishub>
-"""
+</seishub>"""
 
 class PackageRegistryTest(SeisHubEnvironmentTestCase):
     def setUp(self):
@@ -276,6 +270,9 @@ class PackageRegistryTest(SeisHubEnvironmentTestCase):
         self.assertEqual(stylesheet[0].type, 'xhtml')
         res_list = Resource(document = newXMLDocument(TEST_RESLIST))
         self.assertEquals(stylesheet[0].transform(res_list), 
+                          '{"mapping":["/seishub/schema/browser"],"resource"'+\
+                          ':["/seishub/schema/3","/seishub/schema/4"],}')
+        self.assertEquals(stylesheet[0].transform(TEST_RESLIST),
                           '{"mapping":["/seishub/schema/browser"],"resource"'+\
                           ':["/seishub/schema/3","/seishub/schema/4"],}')
         # get stylesheet resource

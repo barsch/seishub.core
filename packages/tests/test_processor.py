@@ -20,8 +20,7 @@ XML_DOC = """<?xml version="1.0" encoding="UTF-8"?>
   <blah1 id="3">
     <blahblah1>üöäß</blahblah1>
   </blah1>
-</testml>
-"""
+</testml>"""
 
 XML_DOC2 = """<?xml version="1.0" encoding="UTF-8"?>
 <testml>
@@ -29,12 +28,10 @@ XML_DOC2 = """<?xml version="1.0" encoding="UTF-8"?>
     <blahblah1>üöäß</blahblah1>
   </blah1>
   <hallowelt />
-</testml>
-"""
+</testml>"""
 
 XML_VC_DOC = """<?xml version="1.0" encoding="UTF-8"?>
-<testml>%d</testml>
-"""
+<testml>%d</testml>"""
 
 
 class AResourceType(Component):

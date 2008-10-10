@@ -8,25 +8,22 @@ from seishub.db.util import DbAttributeProxy
 from seishub.xmldb.errors import AddResourceError, XmlResourceError,\
                                  GetResourceError, ResourceDeletedError
 from seishub.xmldb.xmldbms import XmlDbManager
-from seishub.xmldb.resource import XmlDocument, Resource, newXMLDocument
+from seishub.xmldb.resource import XmlDocument, Resource, newXMLDocument 
+from seishub.xmldb.resource import XML_DECLARATION_LENGTH
 
 
-TEST_XML="""<?xml version="1.0"?>
-<testml>
+TEST_XML="""<testml>
 <blah1 id="3"><blahblah1>blahblahblah</blahblah1></blah1>
-</testml>
-"""
-TEST_XML_MOD="""<?xml version="1.0"?>
-<testml>
+</testml>"""
+
+TEST_XML_MOD="""<testml>
 <blah1 id="3"><blahblah1>blahblahblah</blahblah1></blah1>
 <newblah>newblah</newblah>
-</testml>
-"""
-TEST_BAD_XML = u"""<?xml version="1.0"?>
-<testml>
+</testml>"""
+
+TEST_BAD_XML = u"""<testml>
 <blah1 id="3"></blah1><blahblah1>blahblahblah<foo></blahblah1></foo></blah1>
-</testml>
-"""
+</testml>"""
 
 class XmlDocumentTest(SeisHubEnvironmentTestCase):
     def testXml_data(self):
@@ -108,7 +105,8 @@ class XmlDbManagerTest(SeisHubEnvironmentTestCase):
         self.assertEquals(result.name, str(testres.id))
         self.assertEquals(result.document.data, self.test_data)
         self.assertTrue(result.document.meta.datetime)
-        self.assertEquals(result.document.meta.size, len(self.test_data))
+        self.assertEquals(result.document.meta.size, 
+                          len(self.test_data) + XML_DECLARATION_LENGTH)
         self.assertEquals(result.document.meta.hash, 
                           hash(self.test_data))
         self.assertEquals(result.document.meta.uid, 1000)
@@ -265,17 +263,18 @@ class XmlDbManagerTest(SeisHubEnvironmentTestCase):
         # XXX: BuG: revision counter is not reset on new resources
 
     def testGetResourceList(self):
-        blah = self.env.catalog.getResourceList('seishub')
+        
         #import pdb;pdb.set_trace()
         #print blah
         # add some test resources first:
-#        testres1 = XmlDocument(self.test_package, self.test_resourcetype, 
-#                               data = self.test_data)
-#        testres2 = XmlDocument(self.test_package, self.test_resourcetype,
-#                               data = self.test_data)
-#        self.xmldbm.addResource(testres1)
-#        self.xmldbm.addResource(testres2)
-#        
+        testres1 = Resource(self.test_package, self.test_resourcetype, 
+                            document = newXMLDocument(self.test_data))
+        testres2 = Resource(self.test_package, self.test_resourcetype,
+                            document = newXMLDocument(self.test_data))
+        self.xmldbm.addResource(testres1)
+        self.xmldbm.addResource(testres2)
+        #import pdb;pdb.set_trace()
+        blah = self.env.catalog.getResourceList() 
 #        l = self.xmldbm.getResourceList(self.test_package)
 #        for res in l:
 #            self.assertEqual(res.package_id, self.test_package)
