@@ -287,6 +287,20 @@ class Stylesheet(DocBase):
     def __init__(self, *args, **kwargs):
         DocBase.__init__(self, *args, **kwargs)
         self._parsed_doc = None
+        
+    def getParsed_doc(self):
+        if not self._parsed_doc:
+            self._parsed_doc = XmlStylesheet(self.resource.document.data)
+        return self._parsed_doc
+    
+    parsed_doc = property(getParsed_doc, None, "Parsed stylesheet (read only)")
+        
+    def getContentType(self):
+        if not self._parsed_doc.content_type:
+            return None
+        return self._parsed_doc.content_type[0]
+        
+    content_type = property(getContentType, None, "content-type (readonly)")
     
     def transform(self, resource):
         """Transform a given Resource with the stylesheet.
@@ -297,6 +311,4 @@ class Stylesheet(DocBase):
             doc = resource.document.xml_doc
         else:
             doc = seishub.xmldb.resource.newXMLDocument(resource).xml_doc
-        if not self._parsed_doc:
-            self._parsed_doc = XmlStylesheet(self.resource.document.data)
-        return str(self._parsed_doc.transform(doc))
+        return str(self.parsed_doc.transform(doc))

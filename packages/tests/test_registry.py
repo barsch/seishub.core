@@ -275,6 +275,7 @@ class PackageRegistryTest(SeisHubEnvironmentTestCase):
         self.assertEquals(stylesheet[0].transform(TEST_RESLIST),
                           '{"mapping":["/seishub/schema/browser"],"resource"'+\
                           ':["/seishub/schema/3","/seishub/schema/4"],}')
+        self.assertEquals(stylesheet[0].content_type, 'application/json')
         # get stylesheet resource
         res = stylesheet[0].resource
         self.assertEqual(res.document.data, TEST_STYLESHEET)
