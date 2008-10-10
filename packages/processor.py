@@ -8,6 +8,7 @@ from seishub.core import SeisHubError
 from seishub.util.list import unique
 from seishub.util.text import isInteger
 from seishub.util.path import splitPath
+from seishub.util.xml import addXMLDeclaration 
 from seishub.xmldb.errors import GetResourceError, ResourceDeletedError
 
 # @see: http://www.boutell.com/newfaq/misc/urllength.html
@@ -620,9 +621,11 @@ class Processor:
             self.env.log.error(e)
             raise ProcessorError(http.INTERNAL_SERVER_ERROR, e)
         else:
-            # XXX: set utf-8 encoding header
+            # set XML declaration inclusive UTF-8 encoding string
+            data = result.document.data.encode('utf-8')
+            data = addXMLDeclaration(data, 'utf-8')
             # return resource content
-            return result.document.data.encode('utf-8')
+            return data
     
     def renderResource(self, data):
         """Resource handler. Returns a content of this resource as string.

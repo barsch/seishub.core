@@ -61,9 +61,9 @@ class StylesheetResource(Component):
     package_id = 'seishub'
     resourcetype_id = 'stylesheet'
     
-    registerStylesheet('resourcelist:xhtml', 
+    registerStylesheet('resourcelist.xhtml', 
                        'xslt' + os.sep + 'resourcelist_xhtml.xslt')
-    registerStylesheet('resourcelist:json', 
+    registerStylesheet('resourcelist.json', 
                        'xslt' + os.sep + 'resourcelist_json.xslt')
 
 

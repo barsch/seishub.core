@@ -69,7 +69,7 @@ class Environment(ComponentManager):
         self.registry = ComponentRegistry(self)
         # trigger auto installer, install seishub package first
         PackageInstaller.cleanup(self)
-        # XXX: ???
+        # make sure seishub packages are installed first
         PackageInstaller.install(self, 'seishub')
         PackageInstaller.install(self)
     
@@ -119,7 +119,8 @@ class Environment(ComponentManager):
         self.log.info('Enabling component %s' % fullname)
         self.config.save()
         self.registry.mappers.update()
-        #XXX: PackageInstaller.install(self)
+        if hasattr(component, 'package_id'):
+            PackageInstaller.install(self, component.package_id)
     
     def disableComponent(self, component):
         """Disables a component."""
@@ -136,7 +137,7 @@ class Environment(ComponentManager):
         self.log.info('Disabling component %s' % fullname)
         self.config.save()
         self.registry.mappers.update()
-        #XXX: PackageInstaller.cleanup(self)
+        PackageInstaller.cleanup(self)
     
     def initOptions(self):
         """Initialize any not yet set default options in configuration file."""

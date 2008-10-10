@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+from lxml import etree
+from StringIO import StringIO
 from twisted.web import http
 from twisted.application import internet
 from twisted.internet import threads
@@ -12,7 +14,7 @@ from seishub.util.http import parseAccept, validMediaType
 from seishub.util.path import absPath
 
 
-RESOURCELIST_ROOT = """<?xml version="1.0"?>
+RESOURCELIST_ROOT = """<?xml version="1.0" encoding="UTF-8"?>
             
     <seishub xml:base="%s" xmlns:xlink="http://www.w3.org/1999/xlink">
     %s
@@ -44,9 +46,11 @@ class RESTRequest(Processor, http.Request):
         self.format = ''
         if 'format' in self.args.keys():
             self.format = self.args.get('format')[0]
-            if validMediaType(self.format):
-                # add the valid format to the front of the list!
-                self.accept = [(1.0, self.format, {}, {})] + self.accept
+        if 'output' in self.args.keys():
+            self.format = self.args.get('output')[0]
+        if self.format and validMediaType(self.format):
+            # add the valid format to the front of the list!
+            self.accept = [(1.0, self.format, {}, {})] + self.accept
     
     def _processContent(self):
         try:
@@ -107,37 +111,21 @@ class RESTRequest(Processor, http.Request):
         self.setHeader('content-type', 'application/xml; charset=UTF-8')
         # handle output/format conversion
         if self.format:
-            result = self._transformContent('seishub', 'stylesheet', 
-                                            'resourcelist:%s' % self.format, 
-                                            result)
+            reg = self.env.registry
+            # fetch a xslt document object
+            xslt = reg.stylesheets.get(package_id='seishub',
+                                       resourcetype_id='stylesheet',
+                                       type='resourcelist.%s' % self.format)
+            if len(xslt):
+                xslt = xslt[0]
+                result = xslt.transform(result)
+                if xslt.content_type:
+                    self.setHeader('content-type', 
+                                   xslt.content_type + '; charset=UTF-8')
         # set header
         self._setHeaders(result)
         self.setResponseCode(http.OK)
         return result 
-    
-    def _transformContent(self, package_id, resourcetype_id, type, data):
-        from lxml import etree
-        from StringIO import StringIO
-        reg = self.env.registry
-        xslt = reg.stylesheets.get(package_id=package_id,
-                                   resourcetype_id=resourcetype_id,
-                                   type=type)
-        if not xslt:
-            return data
-        xslt = StringIO(xslt[0].getResource().getDocument().data)
-        xslt_doc = etree.parse(xslt)
-        transform = etree.XSLT(xslt_doc)
-        f = StringIO(data)
-        doc = etree.parse(f)
-        result_tree = transform(doc)
-        data = str(result_tree)
-        # content type should be included into the stylesheet 
-        root = xslt_doc.getroot()
-        content_type = root.xpath('.//xsl:output/@media-type', 
-                                  namespaces=root.nsmap)
-        if content_type and isinstance(content_type, list):
-            self.setHeader('content-type', content_type[0] + '; charset=UTF-8')
-        return data
 
 
 class RESTHTTPChannel(http.HTTPChannel):
