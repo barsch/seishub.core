@@ -22,7 +22,9 @@ DELETE = 'DELETE'
 MOVE = 'MOVE'
 
 ALLOWED_HTTP_METHODS = [GET, PUT, POST, DELETE, MOVE]
-NOT_IMPLEMENTED_HTTP_METHODS = ['TRACE', 'OPTIONS', 'COPY']
+NOT_IMPLEMENTED_HTTP_METHODS = ['TRACE', 'OPTIONS', 'COPY', 'HEAD', 'PROPFIND',
+                                'PROPPATCH', 'MKCOL', 'CONNECT', 'PATCH', 
+                                'LOCK', 'UNLOCK']
 
 
 class ProcessorError(SeisHubError):
