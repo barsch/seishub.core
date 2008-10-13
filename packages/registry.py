@@ -105,7 +105,7 @@ class ComponentRegistry(DbStorage):
         package id. Optional a base path can be added in front of each URL.
         """
         ids = self.getResourceTypeIds(package_id)
-        return [base + '/' + package_id + '/' + id for id in ids]
+        return [base + '/' + package_id + '/xml/' + id for id in ids]
     
     def isResourceTypeId(self, package_id, resourcetype_id):
         """Checks if a given resource type is an enabled resource type.""" 
@@ -114,9 +114,9 @@ class ComponentRegistry(DbStorage):
     def isResourceTypeURL(self, url):
         """Checks if the given URL fits to a resource type URL.""" 
         parts = url.split('/')
-        if len(parts)!=3 or parts[0]!='':
+        if len(parts)!=4 or parts[0]!='' or parts[2]!='xml':
             return False
-        return self.isResourceTypeId(parts[1], parts[2])
+        return self.isResourceTypeId(parts[1], parts[3])
     
     # XXX: refactor the rest into different module
     

@@ -7,8 +7,6 @@ from twisted.web import http
 from seishub.test import SeisHubEnvironmentTestCase
 from seishub.packages.processor import Processor, ProcessorError
 from seishub.packages.processor import PUT, POST, DELETE, GET, MOVE
-from seishub.packages.processor import MAX_URI_LENGTH, ALLOWED_HTTP_METHODS
-from seishub.packages.processor import NOT_IMPLEMENTED_HTTP_METHODS
 from seishub.core import Component, implements
 from seishub.packages.builtins import IResourceType, IPackage
 from seishub.packages.interfaces import IGETMapper, IPUTMapper, \
@@ -57,7 +55,7 @@ class TestMapper2(Component):
     implements(IGETMapper)
     
     package_id = 'mapper-test'
-    mapping_url = '/test2/testmapping'
+    mapping_url = '/mapper-test/testmapping2'
     
     def processGET(self, request):
         pass
@@ -67,7 +65,30 @@ class TestMapper3(Component):
     """And one more test mapper."""
     implements(IGETMapper)
     
-    mapping_url = '/test/vc/muh'
+    package_id = 'mapper-test'
+    mapping_url = '/mapper-test/testmapping3'
+    
+    def processGET(self, request):
+        pass
+
+
+class TestMapper4(Component):
+    """And one more test mapper."""
+    implements(IGETMapper)
+    
+    package_id = 'mapper-test'
+    mapping_url = '/testmapping4'
+    
+    def processGET(self, request):
+        pass
+
+
+class TestMapper5(Component):
+    """An unregistered mapper."""
+    implements(IGETMapper)
+    
+    package_id = 'mapper-test'
+    mapping_url = '/mapper-test/testmapping5'
     
     def processGET(self, request):
         pass
@@ -80,16 +101,37 @@ class ProcessorMapperTest(SeisHubEnvironmentTestCase):
         self.env.enableComponent(APackage)
         self.env.enableComponent(TestMapper)
         self.env.enableComponent(TestMapper2)
+        self.env.enableComponent(TestMapper3)
+        self.env.enableComponent(TestMapper4)
         PackageInstaller.install(self.env)
         
     def tearDown(self):
         self.env.disableComponent(APackage)
         self.env.disableComponent(TestMapper)
         self.env.disableComponent(TestMapper2)
+        self.env.disableComponent(TestMapper3)
+        self.env.disableComponent(TestMapper4)
     
-    def test_failes(self):
-        pass
-
+    def test_getRootMappers(self):
+        proc = Processor(self.env)
+        # root level
+        data = proc.run(GET, '/')
+        uris = data.get('mapping')
+        self.assertTrue('/test' in uris)
+        self.assertTrue('/testmapping4' in uris)
+        # virtual level
+        proc = Processor(self.env)
+        data = proc.run(GET, '/test')
+        uris = data.get('mapping')
+        self.assertTrue('/test/testmapping' in uris)
+    
+    def test_getResourceTypeMappers(self):
+        proc = Processor(self.env)
+        data = proc.run(GET, '/mapper-test')
+        uris = data.get('mapping')
+        self.assertTrue('/mapper-test/testmapping2' in uris)
+        self.assertTrue('/mapper-test/testmapping3' in uris)
+        self.assertFalse('/mapper-test/testmapping5' in uris)
 
 def suite():
     suite = unittest.TestSuite()

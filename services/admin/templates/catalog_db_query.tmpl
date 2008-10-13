@@ -30,7 +30,7 @@
   <tr>
   #for $f in $r
     <td>
-      #if isinstance(f, buffer)
+      #if isinstance(f, unicode)
         #filter WebSafe 
         #echo f.__repr__() #
         #end filter

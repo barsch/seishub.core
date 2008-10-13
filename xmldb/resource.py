@@ -211,8 +211,9 @@ class Resource(Serializable, PackageSpecific):
         self.name = name
         
     def __str__(self):
-        return '/' + self.package.package_id + '/' +\
-               self.resourcetype.resourcetype_id + '/' + str(self.name)
+        return "/%s/xml/%s/%s" % (self.package.package_id, 
+                                  self.resourcetype.resourcetype_id, 
+                                  str(self.name))
     
     # auto update id when _Serializable__id is changed:
     def _setId(self, id):

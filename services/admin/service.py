@@ -93,14 +93,11 @@ class AdminRequest(http.Request):
         else:
             if not isinstance(data, dict):
                 self.finish()
-            # ensure all entries in our dict are strings
-            # XXX: very ugly!
-            temp = {}
-            for i in data.keys():
-                temp[i] = []
-                for j in data.get(i):
-                    temp[i].append(str(j))
-            data = temp
+            # created paths for resource objects
+            temp = []
+            for res in data.get('resource', []):
+                temp.append(str(res))
+            data['resource'] = temp
             # format as json
             # XXX: use json module for Python 2.6
             data = str(demjson.encode(data))

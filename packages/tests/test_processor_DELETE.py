@@ -22,7 +22,7 @@ XML_DOC = """<?xml version="1.0" encoding="utf-8"?>
 </testml>"""
 
 
-XML_VC_DOC = """<?xml version="1.0" encoding="utf-8"?>
+XML_VCDOC = """<?xml version="1.0" encoding="utf-8"?>
 
 <testml>%d</testml>"""
 
@@ -45,7 +45,7 @@ class AVersionControlledResourceType(Component):
     version_control = True
 
 
-class ProcessorDELETETest(SeisHubEnvironmentTestCase):
+class ProcessorDELETETestSuite(SeisHubEnvironmentTestCase):
     """Test case for HTTP DELETE processing."""
     
     def setUp(self):
@@ -74,17 +74,29 @@ class ProcessorDELETETest(SeisHubEnvironmentTestCase):
             self.assertEqual(e.code, http.FORBIDDEN)
     
     def test_deleteResourceType(self):
-        """SeisHub processor does not allow deletion of packages."""
+        """SeisHub processor does not allow deletion of resource types."""
         proc = Processor(self.env)
         # without trailing slash
         try:
-            proc.run(DELETE, '/delete-test/notvc')
+            proc.run(DELETE, '/delete-test/xml/notvc')
             self.fail("Expected ProcessorError")
         except ProcessorError, e:
             self.assertEqual(e.code, http.FORBIDDEN)
         # with trailing slash
         try:
-            proc.run(DELETE, '/delete-test/notvc/')
+            proc.run(DELETE, '/delete-test/xml/notvc/')
+            self.fail("Expected ProcessorError")
+        except ProcessorError, e:
+            self.assertEqual(e.code, http.FORBIDDEN)
+        # without trailing slash
+        try:
+            proc.run(DELETE, '/delete-test/xml')
+            self.fail("Expected ProcessorError")
+        except ProcessorError, e:
+            self.assertEqual(e.code, http.FORBIDDEN)
+        # with trailing slash
+        try:
+            proc.run(DELETE, '/delete-test/xml/')
             self.fail("Expected ProcessorError")
         except ProcessorError, e:
             self.assertEqual(e.code, http.FORBIDDEN)
@@ -94,7 +106,7 @@ class ProcessorDELETETest(SeisHubEnvironmentTestCase):
         proc = Processor(self.env)
         # with trailing slash
         try:
-            proc.run(DELETE, '/delete-test/notvc/test.xml')
+            proc.run(DELETE, '/delete-test/xml/notvc/test.xml')
             self.fail("Expected ProcessorError")
         except ProcessorError, e:
             self.assertEqual(e.code, http.NOT_FOUND)
@@ -103,7 +115,7 @@ class ProcessorDELETETest(SeisHubEnvironmentTestCase):
         """SeisHub builtin resources can't be deleted."""
         proc = Processor(self.env)
         # fetch a seishub stylesheet
-        data = proc.run(GET, '/seishub/stylesheet')
+        data = proc.run(GET, '/seishub/xml/stylesheet')
         url = str(data.get('resource')[0])
         try:
             proc.run(DELETE, url)
@@ -116,7 +128,7 @@ class ProcessorDELETETest(SeisHubEnvironmentTestCase):
         proc = Processor(self.env)
         # with trailing slash
         try:
-            proc.run(DELETE, '/delete-test/notvc2/test.xml')
+            proc.run(DELETE, '/delete-test/xml/notvc2/test.xml')
             self.fail("Expected ProcessorError")
         except ProcessorError, e:
             self.assertEqual(e.code, http.FORBIDDEN)
@@ -126,7 +138,7 @@ class ProcessorDELETETest(SeisHubEnvironmentTestCase):
         proc = Processor(self.env)
         # with trailing slash
         try:
-            proc.run(DELETE, '/delete-test2/notvc/test.xml')
+            proc.run(DELETE, '/delete-test2/xml/notvc/test.xml')
             self.fail("Expected ProcessorError")
         except ProcessorError, e:
             self.assertEqual(e.code, http.FORBIDDEN)
@@ -135,38 +147,38 @@ class ProcessorDELETETest(SeisHubEnvironmentTestCase):
         """Revisions may not be deleted via the processor."""
         proc = Processor(self.env)
         # create resource
-        proc.run(PUT, '/delete-test/vc/test.xml', StringIO(XML_DOC))
-        proc.run(POST, '/delete-test/vc/test.xml', StringIO(XML_DOC))
-        proc.run(POST, '/delete-test/vc/test.xml', StringIO(XML_DOC))
+        proc.run(PUT, '/delete-test/xml/vc/test.xml', StringIO(XML_DOC))
+        proc.run(POST, '/delete-test/xml/vc/test.xml', StringIO(XML_DOC))
+        proc.run(POST, '/delete-test/xml/vc/test.xml', StringIO(XML_DOC))
         # with trailing slash
         try:
-            proc.run(DELETE, '/delete-test/vc/test.xml/1')
+            proc.run(DELETE, '/delete-test/xml/vc/test.xml/1')
             self.fail("Expected ProcessorError")
         except ProcessorError, e:
             self.assertEqual(e.code, http.FORBIDDEN)
         # delete resource
-        proc.run(DELETE, '/delete-test/vc/test.xml')
+        proc.run(DELETE, '/delete-test/xml/vc/test.xml')
     
     def test_deleteVersionControlledResource(self):
         """Successful deletion of version controlled resources."""
         proc = Processor(self.env)
         # create resource
-        proc.run(PUT, '/delete-test/vc/test.xml', StringIO(XML_DOC))
-        proc.run(POST, '/delete-test/vc/test.xml', StringIO(XML_VC_DOC % 1))
-        proc.run(POST, '/delete-test/vc/test.xml', StringIO(XML_VC_DOC % 2))
+        proc.run(PUT, '/delete-test/xml/vc/test.xml', StringIO(XML_DOC))
+        proc.run(POST, '/delete-test/xml/vc/test.xml', StringIO(XML_VCDOC % 1))
+        proc.run(POST, '/delete-test/xml/vc/test.xml', StringIO(XML_VCDOC % 2))
         # check latest resource - should be #20
-        data = proc.run(GET, '/delete-test/vc/test.xml')
-        self.assertEqual(data, XML_VC_DOC % 2)
+        data = proc.run(GET, '/delete-test/xml/vc/test.xml')
+        self.assertEqual(data, XML_VCDOC % 2)
         # check oldest resource -> revision start with 1
-        data = proc.run(GET, '/delete-test/vc/test.xml/1')
+        data = proc.run(GET, '/delete-test/xml/vc/test.xml/1')
         self.assertEqual(data, XML_DOC)
         # delete resource
-        data = proc.run(DELETE, '/delete-test/vc/test.xml')
+        data = proc.run(DELETE, '/delete-test/xml/vc/test.xml')
         self.assertEqual(data, '')
         self.assertEqual(proc.response_code, http.NO_CONTENT)
         # fetch resource again
         try:
-            proc.run(GET, '/delete-test/vc/test.xml')
+            proc.run(GET, '/delete-test/xml/vc/test.xml')
             self.fail("Expected ProcessorError")
         except ProcessorError, e:
             self.assertEqual(e.code, http.GONE)
@@ -175,17 +187,17 @@ class ProcessorDELETETest(SeisHubEnvironmentTestCase):
         """Successful deletion of resources."""
         proc = Processor(self.env)
         # create resource
-        proc.run(PUT, '/delete-test/notvc/test.xml', StringIO(XML_DOC))
+        proc.run(PUT, '/delete-test/xml/notvc/test.xml', StringIO(XML_DOC))
         # check resource
-        data = proc.run(GET, '/delete-test/notvc/test.xml')
+        data = proc.run(GET, '/delete-test/xml/notvc/test.xml')
         self.assertEqual(data, XML_DOC)
         # delete resource
-        data = proc.run(DELETE, '/delete-test/notvc/test.xml')
+        data = proc.run(DELETE, '/delete-test/xml/notvc/test.xml')
         self.assertEqual(data, '')
         self.assertEqual(proc.response_code, http.NO_CONTENT)
         # fetch resource again
         try:
-            proc.run(GET, '/delete-test/notvc/test.xml')
+            proc.run(GET, '/delete-test/xml/notvc/test.xml')
             self.fail("Expected ProcessorError")
         except ProcessorError, e:
             self.assertEqual(e.code, http.NOT_FOUND)
@@ -194,55 +206,57 @@ class ProcessorDELETETest(SeisHubEnvironmentTestCase):
         """XXX: POST on deleted version controlled resource should work."""
         proc = Processor(self.env)
         # create resource
-        proc.run(PUT, '/delete-test/vc/test.xml', StringIO(XML_DOC))
-        proc.run(POST, '/delete-test/vc/test.xml', StringIO(XML_VC_DOC % 2))
-        proc.run(POST, '/delete-test/vc/test.xml', StringIO(XML_VC_DOC % 3))
+        proc.run(PUT, '/delete-test/xml/vc/test.xml', StringIO(XML_DOC))
+        proc.run(POST, '/delete-test/xml/vc/test.xml', StringIO(XML_VCDOC % 2))
+        proc.run(POST, '/delete-test/xml/vc/test.xml', StringIO(XML_VCDOC % 3))
         # delete resource
-        proc.run(DELETE, '/delete-test/vc/test.xml')
+        proc.run(DELETE, '/delete-test/xml/vc/test.xml')
         # upload again
-        proc.run(POST, '/delete-test/vc/test.xml', StringIO(XML_VC_DOC % 1000))
-        data=proc.run(GET, '/delete-test/vc/test.xml')
-        self.assertEqual(data, XML_VC_DOC % 1000)
-        data=proc.run(GET, '/delete-test/vc/test.xml/1')
+        proc.run(POST, '/delete-test/xml/vc/test.xml', 
+                 StringIO(XML_VCDOC % 1000))
+        data=proc.run(GET, '/delete-test/xml/vc/test.xml')
+        self.assertEqual(data, XML_VCDOC % 1000)
+        data=proc.run(GET, '/delete-test/xml/vc/test.xml/1')
         self.assertEqual(data, XML_DOC)
-        data=proc.run(GET, '/delete-test/vc/test.xml/2')
-        self.assertEqual(data, XML_VC_DOC % 2)
-        data=proc.run(GET, '/delete-test/vc/test.xml/3')
-        self.assertEqual(data, XML_VC_DOC % 3)
-        data=proc.run(GET, '/delete-test/vc/test.xml/4')
+        data=proc.run(GET, '/delete-test/xml/vc/test.xml/2')
+        self.assertEqual(data, XML_VCDOC % 2)
+        data=proc.run(GET, '/delete-test/xml/vc/test.xml/3')
+        self.assertEqual(data, XML_VCDOC % 3)
+        data=proc.run(GET, '/delete-test/xml/vc/test.xml/4')
         # XXX: BUG - see ticket #62
-        data=proc.run(GET, '/delete-test/vc/test.xml/5')
-        self.assertEqual(data, XML_VC_DOC % 1000)
+        data=proc.run(GET, '/delete-test/xml/vc/test.xml/5')
+        self.assertEqual(data, XML_VCDOC % 1000)
     
     def test_putOnDeletedVersionControlledResource(self):
         """XXX: PUT on deleted version controlled resource should work."""
         proc = Processor(self.env)
         # create resource
-        proc.run(PUT, '/delete-test/vc/test.xml', StringIO(XML_DOC))
-        proc.run(POST, '/delete-test/vc/test.xml', StringIO(XML_VC_DOC % 2))
-        proc.run(POST, '/delete-test/vc/test.xml', StringIO(XML_VC_DOC % 3))
+        proc.run(PUT, '/delete-test/xml/vc/test.xml', StringIO(XML_DOC))
+        proc.run(POST, '/delete-test/xml/vc/test.xml', StringIO(XML_VCDOC % 2))
+        proc.run(POST, '/delete-test/xml/vc/test.xml', StringIO(XML_VCDOC % 3))
         # delete resource
-        proc.run(DELETE, '/delete-test/vc/test.xml')
+        proc.run(DELETE, '/delete-test/xml/vc/test.xml')
         # upload again
         # XXX: BUG - see ticket #62
-        proc.run(PUT, '/delete-test/vc/test.xml', StringIO(XML_VC_DOC % 1000))
-        data=proc.run(GET, '/delete-test/vc/test.xml')
-        self.assertEqual(data, XML_VC_DOC % 1000)
-        data=proc.run(GET, '/delete-test/vc/test.xml/1')
+        proc.run(PUT, '/delete-test/xml/vc/test.xml', 
+                 StringIO(XML_VCDOC % 1000))
+        data=proc.run(GET, '/delete-test/xml/vc/test.xml')
+        self.assertEqual(data, XML_VCDOC % 1000)
+        data=proc.run(GET, '/delete-test/xml/vc/test.xml/1')
         self.assertEqual(data, XML_DOC)
-        data=proc.run(GET, '/delete-test/vc/test.xml/2')
-        self.assertEqual(data, XML_VC_DOC % 2)
-        data=proc.run(GET, '/delete-test/vc/test.xml/3')
-        self.assertEqual(data, XML_VC_DOC % 3)
-        data=proc.run(GET, '/delete-test/vc/test.xml/4')
+        data=proc.run(GET, '/delete-test/xml/vc/test.xml/2')
+        self.assertEqual(data, XML_VCDOC % 2)
+        data=proc.run(GET, '/delete-test/xml/vc/test.xml/3')
+        self.assertEqual(data, XML_VCDOC % 3)
+        data=proc.run(GET, '/delete-test/xml/vc/test.xml/4')
         # XXX: BUG - see ticket #62
-        data=proc.run(GET, '/delete-test/vc/test.xml/5')
-        self.assertEqual(data, XML_VC_DOC % 1000)
+        data=proc.run(GET, '/delete-test/xml/vc/test.xml/5')
+        self.assertEqual(data, XML_VCDOC % 1000)
 
 
 def suite():
     suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(ProcessorDELETETest, 'test'))
+    suite.addTest(unittest.makeSuite(ProcessorDELETETestSuite, 'test'))
     return suite
 
 

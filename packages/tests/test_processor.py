@@ -40,7 +40,7 @@ class AResourceType(Component):
     """A non versioned test resource type."""
     implements(IResourceType, IPackage)
     
-    package_id = 'test'
+    package_id = 'processor-test'
     resourcetype_id = 'notvc'
     version_control = False
 
@@ -49,7 +49,7 @@ class AVersionControlledResourceType(Component):
     """A version controlled test resource type."""
     implements(IResourceType, IPackage)
     
-    package_id = 'test'
+    package_id = 'processor-test'
     resourcetype_id = 'vc'
     version_control = True
 
@@ -68,12 +68,12 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
     def test_failes(self):
         """XXX: BUG - see ticket #37 - This test should not fail!""" 
         proc = Processor(self.env)
-        proc.run(PUT, '/test/vc/test.xml', StringIO(XML_DOC))
-        proc.run(POST, '/test/vc/test.xml', StringIO(XML_DOC))
-        proc.run(POST, '/test/vc/test.xml', StringIO(XML_DOC))
-        proc.run(PUT, '/test/notvc/test.xml', StringIO(XML_DOC))
-        proc.run(DELETE, '/test/vc/test.xml')
-        proc.run(DELETE, '/test/notvc/test.xml')
+        proc.run(PUT, '/processor-test/xml/vc/test.xml', StringIO(XML_DOC))
+        proc.run(POST, '/processor-test/xml/vc/test.xml', StringIO(XML_DOC))
+        proc.run(POST, '/processor-test/xml/vc/test.xml', StringIO(XML_DOC))
+        proc.run(PUT, '/processor-test/xml/notvc/test.xml', StringIO(XML_DOC))
+        proc.run(DELETE, '/processor-test/xml/vc/test.xml')
+        proc.run(DELETE, '/processor-test/xml/notvc/test.xml')
     
     def test_oversizedURI(self):
         """Request URI ist restricted by MAX_URI_LENGTH."""
@@ -130,7 +130,23 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
                 self.assertEqual(e.code, http.FORBIDDEN)
             # with trailing slash
             try:
-                proc.run(method, '/test/')
+                proc.run(method, '/processor-test/')
+                self.fail("Expected ProcessorError")
+            except ProcessorError, e:
+                self.assertEqual(e.code, http.FORBIDDEN)
+    
+    def test_forbiddenMethodsOnResourceTypes(self):
+        proc = Processor(self.env)
+        for method in [POST, PUT, DELETE, MOVE]:
+            # without trailing slash
+            try:
+                proc.run(method, '/processor-test/xml')
+                self.fail("Expected ProcessorError")
+            except ProcessorError, e:
+                self.assertEqual(e.code, http.FORBIDDEN)
+            # with trailing slash
+            try:
+                proc.run(method, '/processor-test/xml/')
                 self.fail("Expected ProcessorError")
             except ProcessorError, e:
                 self.assertEqual(e.code, http.FORBIDDEN)
@@ -140,13 +156,13 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
         for method in [POST, DELETE, MOVE]:
             # without trailing slash
             try:
-                proc.run(method, '/test/vc')
+                proc.run(method, '/processor-test/xml/vc')
                 self.fail("Expected ProcessorError")
             except ProcessorError, e:
                 self.assertEqual(e.code, http.FORBIDDEN)
             # with trailing slash
             try:
-                proc.run(method, '/test/vc/')
+                proc.run(method, '/processor-test/xml/vc/')
                 self.fail("Expected ProcessorError")
             except ProcessorError, e:
                 self.assertEqual(e.code, http.FORBIDDEN)
@@ -162,13 +178,13 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
             self.assertTrue(data.has_key(field))
             self.assertTrue(isinstance(data.get(field), list))
         # check entries in packages
-        self.assertTrue('/test' in data.get('package'))
+        self.assertTrue('/processor-test' in data.get('package'))
         self.assertTrue('/seishub' in data.get('package'))
     
     def test_processPackage(self):
         proc = Processor(self.env)
         # test valid GET method
-        data = proc.run(GET, '/test')
+        data = proc.run(GET, '/processor-test')
         # data must be a dict
         self.assertTrue(isinstance(data, dict))
         # should have 'resourcetype', 'alias', 'property' and 'mapping'
@@ -176,25 +192,40 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
             self.assertTrue(data.has_key(field))
             self.assertTrue(isinstance(data.get(field), list))
         # check entries in resourcetypes
-        self.assertTrue('/test/vc' in data.get('resourcetype'))
-        self.assertTrue('/test/notvc' in data.get('resourcetype'))
+        self.assertTrue('/processor-test/xml' in data.get('resourcetype'))
+        self.assertEquals(len(data.get('resourcetype')), 1)
+    
+    def test_processResourceTypes(self):
+        proc = Processor(self.env)
+        # test valid GET method
+        data = proc.run(GET, '/processor-test/xml')
+        # data must be a dict
+        self.assertTrue(isinstance(data, dict))
+        # should only have 'resourcetype'
+        for field in ['resourcetype']:
+            self.assertTrue(data.has_key(field))
+            self.assertTrue(isinstance(data.get(field), list))
+        # check entries in resourcetypes
+        self.assertTrue('/processor-test/xml/vc' in data.get('resourcetype'))
+        self.assertTrue('/processor-test/xml/notvc' in 
+                        data.get('resourcetype'))
     
     def test_processPackageAlias(self):
         pass
     
     def test_processResourceType(self):
         proc = Processor(self.env)
-        proc.path = '/test/notvc'
+        proc.path = '/processor-test/xml/notvc'
         # test valid GET method
-        data = proc.run(GET, '/test/notvc')
+        data = proc.run(GET, '/processor-test/xml/notvc')
         # data must be a dict
         self.assertTrue(isinstance(data, dict))
         # should have at least 'package', 'property' and 'mapping' as keys
-        for field in ['index', 'alias', 'mapping', 'property', 'resource']:
+        for field in ['index', 'alias', 'property', 'resource']:
             self.assertTrue(data.has_key(field))
             self.assertTrue(isinstance(data.get(field), list))
         # test valid PUT method
-        data = proc.run(PUT, '/test/notvc', StringIO(XML_DOC))
+        data = proc.run(PUT, '/processor-test/xml/notvc', StringIO(XML_DOC))
         # check response; data should be empty; we look into request
         self.assertFalse(data)
         self.assertEqual(proc.response_code, http.CREATED)
@@ -204,7 +235,7 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
         location = response_header.get('Location')
         self.assertTrue(location.startswith(self.env.getRestUrl() + proc.path))
         # fetch all resources via property .all
-        data = proc.run(GET, '/test/notvc')
+        data = proc.run(GET, '/processor-test/xml/notvc')
         # only resources should be there
         self.assertTrue(data.has_key('resource'))
         self.assertTrue(isinstance(data.get('resource'),list))
@@ -235,12 +266,12 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
             self.assertEqual(e.code, http.FORBIDDEN)
         # id does not exists
         try:
-            proc.run(DELETE, '/test/notvc/-1')
+            proc.run(DELETE, '/processor-test/xml/notvc/-1')
             self.fail("Expected ProcessorError")
         except ProcessorError, e:
             self.assertEqual(e.code, http.NOT_FOUND)
         # upload a resource via PUT
-        data = proc.run(PUT, '/test/notvc', StringIO(XML_DOC))
+        data = proc.run(PUT, '/processor-test/xml/notvc', StringIO(XML_DOC))
         # check response; data should be empty; we look into request
         self.assertFalse(data)
         self.assertEqual(proc.response_code, http.CREATED)
@@ -272,7 +303,7 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
         """Test for a version controlled resource."""
         proc = Processor(self.env)
         # upload a resource via PUT
-        data = proc.run(PUT, '/test/vc', StringIO(XML_DOC))
+        data = proc.run(PUT, '/processor-test/xml/vc', StringIO(XML_DOC))
         # check response; data should be empty; we look into request
         self.assertFalse(data)
         self.assertEqual(proc.response_code, http.CREATED)

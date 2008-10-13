@@ -74,7 +74,7 @@ class DatabaseQueryPanel(Component):
     def renderPanel(self, request):
         db = self.env.db.engine
         data = {
-            'query': 'select 1;', 
+            'query': 'select 1 LIMIT 0,20;', 
             'result': '',
             'cols': '',
             'tables': self.tables,
@@ -87,7 +87,8 @@ class DatabaseQueryPanel(Component):
             else:
                 for table in self.tables:
                     if table in args.keys():
-                        query = 'SELECT * FROM '+DEFAULT_PREFIX+table+';'
+                        query = 'SELECT * FROM ' + DEFAULT_PREFIX + table + \
+                                ' LIMIT 0,20;'
             if query:
                 data['query'] = query
                 try:

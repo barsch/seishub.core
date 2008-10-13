@@ -5,13 +5,12 @@ import os
 from twisted.web import http
 
 from seishub.core import Component, implements
-from seishub.packages.interfaces import IPackage, IResourceType, \
-                                        IMapperMethod, \
-                                        IGETMapper, IPUTMapper, \
-                                        IPOSTMapper, IDELETEMapper
+from seishub.packages.interfaces import IPackage, IResourceType
+from seishub.packages.interfaces import IMapperMethod
+from seishub.packages.interfaces import IGETMapper, IPUTMapper
+from seishub.packages.interfaces import IPOSTMapper, IDELETEMapper
 from seishub.packages.processor import ProcessorError
 from seishub.packages.installer import registerStylesheet
-from seishub.util.text import isInteger
 from seishub.util.path import addBaseToList
 
 
@@ -79,6 +78,7 @@ class SchemaResourceMapper(Component):
     """A mapper for all registered schemas."""
     implements(IGETMapper, IPUTMapper, IPOSTMapper, IDELETEMapper)
     
+    package_id = 'seishub'
     mapping_url = '/seishub/schema/browser'
     
     def processGET(self, request):
@@ -142,10 +142,6 @@ class SchemaResourceMapper(Component):
         if not self.registry.isResourceTypeId(request.postpath[3],
                                               request.postpath[4]):
             raise ProcessorError(http.FORBIDDEN, "Invalid resource type.")
-        # check if a non integer id for file name
-        if isInteger(request.postpath[5][0]):
-            raise ProcessorError(http.FORBIDDEN, "Resource name must not " + \
-                                 "start with an integer.")
         # direct resource request
         try:
             self.registry.schemas.register(request.postpath[3],
