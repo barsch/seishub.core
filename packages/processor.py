@@ -114,10 +114,8 @@ class Processor:
         # test if it fits directly to a valid mapping
         if self.env.registry.mappers.get(self.path, self.method):
             return self._processMapping()
-        #import pdb;pdb.set_trace()
-        #XXX: finally it could be a sub path of a mapping
+        # finally it could be a sub path of a mapping
         return self._checkForMappingSubPath()
-        raise ProcessorError(http.FORBIDDEN)
     
     def _processResource(self):
         """Process a resource request."""
@@ -188,9 +186,9 @@ class Processor:
                                  "There is no %s mapper defined for %s." % + \
                                  (self.method, self.path))
         # only use first found object, but warn if multiple implementations
-        #if len(mapper)>1:
-        #    self.log.error('Multiple %s mappings found for %s' % 
-        #                   (self.method, self.path))
+        if len(mapper)>1:
+            self.log.warn('Multiple %s mappings found for %s' % 
+                          (self.method, self.path))
         func = getattr(mapper[0], 'process'+self.method)
         if not func:
             raise ProcessorError(http.NOT_IMPLEMENTED, "Function process%s" + \
@@ -203,7 +201,7 @@ class Processor:
                 raise
             else:
                 raise ProcessorError(http.INTERNAL_SERVER_ERROR, 
-                                     "Error processing %s mapper for %s." % + \
+                                  "Error processing %s mapper for %s." % + \
                                      (self.method, self.path))
         if self.method in [DELETE, POST]:
             self.response_code = http.NO_CONTENT

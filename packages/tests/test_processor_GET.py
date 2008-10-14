@@ -51,8 +51,47 @@ class ProcessorGETTest(SeisHubEnvironmentTestCase):
         self.env.disableComponent(AVersionControlledResourceType)
         self.env.disableComponent(AResourceType)
     
-    def test_processRoot(self):
-        pass
+    def test_getRootWithSlash(self):
+        proc = Processor(self.env)
+        data = proc.run(GET, '/')
+        # data must be a dict
+        self.assertTrue(isinstance(data, dict))
+        # should have at least 'package', 'property' and 'mapping' as keys
+        for field in ['package', 'property', 'mapping']:
+            self.assertTrue(data.has_key(field))
+            self.assertTrue(isinstance(data.get(field), list))
+        self.assertEquals(len(data.keys()), 3)
+        # check entries in packages
+        self.assertTrue('/get-test' in data.get('package'))
+        self.assertTrue('/seishub' in data.get('package'))
+    
+    def test_getPackage(self):
+        proc = Processor(self.env)
+        data = proc.run(GET, '/get-test')
+        # data must be a dict
+        self.assertTrue(isinstance(data, dict))
+        # should have 'resourcetype', 'alias', 'property' and 'mapping'
+        for field in ['resourcetype', 'alias', 'property', 'mapping']:
+            self.assertTrue(data.has_key(field))
+            self.assertTrue(isinstance(data.get(field), list))
+        self.assertEquals(len(data.keys()), 4)
+        # check entries in resourcetypes - should be only 1 entry with xml
+        self.assertTrue('/get-test/xml' in data.get('resourcetype'))
+        self.assertEquals(len(data.get('resourcetype')), 1)
+    
+    def test_getResourceTypes(self):
+        proc = Processor(self.env)
+        # test valid GET method
+        data = proc.run(GET, '/get-test/xml')
+        # data must be a dict with only one entry 'resourcetype' 
+        self.assertTrue(isinstance(data, dict))
+        for field in ['resourcetype']:
+            self.assertTrue(data.has_key(field))
+            self.assertTrue(isinstance(data.get(field), list))
+        self.assertEquals(len(data.keys()), 1)
+        # check entries in resourcetypes
+        self.assertTrue('/get-test/xml/vc' in data.get('resourcetype'))
+        self.assertTrue('/get-test/xml/notvc' in data.get('resourcetype'))
 
 
 def suite():

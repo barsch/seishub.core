@@ -167,52 +167,6 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
             except ProcessorError, e:
                 self.assertEqual(e.code, http.FORBIDDEN)
     
-    def test_processRoot(self):
-        proc = Processor(self.env)
-        # test valid GET method
-        data = proc.run(GET, '/')
-        # data must be a dict
-        self.assertTrue(isinstance(data, dict))
-        # should have at least 'package', 'property' and 'mapping' as keys
-        for field in ['package', 'property', 'mapping']:
-            self.assertTrue(data.has_key(field))
-            self.assertTrue(isinstance(data.get(field), list))
-        # check entries in packages
-        self.assertTrue('/processor-test' in data.get('package'))
-        self.assertTrue('/seishub' in data.get('package'))
-    
-    def test_processPackage(self):
-        proc = Processor(self.env)
-        # test valid GET method
-        data = proc.run(GET, '/processor-test')
-        # data must be a dict
-        self.assertTrue(isinstance(data, dict))
-        # should have 'resourcetype', 'alias', 'property' and 'mapping'
-        for field in ['resourcetype', 'alias', 'property', 'mapping']:
-            self.assertTrue(data.has_key(field))
-            self.assertTrue(isinstance(data.get(field), list))
-        # check entries in resourcetypes
-        self.assertTrue('/processor-test/xml' in data.get('resourcetype'))
-        self.assertEquals(len(data.get('resourcetype')), 1)
-    
-    def test_processResourceTypes(self):
-        proc = Processor(self.env)
-        # test valid GET method
-        data = proc.run(GET, '/processor-test/xml')
-        # data must be a dict
-        self.assertTrue(isinstance(data, dict))
-        # should only have 'resourcetype'
-        for field in ['resourcetype']:
-            self.assertTrue(data.has_key(field))
-            self.assertTrue(isinstance(data.get(field), list))
-        # check entries in resourcetypes
-        self.assertTrue('/processor-test/xml/vc' in data.get('resourcetype'))
-        self.assertTrue('/processor-test/xml/notvc' in 
-                        data.get('resourcetype'))
-    
-    def test_processPackageAlias(self):
-        pass
-    
     def test_processResourceType(self):
         proc = Processor(self.env)
         proc.path = '/processor-test/xml/notvc'
@@ -251,9 +205,6 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
         # check response; data should be empty; we look into request
         self.assertFalse(data)
         self.assertEqual(proc.response_code, http.NO_CONTENT)
-    
-    def test_processResourceTypeAlias(self):
-        pass
     
     def test_processResource(self):
         proc = Processor(self.env)
