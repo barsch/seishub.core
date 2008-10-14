@@ -155,7 +155,7 @@ class PackageManager(object):
         classes = ComponentMeta._registry.get(interface, [])
         # filter for classes with correct package id
         if package_id:
-            classes = [cls for cls in classes if cls in registry[package_id]]
+            classes = [cls for cls in classes if cls in registry.get(package_id, [])]
         return classes
     
     @staticmethod

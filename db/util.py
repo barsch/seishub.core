@@ -2,7 +2,7 @@
 from zope.interface import implements, Interface, directlyProvides, \
                            implementedBy, Attribute
 from zope.interface.exceptions import DoesNotImplement
-from sqlalchemy import select, Text
+from sqlalchemy import select, Text, and_
 from sqlalchemy.sql.expression import ClauseList #@UnresolvedImport
 
 class DbError(Exception):
@@ -19,13 +19,7 @@ class IDbEnabled(Interface):
 
 class ISerializable(Interface):
     """Object providing functionality for serialization"""
-    _id = Attribute("Unique id of Serializable object")
-    
-    def _getId():
-        """return internal storage id"""
-    
-    def _setId(id):
-        """set internal storage id"""
+    _id = Attribute("Unique id of Serializable object.")
         
 
 class IRelation(Interface):
@@ -42,6 +36,13 @@ class IDbObjectProxy(Interface):
 
 class IDbAttributeProxy(Interface):
     """marker interface for DbAttributeProxy class"""
+    
+
+class DB_NULL(object):
+    """Pass this object to pickup(...) as a parameter value to explicitly 
+    claim that parameter to be None.
+    """
+    pass
 
 
 class DbEnabled(object):
@@ -132,11 +133,113 @@ class DbStorage(DbEnabled):
             cl.append(table.c[col] == val)
         return cl, values
     
-    def _to_order_by(self, table, order_by = dict()):
-        cl = ClauseList()
-        for ob in order_by:
-            cl.append(table.c[ob].desc())
-        return cl
+    def _where_clause(self, table, map, values):
+        cl = ClauseList(operator = "AND")
+        for key, val in values.iteritems():
+            if key not in map.keys():
+                continue
+            col = map[key]
+            if IRelation.providedBy(col):
+                if isinstance(val, dict): # retrieve sub-object
+                    try:
+                        # TODO: do this via inline selects rather than getting
+                        # objects recursively
+                        o = self.pickup(col.cls, **val)[0]
+                        val = o._id
+                        values[key] = o
+                    except IndexError:
+                        raise DbError('A related object could not be '+\
+                                      'located in the database. %s: %s' %\
+                                      (col.cls, str(val)))
+                elif isinstance(val, col.cls): # object already there
+                    values[key] = val
+                    val = val._id
+                elif val:
+                    raise DbError("Invalid value for key '%s': %s" %\
+                                  (str(col.name), str(val)))
+                col = col.name
+            if val == None:
+                if key not in null:
+                    continue
+                elif isinstance(table.c[col].type, Text):
+                    val = ''
+            cl.append(table.c[col] == val)
+        return cl, values
+    
+    def _generate_query(self, q, table, mapping, params, joins = None):
+        params = params or dict()
+        #null = params.get('_null', list())
+        for attr, col in mapping.iteritems():
+            value = params.get(attr, None)
+            if IRelation.providedBy(col):
+                colname = col.name
+            else:
+                colname = col
+            if IRelation.providedBy(col) and value is not DB_NULL: # Object relation
+                if col.lazy and not value: 
+                    # skip lazy relations, if not needed for a where clause
+                    continue
+                if isinstance(value, col.cls) and hasattr(value, '_id'): 
+                    # if there is an object of correct type included with the 
+                    # query, providing an id, use that id instead
+                    # TODO: instead of using the id it would be more common to
+                    # use any parameters provided by the object
+                    value = {'_id':value._id}
+                rel_tab = col.cls.db_table
+                # from here on value should be none or a dict, 
+                # or something went wrong
+                assert not value or isinstance(value, dict)
+                if col.lazy and value and '_id' in value.keys():
+                    # in this case we got the id for the related object somehow
+                    # but don't need the related object, as it's non-eagerly 
+                    # loaded
+                    q = q.where(table.c[colname] == value['_id'])
+                else:
+                    # related object is eager loaded or needed for the query
+                    if not joins:
+                        joins = table.outerjoin(rel_tab, onclause = 
+                                                (table.c[colname] == rel_tab.c['id']))
+                    else:
+                        joins = joins.outerjoin(rel_tab, onclause = 
+                                                (table.c[colname] == rel_tab.c['id']))
+                    q, joins = self._generate_query(q, rel_tab, col.cls.db_mapping, 
+                                                        value, joins)
+            elif value == DB_NULL:
+                q = q.where(table.c[colname] == None)
+            elif value:
+                q = q.where(table.c[colname] == value)
+            # don't read lazy attribute columns
+            if not ILazyAttribute.providedBy(col):
+                q.append_column(table.c[colname])
+        return q, joins
+    
+    def _generate_obj(self, cls, result):
+        obj = cls()
+        table = cls.db_table
+        for attr, col in cls.db_mapping.iteritems():
+            if IRelation.providedBy(col): # object relation
+                if col.lazy:
+                    rel_id = result[str(table) + '_' + col.name]
+                    value = col.cls()
+                    if rel_id:
+                        value = DbObjectProxy(self, col.cls, _id = rel_id)
+                else:
+                    value = self._generate_obj(col.cls, result)
+            elif ILazyAttribute.providedBy(col): # lazy attribute
+                value = DbAttributeProxy(self, col, table, 
+                                         {'id':result[str(table) + '_id']})
+            else:
+                value = result[str(table) + '_' + col]
+            obj.__setattr__(attr, value)
+        return obj
+    
+    def _order_by(self, q, table, order_by = dict()):
+        for col, direction in order_by.iteritems():
+            if direction.lower() == 'asc':
+                q = q.order_by(table.c[col].asc())
+            else:
+                q = q.order_by(table.c[col].desc())
+        return q
     
     def _to_list(self, l):
         if l is None:
@@ -171,69 +274,37 @@ class DbStorage(DbEnabled):
         return True
 
     def pickup(self, cls, **keys):
-        """pickup Serializable objects with given keys from database"""
+        """Read Serializable objects with given keys from database.
+        @param cls: Object type to be retrieved.
+        @param **keys: kwarg list of the form: attribute_name = value
+        """
         if not ISerializable.implementedBy(cls):
             raise DoesNotImplement(ISerializable)
-        null = keys.get('_null', list())
-        order_by = keys.get('_order_by', list())
+        order_by = keys.get('_order_by', dict())
         table = cls.db_table
         map = cls.db_mapping
         db = self.getDb()
-        c = list()
-        for col in map.values():
-            if IRelation.providedBy(col):
-                col = col.name
-            elif ILazyAttribute.providedBy(col):
-                # skip lazy attributes
-                continue
-            c.append(table.c[col])
-        w, keys = self._to_where_clause(table, map, keys, null)
-        ob = self._to_order_by(table, order_by)
-        q = select(c, w, order_by = ob)
+        # generate query
+        q = table.select(use_labels = True)
+        q, joins = self._generate_query(q, table, map, keys)
+        if joins:
+            q = q.select_from(joins)
+        q = self._order_by(q, table, order_by)
+        # execute query
         r = db.execute(q)
         try:
             results = r.fetchall()
         finally:
             r.close()
+        # create objects from results
         objs = list()
         for res in results:
-            obj = cls()
-            for field, col in map.iteritems():
-                if IRelation.providedBy(col): # object relation
-                    if field in keys and keys[field]:  
-                        # use the object already retrieved during the query
-                        # this avoids getting objects twice
-                        assert isinstance(keys[field], col.cls)
-                        val = keys[field]
-                    elif res[col.name]:
-                        try:
-                            if col.lazy:
-                                val = DbObjectProxy(self, col.cls, 
-                                                    _id = res[col.name])
-                            else:
-                                val = self.pickup(col.cls, 
-                                                  _id = res[col.name])[0]
-                        except IndexError:
-                            raise DbError('A related object could not be '+\
-                                          'located in the database. %s: %s' %\
-                                          (col.cls, str(res[col.name])))
-                    else:
-                        # TODO: really needed ?
-                        val = col.cls()
-                elif ILazyAttribute.providedBy(col): # lazy attribute
-                    val = DbAttributeProxy(self, col, table, res)
-                else: # simple / plain attribute
-                    val = res[col]
-                if val == '':
-                    val = None
-                obj.__setattr__(field, val)
+            obj = self._generate_obj(cls, res)
             objs.append(obj)
-                    
         return self._to_list(objs)
     
     def drop(self, cls, **keys):
-        """delete object with given keys from database"""
-        null = keys.get('_null', list())
+        """Delete object with given keys from database."""
         # begin transaction:
         db = self.getDb()
         conn = db.connect()
@@ -241,16 +312,13 @@ class DbStorage(DbEnabled):
         table = cls.db_table
         try:
             map = cls.db_mapping
-            w, _ = self._to_where_clause(table, map, keys, null)
+            w, _ = self._to_where_clause(table, map, keys)
             # cascading deletes
             for rel in map.values():
                 if IRelation.providedBy(rel) and rel.cascading_delete:
                     q = select([table.c[rel.name]], w)
                     res = conn.execute(q).fetchall()
                     ids = [r[rel.name] for r in res]
-#                    raise NotImplementedError("cascading delete, this " +\
-#                                              "feature is not fully " +\
-#                                              "implemented yet")
                     for id in ids:
                         self.drop(rel.cls, _id = id)
             # delete parent

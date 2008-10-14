@@ -3,7 +3,7 @@
 from seishub.core import PackageManager, SeisHubError
 from seishub.util.text import from_uri
 from seishub.util.list import unique
-from seishub.db.util import DbStorage
+from seishub.db.util import DbStorage, DB_NULL 
 from seishub.packages.interfaces import IPackage, IResourceType, \
                                         IMapperMethod
 from seishub.packages.package import PackageWrapper, ResourceTypeWrapper, \
@@ -289,15 +289,14 @@ class RegistryBase(DbStorage, list):
             package_id, resourcetype_id, type = self._split_uri(uri)
         keys = {'type':type,
                 'resourcetype':None}
-        null = []
         if document_id:
             keys['document_id'] = document_id
         if package_id:
-            null = ['resourcetype']
+            keys['resourcetype'] = DB_NULL
             keys['package'] = {'package_id' : package_id}
         if resourcetype_id:
             keys['resourcetype'] = {'resourcetype_id' : resourcetype_id}
-        objs = self.pickup(self.cls, _null = null, **keys)
+        objs = self.pickup(self.cls, **keys)
         # inject catalog into objs for lazy resource retrieval
         for o in objs:
             o._catalog = self.catalog
@@ -359,13 +358,12 @@ class AliasRegistry(RegistryBase):
             package_id, resourcetype_id, name = self._split_uri(uri)
         keys = {'name':name,
                 'expr':expr}
-        null = ['resourcetype']
         if package_id:
             keys['package'] = {'package_id' : package_id}
-            keys['resourcetype'] = None
+            keys['resourcetype'] = DB_NULL
             if resourcetype_id:
                 keys['resourcetype'] = {'resourcetype_id' : resourcetype_id}
-        objs = self.pickup(self.cls, _null = null, **keys)
+        objs = self.pickup(self.cls, **keys)
         return objs
     
     def delete(self, package_id = None, resourcetype_id = None, name = None, 

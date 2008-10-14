@@ -65,8 +65,9 @@ class XmlDbManager(DbStorage):
     
     def _getResource(self, package = None, resourcetype = None, name = None, 
                      revision = None, id = None):
+        # XXX: preformance? get latest revision ONLY
         try:
-            res = self.pickup(Resource, _order_by = ['revision'], 
+            res = self.pickup(Resource, _order_by = {'revision':'desc'}, 
                               package = package, 
                               resourcetype = resourcetype,
                               name = name,

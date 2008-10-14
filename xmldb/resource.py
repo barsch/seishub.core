@@ -85,7 +85,8 @@ class XmlDocument(Serializable):
     db_table = data_tab
     db_mapping = {'data':LazyAttribute('data'),
                   '_id':'id',
-                  'meta':Relation(DocumentMeta, 'id', cascading_delete = True)
+                  'meta':Relation(DocumentMeta, 'id', cascading_delete = True,
+                                  lazy = False)
                   }
     
     def __init__(self, data = None, id = None, uid = None):

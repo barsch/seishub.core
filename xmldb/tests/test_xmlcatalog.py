@@ -215,6 +215,7 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         self.assertEqual(res2, [self.res2.document._id, 
                                 self.res1.document._id])
         res3 = self.env.catalog.query('/testpackage/*/*')
+        res3.sort()
         self.assertEqual(res3, [self.res1.document._id,
                          self.res2.document._id,
                          self.res3.document._id])
