@@ -48,7 +48,6 @@ resource_tab = Table(DEFAULT_PREFIX + RESOURCE_TABLE, metadata,
            default = text('(SELECT coalesce(max(id), 0) + 1 FROM '+\
                           DEFAULT_PREFIX + RESOURCE_TABLE +')')
            ),
-    # Column('hash', Integer),
     UniqueConstraint('package_id', 'resourcetype_id', 'name', 'revision'),
     PrimaryKeyConstraint('id', 'revision'),
     useexisting=True,
@@ -62,10 +61,7 @@ metadata_def_tab = Table(DEFAULT_PREFIX + METADATA_DEF_TABLE, metadata,
     )
 
 metadata_tab = Table(DEFAULT_PREFIX + METADATA_TABLE, metadata,
-    Column('resource_id', Integer, 
-           #ForeignKey(DEFAULT_PREFIX + DATA_TABLE +
-           #                                   '.id')
-           ),
+    Column('resource_id', Integer),
     Column('metadata_id', Integer),
     Column('value', Text),
     useexisting=True,
@@ -85,10 +81,7 @@ index_def_tab = Table(DEFAULT_PREFIX + INDEX_DEF_TABLE, metadata,
 
 index_tab = Table(DEFAULT_PREFIX + INDEX_TABLE, metadata,
     Column('id', Integer, primary_key = True, autoincrement = True),
-    Column('index_id', Integer, 
-           #ForeignKey(DEFAULT_PREFIX + INDEX_DEF_TABLE +
-           #'.id')
-           ),
+    Column('index_id', Integer),
     Column('key', Text),
     Column('value', Integer),
     useexisting=True,

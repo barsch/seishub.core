@@ -49,8 +49,10 @@ class XmlCatalog(object):
     def modifyResource(self, package_id, resourcetype_id, name, xml_data):
         package, resourcetype = self.env.registry.\
                                    objects_from_id(package_id, resourcetype_id)
-        res = Resource(package, resourcetype, name, 
-                       document = newXMLDocument(xml_data))
+        #import pdb;pdb.set_trace()
+        res = Resource(package, resourcetype, 
+                       document = newXMLDocument(xml_data),
+                       name = name)
         self.xmldb.modifyResource(res)
         
     def deleteResource(self, package_id, resourcetype_id, name, revision=None):

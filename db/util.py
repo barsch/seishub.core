@@ -342,19 +342,18 @@ class Serializable(object):
     db_mapping = dict()
     
     def __init__(self, *args, **kwargs):
-        #super(Serializable, self).__init__(*args, **kwargs)
-        
         # TODO: remove?
         self._id = None
         
     def _getId(self):
-        # TODO
         try:
             return self._serializable_id
         except:
             return None
         
     def _setId(self, id):
+        if id and not isinstance(id, int):
+            raise TypeError("Id has to be integer. Got a %s." % str(type(id)))
         self._serializable_id = id
         
     _id = property(_getId, _setId, 'Internal id (integer)')
