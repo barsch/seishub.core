@@ -49,6 +49,7 @@ def suite():
     from seishub.tests import suite as tests_suite
     from seishub.util.tests import suite as util_suite
     from seishub.xmldb.tests import suite as xmldb_suite
+    from seishub.db.tests import suite as db_suite
     
     suite = unittest.TestSuite()
     suite.addTest(packages_suite())
@@ -56,6 +57,7 @@ def suite():
     suite.addTest(tests_suite())
     suite.addTest(util_suite())
     suite.addTest(xmldb_suite())
+    suite.addTest(db_suite())
     
     return suite
 

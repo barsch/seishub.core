@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
+import time
+
 from zope.interface import implements, Interface, directlyProvides, \
                            implementedBy, Attribute
 from zope.interface.exceptions import DoesNotImplement
 from sqlalchemy import select, Text, and_
+from sqlalchemy.exceptions import IntegrityError
 from sqlalchemy.sql.expression import ClauseList #@UnresolvedImport
 
 class DbError(Exception):
@@ -67,6 +70,9 @@ class DbStorage(DbEnabled):
     Internal integer ids are stored into the _id attribute of Serializable 
     objects.
     """
+    def __init__(self, db, debug = False):
+        DbEnabled.__init__(self, db)
+        self.debug = debug
     
     def _is_sqlite(self):
         return str(self._db.url).startswith('sqlite')
@@ -84,7 +90,7 @@ class DbStorage(DbEnabled):
                     if not value._id:
                         raise DbError('A related object could not be '+\
                                       'located in the database. %s: %s' %\
-                                      (type(value),str(value)))
+                                      (type(value), str(value)))
                     value = value._id
                 col = col.name
 #                kwargs = self._to_kwargs(value)
@@ -166,9 +172,9 @@ class DbStorage(DbEnabled):
             cl.append(table.c[col] == val)
         return cl, values
     
-    def _generate_query(self, q, table, mapping, params, joins = None):
+    def _generate_query(self, q, table, mapping, params, joins = None, 
+                        order_by = dict()):
         params = params or dict()
-        #null = params.get('_null', list())
         for attr, col in mapping.iteritems():
             value = params.get(attr, None)
             if IRelation.providedBy(col):
@@ -176,7 +182,7 @@ class DbStorage(DbEnabled):
             else:
                 colname = col
             if IRelation.providedBy(col) and value is not DB_NULL: # Object relation
-                if col.lazy and not value: 
+                if col.lazy and not value and attr not in order_by.keys(): 
                     # skip lazy relations, if not needed for a where clause
                     continue
                 if isinstance(value, col.cls) and hasattr(value, '_id'): 
@@ -189,21 +195,23 @@ class DbStorage(DbEnabled):
                 # from here on value should be none or a dict, 
                 # or something went wrong
                 assert not value or isinstance(value, dict)
-                if col.lazy and value and '_id' in value.keys():
+                if col.lazy and value and '_id' in value.keys() and attr not in order_by.keys():
                     # in this case we got the id for the related object somehow
                     # but don't need the related object, as it's non-eagerly 
-                    # loaded
+                    # loaded and not part of the ORDER_BY clause
                     q = q.where(table.c[colname] == value['_id'])
                 else:
-                    # related object is eager loaded or needed for the query
+                    # related object is eagerly loaded or needed for the query
                     if not joins:
                         joins = table.outerjoin(rel_tab, onclause = 
                                                 (table.c[colname] == rel_tab.c['id']))
                     else:
                         joins = joins.outerjoin(rel_tab, onclause = 
                                                 (table.c[colname] == rel_tab.c['id']))
-                    q, joins = self._generate_query(q, rel_tab, col.cls.db_mapping, 
-                                                        value, joins)
+                    rel_order_by = order_by.get(attr, dict())
+                    q, joins = self._generate_query(q, rel_tab, 
+                                                    col.cls.db_mapping, value, 
+                                                    joins, rel_order_by)
             elif value == DB_NULL:
                 q = q.where(table.c[colname] == None)
             elif value:
@@ -233,8 +241,24 @@ class DbStorage(DbEnabled):
             obj.__setattr__(attr, value)
         return obj
     
-    def _order_by(self, q, table, order_by = dict()):
+    def _get_children(self, obj):
+        objs = list()
+        for attr, col in obj.db_mapping.iteritems():
+            if IRelation.providedBy(col):
+                value = obj.__getattribute__(attr)
+                if value:
+                    objs.extend(self._get_children(value))
+        objs.append(obj)
+        return objs
+
+    def _order_by(self, q, table, mapping, order_by = dict()):
         for col, direction in order_by.iteritems():
+#             tables in ORDER BY clause also have to be in FROM clause
+#            q.outerjoin(table)
+            if isinstance(direction, dict):
+                q = self._order_by(q, mapping[col].cls.db_table, 
+                                   mapping[col].cls.db_mapping, direction)
+                continue
             if direction.lower() == 'asc':
                 q = q.order_by(table.c[col].asc())
             else:
@@ -249,10 +273,23 @@ class DbStorage(DbEnabled):
     def to_sql_like(self, expr):
         return expr.replace('*', '%')
         
-    def store(self, *objs):
+    def store(self, *objs, **kwargs):
         """store a (list of) Serializable object(s) into specified db table  
         if objs is a list, all objects in list will be stored within the same 
-        transaction"""
+        transaction.
+        
+        @keyword cascading: If True, also underlying related objects are 
+                            stored, default is False.
+        @type cascading:    bool
+        """
+        if hasattr(self,'debug') and self.debug:
+            start = time.time()
+        cascading = kwargs.get('cascading', False)
+        if cascading:
+            casc_objs = list()
+            for o in objs:
+                casc_objs.extend(self._get_children(o))
+            objs = casc_objs
         db = self.getDb()
         conn = db.connect()
         txn = conn.begin()
@@ -266,11 +303,17 @@ class DbStorage(DbEnabled):
                 o._id = r.last_inserted_ids()[0]
                 
             txn.commit()
+        except IntegrityError, e:
+            txn.rollback()
+            raise DbError(e)
         except:
             txn.rollback()
             raise
         finally:
             conn.close()
+        if hasattr(self,'debug') and self.debug:
+            print "DBUTIL: Stored %i objects in %s seconds." %\
+                  (len(objs), time.time()-start)
         return True
 
     def pickup(self, cls, **keys):
@@ -278,6 +321,8 @@ class DbStorage(DbEnabled):
         @param cls: Object type to be retrieved.
         @param **keys: kwarg list of the form: attribute_name = value
         """
+        if hasattr(self,'debug') and self.debug:
+            start = time.time()
         if not ISerializable.implementedBy(cls):
             raise DoesNotImplement(ISerializable)
         order_by = keys.get('_order_by', dict())
@@ -286,10 +331,11 @@ class DbStorage(DbEnabled):
         db = self.getDb()
         # generate query
         q = table.select(use_labels = True)
-        q, joins = self._generate_query(q, table, map, keys)
+        q, joins = self._generate_query(q, table, map, keys, 
+                                        order_by = order_by)
         if joins:
             q = q.select_from(joins)
-        q = self._order_by(q, table, order_by)
+        q = self._order_by(q, table, map, order_by)
         # execute query
         r = db.execute(q)
         try:
@@ -301,10 +347,15 @@ class DbStorage(DbEnabled):
         for res in results:
             obj = self._generate_obj(cls, res)
             objs.append(obj)
+        if hasattr(self,'debug') and self.debug:
+            print "DBUTIL: Loaded %i object(-tree)s in %s seconds." %\
+                  (len(objs), time.time()-start)
         return self._to_list(objs)
     
     def drop(self, cls, **keys):
         """Delete object with given keys from database."""
+        if hasattr(self,'debug') and self.debug:
+            start = time.time()
         # begin transaction:
         db = self.getDb()
         conn = db.connect()
@@ -329,13 +380,20 @@ class DbStorage(DbEnabled):
             raise
         finally:
             conn.close()
+        if hasattr(self,'debug') and self.debug:
+            print "DBUTIL: Deletion completed in %s seconds." %\
+                  (time.time()-start)
         return True
 
 
 class Serializable(object):
-    """Subclasses may be serialized into a DbStorage
+    """Subclasses may be serialized into a DbStorage.
+    
     Serializable objects should implement serializable attributes via the
-    db_property descriptor"""
+    db_property descriptor.
+    All arguments of the __init__ method of a Serializable object have to be 
+    optional and should default to None!
+    """
     
     implements(ISerializable)
     
@@ -352,8 +410,9 @@ class Serializable(object):
             return None
         
     def _setId(self, id):
-        if id and not isinstance(id, int):
-            raise TypeError("Id has to be integer. Got a %s." % str(type(id)))
+        if id and not (isinstance(id, int) or isinstance(id, long)):
+            raise TypeError("Id has to be integer or long. Got a %s." %\
+                            str(type(id)))
         self._serializable_id = id
         
     _id = property(_getId, _setId, 'Internal id (integer)')
@@ -396,11 +455,11 @@ class DbAttributeProxy(object):
         try:
             q = select([self.table.c[self.attr_name]], w)
             res = self.db_storage.db.execute(q).fetchall()
-            assert len(res) == 1 # sanity check
+            assert len(res) <= 1 # sanity check
             return res[0][self.attr_name]
         except IndexError:
             raise DbError('An error occurred while getting related object ' +\
-                          'data %s: %s' % (self.cls, self.kwargs))
+                          'data "%s": %s' % (self.attr_name, self.keyargs))
 
 
 class db_property(property):
@@ -431,11 +490,12 @@ class db_property(property):
             
 
 class Relation(object):
-    """Defines a relation between Serializable objects
+    """Defines a one-to-one/many-to-one relation between Serializable objects.
     
     @param cls: class of target object type
     @param name: name of the referencing column in database table
-    @param lazy: lazy getting of related objects (True by default)
+    @param lazy: lazy getting of related objects (True by default), in order to
+    support lazy getting, usage of the 'db_property' descriptor is mandatory.
     @param cascading_delete: automatically delete related objects, when parent
     is deleted (False by default)"""
     
