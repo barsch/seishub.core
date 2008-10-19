@@ -124,7 +124,7 @@ class Parent(Serializable):
 class DbUtilTest(SeisHubEnvironmentTestCase):
     def __init__(self, *args, **kwargs):
         SeisHubEnvironmentTestCase.__init__(self, *args, **kwargs)
-        self.db = DbStorage(self.env.db, debug = True)
+        self.db = DbStorage(self.env.db, debug = False)
         
 #    def _config(self):
 #        self.config.set('db', 'verbose', True)

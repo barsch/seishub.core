@@ -87,7 +87,7 @@ class PackageInstaller(object):
     def _pre_register(*args, **kwargs):
         """pre-register an object from filesystem"""
         reg = args[0]
-        # get package id and resorcetype_id from calling class
+        # get package id and resourcetype_id from calling class
         frame = sys._getframe(2)
         locals_ = frame.f_locals
         # Some sanity checks
@@ -96,7 +96,7 @@ class PackageInstaller(object):
         package_id = locals_.get('package_id', None)
         resourcetype_id = locals_.get('resourcetype_id', None)
         assert package_id, 'class must provide package_id'
-        if reg in ['_stylesheets', '_schemas']:
+        if reg in ['_schemas']:
             assert resourcetype_id, 'class must provide resourcetype_id'
         # relative path -> absolute path
         filename = kwargs.get('filename', None)
@@ -104,7 +104,6 @@ class PackageInstaller(object):
             kwargs['filename'] = os.path.join(os.path.dirname(
                                            frame.f_code.co_filename), filename)
         locals_.setdefault('_registry' + reg, []).append(kwargs)
-        #import pdb;pdb.set_trace()
             
     @staticmethod
     def install(env, package_id = None):

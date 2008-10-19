@@ -8,8 +8,7 @@ from seishub.packages.interfaces import IPackage, IResourceType, \
                                         IMapperMethod
 from seishub.packages.package import PackageWrapper, ResourceTypeWrapper, \
                                      Alias, Schema, Stylesheet
-from seishub.packages.util import RegistryDictProxy, \
-                                  RegistryListProxy
+from seishub.packages.util import RegistryDictProxy, RegistryListProxy
 
 
 class ComponentRegistry(DbStorage):
@@ -37,7 +36,12 @@ class ComponentRegistry(DbStorage):
     
     def getPackage(self, package_id):
         """Returns a single package object."""
-        return self.getComponents(IPackage, package_id)[0]
+        pkg = self.getComponents(IPackage, package_id)
+        if not pkg:
+            raise SeisHubError(("Package with id '%s' not found. Make sure " +\
+                               "the package has been enabled.") % (package_id))
+        return pkg[0] 
+        
 
     def getPackageIds(self):
         """Returns sorted list of all enabled package ids."""
@@ -243,7 +247,8 @@ class RegistryBase(DbStorage, list):
     """base class for StylesheetRegistry, SchemaRegistry and AliasRegistry
     
     NOTE: a registry object is unambiguously defined by either 
-    (package, resourcetype, type) or by (package, type) respectively. """
+    (package, resourcetype, type) or by (package, type) respectively.
+    """
     
     def __init__(self, registry):
         super(DbStorage, self).__init__(registry.env.db)
@@ -258,9 +263,11 @@ class RegistryBase(DbStorage, list):
         package_id = args[1]
         if len(args) == 3: # no resourcetype
             type = args[2]
-        else:
+        elif len(args) == 4:
             resourcetype_id = args[2]
             type = args[3]
+        else:
+            raise SeisHubError("Invalid URL: %s" % uri)
         return package_id, resourcetype_id, type
             
     def register(self, package_id, resourcetype_id, type, xml_data):
@@ -283,18 +290,19 @@ class RegistryBase(DbStorage, list):
     
     def get(self, package_id = None, resourcetype_id = None, type = None, 
             document_id = None, uri = None):
-        """Get objects either by (package_id, resourcetype_id, type), 
-        by document_id of related XmlDocument or by unique uri"""
         if uri:
             package_id, resourcetype_id, type = self._split_uri(uri)
-        keys = {'type':type,
-                'resourcetype':None}
+        keys = {'package':None,
+                'resourcetype':None,
+                'type':type
+                }
         if document_id:
             keys['document_id'] = document_id
         if package_id:
-            keys['resourcetype'] = DB_NULL
             keys['package'] = {'package_id' : package_id}
-        if resourcetype_id:
+        if resourcetype_id == DB_NULL:
+            keys['resourcetype'] = DB_NULL
+        elif resourcetype_id:
             keys['resourcetype'] = {'resourcetype_id' : resourcetype_id}
         objs = self.pickup(self.cls, **keys)
         # inject catalog into objs for lazy resource retrieval
@@ -307,7 +315,11 @@ class RegistryBase(DbStorage, list):
         o = self.get(package_id, resourcetype_id, type,
                      uri = uri, document_id = document_id)
         if len(o) > 1:
-            raise SeisHubError("Unexpected result set length.")
+            raise SeisHubError("Error deleting a schema or stylesheet: " +\
+                               "Unexpected result set length.")
+        if len(o) == 0:
+            raise SeisHubError("Error deleting a schema or stylesheet: " +\
+                               "No objects found with the given parameters.")
         self.catalog.xmldb.deleteResource(document_id = o[0].document_id)
         self.drop(self.cls, document_id = o[0].document_id)
         return True
@@ -315,18 +327,124 @@ class RegistryBase(DbStorage, list):
 
 class SchemaRegistry(RegistryBase):
     _registry = list()
-    
     cls = Schema
     package_id = "seishub"
     resourcetype_id = "schema"
+    
+    def _split_uri(self, uri):
+        resourcetype_id = None
+        type = None
+        args = uri.split('/')
+        package_id = args[1]
+        if len(args) == 3: # no type
+            resourcetype_id = args[2]
+        elif len(args) == 4:
+            resourcetype_id = args[2]
+            type = args[3]
+        else:
+            raise SeisHubError("Invalid URL: %s" % uri)
+        return package_id, resourcetype_id, type
+    
+    def register(self, package_id, resourcetype_id, type, xml_data):
+        """Register a schema.
+        
+        @param package_id: package id
+        @type package_id: str
+        @param resourcetype_id: resourcetype id
+        @type resourcetype_id: str
+        @param type: type / additional label
+        @type type: str
+        @param xml_data: Xml data of schema.
+        @type xml_data: str
+        """
+        if not resourcetype_id:
+            raise SeisHubError("Schemas must have a resourcetype.")
+        return RegistryBase.register(self, package_id, resourcetype_id, type, 
+                                     xml_data)
+        
+    def get(self, package_id = None, resourcetype_id = None, type = None, 
+            document_id = None, uri = None):
+        """Get schemas either by (package_id, resourcetype_id, type), 
+        by document_id of related XmlDocument or by uri.
+        
+        The following parameter combinations return a single schema:
+         - get(package_id, resourcetype_id, type)
+         - get(document_id = ...)
+         
+        The following combinations return multiple schemas:
+         - get(package_id, resourcetype_id)
+         - get(package_id)
+         - get() -> all stylesheets
+        """
+        return RegistryBase.get(self, package_id, resourcetype_id, type, 
+                                document_id, uri)
+        
+    def delete(self, package_id = None, resourcetype_id = None, type = None,
+               document_id = None, uri = None):
+        """Remove a schema from the registry.
+        
+        Deletion of multiple schemas is not allowed. Therefore the following 
+        parameter combinations are allowed:
+         - delete(package_id, resourcetype_id, type)
+         - delete(document_id = ...)
+         - delete(uri = ...)
+        """
+        return RegistryBase.delete(self, package_id, resourcetype_id, type, 
+                                   document_id, uri)
 
 
 class StylesheetRegistry(RegistryBase):
     _registry = list()
-
     cls = Stylesheet
     package_id = "seishub"
     resourcetype_id = "stylesheet"
+    
+    def register(self, package_id, resourcetype_id, type, xml_data):
+        """Register a stylesheet.
+        
+        @param package_id: package id
+        @type package_id: str
+        @param resourcetype_id: resourcetype id (may be None)
+        @type resourcetype_id: str | NoneType
+        @param type: type / additional label
+        @type type: str
+        @param xml_data: Xml data of schema.
+        @type xml_data: str
+        """
+        return RegistryBase.register(self, package_id, resourcetype_id, type, 
+                                     xml_data)
+        
+    def get(self, package_id = None, resourcetype_id = None, type = None, 
+            document_id = None, uri = None):
+        """Get stylesheets either by (package_id, resourcetype_id, type), 
+        by document_id of related XmlDocument or by uri.
+        
+        The following parameter combinations return a single stylesheet:
+         - get(package_id, resourcetype_id, type) -> resourcetype specific
+         - get(package_id, None, type) -> package specific
+         - get(document_id = ...)
+         
+        The following combinations return multiple stylesheets:
+         - get(package_id, resourcetype_id) -> resourcetype specific
+         - get(package_id) -> package specific
+         - get() -> all stylesheets
+        """
+        return RegistryBase.get(self, package_id, resourcetype_id or DB_NULL, 
+                                type, document_id, uri)
+        
+    def delete(self, package_id = None, resourcetype_id = None, type = None,
+               document_id = None, uri = None):
+        """Remove a stylesheet from the registry.
+        
+        Deletion of multiple stylesheets is not allowed. Therefore the 
+        following parameter combinations are allowed:
+         - delete(package_id, resourcetype_id, type)
+         - delete(package_id, None, type)
+         - delete(document_id = ...)
+         - delete(uri = ...)
+        """
+        return RegistryBase.delete(self, package_id, resourcetype_id, type, 
+                                   document_id, uri)
 
 
 class AliasRegistry(RegistryBase):

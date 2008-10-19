@@ -6,7 +6,8 @@ from seishub.core import SeisHubError
 from seishub.test import SeisHubEnvironmentTestCase
 from seishub.core import Component, implements
 from seishub.packages.builtins import IResourceType, IPackage
-from seishub.packages.installer import registerStylesheet, registerAlias
+from seishub.packages.installer import registerStylesheet, registerAlias 
+from seishub.packages.installer import registerSchema
 from seishub.packages.interfaces import IGETMapper, IPUTMapper
 from seishub.xmldb.resource import Resource, newXMLDocument
 
@@ -144,16 +145,26 @@ class PackageRegistryTest(SeisHubEnvironmentTestCase):
         self.env.registry.db_registerPackage('testpackage0', '1.0')
         self.env.registry.db_registerResourceType('testpackage0', 'weapon',   
                                                   '1.0')
+        self.env.registry.db_registerResourceType('testpackage0', 'armor',   
+                                                  '1.0')
+        
     def tearDown(self):
         self.env.registry.db_deleteResourceType('testpackage0', 'weapon')
+        self.env.registry.db_deleteResourceType('testpackage0', 'armor')
         self.env.registry.db_deletePackage('testpackage0')
         
     def test_split_uri(self):
-        reg = self.env.registry.schemas
+        reg = self.env.registry.stylesheets
         self.assertEqual(reg._split_uri('/package/resourcetype/type'), 
                          ('package', 'resourcetype', 'type'))
         self.assertEqual(reg._split_uri('/package/type'), 
                          ('package', None, 'type'))
+        reg = self.env.registry.schemas
+        self.assertEqual(reg._split_uri('/package/resourcetype/type'), 
+                         ('package', 'resourcetype', 'type'))
+        self.assertEqual(reg._split_uri('/package/resourcetype'), 
+                         ('package', 'resourcetype', None))
+        
     
     def test_InMemoryRegistry(self):
         packages = self.env.registry.getPackageIds()
@@ -206,11 +217,15 @@ class PackageRegistryTest(SeisHubEnvironmentTestCase):
     def test_SchemaRegistry(self):
         self.env.registry.schemas.register('testpackage0', 'weapon', 'xsd', 
                                            TEST_SCHEMA)
+        self.env.registry.schemas.register('testpackage0', 'armor', 'xsd', 
+                                           TEST_SCHEMA)
+        
         schema = self.env.registry.schemas.get(package_id = 'testpackage0',
                                                resourcetype_id = 'weapon')
         self.assertEqual(schema[0].package.package_id, 'testpackage0')
         self.assertEqual(schema[0].resourcetype.resourcetype_id, 'weapon')
         self.assertEqual(schema[0].type, 'xsd')
+        
         # get schema resource
         res = schema[0].resource
         self.assertEqual(res.document.data, TEST_SCHEMA)
@@ -226,24 +241,36 @@ class PackageRegistryTest(SeisHubEnvironmentTestCase):
         self.assertEqual(res.package.package_id, 'seishub')
         self.assertEqual(res.resourcetype.resourcetype_id, 'schema')
         
-        # add a second schema without resourcetype
-        self.env.registry.schemas.register('testpackage0', None, 'xsd', 
-                                           TEST_SCHEMA)
+        # schema without resourcetype is not allowed
+        self.assertRaises(SeisHubError, self.env.registry.schemas.register, 
+                          'testpackage0', None, 'xsd', TEST_SCHEMA)
+        
         # get schemas for package 'testpackage0'        
         schemas = self.env.registry.schemas.get(package_id = 'testpackage0')
-        self.assertEqual(len(schemas),1)
+        self.assertEqual(len(schemas), 2)
         self.assertEqual(schemas[0].package.package_id, 'testpackage0')
-        self.assertEqual(schemas[0].resourcetype.resourcetype_id, None)
+        self.assertEqual(schemas[0].resourcetype.resourcetype_id, 'weapon')
         self.assertEqual(schemas[0].type, 'xsd')
-        #by uri
+        self.assertEqual(schemas[1].package.package_id, 'testpackage0')
+        self.assertEqual(schemas[1].resourcetype.resourcetype_id, 'armor')
+        self.assertEqual(schemas[1].type, 'xsd')
+        
+        # get by uri
+        # no schemas with package testpackage0 and resourcetype xsd
         schemas = self.env.registry.schemas.get(uri = '/testpackage0/xsd')
-        self.assertEqual(len(schemas),1)
-        self.assertEqual(schemas[0].package.package_id, 'testpackage0')
-        self.assertEqual(schemas[0].resourcetype.resourcetype_id, None)
-        self.assertEqual(schemas[0].type, 'xsd')
+        self.assertEqual(len(schemas), 0)
+        # one schemas with package testpackage0 and resourcetype weapon
+        schemas = self.env.registry.schemas.get(uri = '/testpackage0/weapon')
+        self.assertEqual(len(schemas), 1)
+        # one schemas with package testpackage0, resourcetype weapon and type xsd
+        schemas = self.env.registry.schemas.get(uri =\
+                                                '/testpackage0/weapon/xsd')
+        self.assertEqual(len(schemas), 1)
+
 #        # try to delete multiple schemas
 #        self.assertRaises(SeisHubError, self.env.registry.schemas.delete, 
 #                          uri = '/testpackage0')
+
         # get all
         schemas = self.env.registry.schemas
         self.assertEqual(len(schemas), 2)
@@ -253,21 +280,38 @@ class PackageRegistryTest(SeisHubEnvironmentTestCase):
                                          schema[0].resourcetype.resourcetype_id,
                                          schema[0].type)
         schema = self.env.registry.schemas.get(package_id = 'testpackage0')
-        self.assertEqual(schema[0].package.package_id, 'testpackage0')
-        self.assertEqual(schema[0].resourcetype.resourcetype_id, None)
-        self.assertEqual(schema[0].type, 'xsd')
+        self.assertEqual(len(schema), 1)
+        self.assertEqual(schema[0].resourcetype.resourcetype_id, 'armor')
+        
         # delete by uri
-        self.env.registry.schemas.delete(uri = '/testpackage0/xsd')
+        self.env.registry.schemas.delete(uri = '/testpackage0/armor')
+        schema = self.env.registry.schemas.get(package_id = 'testpackage0')
+        self.assertEqual(len(schema), 0)
 
     def test_StylesheetRegistry(self):
-        self.env.registry.stylesheets.register('testpackage0', 'weapon', 'xhtml', 
-                                               TEST_STYLESHEET)
+        # with resourcetype
+        self.env.registry.stylesheets.register('testpackage0', 'weapon', 
+                                               'xhtml', TEST_STYLESHEET)
+        # without resourcetype
+        self.env.registry.stylesheets.register('testpackage0', None, 
+                                               'xhtml', TEST_STYLESHEET)
+        
         stylesheet = self.env.registry.stylesheets.get\
                                                     (package_id='testpackage0',
                                                     resourcetype_id = 'weapon')
+        self.assertEqual(len(stylesheet), 1)
         self.assertEqual(stylesheet[0].package.package_id, 'testpackage0')
         self.assertEqual(stylesheet[0].resourcetype.resourcetype_id, 'weapon')
         self.assertEqual(stylesheet[0].type, 'xhtml')
+        self.assertEquals(stylesheet[0].content_type, 'application/json')
+        
+        stylesheet_nort = self.env.registry.stylesheets.get(package_id =\
+                                                            'testpackage0')
+        self.assertEqual(len(stylesheet_nort), 1)
+        self.assertEqual(stylesheet_nort[0].package.package_id, 'testpackage0')
+        self.assertEqual(stylesheet_nort[0].resourcetype.resourcetype_id, None)
+        
+        # transformations
         res_list = Resource(document = newXMLDocument(TEST_RESLIST))
         self.assertEquals(stylesheet[0].transform(res_list), 
                           '{"mapping":["/seishub/schema/browser"],"resource"'+\
@@ -275,17 +319,27 @@ class PackageRegistryTest(SeisHubEnvironmentTestCase):
         self.assertEquals(stylesheet[0].transform(TEST_RESLIST),
                           '{"mapping":["/seishub/schema/browser"],"resource"'+\
                           ':["/seishub/schema/3","/seishub/schema/4"],}')
-        self.assertEquals(stylesheet[0].content_type, 'application/json')
+        
         # get stylesheet resource
         res = stylesheet[0].resource
         self.assertEqual(res.document.data, TEST_STYLESHEET)
         self.assertEqual(res.package.package_id, 'seishub')
         self.assertEqual(res.resourcetype.resourcetype_id, 'stylesheet')
+        
+        # remove
         self.env.registry.stylesheets.delete(
                                     stylesheet[0].package.package_id,
                                     stylesheet[0].resourcetype.resourcetype_id,
                                     stylesheet[0].type
                                     )
+        stylesheet = self.env.registry.stylesheets.get\
+                                                    (package_id='testpackage0',
+                                                    resourcetype_id = 'weapon')
+        self.assertEqual(len(stylesheet), 0)
+        self.env.registry.stylesheets.delete('testpackage0', None, 'xhtml')
+        stylesheet_nort = self.env.registry.stylesheets.get(package_id =\
+                                                            'testpackage0')
+        self.assertEqual(len(stylesheet_nort), 0)
         
     def test_AliasRegistry(self):
         self.env.registry.aliases.register('testpackage0', 'weapon', 
@@ -335,8 +389,15 @@ class PackageRegistryTest(SeisHubEnvironmentTestCase):
         self.assertEquals(alias, list())
 
 
+class APackage(Component):
+    implements(IPackage)
+    
+    package_id = 'atestpackage'
+    registerStylesheet('resourcelist','data/resourcelist_json.xslt')
+
 class AResourceType(Component):
-    implements(IResourceType, IPackage)
+    implements(IResourceType)
+    
     package_id = 'atestpackage'
     resourcetype_id = 'aresourcetype'
     registerStylesheet('aformat','data/weapon.xsd')
@@ -426,24 +487,62 @@ class FromFilesystemTest(SeisHubEnvironmentTestCase):
         b = self.env.registry.mappers.getMappings(method='GET')
         self.assertEquals(a, b)
     
-    def testRegisterStylesheet(self):
-        # note: schema registry uses the same functionality and is therefore
-        # not tested seperately
-        
-        # invalid class (no package id/resourcetype id)
+    def testRegisterSchema(self):
         try:
             class Foo():
+                """invalid no package"""
+                registerSchema('blah','blah')
+        except Exception, e:
+            assert isinstance(e, AssertionError)
+            
+        try:
+            class Bar():
+                """invalid, no resourcetype"""
+                package_id = 'atestpackage'
+                registerSchema('xhtml','path/to/file1')
+        except Exception, e:
+            assert isinstance(e, AssertionError)
+            
+        class FooBar():
+            """valid, package and resourcetype specific"""
+            package_id = 'atestpackage'
+            resourcetype_id = 'aresourcetype'
+            registerSchema('xhtml','path/to/file2')
+        
+        p2 = os.path.join(self.env.config.path,'seishub','packages','tests',
+                         'path/to/file2')
+        assert {'filename': p2, 'type': 'xhtml'} in\
+                FooBar._registry_schemas
+                
+    def testRegisterStylesheet(self):
+        # invalid class (no package id)
+        try:
+            class Foo():
+                """invalid no package"""
                 registerStylesheet('blah','blah')
         except Exception, e:
             assert isinstance(e, AssertionError)
         
         class Bar():
+            """valid, package specific"""
+            package_id = 'atestpackage'
+            registerStylesheet('xhtml','path/to/file1')
+            
+        class FooBar():
+            """valid, package and resourcetype specific"""
             package_id = 'atestpackage'
             resourcetype_id = 'aresourcetype'
-            registerStylesheet('xhtml','path/to/file')
-        p = os.path.join(self.env.config.path,'seishub','packages','tests',
-                         'path/to/file')
-        assert {'filename': p, 'type': 'xhtml'} in Bar._registry_stylesheets
+            registerStylesheet('xhtml','path/to/file2')
+        
+        p0 = os.path.join(self.env.config.path,'seishub','packages','tests',
+                         'blah')
+        p1 = os.path.join(self.env.config.path,'seishub','packages','tests',
+                         'path/to/file1')
+        p2 = os.path.join(self.env.config.path,'seishub','packages','tests',
+                         'path/to/file2')
+        assert {'filename': p1, 'type': 'xhtml'} in Bar._registry_stylesheets
+        assert {'filename': p2, 'type': 'xhtml'} in\
+                FooBar._registry_stylesheets
         
     def testRegisterAlias(self):       
         # no package id/resourcetype id
@@ -467,15 +566,25 @@ class FromFilesystemTest(SeisHubEnvironmentTestCase):
     
     def testAutoInstaller(self):
         from seishub.packages.installer import PackageInstaller
+        self.env.enableComponent(APackage)
         self.env.enableComponent(AResourceType)
         PackageInstaller.install(self.env)
-        # stylesheet
-        stylesheet = self.registry.stylesheets.get('atestpackage', 'aresourcetype',
-                                            'aformat')
+        
+        # stylesheets
+        stylesheet = self.registry.stylesheets.get('atestpackage', 
+                                                   'aresourcetype', 'aformat')
         self.assertEqual(len(stylesheet), 1)
         p = os.path.join(self.env.config.path,'seishub','packages','tests',
                          'data','weapon.xsd')
         self.assertEqual(stylesheet[0].resource.document.data, file(p).read())
+        
+        stylesheet = self.registry.stylesheets.get('atestpackage', None, 
+                                                   'resourcelist')
+        self.assertEqual(len(stylesheet), 1)
+        p = os.path.join(self.env.config.path,'seishub','packages','tests',
+                         'data','resourcelist_json.xslt')
+        self.assertEqual(stylesheet[0].resource.document.data, file(p).read())
+        
         # alias
         alias = self.registry.aliases.get('atestpackage', 'aresourcetype', 
                                         'analias')
@@ -487,7 +596,8 @@ class FromFilesystemTest(SeisHubEnvironmentTestCase):
                                      alias[0].resourcetype.resourcetype_id,
                                      alias[0].name)
         self.registry.stylesheets.delete(stylesheet[0].package.package_id,
-                                         stylesheet[0].resourcetype.resourcetype_id,
+                                         stylesheet[0].resourcetype.\
+                                            resourcetype_id,
                                          stylesheet[0].type)
         self.env.disableComponent(AResourceType)
         PackageInstaller.cleanup(self.env)

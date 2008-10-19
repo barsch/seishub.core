@@ -296,9 +296,9 @@ class Stylesheet(DocBase):
     parsed_doc = property(getParsed_doc, None, "Parsed stylesheet (read only)")
         
     def getContentType(self):
-        if not self._parsed_doc.content_type:
+        if not self.parsed_doc.content_type:
             return None
-        return self._parsed_doc.content_type[0]
+        return self.parsed_doc.content_type[0]
         
     content_type = property(getContentType, None, "content-type (readonly)")
     
