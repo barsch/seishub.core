@@ -42,8 +42,8 @@ class IDbAttributeProxy(Interface):
     
 
 class DB_NULL(object):
-    """Pass this object to pickup(...) as a parameter value to explicitly 
-    claim that parameter to be None.
+    """Pass this object to pickup(...) or drop(...) as a parameter value to 
+    explicitly claim that parameter to be None.
     """
     pass
 
@@ -106,71 +106,38 @@ class DbStorage(DbEnabled):
             d[col] = value
         return d
     
-    def _to_where_clause(self, table, map, values, null = list()):
-        cl = ClauseList(operator = "AND")
-        for key, val in values.iteritems():
-            if key not in map.keys():
-                continue
-            col = map[key]
-            if IRelation.providedBy(col):
-                if isinstance(val, dict): # retrieve sub-object
-                    try:
-                        # TODO: do this via inline selects rather than getting
-                        # objects recursively
-                        o = self.pickup(col.cls, **val)[0]
-                        val = o._id
-                        values[key] = o
-                    except IndexError:
-                        raise DbError('A related object could not be '+\
-                                      'located in the database. %s: %s' %\
-                                      (col.cls, str(val)))
-                elif isinstance(val, col.cls): # object already there
-                    values[key] = val
-                    val = val._id
-                elif val:
-                    raise DbError("Invalid value for key '%s': %s" %\
-                                  (str(col.name), str(val)))
-                col = col.name
-            if val == None:
-                if key not in null:
-                    continue
-                elif isinstance(table.c[col].type, Text):
-                    val = ''
-            cl.append(table.c[col] == val)
-        return cl, values
-    
     def _where_clause(self, table, map, values):
         cl = ClauseList(operator = "AND")
         for key, val in values.iteritems():
             if key not in map.keys():
                 continue
+            if val is None:
+                continue
             col = map[key]
             if IRelation.providedBy(col):
-                if isinstance(val, dict): # retrieve sub-object
+                if isinstance(val, dict):
+                    # read related object included in the query
                     try:
-                        # TODO: do this via inline selects rather than getting
-                        # objects recursively
-                        o = self.pickup(col.cls, **val)[0]
-                        val = o._id
-                        values[key] = o
+                        o = self.pickup(col.cls, **val)
+                        assert len(o) == 1 # sanity check
+                        val = o[0]._id
                     except IndexError:
                         raise DbError('A related object could not be '+\
                                       'located in the database. %s: %s' %\
                                       (col.cls, str(val)))
-                elif isinstance(val, col.cls): # object already there
-                    values[key] = val
+                elif isinstance(val, col.cls): 
+                    # related object was included, use it's id 
                     val = val._id
+                elif val == DB_NULL:
+                    val = None
                 elif val:
                     raise DbError("Invalid value for key '%s': %s" %\
                                   (str(col.name), str(val)))
                 col = col.name
-            if val == None:
-                if key not in null:
-                    continue
-                elif isinstance(table.c[col].type, Text):
-                    val = ''
+#            if val == None and isinstance(table.c[col].type, Text):
+#                val = ''
             cl.append(table.c[col] == val)
-        return cl, values
+        return cl
     
     def _generate_query(self, q, table, mapping, params, joins = None, 
                         order_by = dict()):
@@ -195,7 +162,8 @@ class DbStorage(DbEnabled):
                 # from here on value should be none or a dict, 
                 # or something went wrong
                 assert not value or isinstance(value, dict)
-                if col.lazy and value and '_id' in value.keys() and attr not in order_by.keys():
+                if col.lazy and value and '_id' in value.keys() \
+                    and attr not in order_by.keys():
                     # in this case we got the id for the related object somehow
                     # but don't need the related object, as it's non-eagerly 
                     # loaded and not part of the ORDER_BY clause
@@ -319,7 +287,13 @@ class DbStorage(DbEnabled):
     def pickup(self, cls, **keys):
         """Read Serializable objects with given keys from database.
         @param cls: Object type to be retrieved.
-        @param **keys: kwarg list of the form: attribute_name = value
+        @param **keys: kwarg list of the form: 
+            - attribute_name = value
+        or for relational attributes:
+            - attribute_name = Object
+            - attribute_name = {'attribute_name' : 'value'}
+        Use DB_NULL as value to force a column to be None, 
+        attribute_name = None will be ignored.
         """
         if hasattr(self,'debug') and self.debug:
             start = time.time()
@@ -353,17 +327,27 @@ class DbStorage(DbEnabled):
         return self._to_list(objs)
     
     def drop(self, cls, **keys):
-        """Delete object with given keys from database."""
+        """Delete object with given keys from database.
+        
+        @param cls: Object type to be removed.
+        @param **keys: kwarg list of the form: 
+            - attribute_name = value
+        or for relational attributes:
+            - attribute_name = Object
+            - attribute_name = {'attribute_name' : 'value'}
+        Use DB_NULL as value to force a column to be None, 
+        attribute_name = None will be ignored.
+        """
         if hasattr(self,'debug') and self.debug:
             start = time.time()
+        table = cls.db_table
+        map = cls.db_mapping
         # begin transaction:
         db = self.getDb()
         conn = db.connect()
         txn = conn.begin()
-        table = cls.db_table
         try:
-            map = cls.db_mapping
-            w, _ = self._to_where_clause(table, map, keys)
+            w = self._where_clause(table, map, keys)
             # cascading deletes
             for rel in map.values():
                 if IRelation.providedBy(rel) and rel.cascading_delete:

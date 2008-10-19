@@ -7,7 +7,7 @@ from seishub.test import SeisHubEnvironmentTestCase
 from seishub.db.dbmanager import meta
 from seishub.db.util import Serializable, Relation, LazyAttribute, DbStorage
 from seishub.db.util import db_property, DbError, DbObjectProxy 
-from seishub.db.util import DbAttributeProxy
+from seishub.db.util import DbAttributeProxy, DB_NULL 
 
 test_meta = meta
 
@@ -251,8 +251,23 @@ class DbUtilTest(SeisHubEnvironmentTestCase):
                                     _id = self.parent1.child2.grandchild._id)
         self.assertEqual(len(grandchild), 1)
         
-        parent = self.db.pickup(Parent, 
-                                data = "I'm parent of child 1 and child 3.")
+        # delete child2 via grandchild object
+        self.db.drop(Child2, grandchild = self.parent1.child2.grandchild)
+        child2 = self.db.pickup(Child2, _id = self.parent1.child2._id)
+        self.assertEqual(child2, [])
+        
+        # delete parent2 via child3.data
+        self.db.drop(Parent, child2 = {'data':"I'm child3."})
+        parent = self.db.pickup(Parent, _id = self.parent2._id)
+        self.assertEqual(parent, [])
+        
+        # delete child3 via the fact that it has no grandchild object
+        self.db.drop(Child2, grandchild = DB_NULL)
+        child3 = self.db.pickup(Child2, _id = self.parent2.child2._id)
+        self.assertEqual(child3, [])
+        
+#        parent = self.db.pickup(Parent, 
+#                                data = "I'm parent of child 1 and child 3.")
         # XXX: auto check if a related object is still referenced,
         # this raises an exception, as child1 is gone
         # parent[0].child1.data
