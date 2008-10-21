@@ -84,5 +84,6 @@ index_tab = Table(DEFAULT_PREFIX + INDEX_TABLE, metadata,
     Column('index_id', Integer),
     Column('key', Text),
     Column('value', Integer),
-    useexisting=True,
+    UniqueConstraint('index_id','key','value'),
+    useexisting=True
 )

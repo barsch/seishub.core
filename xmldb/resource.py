@@ -147,7 +147,6 @@ class XmlDocument(Serializable):
         return self._parseXml_data(value)
     
     def _parseXml_data(self,xml_data):
-        #import pdb; pdb.set_trace()
         # encode before handing it to parser:
         xml_data = xml_data.encode("utf-8")
         return XmlTreeDoc(xml_data=xml_data, blocking=True)

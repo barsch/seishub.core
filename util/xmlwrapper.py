@@ -161,6 +161,9 @@ class XmlDoc(object):
         
     def getRootElementName(self):
         return self._xml_doc.getroot().tag
+    
+    def getRoot(self):
+        return self._xml_doc.getroot()
 
 
 class XmlTreeDoc(XmlDoc):
@@ -190,15 +193,16 @@ class XmlTreeDoc(XmlDoc):
     def getErrors(self):
         return self.errors
 
-    def evalXPath(self,expr):       
+    def evalXPath(self,expr):
+        #import pdb;pdb.set_trace()
         if not isinstance(expr,basestring):
             raise TypeError('String expected: %s' % expr)
-        
+        root = self.getRoot()
         try:
-            res = self._xml_doc.xpath(expr)
+            res = self._xml_doc.xpath(expr, namespaces = root.nsmap)
         except Exception, e:
-            raise InvalidXPathExpression(e)
-        #import pdb; pdb.set_trace()
+            raise InvalidXPathExpression(("Error evaluating a XPath " +\
+                                         "expression: %s") % str(expr), e)
         if res:
             nodes = [XmlNode(node) for node in res]
         else:
@@ -270,7 +274,6 @@ class XmlTreeDoc(XmlDoc):
 #            self._xml_doc=xml_doc
 #            
 #    def __del__(self):
-#        #import pdb; pdb.set_trace()
 #        if hasattr(self,'_xml_doc'):
 #            if isinstance(self._xml_doc,libxml2.xmlDoc):
 #                self._xml_doc.freeDoc()

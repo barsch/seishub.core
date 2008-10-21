@@ -5,12 +5,12 @@ from sqlalchemy import select #@UnresolvedImport
 from sqlalchemy.sql import and_, or_ #@UnresolvedImport
 from sqlalchemy.sql.expression import _BinaryExpression, ClauseList #@UnresolvedImport
 
-from seishub.db.util import DbStorage
+from seishub.db.util import DbStorage, DbError
 from seishub.xmldb.interfaces import IXmlIndexCatalog, IIndexRegistry, \
                                      IResourceIndexing, IXmlIndex, \
                                      IResourceStorage, IXPathQuery
-from seishub.xmldb.errors import XmlIndexCatalogError, \
-                                 InvalidIndexError
+from seishub.xmldb.errors import XmlIndexCatalogError
+from seishub.xmldb.errors import InvalidIndexError, DuplicateIndexError
 from seishub.xmldb.defaults import index_def_tab, index_tab, \
                                    resource_tab
 from seishub.xmldb.index import XmlIndex
@@ -41,8 +41,12 @@ class XmlIndexCatalog(DbStorage):
             raise DoesNotImplement(IXmlIndex)
         try:
             self.store(xml_index)
+        except DbError, e:
+            raise DuplicateIndexError("Index '%s' already exists." %\
+                                       str(xml_index), e)
         except Exception, e:
-            raise XmlIndexCatalogError(e)
+            raise XmlIndexCatalogError("Error registering an index: %s" %\
+                                       str(xml_index), e)
         return xml_index
     
     def removeIndex(self,value_path=None, key_path=None):
@@ -57,7 +61,7 @@ class XmlIndexCatalog(DbStorage):
         self.drop(XmlIndex, key_path = key_path, value_path = value_path)
         return True
 
-    def getIndex(self,value_path=None, key_path=None, expr=None):
+    def getIndex(self, value_path=None, key_path=None, expr=None, type = None):
         """@see: L{seishub.xmldb.xmlindexcatalog.interfaces.IIndexRegistry}"""
         if not (isinstance(key_path,basestring) and 
                 isinstance(value_path,basestring)):
@@ -70,13 +74,14 @@ class XmlIndexCatalog(DbStorage):
                                            "%s, %s, %s" %\
                                            (value_path, key_path, expr), e )
         
-        index = self.getIndexes(value_path, key_path)
-        if len(index) > 1:
-            raise XmlIndexCatalogError("Unexpected result set length.")
-        elif len(index) == 0:
-            raise XmlIndexCatalogError("No index found for: %s, %s" %\
-                                       (value_path, key_path))
-        
+        index = self.getIndexes(value_path, key_path, type)
+        assert len(index) <= 1
+#        if len(index) > 1:
+#            raise XmlIndexCatalogError("Unexpected result set length.")
+        if not index:
+            return None
+#            raise XmlIndexCatalogError("No index found for: %s, %s" %\
+#                                       (value_path, key_path))
         return index[0]
     
     def getIndexes(self,value_path = None, key_path = None, data_type = None):
@@ -161,7 +166,7 @@ class XmlIndexCatalog(DbStorage):
         
         return True
 
-    def flushIndex(self,value_path, key_path):
+    def flushIndex(self, value_path, key_path):
         """@see: L{seishub.xmldb.interfaces.IResourceIndexing}""" 
         if not (isinstance(key_path,basestring) and isinstance(value_path,basestring)):
             raise XmlIndexCatalogError("No key_path, value_path given.")

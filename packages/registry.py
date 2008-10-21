@@ -466,7 +466,7 @@ class AliasRegistry(RegistryBase):
         return True
     
     def get(self, package_id = None, resourcetype_id = None, 
-            name = None, expr = None,
+            name = None, expr = None, limit = None, order_by = None,
             uri = None):
         """Get a single alias by either (package_id, resourcetype_id, name), by 
         expression, or by unique uri.

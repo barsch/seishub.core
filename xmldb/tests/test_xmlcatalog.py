@@ -170,14 +170,19 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
     def testReindex(self):
         # TODO: testReindex
         self.env.catalog.reindex("testpackage", "station", IDX1)
+#        self.env.catalog.indexResource(self.res3.package.package_id,
+#                                       self.res3.resourcetype.resourcetype_id,
+#                                       self.res3.name)
 
     def testListIndexes(self):
         # get all indexes
-        l = self.env.catalog.listIndexes()
-        self.assertEqual(len(l), 3)
+        l = self.env.catalog.listIndexes('testpackage')
+        self.assertEqual(len(l), 2)
         self.assertEqual(str(l[0]), "/testpackage/station" + IDX1)
         self.assertEqual(str(l[1]), "/testpackage/testml" + IDX2)
-        self.assertEqual(str(l[2]), "/degenesis/weapon" + IDX3)
+        l = self.env.catalog.listIndexes('degenesis')
+        self.assertEqual(len(l), 1)
+        self.assertEqual(str(l[0]), "/degenesis/weapon" + IDX3)
         # by package
         l = self.env.catalog.listIndexes(package_id = 'testpackage')
         self.assertEqual(len(l), 2)

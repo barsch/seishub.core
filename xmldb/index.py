@@ -76,11 +76,10 @@ class XmlIndex(IndexBase):
         elements = self.value_path.split('/')
         # last element is root element
         return elements[len(elements)-1]
-        
-    
+
     # methods from IXmlIndex:
     
-    def eval(self,xml_resource):
+    def eval(self, xml_resource):
         if not IXmlDocument.providedBy(xml_resource):
             raise TypeError("%s is not an IXmlDocument." % str(xml_resource))
         

@@ -9,6 +9,9 @@ class UnknownUriError(SeisHubError):
 class InvalidIndexError(SeisHubError):
     """raised when trying to create an XmlIndex with invalid args"""
     
+class DuplicateIndexError(SeisHubError):
+    """Raised when trying to add an index, that already exists."""
+    
 class InvalidQueryError(SeisHubError):
     """invalid parameters passed to catalogue's query method"""
     

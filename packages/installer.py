@@ -9,6 +9,7 @@ class PackageInstaller(object):
      * schemas
      * stylesheets
      * aliases
+     * indexes
       
     A package/resourcetype etc. is installed automatically when found the 
     first time, but not if an already existing package was updated to a new
@@ -23,7 +24,6 @@ class PackageInstaller(object):
         else:
             version = ''
         env.registry.db_registerPackage(p.package_id, version)
-        PackageInstaller._install_pre_registered(env, p)
     
     @staticmethod
     def _install_resourcetype(env, rt):
@@ -39,49 +39,90 @@ class PackageInstaller(object):
                                              rt.resourcetype_id,
                                              version,
                                              version_control)
-        PackageInstaller._install_pre_registered(env, rt)
-    
+
     @staticmethod
     def _install_pre_registered(env, o):
         package_id = o.package_id
+        resourcetype_id = None
         if hasattr(o, 'resourcetype_id'):
             resourcetype_id = o.resourcetype_id
-        else:
-            resourcetype_id = None
         if hasattr(o, '_registry_schemas'):
             for entry in o._registry_schemas:
+                type = entry['type']
+                # check, if already there
+                if env.registry.schemas.get(package_id, resourcetype_id, type):
+                    env.log.info("'%s': Skipping schema '%s'." % \
+                                 (package_id, entry))
+                    continue
                 try:
                     data = file(entry['filename'], 'r').read()
-                    type = entry['type']
                     env.registry.schemas.register(package_id, 
                                                   resourcetype_id, 
                                                   type, data)
+                    env.log.info("'%s': Registered schema '%s'." % \
+                                 (package_id, entry))
                 except Exception, e:
                     env.log.warn(("Registration of schema failed: " +\
                                  "%s (%s)") % (entry['filename'] ,e))
         
         if hasattr(o, '_registry_stylesheets'):
             for entry in o._registry_stylesheets:
+                type = entry['type']
+                # check, if already there
+                if env.registry.stylesheets.get(package_id, resourcetype_id, 
+                                                type):
+                    env.log.info("'%s': Skipping stylesheet '%s'." %\
+                                 (package_id, entry))
+                    continue
                 try:
                     data = file(entry['filename'], 'r').read()
-                    type = entry['type']
                     env.registry.stylesheets.register(package_id, 
                                                       resourcetype_id, 
                                                       type, data)
+                    env.log.info("'%s': Registered stylesheet '%s'." %\
+                                 (package_id, entry))
                 except Exception, e:
                     env.log.warn(("Registration of stylesheet failed: " +\
                                  "%s (%s)") % (entry['filename'], e))
                     
         if hasattr(o, '_registry_aliases'):
             for entry in o._registry_aliases:
+                # check, if already there
+                if env.registry.aliases.get(package_id, resourcetype_id, 
+                                            **entry):
+                    env.log.info("'%s': Skipping alias '%s'." %\
+                                 (package_id, entry))
+                    continue
                 try:
                     env.registry.aliases.register(package_id, 
                                                   resourcetype_id,
                                                   **entry)
+                    env.log.info("'%s': Registered alias '%s'." %\
+                                 (package_id, entry))
                 except Exception, e:
                     env.log.warn(("Registration of alias failed: " +\
                                  "%s/%s/@%s (%s)") %\
-                                (package_id, resourcetype_id, entry['name'], e))
+                                (package_id, resourcetype_id, entry['name'], 
+                                 e))
+        
+        if hasattr(o, '_registry_indexes'):
+            for entry in o._registry_indexes:
+                # check, if already there
+                if env.catalog.getIndex(package_id, resourcetype_id, **entry):
+                    env.log.info("'%s': Skipping index '%s'." %\
+                                 (package_id, entry))
+                    continue
+                try:
+                    env.catalog.registerIndex(package_id, 
+                                              resourcetype_id,
+                                              **entry)
+                    env.log.info("'%s': Registered index '%s'." %\
+                                 (package_id, entry))
+                except Exception, e:
+                    env.log.warn(("Registration of index failed: " +\
+                                 "/%s/%s%s (%s)") %\
+                                (package_id, resourcetype_id, entry['xpath'], 
+                                 e))
                     
     @staticmethod
     def _pre_register(*args, **kwargs):
@@ -96,7 +137,7 @@ class PackageInstaller(object):
         package_id = locals_.get('package_id', None)
         resourcetype_id = locals_.get('resourcetype_id', None)
         assert package_id, 'class must provide package_id'
-        if reg in ['_schemas']:
+        if reg in ['_schemas', '_indexes']:
             assert resourcetype_id, 'class must provide resourcetype_id'
         # relative path -> absolute path
         filename = kwargs.get('filename', None)
@@ -120,6 +161,7 @@ class PackageInstaller(object):
         for p in packages:
             fs_package = env.registry.getPackage(p)
             db_packages = env.registry.db_getPackages(p)
+            # if package not in database yet, add it
             if len(db_packages) == 0:
                 try:
                     PackageInstaller._install_package(env, fs_package)
@@ -127,6 +169,8 @@ class PackageInstaller(object):
                     env.log.warn(("Registration of package with id '%s' "+\
                                   "failed. (%s)") % (p, e))
                     continue
+            # (re)install package specific objects
+            PackageInstaller._install_pre_registered(env, fs_package)
                 
             # install new resourcetypes for package p
             for rt in env.registry.getResourceTypes(p):
@@ -139,12 +183,14 @@ class PackageInstaller(object):
                                       "with id '%s' in package '%s'"+\
                                       " failed. (%s)") % \
                                       (rt.resourcetype_id, p, e))
+                        continue
+                # (re)install resourcetype specific objects
+                PackageInstaller._install_pre_registered(env, rt)
 
     @staticmethod        
     def cleanup(env):
         """automatically remove unused packages"""
         db_rtypes = env.registry.db_getResourceTypes()
-        #import pdb;pdb.set_trace()
         for rt in db_rtypes:
             if [rt.package.package_id, rt.resourcetype_id] not in \
                [[o.package_id, o.resourcetype_id] for o in env.registry.getResourceTypes(rt.package.package_id)]:
@@ -168,7 +214,7 @@ class PackageInstaller(object):
 
     @staticmethod
     def getUpdatedResourcetypes(package_id = None):
-        pass 
+        pass
 
 registerSchema = lambda type, filename: PackageInstaller._pre_register\
                                                   ('_schemas', 
@@ -179,8 +225,12 @@ registerStylesheet = lambda type, filename: PackageInstaller._pre_register\
                                                    type = type,
                                                    filename = filename)
 registerAlias = lambda name, expr, limit = None, order_by = None: \
-                        PackageInstaller._pre_register('_aliases',
-                                                        name = name,
-                                                        expr = expr,
-                                                        limit = limit,
-                                                        order_by = order_by)          
+                    PackageInstaller._pre_register('_aliases',
+                                                   name = name,
+                                                   expr = expr,
+                                                   limit = limit,
+                                                   order_by = order_by)
+registerIndex = lambda xpath, type = 'text': PackageInstaller._pre_register\
+                                                  ('_indexes',
+                                                   xpath = xpath,
+                                                   type = type)

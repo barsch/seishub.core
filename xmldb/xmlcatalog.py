@@ -49,7 +49,6 @@ class XmlCatalog(object):
     def modifyResource(self, package_id, resourcetype_id, name, xml_data):
         package, resourcetype = self.env.registry.\
                                    objects_from_id(package_id, resourcetype_id)
-        #import pdb;pdb.set_trace()
         res = Resource(package, resourcetype, 
                        document = newXMLDocument(xml_data),
                        name = name)
@@ -118,7 +117,10 @@ class XmlCatalog(object):
         exp_obj = IndexDefiningXpathExpression(expr)
         index = XmlIndex(value_path = exp_obj.value_path, 
                          key_path = exp_obj.key_path)
-        return self.index_catalog.registerIndex(index)
+        index = self.index_catalog.registerIndex(index)
+        self.reindex(package_id, resourcetype_id, xpath)
+        return index
+        
     
     def removeIndex(self,package_id = None, resourcetype_id = None, 
                     xpath = None):
@@ -133,7 +135,7 @@ class XmlCatalog(object):
                                               key_path = exp_obj.key_path)
         
     def getIndex(self, package_id = None, resourcetype_id = None, 
-                 xpath = None):
+                 xpath = None, type = None):
         """@see: L{seishub.xmldb.interfaces.IXmlCatalog}"""
         if package_id and resourcetype_id:
             expr = self._to_xpath(package_id, resourcetype_id, xpath)
@@ -174,6 +176,19 @@ class XmlCatalog(object):
         value_path += '*'
         return self.index_catalog.getIndexes(value_path,
                                              data_type = data_type)
+        
+    def indexResource(self, package_id, resourcetype_id, name, revision = None,
+                      resource = None):
+        if package_id and resourcetype_id and name:
+            resource = self.getResource(package_id, resourcetype_id, name, 
+                                        revision)
+        elif not resource:
+            raise TypeError("Invalid number of arguments.")
+        indexes = self.listIndexes(package_id, resourcetype_id)
+        for idx in indexes:
+            self.index_catalog.indexResource(resource.document._id, 
+                                             idx.value_path, 
+                                             idx.key_path)
         
     def reindex(self, package_id = None, resourcetype_id = None, xpath = None):
         """@see: L{seishub.xmldb.interfaces.IXmlCatalog}"""

@@ -10,7 +10,7 @@ from seishub.packages.interfaces import IMapperMethod
 from seishub.packages.interfaces import IGETMapper, IPUTMapper
 from seishub.packages.interfaces import IPOSTMapper, IDELETEMapper
 from seishub.packages.processor import ProcessorError
-from seishub.packages.installer import registerStylesheet
+from seishub.packages.installer import registerStylesheet, registerIndex
 from seishub.util.path import addBaseToList
 
 
@@ -64,6 +64,7 @@ class StylesheetResource(Component):
                        'xslt' + os.sep + 'resourcelist_xhtml.xslt')
     registerStylesheet('resourcelist.json', 
                        'xslt' + os.sep + 'resourcelist_json.xslt')
+    registerIndex('/xsl:stylesheet/xsl:output/@media-type', 'text')
 
 
 class SchemaResource(Component):

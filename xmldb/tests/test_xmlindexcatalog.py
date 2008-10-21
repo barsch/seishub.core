@@ -7,8 +7,9 @@ import inspect
 from sqlalchemy.sql import and_ #@UnresolvedImport
 
 from seishub.test import SeisHubEnvironmentTestCase
-from seishub.xmldb.xmlindexcatalog import XmlIndexCatalog
-from seishub.xmldb.xmlindexcatalog import XmlIndexCatalogError
+from seishub.xmldb.xmlindexcatalog import XmlIndexCatalog, InvalidIndexError
+from seishub.xmldb.xmlindexcatalog import XmlIndexCatalogError 
+from seishub.xmldb.xmlindexcatalog import DuplicateIndexError
 from seishub.xmldb.xmldbms import XmlDbManager
 from seishub.xmldb.index import XmlIndex
 from seishub.xmldb.resource import Resource, newXMLDocument
@@ -188,7 +189,7 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         self.assertEquals('/'+res[0][1],self._test_vp)
         
         # try to add a duplicate:
-        self.assertRaises(XmlIndexCatalogError,catalog.registerIndex,test_index)
+        self.assertRaises(DuplicateIndexError, catalog.registerIndex,test_index)
         
         # clean up:
         query = index_def_tab.delete(and_(
@@ -256,8 +257,9 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         #TODO: check db entries made
                 
         # pass unknown index:
-        self.assertRaises(XmlIndexCatalogError, catalog.indexResource,
-                          test_res.document._id, value_path="blub", key_path="blah")
+        self.assertRaises(InvalidIndexError, catalog.indexResource,
+                          test_res.document._id, value_path="blub", 
+                          key_path="blah")
         
         # clean up:
         catalog.removeIndex(key_path=self._test_kp, value_path=self._test_vp)
@@ -308,7 +310,6 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         res1 = self.catalog.query(XPathQuery(q1))
         res2 = self.catalog.query(XPathQuery(q2))
         res3 = self.catalog.query(XPathQuery(q3))
-        #import pdb;pdb.set_trace()
         res0.sort(); res1.sort(); res2.sort(); res3.sort()
         self.assertEqual(res0, [self.res2.document._id])
         self.assertEqual(res1, [self.res1.document._id, 
