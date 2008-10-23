@@ -27,11 +27,16 @@ class XmlDbManager(DbStorage):
         # XXX: very ugly (and unsafe) workaround for sqlite
         #if self._db.name == 'sqlite':
         rev = 1
-        if xml_resource.resourcetype.version_control and xml_resource.id:
-            res = self._getResource(xml_resource.package,
-                                    xml_resource.resourcetype, 
-                                    xml_resource.id)
-            rev = res.revision + 1
+        if xml_resource.resourcetype.version_control and \
+           (xml_resource.id or xml_resource.name):
+            try:
+                res = self._getResource(xml_resource.package,
+                                       xml_resource.resourcetype, 
+                                       xml_resource.name,
+                                       id = xml_resource.id)
+                rev = res.revision + 1
+            except NotFoundError: # new resource -> revision = 1
+                pass
         xml_resource.revision = rev
         # end workaround
         try:
@@ -54,6 +59,8 @@ class XmlDbManager(DbStorage):
         # preserve creator
         xml_resource.document.meta.uid = old.document.meta.uid
         if xml_resource.resourcetype.version_control:
+            xml_resource.name = old.name
+            xml_resource.id = old.id
             return self.addResource(xml_resource)
         self._deleteResource(old)
         self.addResource(xml_resource)
