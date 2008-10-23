@@ -21,8 +21,10 @@ import sys
 from zope.interface import Interface #@UnusedImport
 from zope.interface.declarations import _implements, classImplements
 
+from seishub.exceptions import SeisHubError
+
 __all__ = ['Component', 'ExtensionPoint', 'implements', 'Interface',
-           'SeisHubError', 'ERROR', 'WARN', 'INFO', 'DEBUG', 'ComponentMeta',
+           'ERROR', 'WARN', 'INFO', 'DEBUG', 'ComponentMeta',
            'ComponentManager', 'PackageManager']
 
 ERROR = 0
@@ -34,19 +36,19 @@ DEBUG = 20
 
 
 
-class SeisHubError(Exception):
-    """Exception base class for errors in SeisHub."""
-    pass
-
-
-class SeisHubMessageError(SeisHubError):
-    """Exception base class for errors in SeisHub which contains at least a 
-    simple error message.
-    """
-    
-    def __init__(self, message):
-        SeisHubError.__init__(self, message)
-        self.message = message
+#class SeisHubError(Exception):
+#    """Exception base class for errors in SeisHub."""
+#    pass
+#
+#
+#class SeisHubMessageError(SeisHubError):
+#    """Exception base class for errors in SeisHub which contains at least a 
+#    simple error message.
+#    """
+#    
+#    def __init__(self, message):
+#        SeisHubError.__init__(self, message)
+#        self.message = message
 
 
 class ExtensionPoint(property):

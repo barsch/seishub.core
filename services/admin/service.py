@@ -12,7 +12,8 @@ from twisted.web import static, http, util as webutil
 
 from seishub import __version__ as SEISHUB_VERSION
 from seishub.config import IntOption, Option, BoolOption
-from seishub.core import ExtensionPoint, SeisHubError
+from seishub.exceptions import SeisHubError
+from seishub.core import ExtensionPoint
 from seishub.defaults import ADMIN_PORT, ADMIN_CERTIFICATE, \
                              ADMIN_PRIVATE_KEY, ADMIN_MIN_PASSWORD_LENGTH
 from seishub.packages.processor import Processor, ProcessorError, GET

@@ -1,12 +1,10 @@
 # -*- coding: utf-8 -*-
 from zope.interface import implements
-from zope.interface.exceptions import DoesNotImplement
 
-from seishub.core import SeisHubError
+from seishub.exceptions import SeisHubError
 from seishub.db.util import Serializable
 from seishub.xmldb.defaults import index_def_tab
 from seishub.xmldb.interfaces import IXmlIndex, IVirtualIndex, IXmlDocument
-from seishub.xmldb.errors import XmlIndexError
 
 __all__ = ['XmlIndex', 'VirtualIndex']
 
@@ -21,7 +19,7 @@ class IndexBase(Serializable):
     def __init__(self,value_path=None, key_path=None, type=TEXT_INDEX):
         super(IndexBase, self).__init__()
         if not (value_path and key_path):
-            raise XmlIndexError("No index definition given")
+            raise TypeError("No index definition given.")
         self.value_path = value_path
         self.key_path = key_path
         if isinstance(type,basestring):

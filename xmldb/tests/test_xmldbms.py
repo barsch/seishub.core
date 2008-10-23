@@ -2,11 +2,12 @@
 
 import unittest
 
+from seishub.exceptions import InvalidParameterError, DuplicateObjectError
+from seishub.exceptions import NotFoundError, DeletedObjectError
+from seishub.exceptions import InvalidObjectError
 from seishub.util.text import hash
 from seishub.test import SeisHubEnvironmentTestCase
 from seishub.db.util import DbAttributeProxy
-from seishub.xmldb.errors import AddResourceError, XmlResourceError,\
-                                 GetResourceError, ResourceDeletedError
 from seishub.xmldb.xmldbms import XmlDbManager
 from seishub.xmldb.resource import XmlDocument, Resource, newXMLDocument 
 from seishub.xmldb.resource import XML_DECLARATION_LENGTH
@@ -31,8 +32,7 @@ class XmlDocumentTest(SeisHubEnvironmentTestCase):
         xml_data = test_res.getData()
         self.assertEquals(xml_data, TEST_XML)
         test_res.data = TEST_BAD_XML
-        self.assertRaises(XmlResourceError,
-                          test_res.getXml_doc)
+        self.assertRaises(InvalidObjectError, test_res.getXml_doc)
 
 
 class XmlDbManagerTest(SeisHubEnvironmentTestCase):
@@ -86,7 +86,7 @@ class XmlDbManagerTest(SeisHubEnvironmentTestCase):
     def testUnversionedResource(self):
         # add empty resource
         empty = Resource(document = XmlDocument())
-        self.assertRaises(AddResourceError, self.xmldbm.addResource, empty)
+        self.assertRaises(InvalidParameterError, self.xmldbm.addResource, empty)
         testres = Resource(self.test_package, self.test_resourcetype, 
                            document = newXMLDocument(self.test_data, 
                                                      uid = 1000))
@@ -134,7 +134,7 @@ class XmlDbManagerTest(SeisHubEnvironmentTestCase):
         self.xmldbm.deleteResource(testres.package, 
                                    testres.resourcetype, 
                                    id = testres.id)
-        self.assertRaises(GetResourceError, self.xmldbm.getResource, 
+        self.assertRaises(NotFoundError, self.xmldbm.getResource, 
                           testres.package, 
                           testres.resourcetype, 
                           testres.id)
@@ -153,7 +153,7 @@ class XmlDbManagerTest(SeisHubEnvironmentTestCase):
         testres_v = Resource(self.test_package, self.test_resourcetype, 
                                  document = newXMLDocument(self.test_data),
                                  id = result.id)
-        self.assertRaises(AddResourceError, self.xmldbm.addResource, 
+        self.assertRaises(DuplicateObjectError, self.xmldbm.addResource, 
                           testres_v)
         self.xmldbm.deleteResource(testres2.package, 
                                    testres2.resourcetype, 
@@ -203,7 +203,7 @@ class XmlDbManagerTest(SeisHubEnvironmentTestCase):
                                    testres.resourcetype, 
                                    id = testres.id)
         # try to get latest revision (deleted)
-        self.assertRaises(ResourceDeletedError, self.xmldbm.getResource,
+        self.assertRaises(DeletedObjectError, self.xmldbm.getResource,
                           testres.package, 
                           testres.resourcetype, 
                           id = testres.id)
@@ -257,7 +257,7 @@ class XmlDbManagerTest(SeisHubEnvironmentTestCase):
         self.xmldbm.deleteResources(self.test_package, 
                                     self.vc_resourcetype,
                                     testres.id)
-        self.assertRaises(GetResourceError, self.xmldbm.getResource,
+        self.assertRaises(NotFoundError, self.xmldbm.getResource,
                           self.test_package, self.vc_resourcetype, testres.id)
                 
         # XXX: BuG: revision counter is not reset on new resources

@@ -7,9 +7,8 @@ import inspect
 from sqlalchemy.sql import and_ #@UnresolvedImport
 
 from seishub.test import SeisHubEnvironmentTestCase
-from seishub.xmldb.xmlindexcatalog import XmlIndexCatalog, InvalidIndexError
-from seishub.xmldb.xmlindexcatalog import XmlIndexCatalogError 
-from seishub.xmldb.xmlindexcatalog import DuplicateIndexError
+from seishub.exceptions import NotFoundError, DuplicateObjectError
+from seishub.xmldb.xmlindexcatalog import XmlIndexCatalog
 from seishub.xmldb.xmldbms import XmlDbManager
 from seishub.xmldb.index import XmlIndex
 from seishub.xmldb.resource import Resource, newXMLDocument
@@ -189,7 +188,7 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         self.assertEquals('/'+res[0][1],self._test_vp)
         
         # try to add a duplicate:
-        self.assertRaises(DuplicateIndexError, catalog.registerIndex,test_index)
+        self.assertRaises(DuplicateObjectError, catalog.registerIndex,test_index)
         
         # clean up:
         query = index_def_tab.delete(and_(
@@ -249,15 +248,10 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
                               test_index.getValue_path(), 
                               test_index.getKey_path())
         
-        # without storage:
-        self.assertRaises(XmlIndexCatalogError,bad_catalog.indexResource,
-                          test_res._id, 
-                          test_index.getValue_path(), test_index.getKey_path())
-        
         #TODO: check db entries made
                 
         # pass unknown index:
-        self.assertRaises(InvalidIndexError, catalog.indexResource,
+        self.assertRaises(NotFoundError, catalog.indexResource,
                           test_res.document._id, value_path="blub", 
                           key_path="blah")
         

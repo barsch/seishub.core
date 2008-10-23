@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 from zope.interface import implements
 
+from seishub.exceptions import InvalidParameterError
 from seishub.xmldb.interfaces import IXPathQuery, IXPathExpression
-from seishub.xmldb.errors import RestrictedXpathError, InvalidXpathQuery
-from seishub.xmldb.package import PackageSpecific
 
 # XXX: requires PyXML (_xmlplus.xpath)
 # from xml import xpath
@@ -63,7 +62,7 @@ class RestrictedXpathExpression(object):
         if self._parseXpathExpr(expr):
             self._expr=expr
         else:
-            raise RestrictedXpathError("Invalid restricted-xpath expression.")
+            raise InvalidParameterError("Invalid restricted-xpath expression.")
             
     def _parseXpathExpr(self,expr):
         re_nt=re.compile(self.__r_node_test, re.VERBOSE)
@@ -104,7 +103,7 @@ class IndexDefiningXpathExpression(object):
         if self._parseXpathExpr(expr):
             self._expr = expr
         else:
-            raise RestrictedXpathError("Invalid xpath expression: %s" % expr)
+            raise InvalidParameterError("Invalid xpath expression: %s" % expr)
             
     def _parseXpathExpr(self,expr):
         re_vp = re.compile(self.__r_value_path)
@@ -273,10 +272,7 @@ class XPathQuery(RestrictedXpathExpression):
         package, resourcetype, query = self._parsePrefix(query)
         self.package_id = package
         self.resourcetype_id = resourcetype
-        try:
-            RestrictedXpathExpression.__init__(self, query)
-        except RestrictedXpathError, e:
-            raise InvalidXpathQuery(e)
+        RestrictedXpathExpression.__init__(self, query)
         self.parsed_predicates = self._parsePredicates(self.predicates)
 
     def __str__(self):
@@ -286,7 +282,7 @@ class XPathQuery(RestrictedXpathExpression):
         re_pf = re.compile(self.__r_prefix, re.VERBOSE)
         m = re_pf.match(expr)
         if not m:
-            raise InvalidXpathQuery("Invalid query expression: %s" % expr)
+            raise InvalidParameterError("Invalid query expression: %s" % expr)
         pid = self._convertWildcards(m.group('pid'))
         rid = self._convertWildcards(m.group('rid'))
         query = expr[m.end():] 

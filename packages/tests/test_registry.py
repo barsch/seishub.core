@@ -2,7 +2,7 @@
 import unittest
 import os
 
-from seishub.core import SeisHubError
+from seishub.exceptions import SeisHubError
 from seishub.test import SeisHubEnvironmentTestCase
 from seishub.core import Component, implements
 from seishub.packages.builtins import IResourceType, IPackage

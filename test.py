@@ -9,11 +9,12 @@ from seishub.config import Configuration
 
 
 class SeisHubEnvironmentTestCase(unittest.TestCase):
-    """This class is a unit test incoporating a valid SeisHub environment 
+    """This class is a unit test incorporating a valid SeisHub environment 
     without any service running. We generate a temporary configuration file, a
     sqlite data base and disable logging at all. Any class inheriting from 
     this test case may overwrite the _config method to preset additional
-    options to the test environment."""
+    options to the test environment.
+    """
     def __init__(self, methodName):
         unittest.TestCase.__init__(self, methodName)
         self.filename = os.path.join(tempfile.gettempdir(), 

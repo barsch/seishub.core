@@ -3,9 +3,8 @@
 import unittest
 
 from seishub.test import SeisHubEnvironmentTestCase
-from seishub.xmldb.xpath import RestrictedXpathExpression, \
-                                RestrictedXpathError, InvalidXpathQuery, \
-                                XPathQuery
+from seishub.exceptions import InvalidParameterError
+from seishub.xmldb.xpath import RestrictedXpathExpression, XPathQuery
 
 
 class XpathTest(SeisHubEnvironmentTestCase):
@@ -25,7 +24,7 @@ class XpathTest(SeisHubEnvironmentTestCase):
         self.assertEqual(expr.node_test,"rootnode")
         self.assertEqual(expr.predicates,"./somenode/achild and @anattribute")
         for iv in invalid:
-            self.assertRaises(RestrictedXpathError,
+            self.assertRaises(InvalidParameterError,
                               RestrictedXpathExpression,
                               iv)
         
@@ -59,9 +58,9 @@ class XPathQueryTest(SeisHubEnvironmentTestCase):
         self.assertEqual(q1.getValue_path(), "None/None/rootnode")
         
         # invalid expression:
-        self.assertRaises(InvalidXpathQuery,
+        self.assertRaises(InvalidParameterError,
                           XPathQuery, self.invalid_expr)
-        self.assertRaises(InvalidXpathQuery,
+        self.assertRaises(InvalidParameterError,
                           XPathQuery, self.invalid2_expr)
         
 def suite():

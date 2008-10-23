@@ -10,7 +10,7 @@ from twisted.cred import checkers, credentials, error
 from twisted.internet import defer
 
 from seishub.util.text import hash
-from seishub.core import SeisHubMessageError
+from seishub.exceptions import SeisHubError as SeisHubMessageError
 
 
 class UserGenerationError(SeisHubMessageError):

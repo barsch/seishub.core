@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from seishub.core import PackageManager, SeisHubError
+from seishub.exceptions import SeisHubError
+from seishub.core import PackageManager
 from seishub.util.text import from_uri
 from seishub.util.list import unique
 from seishub.db.util import DbStorage, DB_NULL 

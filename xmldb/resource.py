@@ -2,14 +2,14 @@
 
 from zope.interface import implements
 
+from seishub.exceptions import InvalidObjectError
 from seishub.db.util import Serializable, Relation, db_property, LazyAttribute
-from seishub.util.xmlwrapper import IXmlDoc, XmlTreeDoc
+from seishub.util.xmlwrapper import IXmlDoc, XmlTreeDoc, InvalidXmlDataError
 from seishub.util.text import validate_id
 from seishub.util.xml import toUnicode, parseXMLDeclaration, addXMLDeclaration 
 from seishub.util.text import hash
 from seishub.packages.package import PackageWrapper, ResourceTypeWrapper
 from seishub.xmldb.defaults import resource_tab, data_tab, data_meta_tab
-from seishub.xmldb.errors import XmlResourceError
 from seishub.xmldb.interfaces import IResource, IXmlDocument, IDocumentMeta
 from seishub.xmldb.package import PackageSpecific 
 
@@ -120,10 +120,7 @@ class XmlDocument(Serializable):
     
     def getXml_doc(self):
         if not self._xml_doc:
-            try:
-                self._xml_doc = self._validateXml_data(self.data)
-            except Exception, e:
-                raise XmlResourceError(e)
+            self._xml_doc = self._validateXml_data(self.data)
         return self._xml_doc
     
     def setXml_doc(self,xml_doc):
@@ -148,8 +145,11 @@ class XmlDocument(Serializable):
     
     def _parseXml_data(self,xml_data):
         # encode before handing it to parser:
-        xml_data = xml_data.encode("utf-8")
-        return XmlTreeDoc(xml_data=xml_data, blocking=True)
+        # xml_data = xml_data.encode("utf-8")
+        try:
+            return XmlTreeDoc(xml_data=xml_data, blocking=True)
+        except InvalidXmlDataError, e:
+            raise InvalidObjectError("Invalid XML document.", e)
 
 
 #class XmlStylesheetDocument(XmlDocument):

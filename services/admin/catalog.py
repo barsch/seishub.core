@@ -3,6 +3,7 @@
 from sqlalchemy import create_engine
 
 from seishub.core import Component, implements
+from seishub.exceptions import DuplicateObjectError
 from seishub.services.admin.interfaces import IAdminPanel
 from seishub.xmldb.defaults import DEFAULT_PREFIX, DATA_TABLE, \
                                    INDEX_TABLE, INDEX_DEF_TABLE, \
@@ -11,7 +12,6 @@ from seishub.xmldb.defaults import DEFAULT_PREFIX, DATA_TABLE, \
 from seishub.packages.defaults import SCHEMA_TABLE, STYLESHEET_TABLE, \
                                       ALIAS_TABLE, PACKAGES_TABLE, \
                                       RESOURCETYPES_TABLE
-from seishub.xmldb.errors import AddResourceError
 
 
 class BasicPanel(Component):
@@ -144,7 +144,7 @@ class ResourcesPanel(Component):
             self.catalog.addResource(data['package_id'], 
                                      data['resourcetype_id'], 
                                      data['file'])
-        except AddResourceError, e:
+        except DuplicateObjectError, e:
             self.log.error("Error adding resource", e)
             data['error'] = ("Error adding resource", e)
             return data

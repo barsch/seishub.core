@@ -5,12 +5,13 @@ from sqlalchemy import select #@UnresolvedImport
 from sqlalchemy.sql import and_, or_ #@UnresolvedImport
 from sqlalchemy.sql.expression import _BinaryExpression, ClauseList #@UnresolvedImport
 
+from seishub.exceptions import SeisHubError, NotFoundError
+from seishub.exceptions import InvalidParameterError
+from seishub.exceptions import DuplicateObjectError
 from seishub.db.util import DbStorage, DbError
 from seishub.xmldb.interfaces import IXmlIndexCatalog, IIndexRegistry, \
                                      IResourceIndexing, IXmlIndex, \
                                      IResourceStorage, IXPathQuery
-from seishub.xmldb.errors import XmlIndexCatalogError
-from seishub.xmldb.errors import InvalidIndexError, DuplicateIndexError
 from seishub.xmldb.defaults import index_def_tab, index_tab, \
                                    resource_tab
 from seishub.xmldb.index import XmlIndex
@@ -22,14 +23,13 @@ class XmlIndexCatalog(DbStorage):
                IResourceIndexing,
                IXmlIndexCatalog)
     
-    def __init__(self,db,resource_storage = None):
+    def __init__(self, db, resource_storage = None):
         super(XmlIndexCatalog, self).__init__(db)
-        
-        if resource_storage:
-            if not IResourceStorage.providedBy(resource_storage):
-                raise DoesNotImplement(IResourceStorage)
-            self._storage = resource_storage
-            
+        if resource_storage and not \
+           IResourceStorage.providedBy(resource_storage):
+            raise DoesNotImplement(IResourceStorage)
+        self._storage = resource_storage
+    
     def _parse_xpath_query(expr):
         pass
     _parse_xpath_query=staticmethod(_parse_xpath_query)
@@ -42,17 +42,15 @@ class XmlIndexCatalog(DbStorage):
         try:
             self.store(xml_index)
         except DbError, e:
-            raise DuplicateIndexError("Index '%s' already exists." %\
-                                       str(xml_index), e)
+            msg = "Error registering an index: Index '%s' already exists."
+            raise DuplicateObjectError(msg % str(xml_index), e)
         except Exception, e:
-            raise XmlIndexCatalogError("Error registering an index: %s" %\
-                                       str(xml_index), e)
+            msg = "Error registering an index: %s"
+            raise SeisHubError(msg % str(xml_index), e)
         return xml_index
     
-    def removeIndex(self,value_path=None, key_path=None):
+    def removeIndex(self,value_path, key_path):
         """@see: L{seishub.xmldb.xmlindexcatalog.interfaces.IIndexRegistry}"""
-        if not (isinstance(key_path,basestring) and isinstance(value_path,basestring)):
-            raise XmlIndexCatalogError("No key_path and value_path given.")
         if value_path.startswith('/'):
             value_path = value_path[1:]
         # flush index first:
@@ -70,18 +68,15 @@ class XmlIndexCatalog(DbStorage):
                 value_path = expr_o.value_path
                 key_path = expr_o.key_path
             except Exception, e:
-                raise XmlIndexCatalogError("Invalid index expression: "+\
-                                           "%s, %s, %s" %\
-                                           (value_path, key_path, expr), e )
+                msg = "Error getting an Index: Invalid index expression: " +\
+                      "%s, %s, %s"
+                raise InvalidParameterError(msg % (value_path, key_path, expr), 
+                                            e)
         
         index = self.getIndexes(value_path, key_path, type)
         assert len(index) <= 1
-#        if len(index) > 1:
-#            raise XmlIndexCatalogError("Unexpected result set length.")
         if not index:
             return None
-#            raise XmlIndexCatalogError("No index found for: %s, %s" %\
-#                                       (value_path, key_path))
         return index[0]
     
     def getIndexes(self,value_path = None, key_path = None, data_type = None):
@@ -127,20 +122,12 @@ class XmlIndexCatalog(DbStorage):
     # methods from IResourceIndexing:
     def indexResource(self, document_id, value_path, key_path):
         """@see: L{seishub.xmldb.xmlindexcatalog.interfaces.IResourceIndexing}"""
-#        #TODO: do this not index specific but resource type specific
-
-        if not (isinstance(key_path,basestring) and 
-                isinstance(value_path,basestring)):
-                raise XmlIndexCatalogError("Invalid key path or value path")
-        
+        #TODO: do this not index specific but resource type specific     
         #get objs and evaluate index on resource:
-        try:
-            resource = self._storage.getResource(document_id = document_id)
-        except AttributeError:
-            raise XmlIndexCatalogError("No resource storage.")
+        resource = self._storage.getResource(document_id = document_id)
         index = self.getIndex(value_path, key_path)
         if not index:
-            raise InvalidIndexError("No index found for (%s,%s)" % 
+            raise NotFoundError("No index found for (%s,%s)" % 
                                     (value_path, key_path))
         keysvals = index.eval(resource.document)
         #data_type = index.getType()
@@ -160,7 +147,8 @@ class XmlIndexCatalog(DbStorage):
             txn.commit()
         except Exception, e:
             txn.rollback()
-            raise XmlIndexCatalogError(e)
+            raise SeisHubError("Error indexing document with id %s" %\
+                               document_id, e)
         finally:
             conn.close()
         
@@ -168,9 +156,6 @@ class XmlIndexCatalog(DbStorage):
 
     def flushIndex(self, value_path, key_path):
         """@see: L{seishub.xmldb.interfaces.IResourceIndexing}""" 
-        if not (isinstance(key_path,basestring) and isinstance(value_path,basestring)):
-            raise XmlIndexCatalogError("No key_path, value_path given.")
-
         self._db.execute(index_tab.delete(
                          index_tab.c.index_id.in_
                            (select([index_def_tab.c.id],
@@ -196,8 +181,9 @@ class XmlIndexCatalog(DbStorage):
                 # find appropriate index:
                 idx = self.getIndex(value_path, str(p._left))
                 if not idx:
-                    raise XmlIndexCatalogError("No Index found for %s/%s" % \
-                                               (value_path, str(p._left)))
+                    msg = "Error processing query %s: No Index found for %s/%s"
+                    raise NotFoundError(msg % (str(q), value_path, 
+                                               str(p._left)))
                 idx_id = idx._getId()
                 # XXX: maybe simple counter instead of hash
                 alias_id = abs(hash(str(idx_id) + str(p._right)))
@@ -249,7 +235,8 @@ class XmlIndexCatalog(DbStorage):
             # find appropriate index
             idx = self.getIndex(ob[0].value_path, ob[0].key_path)
             if not idx:
-                raise XmlIndexCatalogError("No Index found for %s" % str(ob[0]))
+                msg = "Error processing query %s: No Index found for %s."
+                raise NotFoundError(msg % (str(query), str(ob[0])))
             alias = index_tab.alias("idx_" + str(alias_id))
             alias_id += 1
             q = q.where(and_(alias.c.index_id == idx._getId(), 

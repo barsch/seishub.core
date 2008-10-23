@@ -17,8 +17,8 @@
 #
 # Author: Christopher Lenz <cmlenz@gmx.de>
 
-from seishub.core import Interface, Component, SeisHubError, ExtensionPoint, \
-                         implements
+from seishub.exceptions import SeisHubError
+from seishub.core import Interface, Component, ExtensionPoint, implements
 
 import unittest
 

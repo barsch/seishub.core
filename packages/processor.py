@@ -4,13 +4,11 @@ from StringIO import StringIO
 
 from twisted.web import http
 
-from seishub.core import SeisHubError
+from seishub.exceptions import SeisHubError, DeletedObjectError, NotFoundError
 from seishub.util.list import unique
 from seishub.util.text import isInteger
 from seishub.util.path import splitPath
-from seishub.util.xml import addXMLDeclaration 
-from seishub.xmldb.errors import GetResourceError, ResourceDeletedError
-
+from seishub.util.xml import addXMLDeclaration
 
 # @see: http://www.boutell.com/newfaq/misc/urllength.html
 MAX_URI_LENGTH = 1000
@@ -257,11 +255,11 @@ class Processor:
         # XXX: 401 Unauthorized
         # XXX: 409 Conflict/415 Unsupported Media Type 
         # XSD not valid - here we need additional info why
-        except GetResourceError, e:
+        except NotFoundError, e:
             # 404 Not Found
             self.env.log.debug(e)
             raise ProcessorError(http.NOT_FOUND, e)
-        except ResourceDeletedError, e:
+        except DeletedObjectError, e:
             # 410 Gone
             self.env.log.debug(e)
             raise ProcessorError(http.GONE, e)

@@ -18,7 +18,7 @@ from ConfigParser import ConfigParser
 import os
 from sets import Set as set
 
-from seishub.core import SeisHubError
+from seishub.exceptions import SeisHubError
 from seishub.util.text import toUnicode
 
 __all__ = ['Configuration', 'Option', 'BoolOption', 'IntOption', 'ListOption',

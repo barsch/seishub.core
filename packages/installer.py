@@ -1,6 +1,6 @@
 import sys, os
 
-from seishub.core import SeisHubError
+from seishub.exceptions import SeisHubError
 
 class PackageInstaller(object):
     """The PackageInstaller allows file system based registration of:

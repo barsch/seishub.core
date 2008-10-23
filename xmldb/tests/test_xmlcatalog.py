@@ -3,7 +3,7 @@
 import unittest
 
 from seishub.test import SeisHubEnvironmentTestCase
-from seishub.core import SeisHubError
+from seishub.exceptions import SeisHubError
 
 
 RAW_XML = """<station rel_uri="bern">

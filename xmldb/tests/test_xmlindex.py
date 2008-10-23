@@ -3,7 +3,7 @@
 import unittest
 
 from seishub.test import SeisHubEnvironmentTestCase
-from seishub.core import SeisHubError
+from seishub.exceptions import SeisHubError
 from seishub.xmldb.resource import XmlDocument, Resource, newXMLDocument
 from seishub.xmldb.index import XmlIndex
 

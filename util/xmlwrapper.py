@@ -4,7 +4,7 @@ from lxml import etree
 from zope.interface import implements, Interface, Attribute
 from zope.interface.exceptions import DoesNotImplement
 
-from seishub.core import SeisHubError
+from seishub.exceptions import SeisHubError
 
 class IXmlNode(Interface):
     """Basic xml node object"""
@@ -184,7 +184,10 @@ class XmlTreeDoc(XmlDoc):
     def _parse(self):
         parser = etree.XMLParser()
         data = StringIO(self._xml_data)
-        self._xml_doc = etree.parse(data,parser)
+        try:
+            self._xml_doc = etree.parse(data,parser)
+        except Exception, e:
+            raise InvalidXmlDataError("Invalid XML data.", e)
         self.errors = parser.error_log
         if self.options['blocking'] and len(self.errors) > 0:
             raise InvalidXmlDataError(self.errors)

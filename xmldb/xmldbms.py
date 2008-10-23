@@ -3,10 +3,11 @@
 from zope.interface import implements
 from sqlalchemy.sql import and_
 
+from seishub.exceptions import SeisHubError, InvalidParameterError
+from seishub.exceptions import NotFoundError, DeletedObjectError
+from seishub.exceptions import DuplicateObjectError
 from seishub.db.util import DbStorage, DbError
 from seishub.xmldb.interfaces import IResourceStorage
-from seishub.xmldb.errors import AddResourceError, GetResourceError, \
-                                 DeleteResourceError, ResourceDeletedError
 from seishub.xmldb.resource import XmlDocument, Resource
 
 class XmlDbManager(DbStorage):
@@ -18,7 +19,7 @@ class XmlDbManager(DbStorage):
         """Add a new resource to the storage
         @return: True on success"""
         if not xml_resource.document.data or xml_resource.document.data == "":
-            raise AddResourceError('Empty document!')
+            raise InvalidParameterError('Empty document!')
                 
         if xml_resource.resourcetype.version_control:
             xml_resource.revision = None
@@ -40,8 +41,10 @@ class XmlDbManager(DbStorage):
                            xml_resource)
             else:
                 self.store(xml_resource)
-        except Exception, e:
-            raise AddResourceError(e)
+        except DbError, e:
+            msg = "Error adding a resource: A resource with the given " +\
+                  "paramters already exists."
+            raise DuplicateObjectError(msg, e)
         return True
     
     def modifyResource(self, xml_resource = Resource()):
@@ -73,11 +76,11 @@ class XmlDbManager(DbStorage):
                               name = name,
                               revision = revision,
                               id = id)[0]
-        except Exception, e:
-            raise GetResourceError("Resource not found. ('%s/%s/%s/%s')" %\
-                            (package.package_id, 
-                             resourcetype.resourcetype_id, name, 
-                             revision), e)
+        except IndexError:
+            raise NotFoundError("Resource not found. ('%s/%s/%s/%s')" %\
+                                (package.package_id, 
+                                 resourcetype.resourcetype_id, name, 
+                                 revision))
         return res
     
     def getResource(self, package = None, resourcetype = None, name = None, 
@@ -93,15 +96,15 @@ class XmlDbManager(DbStorage):
             try:
                 res = self.pickup(Resource, 
                                   document = {'_id':document_id})[0]
-            except Exception, e:
-                raise GetResourceError("Resource not found. ('%s')" %\
-                                       (document_id), e)
+            except IndexError, e:
+                raise NotFoundError("Resource not found. ('%s')" %\
+                                    (document_id), e)
             return res
         res = self._getResource(package, resourcetype, name, revision, id)
         # resource has been deleted
         if not res.document._id:
-            raise ResourceDeletedError("Resource has been deleted. "+\
-                                       "('%s/%s/%s/%s')" %\
+            raise DeletedObjectError("The requested resource has been "+\
+                                     "deleted. ('%s/%s/%s/%s')" %\
                                        (package.package_id, 
                                         resourcetype.resourcetype_id, 
                                         name, revision))
@@ -117,8 +120,7 @@ class XmlDbManager(DbStorage):
             if res.document._id:
                 self.drop(XmlDocument, _id = res.document._id)
         except Exception, e:
-            raise DeleteResourceError("Error deleting resource."+\
-                                      " '%s/%s/%s/%s'", e)
+            raise SeisHubError("Error deleting resource. '%s/%s/%s/%s'", e)
 
     def deleteResource(self, package = None, resourcetype = None, name = None,
                        revision = None, document_id = None, id = None):
@@ -148,8 +150,8 @@ class XmlDbManager(DbStorage):
             try:
                 self.store(res)
             except Exception, e:
-                raise DeleteResourceError("Error deleting version controlled"+\
-                                          " resource. '%s/%s/%s/%s'", e)
+                raise SeisHubError("Error deleting version controlled"+\
+                                   " resource. '%s/%s/%s/%s'", e)
         return True
     
     def deleteResources(self, package, resourcetype, name = None):
