@@ -17,7 +17,8 @@ from twisted.python import components
 from seishub.defaults import SFTP_PORT, SFTP_PRIVATE_KEY, SFTP_PUBLIC_KEY
 from seishub.defaults import SFTP_AUTOSTART
 from seishub.config import IntOption, Option, BoolOption
-from seishub.packages.processor import Processor, ProcessorError
+from seishub.packages.processor import Processor
+from seishub.exceptions import SeisHubError
 from seishub.packages.processor import PUT, POST, DELETE, GET, MOVE
 from seishub.util.path import absPath
 
@@ -105,7 +106,7 @@ class InMemoryFile:
             self.proc.method = PUT
         try:
             self.proc.process()
-        except ProcessorError, e:
+        except SeisHubError, e:
             raise filetransfer.SFTPError(filetransfer.FX_FAILURE, e.message)
     
     def getAttrs(self):
@@ -180,7 +181,7 @@ class SFTPServiceProtocol:
         data = None
         try:
             data = proc.run(GET, filename)
-        except ProcessorError, e:
+        except SeisHubError, e:
             pass
         except Exception, e:
             raise filetransfer.SFTPError(filetransfer.FX_FAILURE, e.message)

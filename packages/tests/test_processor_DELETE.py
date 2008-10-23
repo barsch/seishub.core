@@ -6,7 +6,8 @@ from StringIO import StringIO
 from twisted.web import http
 
 from seishub.test import SeisHubEnvironmentTestCase
-from seishub.packages.processor import Processor, ProcessorError
+from seishub.packages.processor import Processor
+from seishub.exceptions import SeisHubError
 from seishub.packages.processor import PUT, POST, DELETE, GET
 from seishub.core import Component, implements
 from seishub.packages.builtins import IResourceType, IPackage
@@ -63,14 +64,14 @@ class ProcessorDELETETestSuite(SeisHubEnvironmentTestCase):
         # without trailing slash
         try:
             proc.run(DELETE, '/delete-test')
-            self.fail("Expected ProcessorError")
-        except ProcessorError, e:
+            self.fail("Expected SeisHubError")
+        except SeisHubError, e:
             self.assertEqual(e.code, http.FORBIDDEN)
         # with trailing slash
         try:
             proc.run(DELETE, '/delete-test/')
-            self.fail("Expected ProcessorError")
-        except ProcessorError, e:
+            self.fail("Expected SeisHubError")
+        except SeisHubError, e:
             self.assertEqual(e.code, http.FORBIDDEN)
     
     def test_deleteResourceType(self):
@@ -79,26 +80,26 @@ class ProcessorDELETETestSuite(SeisHubEnvironmentTestCase):
         # without trailing slash
         try:
             proc.run(DELETE, '/delete-test/xml/notvc')
-            self.fail("Expected ProcessorError")
-        except ProcessorError, e:
+            self.fail("Expected SeisHubError")
+        except SeisHubError, e:
             self.assertEqual(e.code, http.FORBIDDEN)
         # with trailing slash
         try:
             proc.run(DELETE, '/delete-test/xml/notvc/')
-            self.fail("Expected ProcessorError")
-        except ProcessorError, e:
+            self.fail("Expected SeisHubError")
+        except SeisHubError, e:
             self.assertEqual(e.code, http.FORBIDDEN)
         # without trailing slash
         try:
             proc.run(DELETE, '/delete-test/xml')
-            self.fail("Expected ProcessorError")
-        except ProcessorError, e:
+            self.fail("Expected SeisHubError")
+        except SeisHubError, e:
             self.assertEqual(e.code, http.FORBIDDEN)
         # with trailing slash
         try:
             proc.run(DELETE, '/delete-test/xml/')
-            self.fail("Expected ProcessorError")
-        except ProcessorError, e:
+            self.fail("Expected SeisHubError")
+        except SeisHubError, e:
             self.assertEqual(e.code, http.FORBIDDEN)
     
     def test_deleteNonExistingResource(self):
@@ -107,8 +108,8 @@ class ProcessorDELETETestSuite(SeisHubEnvironmentTestCase):
         # with trailing slash
         try:
             proc.run(DELETE, '/delete-test/xml/notvc/test.xml')
-            self.fail("Expected ProcessorError")
-        except ProcessorError, e:
+            self.fail("Expected SeisHubError")
+        except SeisHubError, e:
             self.assertEqual(e.code, http.NOT_FOUND)
     
     def test_deleteBuiltinResource(self):
@@ -119,8 +120,8 @@ class ProcessorDELETETestSuite(SeisHubEnvironmentTestCase):
         url = str(data.get('resource')[0])
         try:
             proc.run(DELETE, url)
-            self.fail("Expected ProcessorError")
-        except ProcessorError, e:
+            self.fail("Expected SeisHubError")
+        except SeisHubError, e:
             self.assertEqual(e.code, http.FORBIDDEN)
     
     def test_deleteResourceInNonExistingResourceType(self):
@@ -129,8 +130,8 @@ class ProcessorDELETETestSuite(SeisHubEnvironmentTestCase):
         # with trailing slash
         try:
             proc.run(DELETE, '/delete-test/xml/notvc2/test.xml')
-            self.fail("Expected ProcessorError")
-        except ProcessorError, e:
+            self.fail("Expected SeisHubError")
+        except SeisHubError, e:
             self.assertEqual(e.code, http.FORBIDDEN)
     
     def test_deleteResourceInNonExistingPackage(self):
@@ -139,8 +140,8 @@ class ProcessorDELETETestSuite(SeisHubEnvironmentTestCase):
         # with trailing slash
         try:
             proc.run(DELETE, '/delete-test2/xml/notvc/test.xml')
-            self.fail("Expected ProcessorError")
-        except ProcessorError, e:
+            self.fail("Expected SeisHubError")
+        except SeisHubError, e:
             self.assertEqual(e.code, http.FORBIDDEN)
     
     def test_deleteRevision(self):
@@ -153,8 +154,8 @@ class ProcessorDELETETestSuite(SeisHubEnvironmentTestCase):
         # with trailing slash
         try:
             proc.run(DELETE, '/delete-test/xml/vc/test.xml/1')
-            self.fail("Expected ProcessorError")
-        except ProcessorError, e:
+            self.fail("Expected SeisHubError")
+        except SeisHubError, e:
             self.assertEqual(e.code, http.FORBIDDEN)
         # delete resource
         proc.run(DELETE, '/delete-test/xml/vc/test.xml')
@@ -179,8 +180,8 @@ class ProcessorDELETETestSuite(SeisHubEnvironmentTestCase):
         # fetch resource again
         try:
             proc.run(GET, '/delete-test/xml/vc/test.xml')
-            self.fail("Expected ProcessorError")
-        except ProcessorError, e:
+            self.fail("Expected SeisHubError")
+        except SeisHubError, e:
             self.assertEqual(e.code, http.GONE)
     
     def test_deleteResource(self):
@@ -198,8 +199,8 @@ class ProcessorDELETETestSuite(SeisHubEnvironmentTestCase):
         # fetch resource again
         try:
             proc.run(GET, '/delete-test/xml/notvc/test.xml')
-            self.fail("Expected ProcessorError")
-        except ProcessorError, e:
+            self.fail("Expected SeisHubError")
+        except SeisHubError, e:
             self.assertEqual(e.code, http.NOT_FOUND)
     
     def test_postOnDeletedVersionControlledResource(self):

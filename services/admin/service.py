@@ -16,7 +16,8 @@ from seishub.exceptions import SeisHubError
 from seishub.core import ExtensionPoint
 from seishub.defaults import ADMIN_PORT, ADMIN_CERTIFICATE, \
                              ADMIN_PRIVATE_KEY, ADMIN_MIN_PASSWORD_LENGTH
-from seishub.packages.processor import Processor, ProcessorError, GET
+from seishub.packages.processor import Processor, GET
+from seishub.exceptions import SeisHubError
 from seishub.services.admin.interfaces import IAdminPanel, IAdminTheme, \
                                               IAdminStaticContent
 from seishub.util import demjson
@@ -89,8 +90,8 @@ class AdminRequest(http.Request):
         proc = Processor(self.env)
         try:
             data = proc.run(GET, self.path[5:])
-        except ProcessorError, e:
-            self.env.log.info('ProcessorError:', e)
+        except SeisHubError, e:
+            self.env.log.info('SeisHubError:', e)
         else:
             if not isinstance(data, dict):
                 self.finish()

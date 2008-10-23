@@ -5,11 +5,11 @@ import os
 from twisted.web import http
 
 from seishub.core import Component, implements
+from seishub.exceptions import SeisHubError
 from seishub.packages.interfaces import IPackage, IResourceType
 from seishub.packages.interfaces import IMapperMethod
 from seishub.packages.interfaces import IGETMapper, IPUTMapper
 from seishub.packages.interfaces import IPOSTMapper, IDELETEMapper
-from seishub.packages.processor import ProcessorError
 from seishub.packages.installer import registerStylesheet, registerIndex
 from seishub.util.path import addBaseToList
 
@@ -91,7 +91,7 @@ class SchemaResourceMapper(Component):
         # test if package at all
         package_id = request.postpath[3]
         if not self.registry.isPackageId(package_id):
-            raise ProcessorError(http.FORBIDDEN, "Invalid package.")
+            raise SeisHubError(http.FORBIDDEN, "Invalid package.")
         # package level - show all resource types of this package
         if len(request.postpath)==4:
             urls = self.registry.getResourceTypeURLs(package_id, 
@@ -100,7 +100,7 @@ class SchemaResourceMapper(Component):
         # test if valid resource type
         resourcetype_id = request.postpath[4]
         if not self.registry.isResourceTypeId(package_id, resourcetype_id):
-            raise ProcessorError(http.FORBIDDEN, "Invalid resource type.")
+            raise SeisHubError(http.FORBIDDEN, "Invalid resource type.")
         # resource type level - show all schemas named after label
         if len(request.postpath)==5:
             # query catalog for schemas
@@ -115,17 +115,17 @@ class SchemaResourceMapper(Component):
                                         resourcetype_id=resourcetype_id,
                                         type=request.postpath[5])
         if not obj:
-            raise ProcessorError(http.NOT_FOUND, "Schema not found.")
+            raise SeisHubError(http.NOT_FOUND, "Schema not found.")
         return obj[0].getResource().document.data
     
     def processDELETE(self, request):
         """Process a DELETE request at the mapping_url."""
         if len(request.postpath)!=6:
-            raise ProcessorError(http.BAD_REQUEST, "Invalid request.")
+            raise SeisHubError(http.BAD_REQUEST, "Invalid request.")
         # test if valid resource type
         if not self.registry.isResourceTypeId(request.postpath[3],
                                               request.postpath[4]):
-            raise ProcessorError(http.FORBIDDEN, "Invalid resource type.")
+            raise SeisHubError(http.FORBIDDEN, "Invalid resource type.")
         # direct resource request
         try:
             self.registry.schemas.delete(package_id=request.postpath[3],
@@ -133,16 +133,16 @@ class SchemaResourceMapper(Component):
                                          type=request.postpath[5])
         except Exception, e:
             self.log.info("Error deleting schemas", e)
-            raise ProcessorError(http.INTERNAL_SERVER_ERROR, e)
+            raise SeisHubError(http.INTERNAL_SERVER_ERROR, e)
     
     def processPUT(self, request):
         """Process a PUT request at the mapping_url."""
         if len(request.postpath)!=6:
-            raise ProcessorError(http.BAD_REQUEST, "Invalid request.")
+            raise SeisHubError(http.BAD_REQUEST, "Invalid request.")
         # test if valid resource type
         if not self.registry.isResourceTypeId(request.postpath[3],
                                               request.postpath[4]):
-            raise ProcessorError(http.FORBIDDEN, "Invalid resource type.")
+            raise SeisHubError(http.FORBIDDEN, "Invalid resource type.")
         # direct resource request
         try:
             self.registry.schemas.register(request.postpath[3],
@@ -151,7 +151,7 @@ class SchemaResourceMapper(Component):
                                            request.data)
         except Exception, e:
             self.log.error("Error adding schemas", e)
-            raise ProcessorError(http.INTERNAL_SERVER_ERROR, e)
+            raise SeisHubError(http.INTERNAL_SERVER_ERROR, e)
         return self.mapping_url + '/'.join(request.postpath[3:])
     
     def processPOST(self, request):

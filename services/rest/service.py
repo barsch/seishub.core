@@ -1,15 +1,14 @@
 # -*- coding: utf-8 -*-
 
-from lxml import etree
-from StringIO import StringIO
 from twisted.web import http
 from twisted.application import internet
 from twisted.internet import threads
 
 from seishub.defaults import REST_PORT
 from seishub import __version__ as SEISHUB_VERSION
+from seishub.exceptions import SeisHubError
 from seishub.config import IntOption, BoolOption
-from seishub.packages.processor import Processor, ProcessorError
+from seishub.packages.processor import Processor
 from seishub.util.http import parseAccept, validMediaType
 from seishub.util.path import absPath
 
@@ -55,7 +54,7 @@ class RESTRequest(Processor, http.Request):
     def _processContent(self):
         try:
             content = Processor.process(self)
-        except ProcessorError, e:
+        except SeisHubError, e:
             self.response_code = e.code
             content = ''
             self.env.log.error(http.responses.get(self.response_code))

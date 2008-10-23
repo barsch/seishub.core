@@ -6,7 +6,8 @@ from StringIO import StringIO
 from twisted.web import http
 
 from seishub.test import SeisHubEnvironmentTestCase
-from seishub.packages.processor import Processor, ProcessorError
+from seishub.packages.processor import Processor
+from seishub.exceptions import SeisHubError
 from seishub.packages.processor import PUT, POST, DELETE, GET, MOVE
 from seishub.packages.processor import MAX_URI_LENGTH
 from seishub.core import Component, implements
@@ -58,8 +59,8 @@ class ProcessorMOVETestSuite(SeisHubEnvironmentTestCase):
         proc = Processor(self.env)
         try:
             proc.run(MOVE, '/move-test/xml/notvc/test.xml')
-            self.fail("Expected ProcessorError")
-        except ProcessorError, e:
+            self.fail("Expected SeisHubError")
+        except SeisHubError, e:
             self.assertEqual(e.code, http.BAD_REQUEST)
     
     def test_moveWithoutAbsoluteDestination(self):
@@ -68,8 +69,8 @@ class ProcessorMOVETestSuite(SeisHubEnvironmentTestCase):
         try:
             proc.run(MOVE, '/move-test/xml/notvc/test.xml', 
                      received_headers = {'Destination': '/test/notvc/muh.xml'})
-            self.fail("Expected ProcessorError")
-        except ProcessorError, e:
+            self.fail("Expected SeisHubError")
+        except SeisHubError, e:
             self.assertEqual(e.code, http.BAD_REQUEST)
     
     def test_moveWithOversizedDestination(self):
@@ -80,8 +81,8 @@ class ProcessorMOVETestSuite(SeisHubEnvironmentTestCase):
         try:
             proc.run(MOVE, '/move-test/xml/notvc/test.xml', 
                      received_headers = {'Destination': uri})
-            self.fail("Expected ProcessorError")
-        except ProcessorError, e:
+            self.fail("Expected SeisHubError")
+        except SeisHubError, e:
             self.assertEqual(e.code, http.REQUEST_URI_TOO_LONG)
     
     def test_moveToOtherResourceType(self):
@@ -92,8 +93,8 @@ class ProcessorMOVETestSuite(SeisHubEnvironmentTestCase):
         try:
             proc.run(MOVE, '/move-test/xml/notvc/test.xml', 
                      received_headers = {'Destination': uri})
-            self.fail("Expected ProcessorError")
-        except ProcessorError, e:
+            self.fail("Expected SeisHubError")
+        except SeisHubError, e:
             self.assertEqual(e.code, http.FORBIDDEN)
     
     def test_moveToInvalidResourceTypePath(self):
@@ -106,8 +107,8 @@ class ProcessorMOVETestSuite(SeisHubEnvironmentTestCase):
         try:
             proc.run(MOVE, '/move-test/xml/notvc/test.xml', 
                      received_headers = {'Destination': uri})
-            self.fail("Expected ProcessorError")
-        except ProcessorError, e:
+            self.fail("Expected SeisHubError")
+        except SeisHubError, e:
             self.assertEqual(e.code, http.FORBIDDEN)
         # delete resource
         proc.run(DELETE, '/move-test/xml/notvc/test.xml')
@@ -119,8 +120,8 @@ class ProcessorMOVETestSuite(SeisHubEnvironmentTestCase):
         try:
             proc.run(MOVE, '/move-test/xml/notvc/test.xml', 
                      received_headers = {'Destination': uri})
-            self.fail("Expected ProcessorError")
-        except ProcessorError, e:
+            self.fail("Expected SeisHubError")
+        except SeisHubError, e:
             self.assertEqual(e.code, http.FORBIDDEN)
     
     def test_moveWithoutFilename(self):
@@ -131,16 +132,16 @@ class ProcessorMOVETestSuite(SeisHubEnvironmentTestCase):
         try:
             proc.run(MOVE, '/move-test/xml/notvc/test.xml', 
                      received_headers = {'Destination': uri})
-            self.fail("Expected ProcessorError")
-        except ProcessorError, e:
+            self.fail("Expected SeisHubError")
+        except SeisHubError, e:
             self.assertEqual(e.code, http.FORBIDDEN)
         # without trailing slash
         uri = self.env.getRestUrl() + '/move-test/xml/vc'
         try:
             proc.run(MOVE, '/move-test/xml/notvc/test.xml', 
                      received_headers = {'Destination': uri})
-            self.fail("Expected ProcessorError")
-        except ProcessorError, e:
+            self.fail("Expected SeisHubError")
+        except SeisHubError, e:
             self.assertEqual(e.code, http.FORBIDDEN)
     
     def test_moveToNewResource(self):
@@ -164,8 +165,8 @@ class ProcessorMOVETestSuite(SeisHubEnvironmentTestCase):
         # get original resource
         try:
             proc.run(GET, '/move-test/xml/notvc/test.xml')
-            self.fail("Expected ProcessorError")
-        except ProcessorError, e:
+            self.fail("Expected SeisHubError")
+        except SeisHubError, e:
             self.assertEqual(e.code, http.NOT_FOUND)
         # get new resource
         data = proc.run(GET, '/move-test/xml/notvc/new.xml')
@@ -179,8 +180,8 @@ class ProcessorMOVETestSuite(SeisHubEnvironmentTestCase):
         # get new resource 
         try:
             proc.run(GET, '/move-test/xml/notvc/new.xml')
-            self.fail("Expected ProcessorError")
-        except ProcessorError, e:
+            self.fail("Expected SeisHubError")
+        except SeisHubError, e:
             self.assertEqual(e.code, http.NOT_FOUND)
         # remove resource
         proc.run(DELETE, '/move-test/xml/notvc/test.xml')
@@ -198,8 +199,8 @@ class ProcessorMOVETestSuite(SeisHubEnvironmentTestCase):
         try:
             proc.run(MOVE, '/move-test/xml/vc/test.xml/2', 
                      received_headers = {'Destination': uri})
-            self.fail("Expected ProcessorError")
-        except ProcessorError, e:
+            self.fail("Expected SeisHubError")
+        except SeisHubError, e:
             self.assertEqual(e.code, http.FORBIDDEN)
         # delete resource
         proc.run(DELETE, '/move-test/xml/vc/test.xml')
@@ -215,8 +216,8 @@ class ProcessorMOVETestSuite(SeisHubEnvironmentTestCase):
         try:
             proc.run(MOVE, '/move-test/xml/vc/test.xml/1', 
                      received_headers = {'Destination': uri})
-            self.fail("Expected ProcessorError")
-        except ProcessorError, e:
+            self.fail("Expected SeisHubError")
+        except SeisHubError, e:
             self.assertEqual(e.code, http.FORBIDDEN)
         # delete resource
         proc.run(DELETE, '/move-test/xml/vc/test.xml')
@@ -235,8 +236,8 @@ class ProcessorMOVETestSuite(SeisHubEnvironmentTestCase):
         try:
             proc.run(MOVE, '/move-test/xml/vc/test1.xml', 
                      received_headers = {'Destination': uri})
-            self.fail("Expected ProcessorError")
-        except ProcessorError, e:
+            self.fail("Expected SeisHubError")
+        except SeisHubError, e:
             self.assertEqual(e.code, http.FORBIDDEN)
         # delete resources
         proc.run(DELETE, '/move-test/xml/vc/test1.xml')
@@ -256,8 +257,8 @@ class ProcessorMOVETestSuite(SeisHubEnvironmentTestCase):
         try:
             proc.run(MOVE, '/move-test/xml/vc/test1.xml', 
                      received_headers = {'Destination': uri})
-            self.fail("Expected ProcessorError")
-        except ProcessorError, e:
+            self.fail("Expected SeisHubError")
+        except SeisHubError, e:
             self.assertEqual(e.code, http.FORBIDDEN)
         # delete resources
         proc.run(DELETE, '/move-test/xml/vc/test1.xml')
@@ -274,8 +275,8 @@ class ProcessorMOVETestSuite(SeisHubEnvironmentTestCase):
         try:
             proc.run(MOVE, '/move-test/xml/notvc/test1.xml', 
                      received_headers = {'Destination': uri})
-            self.fail("Expected ProcessorError")
-        except ProcessorError, e:
+            self.fail("Expected SeisHubError")
+        except SeisHubError, e:
             # XXX: BUG - see ticket #61 - processor should raise FORBIDDEN
             self.assertEqual(e.code, http.FORBIDDEN)
         # delete resources
@@ -291,8 +292,8 @@ class ProcessorMOVETestSuite(SeisHubEnvironmentTestCase):
         to_uri = self.env.getRestUrl() + '/seishub/xml/stylesheet/test.xml' 
         try:
             proc.run(MOVE, uri, received_headers = {'Destination': to_uri})
-            self.fail("Expected ProcessorError")
-        except ProcessorError, e:
+            self.fail("Expected SeisHubError")
+        except SeisHubError, e:
             self.assertEqual(e.code, http.FORBIDDEN)
     
     def test_moveToSameURI(self):
@@ -302,8 +303,8 @@ class ProcessorMOVETestSuite(SeisHubEnvironmentTestCase):
         try:
             proc.run(MOVE, '/move-test/xml/notvc/test.xml', 
                      received_headers = {'Destination': uri})
-            self.fail("Expected ProcessorError")
-        except ProcessorError, e:
+            self.fail("Expected SeisHubError")
+        except SeisHubError, e:
             self.assertEqual(e.code, http.FORBIDDEN)
     
     def test_moveToInvalidResourcename(self):
@@ -319,40 +320,40 @@ class ProcessorMOVETestSuite(SeisHubEnvironmentTestCase):
         try:
             proc.run(MOVE, '/move-test/xml/notvc/test.xml', 
                      received_headers = {'Destination': uri})
-            self.fail("Expected ProcessorError")
-        except ProcessorError, e:
+            self.fail("Expected SeisHubError")
+        except SeisHubError, e:
             self.assertEqual(e.code, http.CONFLICT)
         # starting dot (.)
         uri = self.env.getRestUrl() + '/move-test/xml/notvc/.test'
         try:
             proc.run(MOVE, '/move-test/xml/notvc/test.xml', 
                      received_headers = {'Destination': uri})
-            self.fail("Expected ProcessorError")
-        except ProcessorError, e:
+            self.fail("Expected SeisHubError")
+        except SeisHubError, e:
             self.assertEqual(e.code, http.CONFLICT)
         # starting at sign (@)
         uri = self.env.getRestUrl() + '/move-test/xml/notvc/@test'
         try:
             proc.run(MOVE, '/move-test/xml/notvc/test.xml', 
                      received_headers = {'Destination': uri})
-            self.fail("Expected ProcessorError")
-        except ProcessorError, e:
+            self.fail("Expected SeisHubError")
+        except SeisHubError, e:
             self.assertEqual(e.code, http.CONFLICT)
         # starting underscore (_)
         uri = self.env.getRestUrl() + '/move-test/xml/notvc/_test'
         try:
             proc.run(MOVE, '/move-test/xml/notvc/test.xml', 
                      received_headers = {'Destination': uri})
-            self.fail("Expected ProcessorError")
-        except ProcessorError, e:
+            self.fail("Expected SeisHubError")
+        except SeisHubError, e:
             self.assertEqual(e.code, http.CONFLICT)
         # starting minus (-)
         uri = self.env.getRestUrl() + '/move-test/xml/notvc/-test'
         try:
             proc.run(MOVE, '/move-test/xml/notvc/test.xml', 
                      received_headers = {'Destination': uri})
-            self.fail("Expected ProcessorError")
-        except ProcessorError, e:
+            self.fail("Expected SeisHubError")
+        except SeisHubError, e:
             self.assertEqual(e.code, http.CONFLICT)
         # but this should go
         uri = self.env.getRestUrl() + '/move-test/xml/notvc/Aaz09_-.xml'
@@ -375,8 +376,8 @@ class ProcessorMOVETestSuite(SeisHubEnvironmentTestCase):
         try:
             proc.run(MOVE, '/move-test/xml/notvc/test.xml', 
                      received_headers = {'Destination': uri})
-            self.fail("Expected ProcessorError")
-        except ProcessorError, e:
+            self.fail("Expected SeisHubError")
+        except SeisHubError, e:
             self.assertEqual(e.code, http.BAD_GATEWAY)
 
 

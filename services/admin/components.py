@@ -88,7 +88,7 @@ class StylesheetsPanel(Component):
             elif 'delete' in args.keys() and 'stylesheet[]' in args.keys():
                 data.update(self._deleteStylesheet(args['stylesheet[]']))
         # fetch all uris
-        data['stylesheets'] = self.registry.stylesheets
+        data['stylesheets'] = self.registry.stylesheets.get()
         return ('components_stylesheets.tmpl', data)
     
     def _addStylesheet(self, package_id, resourcetype_id, type, file):

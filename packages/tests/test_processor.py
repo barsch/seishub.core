@@ -5,7 +5,8 @@ from StringIO import StringIO
 from twisted.web import http
 
 from seishub.test import SeisHubEnvironmentTestCase
-from seishub.packages.processor import Processor, ProcessorError
+from seishub.packages.processor import Processor
+from seishub.exceptions import SeisHubError
 from seishub.packages.processor import PUT, POST, DELETE, GET, MOVE
 from seishub.packages.processor import MAX_URI_LENGTH, ALLOWED_HTTP_METHODS
 from seishub.packages.processor import NOT_IMPLEMENTED_HTTP_METHODS
@@ -81,8 +82,8 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
         for method in ALLOWED_HTTP_METHODS:
             try:
                 proc.run(method, 'a' * MAX_URI_LENGTH, '')
-                self.fail("Expected ProcessorError")
-            except ProcessorError, e:
+                self.fail("Expected SeisHubError")
+            except SeisHubError, e:
                 self.assertEqual(e.code, http.REQUEST_URI_TOO_LONG)
     
     def test_notImplementedMethods(self):
@@ -90,8 +91,8 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
         for method in NOT_IMPLEMENTED_HTTP_METHODS:
             try:
                 proc.run(method, '/')
-                self.fail("Expected ProcessorError")
-            except ProcessorError, e:
+                self.fail("Expected SeisHubError")
+            except SeisHubError, e:
                 self.assertEqual(e.code, http.NOT_IMPLEMENTED)
     
     def test_invalidMethods(self):
@@ -99,8 +100,8 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
         for method in ['HEAD', 'XXX', 'GETPUT']:
             try:
                 proc.run(method, '/')
-                self.fail("Expected ProcessorError")
-            except ProcessorError, e:
+                self.fail("Expected SeisHubError")
+            except SeisHubError, e:
                 self.assertEqual(e.code, http.NOT_ALLOWED)
     
     def test_forbiddenMethodsOnRoot(self):
@@ -109,14 +110,14 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
             # without slash
             try:
                 proc.run(method, '')
-                self.fail("Expected ProcessorError")
-            except ProcessorError, e:
+                self.fail("Expected SeisHubError")
+            except SeisHubError, e:
                 self.assertEqual(e.code, http.FORBIDDEN)
             # with slash
             try:
                 proc.run(method, '/')
-                self.fail("Expected ProcessorError")
-            except ProcessorError, e:
+                self.fail("Expected SeisHubError")
+            except SeisHubError, e:
                 self.assertEqual(e.code, http.FORBIDDEN)
     
     def test_forbiddenMethodsOnPackage(self):
@@ -125,14 +126,14 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
             # without trailing slash
             try:
                 proc.run(method, '/test')
-                self.fail("Expected ProcessorError")
-            except ProcessorError, e:
+                self.fail("Expected SeisHubError")
+            except SeisHubError, e:
                 self.assertEqual(e.code, http.FORBIDDEN)
             # with trailing slash
             try:
                 proc.run(method, '/processor-test/')
-                self.fail("Expected ProcessorError")
-            except ProcessorError, e:
+                self.fail("Expected SeisHubError")
+            except SeisHubError, e:
                 self.assertEqual(e.code, http.FORBIDDEN)
     
     def test_forbiddenMethodsOnResourceTypes(self):
@@ -141,14 +142,14 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
             # without trailing slash
             try:
                 proc.run(method, '/processor-test/xml')
-                self.fail("Expected ProcessorError")
-            except ProcessorError, e:
+                self.fail("Expected SeisHubError")
+            except SeisHubError, e:
                 self.assertEqual(e.code, http.FORBIDDEN)
             # with trailing slash
             try:
                 proc.run(method, '/processor-test/xml/')
-                self.fail("Expected ProcessorError")
-            except ProcessorError, e:
+                self.fail("Expected SeisHubError")
+            except SeisHubError, e:
                 self.assertEqual(e.code, http.FORBIDDEN)
     
     def test_forbiddenMethodsOnResourceType(self):
@@ -157,14 +158,14 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
             # without trailing slash
             try:
                 proc.run(method, '/processor-test/xml/vc')
-                self.fail("Expected ProcessorError")
-            except ProcessorError, e:
+                self.fail("Expected SeisHubError")
+            except SeisHubError, e:
                 self.assertEqual(e.code, http.FORBIDDEN)
             # with trailing slash
             try:
                 proc.run(method, '/processor-test/xml/vc/')
-                self.fail("Expected ProcessorError")
-            except ProcessorError, e:
+                self.fail("Expected SeisHubError")
+            except SeisHubError, e:
                 self.assertEqual(e.code, http.FORBIDDEN)
     
     def test_processResourceType(self):
@@ -212,14 +213,14 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
         # package and/or resource type does not exists
         try:
             proc.run(DELETE, '/xxx/yyy/1')
-            self.fail("Expected ProcessorError")
-        except ProcessorError, e:
+            self.fail("Expected SeisHubError")
+        except SeisHubError, e:
             self.assertEqual(e.code, http.FORBIDDEN)
         # id does not exists
         try:
             proc.run(DELETE, '/processor-test/xml/notvc/-1')
-            self.fail("Expected ProcessorError")
-        except ProcessorError, e:
+            self.fail("Expected SeisHubError")
+        except SeisHubError, e:
             self.assertEqual(e.code, http.NOT_FOUND)
         # upload a resource via PUT
         data = proc.run(PUT, '/processor-test/xml/notvc', StringIO(XML_DOC))
@@ -246,8 +247,8 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
         # GET deleted revision
         try:
             proc.run(GET, location)
-            self.fail("Expected ProcessorError")
-        except ProcessorError, e:
+            self.fail("Expected SeisHubError")
+        except SeisHubError, e:
             self.assertEqual(e.code, http.NOT_FOUND)
     
     def test_processVCResource(self):
@@ -287,16 +288,16 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
         # GET not existing revision #3
         try:
             data = proc.run(GET, location + '/3')
-            self.fail("Expected ProcessorError")
-        except ProcessorError, e:
+            self.fail("Expected SeisHubError")
+        except SeisHubError, e:
             self.assertEqual(e.code, http.NOT_FOUND)
         # DELETE resource
         proc.run(DELETE, location)
         # try to GET deleted revision
         try:
             proc.run(GET, location)
-            self.fail("Expected ProcessorError")
-        except ProcessorError, e:
+            self.fail("Expected SeisHubError")
+        except SeisHubError, e:
             self.assertEqual(e.code, http.GONE)
 
 

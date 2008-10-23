@@ -33,24 +33,6 @@ INFO = 10
 DEBUG = 20
 
 
-
-
-
-#class SeisHubError(Exception):
-#    """Exception base class for errors in SeisHub."""
-#    pass
-#
-#
-#class SeisHubMessageError(SeisHubError):
-#    """Exception base class for errors in SeisHub which contains at least a 
-#    simple error message.
-#    """
-#    
-#    def __init__(self, message):
-#        SeisHubError.__init__(self, message)
-#        self.message = message
-
-
 class ExtensionPoint(property):
     """Marker class for extension points in components."""
     

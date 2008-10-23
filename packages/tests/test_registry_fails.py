@@ -5,7 +5,8 @@ from StringIO import StringIO
 from twisted.web import http
 
 from seishub.test import SeisHubEnvironmentTestCase
-from seishub.packages.processor import Processor, ProcessorError
+from seishub.packages.processor import Processor
+from seishub.exceptions import SeisHubError
 from seishub.packages.processor import PUT, GET
 from seishub.core import Component, implements
 from seishub.packages.builtins import IResourceType, IPackage
@@ -58,13 +59,13 @@ class PackageRegistryTestSuite(SeisHubEnvironmentTestCase):
         try:
             proc.run(GET, '/test1/rt/1')
             self.fail("Expected ProcessorError")
-        except ProcessorError, e:
+        except SeisHubError, e:
             self.assertEqual(e.code, http.NOT_FOUND)
         # try to fetch non existing resource from enabled resource type 2
         try:
             proc.run(GET, '/test2/rt/muh')
             self.fail("Expected ProcessorError")
-        except ProcessorError, e:
+        except SeisHubError, e:
             self.assertEqual(e.code, http.NOT_FOUND)
         # try to fetch non existing resource from enabled resource type 2
         # XXX: BUG - see ticket #65
@@ -72,7 +73,7 @@ class PackageRegistryTestSuite(SeisHubEnvironmentTestCase):
         try:
             proc.run(GET, '/test2/rt/1')
             self.fail("Expected ProcessorError")
-        except ProcessorError, e:
+        except SeisHubError, e:
             self.assertEqual(e.code, http.NOT_FOUND)
 
 
