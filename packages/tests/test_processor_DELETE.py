@@ -203,33 +203,8 @@ class ProcessorDELETETestSuite(SeisHubEnvironmentTestCase):
         except SeisHubError, e:
             self.assertEqual(e.code, http.NOT_FOUND)
     
-    def test_postOnDeletedVersionControlledResource(self):
-        """XXX: POST on deleted version controlled resource should work."""
-        proc = Processor(self.env)
-        # create resource
-        proc.run(PUT, '/delete-test/xml/vc/test.xml', StringIO(XML_DOC))
-        proc.run(POST, '/delete-test/xml/vc/test.xml', StringIO(XML_VCDOC % 2))
-        proc.run(POST, '/delete-test/xml/vc/test.xml', StringIO(XML_VCDOC % 3))
-        # delete resource
-        proc.run(DELETE, '/delete-test/xml/vc/test.xml')
-        # upload again
-        proc.run(POST, '/delete-test/xml/vc/test.xml', 
-                 StringIO(XML_VCDOC % 1000))
-        data=proc.run(GET, '/delete-test/xml/vc/test.xml')
-        self.assertEqual(data, XML_VCDOC % 1000)
-        data=proc.run(GET, '/delete-test/xml/vc/test.xml/1')
-        self.assertEqual(data, XML_DOC)
-        data=proc.run(GET, '/delete-test/xml/vc/test.xml/2')
-        self.assertEqual(data, XML_VCDOC % 2)
-        data=proc.run(GET, '/delete-test/xml/vc/test.xml/3')
-        self.assertEqual(data, XML_VCDOC % 3)
-        data=proc.run(GET, '/delete-test/xml/vc/test.xml/4')
-        # XXX: BUG - see ticket #62
-        data=proc.run(GET, '/delete-test/xml/vc/test.xml/5')
-        self.assertEqual(data, XML_VCDOC % 1000)
-    
     def test_putOnDeletedVersionControlledResource(self):
-        """XXX: PUT on deleted version controlled resource should work."""
+        """XXX: see #71 - PUT on deleted versionized resource should create new resource."""
         proc = Processor(self.env)
         # create resource
         proc.run(PUT, '/delete-test/xml/vc/test.xml', StringIO(XML_DOC))
@@ -238,21 +213,12 @@ class ProcessorDELETETestSuite(SeisHubEnvironmentTestCase):
         # delete resource
         proc.run(DELETE, '/delete-test/xml/vc/test.xml')
         # upload again
-        # XXX: BUG - see ticket #62
-        proc.run(PUT, '/delete-test/xml/vc/test.xml', 
-                 StringIO(XML_VCDOC % 1000))
-        data=proc.run(GET, '/delete-test/xml/vc/test.xml')
-        self.assertEqual(data, XML_VCDOC % 1000)
+        proc.run(PUT, '/delete-test/xml/vc/test.xml', StringIO(XML_VCDOC % 10))
+        # should be only latest upload
         data=proc.run(GET, '/delete-test/xml/vc/test.xml/1')
-        self.assertEqual(data, XML_DOC)
-        data=proc.run(GET, '/delete-test/xml/vc/test.xml/2')
-        self.assertEqual(data, XML_VCDOC % 2)
-        data=proc.run(GET, '/delete-test/xml/vc/test.xml/3')
-        self.assertEqual(data, XML_VCDOC % 3)
-        data=proc.run(GET, '/delete-test/xml/vc/test.xml/4')
-        # XXX: BUG - see ticket #62
-        data=proc.run(GET, '/delete-test/xml/vc/test.xml/5')
-        self.assertEqual(data, XML_VCDOC % 1000)
+        self.assertEqual(data, XML_VCDOC % 10)
+        # delete resource
+        proc.run(DELETE, '/delete-test/xml/vc/test.xml')
 
 
 def suite():

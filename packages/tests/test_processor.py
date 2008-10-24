@@ -97,7 +97,7 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
     
     def test_invalidMethods(self):
         proc = Processor(self.env)
-        for method in ['HEAD', 'XXX', 'GETPUT']:
+        for method in ['MUH', 'XXX', 'GETPUT']:
             try:
                 proc.run(method, '/')
                 self.fail("Expected SeisHubError")

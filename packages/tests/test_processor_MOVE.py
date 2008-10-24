@@ -308,7 +308,7 @@ class ProcessorMOVETestSuite(SeisHubEnvironmentTestCase):
             self.assertEqual(e.code, http.FORBIDDEN)
     
     def test_moveToInvalidResourcename(self):
-        """XXX: Destination file name may not start with '~', '@', '.', '_' or '-'.
+        """XXX: Destination file name may not start with '@', '.', '_' or '-'.
         
         SeisHub restricts the destination filename to distinct between 
         ~mappers, @aliases and .properties.

@@ -4,7 +4,7 @@ from twisted.web import http
 
 
 class SeisHubError(Exception):
-    """The processor error class."""
+    """The general SeisHub error class."""
     code = None
     
     def __init__(self, *args, **kwargs):
@@ -13,12 +13,14 @@ class SeisHubError(Exception):
         @keyword code: http error code
         @type code: int
         """
-        Exception.__init__(self, *args, **kwargs)
         message = kwargs.get('message', None)
         if not message and args:
             message = str(args[0])
-        self.code = self.code or kwargs.get('code', http.INTERNAL_SERVER_ERROR)
         self.message = message or http.RESPONSES.get(self.code, '')
+        self.code = self.code or kwargs.get('code', http.INTERNAL_SERVER_ERROR)
+        # XXX: TypeError: SeisHubError does not take keyword arguments 
+        #Exception.__init__(self, *args, **kwargs)
+        Exception.__init__(self, *args)
     
     def __str__(self):
         return 'Error %s: %s' % (self.code, self.message)

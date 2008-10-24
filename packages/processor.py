@@ -65,10 +65,12 @@ class Processor:
         self.method = self.method.upper()
         # check for valid but not implemented methods
         if self.method in NOT_IMPLEMENTED_HTTP_METHODS:
-            raise SeisHubError(code=http.NOT_IMPLEMENTED)
+            msg = 'HTTP %s is not implemented.' % self.method
+            raise SeisHubError(msg, code=http.NOT_IMPLEMENTED)
         # check for valid methods
         if self.method not in ALLOWED_HTTP_METHODS:
-            raise SeisHubError(code=http.NOT_ALLOWED)
+            msg = 'HTTP %s is not allowed.' % self.method
+            raise SeisHubError(msg, code=http.NOT_ALLOWED)
         
         # read content
         self.content.seek(0)
@@ -99,7 +101,7 @@ class Processor:
                 if self.env.registry.isPackageId(self.postpath[0]):
                     return self._getResourceTypes(self.postpath[0])
         # test if it fits directly to a valid mapping
-        if self.method in ALLOWED_MAPPER_METHODS:
+        if self.postpath and self.method in ALLOWED_MAPPER_METHODS:
             if self.env.registry.mappers.get(self.path, self.method):
                 return self._processMapping()
         # finally it could be a sub path of a mapping
