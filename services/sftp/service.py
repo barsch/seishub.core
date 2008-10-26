@@ -126,15 +126,12 @@ class SFTPServiceProtocol:
         return {}
     
     def realPath(self, path):
-        print "realPath", path
         return absPath(path)
     
     def openFile(self, filename, flags, attrs):
-        print "openDirectory", filename, flags, attrs
         return InMemoryFile(self.env, filename, flags, attrs)
     
     def openDirectory(self, path):
-        print "openDirectory", path
         # remove trailing slashes
         path = absPath(path)
         proc = Processor(self.env)
@@ -165,7 +162,7 @@ class SFTPServiceProtocol:
                 # resource object
                 file_name = str(obj).split('/')[-1:][0]
                 temp = obj.document.meta.datetime
-                file_datetime = time.mktime(temp.timetuple())
+                file_datetime = int(time.mktime(temp.timetuple()))
                 file_size = obj.document.meta.size
                 file_uid = obj.document.meta.uid or 0
                 filelist.append((file_name, {'permissions': 0100644,
@@ -176,7 +173,6 @@ class SFTPServiceProtocol:
         return DirList(self.env, iter(filelist))
     
     def getAttrs(self, filename, followLinks):
-        print "getAttrs", filename, followLinks
         # remove trailing slashes
         filename = absPath(filename)
         # process resource
@@ -198,12 +194,11 @@ class SFTPServiceProtocol:
                 'size': 0, 
                 'uid': 0, 
                 'gid': DEFAULT_GID, 
-                'atime': time.time(), #self.env.startup_time, 
-                'mtime': time.time(), #self.env.startup_time, 
+                'atime': self.env.startup_time, 
+                'mtime': self.env.startup_time, 
                 'nlink': 1} 
     
     def setAttrs(self, path, attrs):
-        print "setAttrs", path, attrs
         return
     
     def removeFile(self, filename):
@@ -219,7 +214,6 @@ class SFTPServiceProtocol:
             raise filetransfer.SFTPError(filetransfer.FX_FAILURE, e.message)
     
     def renameFile(self, oldpath, newpath):
-        print "renameFile", oldpath, newpath
         # process resource
         proc = Processor(self.env)
         destination = self.env.getRestUrl() + newpath
@@ -290,7 +284,6 @@ class SFTPServiceFactory(factory.SSHFactory):
     
     def _getCertificates(self):
         """Fetching certificate files from configuration."""
-        
         pub = self.env.config.get('sftp', 'public_key_file')
         priv = self.env.config.get('sftp', 'private_key_file')
         if not os.path.isfile(pub):
@@ -305,7 +298,6 @@ class SFTPServiceFactory(factory.SSHFactory):
     
     def _generateRSAKeys(self):
         """Generates new private RSA keys for the SFTP service."""
-        
         print "Generate keys ..."
         from Crypto.PublicKey import RSA
         KEY_LENGTH = 1024

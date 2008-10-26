@@ -42,7 +42,7 @@ class Environment(ComponentManager):
         ComponentManager.__init__(self)
         self.compmgr = self
         # set a start up timestamp
-        self.startup_time = time.time()
+        self.startup_time = int(time.time())
         # get SeisHub path
         path = self.getSeisHubPath()
         if not config_file:
