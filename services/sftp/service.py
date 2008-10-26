@@ -10,7 +10,6 @@ from twisted.application import internet
 from twisted.conch.ssh import factory, keys, common, session, filetransfer
 from twisted.conch.interfaces import ISFTPFile, ISFTPServer, IConchUser
 from twisted.conch import avatar
-from twisted.conch.ls import lsLine
 from twisted.cred import portal
 from twisted.python import components
 
@@ -20,7 +19,7 @@ from seishub.config import IntOption, Option, BoolOption
 from seishub.packages.processor import Processor
 from seishub.exceptions import SeisHubError
 from seishub.packages.processor import PUT, POST, DELETE, GET, MOVE
-from seishub.util.path import absPath
+from seishub.util.path import absPath, lsLine
 
 
 DEFAULT_GID = 1000
@@ -127,12 +126,15 @@ class SFTPServiceProtocol:
         return {}
     
     def realPath(self, path):
+        print "realPath", path
         return absPath(path)
     
     def openFile(self, filename, flags, attrs):
+        print "openDirectory", filename, flags, attrs
         return InMemoryFile(self.env, filename, flags, attrs)
     
     def openDirectory(self, path):
+        print "openDirectory", path
         # remove trailing slashes
         path = absPath(path)
         proc = Processor(self.env)
@@ -174,6 +176,7 @@ class SFTPServiceProtocol:
         return DirList(self.env, iter(filelist))
     
     def getAttrs(self, filename, followLinks):
+        print "getAttrs", filename, followLinks
         # remove trailing slashes
         filename = absPath(filename)
         # process resource
@@ -194,12 +197,13 @@ class SFTPServiceProtocol:
         return {'permissions': perm, 
                 'size': 0, 
                 'uid': 0, 
-                'gid': 0, #DEFAULT_GID, 
+                'gid': DEFAULT_GID, 
                 'atime': time.time(), #self.env.startup_time, 
                 'mtime': time.time(), #self.env.startup_time, 
                 'nlink': 1} 
     
     def setAttrs(self, path, attrs):
+        print "setAttrs", path, attrs
         return
     
     def removeFile(self, filename):
@@ -215,6 +219,7 @@ class SFTPServiceProtocol:
             raise filetransfer.SFTPError(filetransfer.FX_FAILURE, e.message)
     
     def renameFile(self, oldpath, newpath):
+        print "renameFile", oldpath, newpath
         # process resource
         proc = Processor(self.env)
         destination = self.env.getRestUrl() + newpath
@@ -226,12 +231,12 @@ class SFTPServiceProtocol:
         return
     
     def makeDirectory(self, path, attrs):
-        raise filetransfer.SFTPError(filetransfer.FX_OP_UNSUPPORTED, 
-                                     "Directories can't be added via SFTP.")
+        msg = "Directories can't be added via SFTP."
+        raise filetransfer.SFTPError(filetransfer.FX_OP_UNSUPPORTED, msg)
     
     def removeDirectory(self, path):
-        raise filetransfer.SFTPError(filetransfer.FX_OP_UNSUPPORTED, 
-                                     "Directories can't be deleted via SFTP.")
+        msg = "Directories can't be deleted via SFTP."
+        raise filetransfer.SFTPError(filetransfer.FX_OP_UNSUPPORTED,msg)
     
     def readLink(self, path):
         raise filetransfer.SFTPError(filetransfer.FX_OP_UNSUPPORTED, '')
