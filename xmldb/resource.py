@@ -300,7 +300,7 @@ def newXMLDocument(data, id = None, uid = None):
     removed. 
     Use this method whenever you wish to create a XmlDocument manually!
     """
-    if len(data) == '':
+    if len(data) == 0:
         raise InvalidParameterError("Xml data is empty.")
     data = _prepare_xml_data(data)
     return XmlDocument(data, id, uid)
