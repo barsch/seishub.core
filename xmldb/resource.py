@@ -2,7 +2,7 @@
 
 from zope.interface import implements
 
-from seishub.exceptions import InvalidObjectError
+from seishub.exceptions import InvalidObjectError, InvalidParameterError
 from seishub.db.util import Serializable, Relation, db_property, LazyAttribute
 from seishub.util.xmlwrapper import IXmlDoc, XmlTreeDoc, InvalidXmlDataError
 from seishub.util.text import validate_id
@@ -300,5 +300,7 @@ def newXMLDocument(data, id = None, uid = None):
     removed. 
     Use this method whenever you wish to create a XmlDocument manually!
     """
+    if len(data) == '':
+        raise InvalidParameterError("Xml data is empty.")
     data = _prepare_xml_data(data)
     return XmlDocument(data, id, uid)
