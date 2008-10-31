@@ -190,8 +190,11 @@ class PackageInstaller(object):
     @staticmethod        
     def cleanup(env):
         """automatically remove unused packages"""
+        # XXX: see ticket #74
+        return
         db_rtypes = env.registry.db_getResourceTypes()
         for rt in db_rtypes:
+            # XXX: check if referenced elsewhere!!!
             if [rt.package.package_id, rt.resourcetype_id] not in \
                [[o.package_id, o.resourcetype_id] for o in env.registry.getResourceTypes(rt.package.package_id)]:
                 try:

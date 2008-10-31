@@ -10,7 +10,6 @@ from seishub.exceptions import SeisHubError
 from seishub.packages.processor import PUT, GET
 from seishub.core import Component, implements
 from seishub.packages.builtins import IResourceType, IPackage
-from seishub.packages.installer import PackageInstaller
 
 
 XML_DOC = """<?xml version="1.0" encoding="utf-8"?>
@@ -47,23 +46,21 @@ class PackageRegistryTestSuite(SeisHubEnvironmentTestCase):
         """XXX: BUG - see ticket #65 - This test should not fail!"""
         # install resource 1
         self.env.enableComponent(AResourceType)
-        PackageInstaller.install(self.env) 
         proc = Processor(self.env)
-        proc.run(PUT, '/test/rt/1', StringIO(XML_DOC))
+        proc.run(PUT, '/test/xml/rt/1', StringIO(XML_DOC))
         # disable resource type 2
         self.env.disableComponent(AResourceType)
         # install resource 2
         self.env.enableComponent(AResourceType2)
-        PackageInstaller.install(self.env)
         # try to fetch existing resource from disabled resource type 1
         try:
-            proc.run(GET, '/test1/rt/1')
+            proc.run(GET, '/test1/xml/rt/1')
             self.fail("Expected ProcessorError")
         except SeisHubError, e:
             self.assertEqual(e.code, http.NOT_FOUND)
         # try to fetch non existing resource from enabled resource type 2
         try:
-            proc.run(GET, '/test2/rt/muh')
+            proc.run(GET, '/test2/xml/rt/muh')
             self.fail("Expected ProcessorError")
         except SeisHubError, e:
             self.assertEqual(e.code, http.NOT_FOUND)
@@ -71,7 +68,7 @@ class PackageRegistryTestSuite(SeisHubEnvironmentTestCase):
         # XXX: BUG - see ticket #65
         # there was no resource added to /test2/rt yet!
         try:
-            proc.run(GET, '/test2/rt/1')
+            proc.run(GET, '/test2/xml/rt/1')
             self.fail("Expected ProcessorError")
         except SeisHubError, e:
             self.assertEqual(e.code, http.NOT_FOUND)
