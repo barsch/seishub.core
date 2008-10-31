@@ -191,7 +191,7 @@ class Resource(Serializable, PackageSpecific):
     implements(IResource)
     
     db_table = resource_tab
-    db_mapping = {'id':'id',  # external id
+    db_mapping = {'_id':'id',  # external id
                   'revision':'revision',
                   'document':Relation(XmlDocument, 'resource_id', lazy = False),
                   'package':Relation(PackageWrapper,'package_id'),
@@ -203,7 +203,7 @@ class Resource(Serializable, PackageSpecific):
     def __init__(self, package = PackageWrapper(), 
                  resourcetype = ResourceTypeWrapper(), id = None, 
                  revision = None, document = None, name = None):
-        self.id = id
+        self._id = id
         self.revision = revision
         self.document = document
         self.package = package
@@ -215,10 +215,18 @@ class Resource(Serializable, PackageSpecific):
                                   self.resourcetype.resourcetype_id, 
                                   str(self.name))
     
-    # auto update id when _Serializable__id is changed:
-    def _setId(self, id):
-        Serializable._setId(self, id)
-        self.id = id
+#    # auto update id when _Serializable__id is changed:
+#    def _setId(self, id):
+#        Serializable._setId(self, id)
+#        self.id = id
+
+    def getId(self):
+        return self._getId()
+    
+    def setId(self, id):
+        return self._setId(id)
+        
+    id = property(getId, setId, "External resource id")
         
     def getResourceType(self):
         return self._resourcetype

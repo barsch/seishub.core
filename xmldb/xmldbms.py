@@ -121,7 +121,7 @@ class XmlDbManager(DbStorage):
         try:
             self.drop(Resource, package = res.package,
                       resourcetype = res.resourcetype, 
-                      id = res.id,
+                      _id = res._id,
                       revision = res.revision)
             # XXX: check if document is referenced elsewhere
             if res.document._id:
@@ -191,7 +191,7 @@ class XmlDbManager(DbStorage):
         res = self.pickup(Resource, 
                           package = package, resourcetype = resourcetype,
                           name = name,
-                          id = id)
+                          _id = id)
         return res
     
     

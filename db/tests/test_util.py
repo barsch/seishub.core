@@ -38,15 +38,40 @@ test_grandchild_tab = sa.Table('test_grandchild', test_meta,
     useexisting = True,
     )
 
+test_lego_bricks = sa.Table('test_lego_bricks', test_meta,
+    sa.Column('id', sa.Integer, primary_key = True, autoincrement = True),
+    sa.Column('owner_rel', sa.Integer),
+    sa.Column('owner2_rel', sa.Integer),
+    sa.Column('color', sa.Text),
+    sa.Column('size', sa.Integer),
+    
+)
+
+
+class LegoBrick(Serializable):
+    db_table = test_lego_bricks
+    db_mapping = {'_id':'id',
+                  'color':'color',
+                  'size':'size'
+                  }
+    
+    def __init__(self, color = None, size = None):
+        self.color = color
+        self.size = size
+
 
 class GrandChild(Serializable):
     db_table = test_grandchild_tab
     db_mapping = {'_id':'id',
                   'data':'data',
+                  'lego':Relation(LegoBrick, 'owner_rel', lazy = False, 
+                                  relation_type = 'to-many',
+                                  cascading_delete = True)
                   }
     
-    def __init__(self, data = None):
+    def __init__(self, data = None, lego = None):
         self.data = data
+        self.lego = lego
 
 
 class Child1(Serializable):
@@ -74,11 +99,16 @@ class Child2(Serializable):
                   'grandchild':Relation(GrandChild, 'grandchild_rel', 
                                         lazy = False, 
                                         cascading_delete = False),
+                  'lego':Relation(LegoBrick, 'owner2_rel', 
+                                  lazy = False, 
+                                  relation_type = 'to-many',
+                                  cascading_delete = True)
                   }
     
-    def __init__(self, data = None, grandchild = None):
+    def __init__(self, data = None, grandchild = None, lego = None):
         self.data = data
         self.grandchild = grandchild
+        self.lego = lego
         
     def setData(self, value):
         self._data = value
@@ -130,9 +160,14 @@ class DbUtilTest(SeisHubEnvironmentTestCase):
 #        self.config.set('db', 'verbose', True)
 
     def setUp(self):
-        grandchild = GrandChild("I'm a grandchild.")
+        brick1 = LegoBrick('red', 2)
+        brick2 = LegoBrick('blue', 1)
+        brick3 = LegoBrick('yellow', 1)
+        brick4 = LegoBrick('black', 3)
+        brick5 = LegoBrick('white', 4)
+        grandchild = GrandChild("I'm a grandchild.", [brick1, brick2, brick3])
         child1 = Child1("I'm child1.")
-        child2 = Child2("I'm child2.", grandchild)
+        child2 = Child2("I'm child2.", grandchild, [brick4, brick5])
         child3 = Child2("I'm child3.")
         self.parent1 = Parent("I'm parent of child 1 and child 2.", 
                               child1, child2)
@@ -145,6 +180,7 @@ class DbUtilTest(SeisHubEnvironmentTestCase):
         self.db.drop(Child1)
         self.db.drop(Child2)
         self.db.drop(Parent)
+        self.db.drop(LegoBrick)
         del self.parent1
 
     def testStore(self):
@@ -159,6 +195,9 @@ class DbUtilTest(SeisHubEnvironmentTestCase):
         assert self.parent1.child1._id
         assert self.parent1.child2._id
         assert self.parent1.child2.grandchild._id
+        assert self.parent1.child2.grandchild.lego[0]._id
+        assert self.parent1.child2.grandchild.lego[1]._id
+        assert self.parent1.child2.grandchild.lego[2]._id
         self.assertEqual(self.parent2.child1._id, self.parent1.child1._id)
         # store parent2, without cascading option to avoid storing child1 twice
         self.assertRaises(DbError, self.db.store, self.parent2, 
@@ -176,20 +215,22 @@ class DbUtilTest(SeisHubEnvironmentTestCase):
         self.assertEqual(len(all), 2)
         self.assertEqual(all[0].data, "I'm parent of child 1 and child 2.")
         self.assertEqual(all[1].data, "I'm parent of child 1 and child 3.")
-        
         # ordered by child2.data
         all = self.db.pickup(Parent, _order_by = {'child2':{'data':'desc'}})
         self.assertEqual(len(all), 2)
         self.assertEqual(all[0].data, "I'm parent of child 1 and child 3.")
         self.assertEqual(all[1].data, "I'm parent of child 1 and child 2.")
+        # both parents share the same child1
+        self.assertEqual(all[0].child1, all[1].child1)
         
         # get by id
         parent1 = self.db.pickup(Parent, _id = self.parent1._id)
         parent2 = self.db.pickup(Parent, _id = self.parent2._id)
         self.assertEqual(len(parent1), 1)
         self.assertEqual(len(parent2), 1)
-        parent1 = parent1[0]
-        parent2 = parent2[0]
+
+        parent1 = all[1]
+        parent2 = all[0]
         self.assertEqual(parent1.data, "I'm parent of child 1 and child 2.")
         # child 1 is greedy
         self.assertEqual(type(parent1._child1), Child1)
@@ -205,6 +246,18 @@ class DbUtilTest(SeisHubEnvironmentTestCase):
         # child 2 has a greedy grandchild
         self.assertEqual(type(parent1.child2.grandchild), GrandChild)
         self.assertEqual(parent1.child2.grandchild.data, "I'm a grandchild.")
+        # child 2 has two lego bricks
+        self.assertEqual(len(parent1.child2.lego), 2)
+        self.assertEqual(parent1.child2.lego[0].color, 'black')
+        self.assertEqual(parent1.child2.lego[1].color, 'white')
+        # grandchild has got three lego bricks
+        self.assertEqual(len(parent1.child2.grandchild.lego), 3)
+        self.assertEqual(parent1.child2.grandchild.lego[0].color, 'red')
+        self.assertEqual(parent1.child2.grandchild.lego[1].color, 'blue')
+        self.assertEqual(parent1.child2.grandchild.lego[2].color, 'yellow')
+        
+        # parent2 has no grandchild:
+        self.assertEqual(parent2.child2.grandchild, None)
         
         # get by related object
         parent = self.db.pickup(Parent, child1 = self.parent1.child1)
@@ -225,9 +278,8 @@ class DbUtilTest(SeisHubEnvironmentTestCase):
         self.assertEqual(len(parent), 1)
         parent = parent[0]
         self.assertEqual(parent.data, "I'm parent of child 1 and child 2.")
-        
-        
-        
+
+   
     def testDrop(self):
         self.db.store(self.parent1, cascading = True)
         self.db.store(self.parent2.child2, self.parent2)
@@ -266,11 +318,19 @@ class DbUtilTest(SeisHubEnvironmentTestCase):
         child3 = self.db.pickup(Child2, _id = self.parent2.child2._id)
         self.assertEqual(child3, [])
         
-#        parent = self.db.pickup(Parent, 
-#                                data = "I'm parent of child 1 and child 3.")
-        # XXX: auto check if a related object is still referenced,
-        # this raises an exception, as child1 is gone
-        # parent[0].child1.data
+        parent = self.db.pickup(Parent, 
+                                data = "I'm parent of child 1 and child 3.")
+#         XXX: auto check if a related object is still referenced,
+#         this raises an exception, as child1 is gone
+#         parent[0].child1.data
+
+        # delete grandchild (and - cascading - it's lego bricks)
+        self.db.drop(GrandChild)
+        grandchild = self.db.pickup(GrandChild)
+        self.assertEqual(grandchild, [])
+        legobricks = self.db.pickup(LegoBrick)
+        self.assertEqual(legobricks, [])
+        
         
 
 def suite():

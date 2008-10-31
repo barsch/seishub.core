@@ -4,9 +4,11 @@ import time
 from zope.interface import implements, Interface, directlyProvides, \
                            implementedBy, Attribute
 from zope.interface.exceptions import DoesNotImplement
-from sqlalchemy import select, Text, and_
+from sqlalchemy import select, Text, or_
 from sqlalchemy.exceptions import IntegrityError
-from sqlalchemy.sql.expression import ClauseList #@UnresolvedImport
+from sqlalchemy.sql.expression import ClauseList
+
+from seishub.util.list import unique
 
 class DbError(Exception):
     pass
@@ -68,7 +70,12 @@ class DbStorage(DbEnabled):
     """Mixin providing object serialization to a sqlalchemy SQL database.
             
     Internal integer ids are stored into the _id attribute of Serializable 
-    objects.
+    objects. Each object has an unique id for that object type.
+    
+    Known limitations of the DbStorage mapping tool:
+        * 'many-to-many' relations are not (yet) supported
+        * selecting / dropping with parameters depending on a 'to-many' 
+        relation are not (yet) supported
     """
     def __init__(self, db, debug = False):
         DbEnabled.__init__(self, db)
@@ -82,9 +89,12 @@ class DbStorage(DbEnabled):
         cls = o.__class__
         table = o.db_table
         for field, col in o.db_mapping.iteritems():
-            value = o.__getattribute__(field)
+            try:
+                value = o.__getattribute__(field)
+            except AttributeError:
+                value = None
             # object relation
-            if IRelation.providedBy(col):
+            if IRelation.providedBy(col) and col.relation_type == 'to-one':
                 if value:
                     assert isinstance(value, col.cls)
                     if not value._id:
@@ -95,6 +105,8 @@ class DbStorage(DbEnabled):
                 col = col.name
 #                kwargs = self._to_kwargs(value)
 #                value = self.pickup(col, **kwargs)._id
+            elif IRelation.providedBy(col) and col.relation_type == 'to-many':
+                continue
             elif ILazyAttribute.providedBy(col):
                 col = col.name
             # convert None to '' on Text columns
@@ -139,13 +151,22 @@ class DbStorage(DbEnabled):
             cl.append(table.c[col] == val)
         return cl
     
-    def _generate_query(self, q, table, mapping, params, joins = None, 
+    def _generate_query(self, q, table, mapping, params, joins = list(), 
                         order_by = dict()):
         params = params or dict()
         for attr, col in mapping.iteritems():
             value = params.get(attr, None)
             if IRelation.providedBy(col):
-                colname = col.name
+                if col.relation_type == 'to-one':
+                    # in a to-one relation the id of the child is stored in the
+                    # parent's table
+                    colname = col.name
+                    relname = 'id'
+                else:
+                    # in a to-many relation the id of the parent is stored 
+                    # in the child's table
+                    colname = 'id'
+                    relname = col.name
             else:
                 colname = col
             if IRelation.providedBy(col) and value is not DB_NULL: # Object relation
@@ -170,12 +191,26 @@ class DbStorage(DbEnabled):
                     q = q.where(table.c[colname] == value['_id'])
                 else:
                     # related object is eagerly loaded or needed for the query
+                    parent_col = table.c[colname]
+                    rel_col = rel_tab.c[relname]
+                    
+#                    joins.setdefault('left', table)
+#                    joins.setdefault(col.cls, list())
+#                    joins[col.cls].append(parent_col == rel_col)
+                    # TODO: this is very ugly... find a better way
+                    # add first table to joins as left table
                     if not joins:
-                        joins = table.outerjoin(rel_tab, onclause = 
-                                                (table.c[colname] == rel_tab.c['id']))
+                        joins = [[None, [table]]]
+                    # check if current class is already in joins
+                    if col.cls in zip(*joins)[0]:
+                        # yes: append clause
+                        for k in range(len(joins)):
+                            if joins[k][0] == col.cls:
+                                joins[k][1].append(parent_col == rel_col)
                     else:
-                        joins = joins.outerjoin(rel_tab, onclause = 
-                                                (table.c[colname] == rel_tab.c['id']))
+                        # no, add class and clause
+                        joins.append([col.cls, [parent_col == rel_col]])
+                            
                     rel_order_by = order_by.get(attr, dict())
                     q, joins = self._generate_query(q, rel_tab, 
                                                     col.cls.db_mapping, value, 
@@ -186,37 +221,85 @@ class DbStorage(DbEnabled):
                 q = q.where(table.c[colname] == value)
             # don't read lazy attribute columns
             if not ILazyAttribute.providedBy(col):
-                q.append_column(table.c[colname])
+                if IRelation.providedBy(col) and\
+                    col.relation_type == 'to-many':
+                    pass
+#                    q = q.group_by(col.cls.db_table.c[relname])
+                else:
+                    q.append_column(table.c[colname])
+                
         return q, joins
-    
-    def _generate_obj(self, cls, result):
-        obj = cls()
+
+    def _generate_objs(self, cls, result, objs):
         table = cls.db_table
+        values = dict()
+        # set a default value for id
+        cls.db_mapping.setdefault('_id', 'id')
+        # init the object container for current object type
+        objs.setdefault(cls, list())
+        # get id of current obj
+        cur_id = result[str(table) + '_' + cls.db_mapping['_id']]
+        if not cur_id:
+            # skip empty objects
+            return objs
         for attr, col in cls.db_mapping.iteritems():
             if IRelation.providedBy(col): # object relation
-                if col.lazy:
+                if col.relation_type == 'to-one':
                     rel_id = result[str(table) + '_' + col.name]
-                    value = col.cls()
-                    if rel_id:
-                        value = DbObjectProxy(self, col.cls, _id = rel_id)
-                else:
-                    value = self._generate_obj(col.cls, result)
+                    if col.lazy:
+                        values[attr] = col.cls()
+                        if rel_id:
+                            values[attr] = DbObjectProxy(self, col.cls, 
+                                                         _id = rel_id)
+                    else:
+                        # use the object of type col.cls that was created last
+                        rel_o = self._generate_objs(col.cls, 
+                                                    result, objs)[col.cls]
+                        if rel_o:
+                            values[attr] = rel_o[-1]
+                else: # to-many relation
+                    rel_id = result[str(col.cls.db_table) + '_' + col.name]
+                    rel_o = self._generate_objs(col.cls, result, objs)[col.cls]
+                    values[attr] = list()
+                    for o in rel_o:
+                        rel_attr = o.__getattribute__(col.name + '_id')
+                        if rel_attr and rel_attr == cur_id: 
+                            values[attr].append(o)
             elif ILazyAttribute.providedBy(col): # lazy attribute
-                value = DbAttributeProxy(self, col, table, 
-                                         {'id':result[str(table) + '_id']})
+                values[attr] = DbAttributeProxy(self, col, table, {'id':
+                                                result[str(table) + '_id']})
             else:
-                value = result[str(table) + '_' + col]
-            obj.__setattr__(attr, value)
-        return obj
+                values[attr] = result[str(table) + '_' + col]
+        
+        # check if object has already been created
+        for o in objs[cls]:
+            if values['_id'] == o._id:
+                # yes, this should only happen on 'to-many' relations
+                for key, val in values.iteritems():
+                    o.__setattr__(key, val)
+                return objs
+        # no, create new object
+        new_obj = cls()
+        for key, val in values.iteritems():
+            new_obj.__setattr__(key, val)
+        objs[cls].append(new_obj)
+        return objs
+                
     
     def _get_children(self, obj):
         objs = list()
+        to_many = list()
         for attr, col in obj.db_mapping.iteritems():
             if IRelation.providedBy(col):
                 value = obj.__getattribute__(attr)
-                if value:
+                if isinstance(value, list):
+                    for v in value:
+                        to_many.extend(self._get_children(v))
+                elif value:
                     objs.extend(self._get_children(value))
         objs.append(obj)
+        # add child objects last which correspond to a 'to-many' relation
+        objs.extend(to_many)
         return objs
 
     def _order_by(self, q, table, mapping, order_by = dict()):
@@ -273,7 +356,7 @@ class DbStorage(DbEnabled):
             txn.commit()
         except IntegrityError, e:
             txn.rollback()
-            raise DbError(e)
+            raise DbError("Error storing an object.", e)
         except:
             txn.rollback()
             raise
@@ -305,10 +388,34 @@ class DbStorage(DbEnabled):
         db = self.getDb()
         # generate query
         q = table.select(use_labels = True)
-        q, joins = self._generate_query(q, table, map, keys, 
-                                        order_by = order_by)
-        if joins:
+        # XXX: very strange bug!!!
+        # if i do not explicitly set 'joins = dict()' here,
+        # sometimes the local joins variable in _generate_query is NOT empty 
+        # in the beginning!!!
+        q, join_list = self._generate_query(q, table, map, keys, 
+                                            order_by = order_by,
+                                            joins = dict())
+        
+#        if join_dict and len(join_dict) >= 2:
+#            left_tab = join_dict.pop('left')
+#            tb, cl = join_dict.popitem()
+#            joins = left_tab.outerjoin(tb.db_table, onclause = or_(*cl))
+#            for tb, cl in join_dict.iteritems():
+#                joins = joins.outerjoin(tb.db_table, onclause = or_(*cl))
+#            q = q.select_from(joins)
+        
+        if join_list and len(join_list) >= 2:
+            left_tab = join_list[0][1][0]
+            joins = left_tab.outerjoin(join_list[1][0].db_table, 
+                                       onclause = or_(*join_list[1][1]))
+            del join_list[:2]
+            for j in join_list:
+                joins = joins.outerjoin(j[0].db_table, onclause = or_(*j[1]))
             q = q.select_from(joins)
+            
+
+#        if join_dict:
+#            q = q.select_from(join_dict)
         q = self._order_by(q, table, map, order_by)
         # execute query
         r = db.execute(q)
@@ -317,14 +424,13 @@ class DbStorage(DbEnabled):
         finally:
             r.close()
         # create objects from results
-        objs = list()
+        objs = {cls:list()}
         for res in results:
-            obj = self._generate_obj(cls, res)
-            objs.append(obj)
+            objs = self._generate_objs(cls, res, objs)
         if hasattr(self,'debug') and self.debug:
             print "DBUTIL: Loaded %i object(-tree)s in %s seconds." %\
-                  (len(objs), time.time()-start)
-        return self._to_list(objs)
+                  (len(objs[cls]), time.time()-start)
+        return self._to_list(objs[cls])
     
     def drop(self, cls, **keys):
         """Delete object with given keys from database.
@@ -351,11 +457,16 @@ class DbStorage(DbEnabled):
             # cascading deletes
             for rel in map.values():
                 if IRelation.providedBy(rel) and rel.cascading_delete:
-                    q = select([table.c[rel.name]], w)
+                    if rel.relation_type == 'to-one':
+                        q = select([table.c[rel.name]], w)
+                        relkey = '_id'
+                    else:
+                        # to-many relation
+                        q = select([table.c['id']], w)
+                        relkey = rel.name + '_id'
                     res = conn.execute(q).fetchall()
-                    ids = [r[rel.name] for r in res]
-                    for id in ids:
-                        self.drop(rel.cls, _id = id)
+                    for r in res:
+                        self.drop(rel.cls, **{relkey:r[0]})
             # delete parent
             conn.execute(table.delete(w))
             txn.commit()
@@ -398,6 +509,16 @@ class Serializable(object):
             raise TypeError("Id has to be integer or long. Got a %s." %\
                             str(type(id)))
         self._serializable_id = id
+        # set backreference ids:
+        for name, col in self.db_mapping.iteritems():
+            if IRelation.providedBy(col) and col.relation_type == 'to-many':
+                objs = self.__getattribute__(name)
+                if not objs:
+                    continue
+                for o in objs:
+                    rel_attr = col.name + '_id'
+                    o.__setattr__(rel_attr, id)
+                    o.db_mapping[rel_attr] = col.name
         
     _id = property(_getId, _setId, 'Internal id (integer)')
     
@@ -460,6 +581,8 @@ class db_property(property):
     def __get__(self, obj, objtype):
         if not self.attr:
             return property.__get__(self, obj, objtype)
+#        if not hasattr(self, self.attr):
+#            return property.__get__(self, obj, objtype)
         data = obj.__getattribute__(self.attr)
         if IDbObjectProxy.providedBy(data) or \
            IDbAttributeProxy.providedBy(data):
@@ -481,16 +604,21 @@ class Relation(object):
     @param lazy: lazy getting of related objects (True by default), in order to
     support lazy getting, usage of the 'db_property' descriptor is mandatory.
     @param cascading_delete: automatically delete related objects, when parent
-    is deleted (False by default)"""
+    is deleted (False by default)
+    @param relation_type: 'to-one' | 'to-many'; Defines the relation type.
+    Note: If set to 'to-one' name is a column in the referer's table, if set to
+    'to-many' in the referee's table.
+    """
     
     implements(IRelation)
     
-    def __init__(self, cls, name, lazy = True, cascading_delete = False):
+    def __init__(self, cls, name, lazy = True, cascading_delete = False,
+                 relation_type = 'to-one'):
         self.cls = cls
         self.name = name
         self.lazy = lazy
-        # TODO: not implemented yet
         self.cascading_delete = cascading_delete
+        self.relation_type = relation_type
         
 
 class LazyAttribute(object):

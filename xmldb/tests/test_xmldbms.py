@@ -184,6 +184,7 @@ class XmlDbManagerTest(SeisHubEnvironmentTestCase):
                               id = result.id)
         self.xmldbm.modifyResource(testres_v2)
         # get latest revision
+        # XXX: fails, will be fixed with new resource model
         result = self.xmldbm.getResource(testres.package, 
                                          testres.resourcetype, 
                                          id = testres.id)
