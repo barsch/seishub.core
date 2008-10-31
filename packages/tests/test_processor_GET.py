@@ -31,6 +31,15 @@ class AResourceType(Component):
     version_control = False
 
 
+class AResourceType2(Component):
+    """Another test package and resource type."""
+    implements(IResourceType, IPackage)
+    
+    package_id = 'get-test2'
+    resourcetype_id = 'notvc'
+    version_control = False
+
+
 class AVersionControlledResourceType(Component):
     """A version controlled test resource type."""
     implements(IResourceType, IPackage)
@@ -46,7 +55,6 @@ class ProcessorGETTest(SeisHubEnvironmentTestCase):
     def setUp(self):
         self.env.enableComponent(AVersionControlledResourceType)
         self.env.enableComponent(AResourceType)
-        PackageInstaller.install(self.env)
     
     def tearDown(self):
         self.env.disableComponent(AVersionControlledResourceType)
@@ -93,6 +101,40 @@ class ProcessorGETTest(SeisHubEnvironmentTestCase):
         # check entries in resourcetypes
         self.assertTrue('/get-test/xml/vc' in data.get('resourcetype'))
         self.assertTrue('/get-test/xml/notvc' in data.get('resourcetype'))
+    
+    def test_dontHijackResources(self):
+        """Don't hijack resources from different packages - see #65."""
+        # deinstall resource type 2 and install resource type 1
+        self.env.disableComponent(AResourceType2)
+        self.env.disableComponent(AVersionControlledResourceType)
+        self.env.enableComponent(AResourceType)
+        proc = Processor(self.env)
+        proc.run(PUT, '/get-test/xml/notvc/1', StringIO(XML_DOC))
+        # disable resource type 1
+        self.env.disableComponent(AResourceType)
+        # install resource type 2
+        self.env.enableComponent(AResourceType2)
+        PackageInstaller.install(self.env)
+        # try to fetch existing resource from disabled resource type 1
+        try:
+            proc.run(GET, '/get-test/xml/notvc/1')
+            self.fail("Expected ProcessorError")
+        except SeisHubError, e:
+            self.assertEqual(e.code, http.NOT_FOUND)
+        # try to fetch non existing resource from enabled resource type 2
+        try:
+            proc.run(GET, '/get-test2/xml/notvc/muh')
+            self.fail("Expected ProcessorError")
+        except SeisHubError, e:
+            self.assertEqual(e.code, http.NOT_FOUND)
+        # try to fetch non existing resource from enabled resource type 2
+        try:
+            proc.run(GET, '/get-test2/xml/notvc/1')
+            self.fail("Expected ProcessorError")
+        except SeisHubError, e:
+            self.assertEqual(e.code, http.NOT_FOUND)
+        self.env.enableComponent(AResourceType)
+        proc.run(DELETE, '/get-test/xml/notvc/1')
 
 
 def suite():

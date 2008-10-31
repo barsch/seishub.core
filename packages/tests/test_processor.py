@@ -60,8 +60,7 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
     def setUp(self):
         self.env.enableComponent(AVersionControlledResourceType)
         self.env.enableComponent(AResourceType)
-        PackageInstaller.install(self.env)
-        
+    
     def tearDown(self):
         self.env.disableComponent(AVersionControlledResourceType)
         self.env.disableComponent(AResourceType)

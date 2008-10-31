@@ -4,7 +4,6 @@ import doctest
 import unittest
 
 from seishub.packages.tests import test_registry
-from seishub.packages.tests import test_registry_fails
 from seishub.packages.tests import test_processor
 from seishub.packages.tests import test_processor_PUT
 from seishub.packages.tests import test_processor_GET

@@ -104,7 +104,6 @@ class ProcessorMapperTest(SeisHubEnvironmentTestCase):
         self.env.enableComponent(TestMapper2)
         self.env.enableComponent(TestMapper3)
         self.env.enableComponent(TestMapper4)
-        PackageInstaller.install(self.env)
         
     def tearDown(self):
         self.env.disableComponent(APackage)

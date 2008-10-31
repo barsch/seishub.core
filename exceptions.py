@@ -13,17 +13,16 @@ class SeisHubError(Exception):
         @keyword code: http error code
         @type code: int
         """
-        message = kwargs.get('message', None)
+        message = kwargs.pop('message', None)
         if not message and args:
             message = str(args[0])
         self.message = message or http.RESPONSES.get(self.code, '')
-        self.code = self.code or kwargs.get('code', http.INTERNAL_SERVER_ERROR)
-        # XXX: TypeError: SeisHubError does not take keyword arguments 
-        #Exception.__init__(self, *args, **kwargs)
-        Exception.__init__(self, *args)
+        code = kwargs.pop('code', http.INTERNAL_SERVER_ERROR)
+        self.code = self.code or code
+        Exception.__init__(self, *args, **kwargs)
     
-    def __str__(self):
-        return 'Error %s: %s' % (self.code, self.message)
+#    def __str__(self):
+#        return 'Error %s: %s' % (self.code, self.message)
 
 
 class UnauthorizedError(SeisHubError):

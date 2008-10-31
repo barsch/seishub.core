@@ -3,7 +3,7 @@
 from sqlalchemy import create_engine
 
 from seishub.core import Component, implements
-from seishub.exceptions import DuplicateObjectError
+from seishub.exceptions import SeisHubError, InvalidParameterError
 from seishub.services.admin.interfaces import IAdminPanel
 from seishub.xmldb.defaults import DEFAULT_PREFIX, DATA_TABLE, \
                                    INDEX_TABLE, INDEX_DEF_TABLE, \
@@ -144,10 +144,10 @@ class ResourcesPanel(Component):
             self.catalog.addResource(data['package_id'], 
                                      data['resourcetype_id'], 
                                      data['file'])
-        except DuplicateObjectError, e:
-            self.log.error("Error adding resource", e)
+        except InvalidParameterError, e:
+            data['error'] = ("Please choose a non-empty XML document", e)
+        except SeisHubError, e:
             data['error'] = ("Error adding resource", e)
-            return data
         data['file']=''
         return data
     
