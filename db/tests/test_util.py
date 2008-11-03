@@ -7,7 +7,7 @@ from seishub.test import SeisHubEnvironmentTestCase
 from seishub.db.dbmanager import meta
 from seishub.db.util import Serializable, Relation, LazyAttribute, DbStorage
 from seishub.db.util import db_property, DbError, DbObjectProxy 
-from seishub.db.util import DbAttributeProxy, DB_NULL 
+from seishub.db.util import DbAttributeProxy, DB_NULL, DB_LIMIT
 
 test_meta = meta
 
@@ -155,7 +155,7 @@ class DbUtilTest(SeisHubEnvironmentTestCase):
     def __init__(self, *args, **kwargs):
         SeisHubEnvironmentTestCase.__init__(self, *args, **kwargs)
         self.db = DbStorage(self.env.db, debug = False)
-        
+#        
 #    def _config(self):
 #        self.config.set('db', 'verbose', True)
 
@@ -278,8 +278,50 @@ class DbUtilTest(SeisHubEnvironmentTestCase):
         self.assertEqual(len(parent), 1)
         parent = parent[0]
         self.assertEqual(parent.data, "I'm parent of child 1 and child 2.")
+        # child3 has no grandchild
+        child3 = self.db.pickup(Child2, grandchild = DB_NULL)
+        self.assertEqual(len(child3), 1)
+        self.assertEqual(child3[0].data, "I'm child3.")
+        # parent2 has child3, which has no grandchild:
+        parent2 = self.db.pickup(Parent, child2 = {'grandchild':DB_NULL})
+        self.assertEqual(len(parent2), 1)
+        self.assertEqual(parent2[0].data, "I'm parent of child 1 and child 3.")
+        
+        # test limit / offset
+        all = self.db.pickup(Parent, _order_by = {'data':'desc'}, _limit = 1)
+        self.assertEqual(len(all), 1)
+        self.assertEqual(all[0].data, "I'm parent of child 1 and child 3.")
+        all = self.db.pickup(Parent, _order_by = {'data':'desc'}, 
+                             _limit = 1, _offset = 1)
+        self.assertEqual(len(all), 1)
+        self.assertEqual(all[0].data, "I'm parent of child 1 and child 2.")
+        
+        # test DB_LIMIT_MAX / MIN on a to many relation
+        child2 = self.db.pickup(Child2, _id = self.parent1.child2._id, 
+                                 grandchild = {'lego':DB_LIMIT('color', 'max')}
+                                 )
+        # child 2 still has its own lego
+        self.assertEqual(len(child2[0].lego), 2)
+        # but grandchild has yellow brick only
+        self.assertEqual(len(child2[0].grandchild.lego), 1)
+        self.assertEqual(child2[0].grandchild.lego[0].color, 'yellow')
+        child2 = self.db.pickup(Child2, _id = self.parent1.child2._id, 
+                                 grandchild = {'lego':DB_LIMIT('color', 'min')}
+                                 )
+        # child 2 still has its own lego
+        self.assertEqual(len(child2[0].lego), 2)
+        # but grandchild has blue brick only
+        self.assertEqual(len(child2[0].grandchild.lego), 1)
+        self.assertEqual(child2[0].grandchild.lego[0].color, 'blue')
+        
+        # TODO: not supported yet
+        parent1 = self.db.pickup(Parent, _id = self.parent1._id, 
+                                 child2 = {'grandchild':
+                                           {'lego':DB_LIMIT('color', 'max')}}
+                                 )
+        
+        
 
-   
     def testDrop(self):
         self.db.store(self.parent1, cascading = True)
         self.db.store(self.parent2.child2, self.parent2)

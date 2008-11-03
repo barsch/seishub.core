@@ -4,11 +4,10 @@ import time
 from zope.interface import implements, Interface, directlyProvides, \
                            implementedBy, Attribute
 from zope.interface.exceptions import DoesNotImplement
-from sqlalchemy import select, Text, or_
-from sqlalchemy.exceptions import IntegrityError
+from sqlalchemy import select, Text, or_, and_
+from sqlalchemy.exceptions import IntegrityError, NoSuchColumnError
 from sqlalchemy.sql.expression import ClauseList
 
-from seishub.util.list import unique
 
 class DbError(Exception):
     pass
@@ -44,10 +43,19 @@ class IDbAttributeProxy(Interface):
     
 
 class DB_NULL(object):
-    """Pass this object to pickup(...) or drop(...) as a parameter value to 
+    """Pass this class to pickup(...) or drop(...) as a parameter value to 
     explicitly claim that parameter to be None.
     """
     pass
+
+
+class DB_LIMIT(object):
+    """Pass this object to pickup(...) to select only the object beeing maximal 
+    for the given attribute in a to-many relation.
+    """
+    def __init__(self, attr, type = 'max'):
+        self.attr = attr
+        self.type = type
 
 
 class DbEnabled(object):
@@ -72,10 +80,12 @@ class DbStorage(DbEnabled):
     Internal integer ids are stored into the _id attribute of Serializable 
     objects. Each object has an unique id for that object type.
     
-    Known limitations of the DbStorage mapping tool:
+    Known bugs and limitations of the DbStorage mapping tool:
         * 'many-to-many' relations are not (yet) supported
         * selecting / dropping with parameters depending on a 'to-many' 
         relation are not (yet) supported
+        * lazy 'to-many' relations not yet supported
+        * DB_LIMIT on children of lazy 'to-one' relations not yet supported
     """
     def __init__(self, db, debug = False):
         DbEnabled.__init__(self, db)
@@ -156,6 +166,7 @@ class DbStorage(DbEnabled):
         params = params or dict()
         for attr, col in mapping.iteritems():
             value = params.get(attr, None)
+            colname = col
             if IRelation.providedBy(col):
                 if col.relation_type == 'to-one':
                     # in a to-one relation the id of the child is stored in the
@@ -167,9 +178,9 @@ class DbStorage(DbEnabled):
                     # in the child's table
                     colname = 'id'
                     relname = col.name
-            else:
-                colname = col
-            if IRelation.providedBy(col) and value is not DB_NULL: # Object relation
+            if IRelation.providedBy(col) and not value is DB_NULL:
+                #(value is DB_NULL or isinstance(value, DB_LIMIT)): 
+                # Object relation
                 if col.lazy and not value and attr not in order_by.keys(): 
                     # skip lazy relations, if not needed for a where clause
                     continue
@@ -182,7 +193,7 @@ class DbStorage(DbEnabled):
                 rel_tab = col.cls.db_table
                 # from here on value should be none or a dict, 
                 # or something went wrong
-                assert not value or isinstance(value, dict)
+                # assert not value or isinstance(value, dict)
                 if col.lazy and value and '_id' in value.keys() \
                     and attr not in order_by.keys():
                     # in this case we got the id for the related object somehow
@@ -193,28 +204,39 @@ class DbStorage(DbEnabled):
                     # related object is eagerly loaded or needed for the query
                     parent_col = table.c[colname]
                     rel_col = rel_tab.c[relname]
-                    
-#                    joins.setdefault('left', table)
-#                    joins.setdefault(col.cls, list())
-#                    joins[col.cls].append(parent_col == rel_col)
-                    # TODO: this is very ugly... find a better way
-                    # add first table to joins as left table
+                    # TODO: very ugly... find a better way
+                    # ensure the right order of JOIN clauses;
+                    # add first table to joins on the left
                     if not joins:
                         joins = [[None, [table]]]
                     # check if current class is already in joins
-                    if col.cls in zip(*joins)[0]:
+                    if rel_tab in zip(*joins)[0]:
                         # yes: append clause
                         for k in range(len(joins)):
-                            if joins[k][0] == col.cls:
+                            if joins[k][0] == rel_tab:
                                 joins[k][1].append(parent_col == rel_col)
                     else:
                         # no, add class and clause
-                        joins.append([col.cls, [parent_col == rel_col]])
-                            
+                        joins.append([rel_tab, [parent_col == rel_col]])
                     rel_order_by = order_by.get(attr, dict())
-                    q, joins = self._generate_query(q, rel_tab, 
-                                                    col.cls.db_mapping, value, 
-                                                    joins, rel_order_by)
+                    if not isinstance(value, DB_LIMIT):
+                        q, joins = self._generate_query(q, rel_tab, 
+                                                        col.cls.db_mapping, 
+                                                        value, joins, 
+                                                        rel_order_by)
+                    else:
+                        rel_tabA = rel_tab.alias()
+                        # column to maximize / minimize
+                        limit_col = col.cls.db_mapping[value.attr]
+                        # select rows where limit_col is maximal/minimal only
+                        if value.type == 'max':
+                            cl = rel_tab.c[limit_col] < rel_tabA.c[limit_col]
+                        else:
+                            cl = rel_tab.c[limit_col] > rel_tabA.c[limit_col]
+                        joins.append([rel_tabA, 
+                                      [and_(rel_col == rel_tabA.c[relname], cl)
+                                      ]])
+                        q = q.where(rel_tabA.c[relname] == None)
             elif value == DB_NULL:
                 q = q.where(table.c[colname] == None)
             elif value:
@@ -238,7 +260,10 @@ class DbStorage(DbEnabled):
         # init the object container for current object type
         objs.setdefault(cls, list())
         # get id of current obj
-        cur_id = result[str(table) + '_' + cls.db_mapping['_id']]
+        try:
+            cur_id = result[str(table) + '_' + cls.db_mapping['_id']]
+        except NoSuchColumnError:
+            cur_id = None
         if not cur_id:
             # skip empty objects
             return objs
@@ -370,54 +395,55 @@ class DbStorage(DbEnabled):
     def pickup(self, cls, **keys):
         """Read Serializable objects with given keys from database.
         @param cls: Object type to be retrieved.
+        @keyword _order_by: dictionary of the form: 
+            {'attribute':'ASC'|'DESC', ...}
+        @keyword _limit: result limit
+        @keyword _offset: result offset (used in combination with limit)
         @param **keys: kwarg list of the form: 
             - attribute_name = value
         or for relational attributes:
             - attribute_name = Object
             - attribute_name = {'attribute_name' : 'value'}
-        Use DB_NULL as value to force a column to be None, 
-        attribute_name = None will be ignored.
+            
+        In a to-many relation DB_LIMIT_MIN and DB_LIMIT_MAX may be used to 
+        select only one single related object providing the maximum (or 
+        minimum) for the given attribute:
+            - relation_name = DB_LIMIT_MAX('attribute_name')
+        
+        Use DB_NULL as a value to force a column to be None; 
+        attribute_name = None will be ignored:
+            - attribute_name = DB_NULL
         """
         if hasattr(self,'debug') and self.debug:
             start = time.time()
         if not ISerializable.implementedBy(cls):
             raise DoesNotImplement(ISerializable)
         order_by = keys.get('_order_by', dict())
+        limit = keys.get('_limit', None)
+        offset = keys.get('_offset', None)
         table = cls.db_table
         map = cls.db_mapping
-        db = self.getDb()
         # generate query
         q = table.select(use_labels = True)
         # XXX: very strange bug!!!
-        # if i do not explicitly set 'joins = dict()' here,
+        # if i do not explicitly set 'joins = list()' here,
         # sometimes the local joins variable in _generate_query is NOT empty 
-        # in the beginning!!!
+        # in the beginning!!! XXX check if this is still valid...
         q, join_list = self._generate_query(q, table, map, keys, 
                                             order_by = order_by,
-                                            joins = dict())
-        
-#        if join_dict and len(join_dict) >= 2:
-#            left_tab = join_dict.pop('left')
-#            tb, cl = join_dict.popitem()
-#            joins = left_tab.outerjoin(tb.db_table, onclause = or_(*cl))
-#            for tb, cl in join_dict.iteritems():
-#                joins = joins.outerjoin(tb.db_table, onclause = or_(*cl))
-#            q = q.select_from(joins)
-        
+                                            joins = list())
         if join_list and len(join_list) >= 2:
             left_tab = join_list[0][1][0]
-            joins = left_tab.outerjoin(join_list[1][0].db_table, 
+            joins = left_tab.outerjoin(join_list[1][0], 
                                        onclause = or_(*join_list[1][1]))
             del join_list[:2]
             for j in join_list:
-                joins = joins.outerjoin(j[0].db_table, onclause = or_(*j[1]))
+                joins = joins.outerjoin(j[0], onclause = or_(*j[1]))
             q = q.select_from(joins)
-            
-
-#        if join_dict:
-#            q = q.select_from(join_dict)
         q = self._order_by(q, table, map, order_by)
+        q = q.offset(offset).limit(limit)
         # execute query
+        db = self.getDb()
         r = db.execute(q)
         try:
             results = r.fetchall()
