@@ -2,6 +2,7 @@
 
 from zope.interface import implements
 
+from seishub.exceptions import NotFoundError
 from seishub.xmldb.interfaces import IXmlCatalog
 from seishub.xmldb.xmldbms import XmlDbManager
 from seishub.xmldb.xmlindexcatalog import XmlIndexCatalog
@@ -31,79 +32,109 @@ class XmlCatalog(object):
     # xmldbms methods
     def addResource(self, package_id, resourcetype_id, xml_data, uid = None, 
                     name = None):
-        """@see: L{seishub.xmldb.interfaces.IXmlCatalog}"""
-        package, resourcetype = self.env.registry.\
-                                   objects_from_id(package_id, resourcetype_id)
-        res = Resource(package, resourcetype, 
+        """Add a new resource to the database.
+        
+        @param package_id: package id
+        @param resourcetype_id: resourcetype id
+        @param xml_data: xml data
+        @param uid: user id of creator
+        @param name: optional resource name, defaults to unique integer id
+        @return: Resource object
+        """
+        _, resourcetype = self.env.registry.objects_from_id(package_id, 
+                                                            resourcetype_id)
+        res = Resource(resourcetype, 
                        document = newXMLDocument(xml_data, uid = uid), 
                        name = name)
         self.xmldb.addResource(res)
         return res
     
     def moveResource(self, package_id, resourcetype_id, old_name, new_name):
-        """@see: L{seishub.xmldb.interfaces.IXmlCatalog}"""
-        package, resourcetype = self.env.registry.\
-                                   objects_from_id(package_id, resourcetype_id)
-        self.xmldb.moveResource(package, resourcetype, old_name, new_name)
+        """Rename a resource."""
+        self.xmldb.moveResource(package_id, resourcetype_id, old_name, 
+                                new_name)
     
     def modifyResource(self, package_id, resourcetype_id, name, xml_data):
-        package, resourcetype = self.env.registry.\
-                                   objects_from_id(package_id, resourcetype_id)
-        res = Resource(package, resourcetype, 
-                       document = newXMLDocument(xml_data),
+        """Modify the XML document of an already existing resource.
+        In case of a version controlled resource a new revision is created.
+        """
+        _, resourcetype = self.env.registry.objects_from_id(package_id, 
+                                                            resourcetype_id)
+        old_res = self.getResource(package_id, resourcetype_id, name)
+        res = Resource(resourcetype, document = newXMLDocument(xml_data),
                        name = name)
-        self.xmldb.modifyResource(res)
+        self.xmldb.modifyResource(res, old_res.id)
         
     def deleteResource(self, package_id, resourcetype_id, name, revision=None):
-        """@see: L{seishub.xmldb.interfaces.IXmlCatalog}"""
-        package, resourcetype = self.env.registry.\
-                                   objects_from_id(package_id, resourcetype_id)
-        return self.xmldb.deleteResource(package, resourcetype, name, revision)
+        """Remove a resource from the database.
+        
+        Note for version controlled resources:
+        If no revision is specified all revisions of the resource all deleted;
+        otherwise only the specified revision is removed.
+        """
+        if revision:
+            return self.xmldb.deleteRevision(package_id, resourcetype_id, name, 
+                                             revision = revision)
+        res = self.xmldb.deleteResource(package_id, resourcetype_id, name, 
+                                        revision)
+        if not res:
+            msg = "Error deleting a resource: No resource was found with the"+\
+                  "given parameters. (%s/%s/%s)"
+            raise NotFoundError(msg % (package_id, resourcetype_id, name))
+        return res
     
     def deleteAllResources(self, package_id, resourcetype_id):
-        package, resourcetype = self.env.registry.\
-                                   objects_from_id(package_id, resourcetype_id)
-        return self.xmldb.deleteResources(package, resourcetype)
+        """Remove all resources of specified package and resourcetype."""
+        return self.xmldb.deleteResources(package_id, resourcetype_id)
     
     def deleteRevisions(self, package_id, resourcetype_id, name):
-        """@see: L{seishub.xmldb.interfaces.IXmlCatalog}"""
-        package, resourcetype = self.env.registry.\
-                                   objects_from_id(package_id, resourcetype_id)
-        return self.xmldb.deleteResources(package, resourcetype, name)
+        self.env.log.warn("Deprecation warning: xmlcatalog.deleteRevisions()"+\
+                          "is deprecated, use xmlcatalog.deleteResource() "+\
+                          "instead")
+        return self.deleteResource(package_id, resourcetype_id, name)
     
     def getResource(self, package_id, resourcetype_id, name, revision = None):
-        """@see: L{seishub.xmldb.interfaces.IXmlCatalog}"""
-        package, resourcetype = self.env.registry.\
-                                   objects_from_id(package_id, resourcetype_id)
-        return self.xmldb.getResource(package, resourcetype, name, revision)
-    
-    def getRevisionHistory(self):
-        # TODO: future
-        pass
+        """Get a specific resource from the database.
         
-    def getResourceList(self, package_id = None, resourcetype_id = None, 
-                        name = None):
-        """@see: L{seishub.xmldb.interfaces.IXmlCatalog}"""
-        package, resourcetype = self.env.registry.\
-                                   objects_from_id(package_id, resourcetype_id)
-        return self.xmldb.getResourceList(package, resourcetype, name)
+        @param package_id: resourcetype id
+        @param: resourcetype_id: package id
+        @param name: Name of the resource
+        @param revision: revision of related document (if no revision is given,
+            newest revision is used, to retrieve all revisions of a document  
+            use getResourceHistory(...)
+        """
+        return self.xmldb.getResource(package_id, resourcetype_id, name, 
+                                      revision)
+    
+    def getResourceHistory(self, package_id, resourcetype_id, name):
+        """Get all revisions of the specified resource.
+        
+        The Resource instance returned will contain a list of documents sorted 
+        by revision (accessible as usual via Resource.document).
+        Note: In case a resource does not provide multiple revisions, this is 
+        the same as a call to XmlCatalog.getResource(...).
+        
+        @param package_id: package id
+        @param resourcetype_id: resourcetype id
+        @param name: name of the resource
+        @return: Resource object
+        """
+        return self.xmldb.getResourceHistory(package_id, resourcetype_id, name)
+        
+    def getResourceList(self, package_id = None, resourcetype_id = None):
+        """Get a list of resources for specified package and resourcetype"""
+        return self.xmldb.getResourceList(package_id, resourcetype_id)
     
     def revertResource(self, package_id, resourcetype_id, name, revision):
-        """@see: L{seishub.xmldb.interfaces.IXmlCatalog}"""
-        package, resourcetype = self.env.registry.\
-                                   objects_from_id(package_id, resourcetype_id)
-        return self.xmldb.revertResource(package, resourcetype, name, revision)
+        """Reverts the specified revision for the given resource.
+        All revisions newer than the specified one will be removed.
+        """
+        return self.xmldb.revertResource(package_id, resourcetype_id, name, 
+                                         revision)
         
-    def resourceExists(self, package_id, resourcetype_id, name):
-        """@see: L{seishub.xmldb.interfaces.IXmlCatalog}"""
-        raise NotImplementedError("resourceExists not implemented")
-        package, resourcetype = self.env.registry.\
-                                   objects_from_id(package_id, resourcetype_id)
-        return self.xmldb.resourceExists(package, resourcetype, name)
-    
-    def getUriList(self, package_id = None, resourcetype_id = None):
-        # XXX: to be removed
-        return self.xmldb.getUriList(package_id, resourcetype_id)
+#    def resourceExists(self, package_id, resourcetype_id, name):
+#        """@see: L{seishub.xmldb.interfaces.IXmlCatalog}"""
+#        raise NotImplementedError("resourceExists not implemented")
     
     # xmlindexcatalog methods
     def registerIndex(self, package_id = None, resourcetype_id = None, 

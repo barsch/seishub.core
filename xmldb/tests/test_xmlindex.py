@@ -45,8 +45,7 @@ class XmlIndexTest(SeisHubEnvironmentTestCase):
                           )
         
         empty_resource = Resource(document = XmlDocument())
-        test_resource = Resource(self.pkg1,self.rt1,
-                                 document = newXMLDocument(RAW_XML1))
+        test_resource = Resource(self.rt1, document = newXMLDocument(RAW_XML1))
         
         class Foo(object):
             pass

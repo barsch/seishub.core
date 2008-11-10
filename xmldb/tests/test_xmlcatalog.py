@@ -155,10 +155,11 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         r = catalog.getResourceList()
         assert len(r) >= 3
         # unexisting package
-        self.assertRaises(SeisHubError, 
-                          catalog.getResourceList, 'unexisting package')
+        r = catalog.getResourceList('unexisting package')
+        self.assertEquals(len(r), 0)
+        # empty package
         r = catalog.getResourceList(pid2)
-        self.assertEqual(r, list())
+        self.assertEqual(len(r), 0)
         # delete all resources of type 'station'
         r = catalog.getResourceList("testpackage", "station")
         assert len(r) == 2
@@ -208,6 +209,7 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         self.assertEqual(len(l), 0)
         
     def testQuery(self):
+        """XXX: these tests fail, will be fixed with #75"""
         self.env.catalog.reindex("testpackage", "station", IDX1)
         res1 = self.env.catalog.query('/testpackage/station/station',
                                       [['/testpackage/station/station/XY/paramXY','asc']],

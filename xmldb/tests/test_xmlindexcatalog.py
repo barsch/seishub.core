@@ -234,8 +234,7 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         bad_catalog = XmlIndexCatalog(db = self.db)
         
         # register a test resource:
-        test_res = Resource(self.pkg1,self.rt3, 
-                            document = newXMLDocument(RAW_XML1))
+        test_res = Resource(self.rt3, document = newXMLDocument(RAW_XML1))
         dbmgr.addResource(test_res)
 
         # register a test index:
@@ -257,7 +256,7 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         
         # clean up:
         catalog.removeIndex(key_path=self._test_kp, value_path=self._test_vp)
-        dbmgr.deleteResource(self.pkg1,self.rt3, test_res.id)
+        dbmgr.deleteResource(id = test_res.id)
     
     def testFlushIndex(self):
         dbmgr=XmlDbManager(self.db)
@@ -270,8 +269,7 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         except:
             print "Error registering index."
         
-        test_res = Resource(self.pkg1, self.rt3, 
-                            document = newXMLDocument(RAW_XML1))
+        test_res = Resource(self.rt3, document = newXMLDocument(RAW_XML1))
         try:
             dbmgr.addResource(test_res)
         except:
@@ -289,9 +287,10 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         
         # clean up:
         catalog.removeIndex(test_index.getValue_path(), test_index.getKey_path())
-        dbmgr.deleteResource(self.pkg1, self.rt3, test_res.id)
+        dbmgr.deleteResource(id = test_res.id)
         
     def testQuery(self):
+        """XXX: these tests fail, will be fixed with #75"""
         # create test catalog
         self._setup_testdata()
         

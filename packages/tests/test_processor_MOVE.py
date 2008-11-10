@@ -277,10 +277,14 @@ class ProcessorMOVETestSuite(SeisHubEnvironmentTestCase):
             self.fail("Expected SeisHubError")
         except SeisHubError, e:
             # XXX: BUG - see ticket #61 - processor should raise FORBIDDEN
-            self.assertEqual(e.code, http.FORBIDDEN)
+            # XXX: ticket #61 is fixed, but a DuplicateObjectError is raised,
+            # of course we could also raise a ForbiddenError, not sure what 
+            # makes more sense
+            self.assertEqual(e.code, http.CONFLICT)
+            # self.assertEqual(e.code, http.FORBIDDEN)
         # delete resources
-        proc.run(DELETE, '/move-test/xml/vc/test1.xml')
-        proc.run(DELETE, '/move-test/xml/vc/test2.xml')
+        proc.run(DELETE, '/move-test/xml/notvc/test1.xml')
+        proc.run(DELETE, '/move-test/xml/notvc/test2.xml')
     
     def test_moveBuiltinResource(self):
         """SeisHub builtin resources can't be renamed or moved."""
@@ -313,7 +317,11 @@ class ProcessorMOVETestSuite(SeisHubEnvironmentTestCase):
         ~mappers, @aliases and .properties.
         """
         proc = Processor(self.env)
+        # create resources
+        proc.run(PUT, '/move-test/xml/notvc/test.xml', StringIO(XML_DOC))
         # XXX: BUG see ticket #36 - no exception raised from catalog!
+        # XXX: ticket #36 is fixed, InvalidParameterError is raised => changed 
+        # test to catch http.BAD_REQUEST
         # starting tilde (~)
         uri = self.env.getRestUrl() + '/move-test/xml/notvc/~test'
         try:
@@ -321,7 +329,8 @@ class ProcessorMOVETestSuite(SeisHubEnvironmentTestCase):
                      received_headers = {'Destination': uri})
             self.fail("Expected SeisHubError")
         except SeisHubError, e:
-            self.assertEqual(e.code, http.CONFLICT)
+            #self.assertEqual(e.code, http.CONFLICT
+            self.assertEqual(e.code, http.BAD_REQUEST)
         # starting dot (.)
         uri = self.env.getRestUrl() + '/move-test/xml/notvc/.test'
         try:
@@ -329,7 +338,8 @@ class ProcessorMOVETestSuite(SeisHubEnvironmentTestCase):
                      received_headers = {'Destination': uri})
             self.fail("Expected SeisHubError")
         except SeisHubError, e:
-            self.assertEqual(e.code, http.CONFLICT)
+            # self.assertEqual(e.code, http.CONFLICT)
+            self.assertEqual(e.code, http.BAD_REQUEST)
         # starting at sign (@)
         uri = self.env.getRestUrl() + '/move-test/xml/notvc/@test'
         try:
@@ -337,7 +347,8 @@ class ProcessorMOVETestSuite(SeisHubEnvironmentTestCase):
                      received_headers = {'Destination': uri})
             self.fail("Expected SeisHubError")
         except SeisHubError, e:
-            self.assertEqual(e.code, http.CONFLICT)
+            # self.assertEqual(e.code, http.CONFLICT)
+            self.assertEqual(e.code, http.BAD_REQUEST)
         # starting underscore (_)
         uri = self.env.getRestUrl() + '/move-test/xml/notvc/_test'
         try:
@@ -345,7 +356,8 @@ class ProcessorMOVETestSuite(SeisHubEnvironmentTestCase):
                      received_headers = {'Destination': uri})
             self.fail("Expected SeisHubError")
         except SeisHubError, e:
-            self.assertEqual(e.code, http.CONFLICT)
+            self.assertEqual(e.code, http.BAD_REQUEST)
+            #self.assertEqual(e.code, http.CONFLICT)
         # starting minus (-)
         uri = self.env.getRestUrl() + '/move-test/xml/notvc/-test'
         try:
@@ -353,7 +365,8 @@ class ProcessorMOVETestSuite(SeisHubEnvironmentTestCase):
                      received_headers = {'Destination': uri})
             self.fail("Expected SeisHubError")
         except SeisHubError, e:
-            self.assertEqual(e.code, http.CONFLICT)
+            # self.assertEqual(e.code, http.CONFLICT)
+            self.assertEqual(e.code, http.BAD_REQUEST)
         # but this should go
         uri = self.env.getRestUrl() + '/move-test/xml/notvc/Aaz09_-.xml'
         proc.run(MOVE, '/move-test/xml/notvc/test.xml', 
@@ -362,6 +375,8 @@ class ProcessorMOVETestSuite(SeisHubEnvironmentTestCase):
         uri = self.env.getRestUrl() + '/move-test/xml/notvc/test.xml'
         proc.run(MOVE, '/move-test/xml/notvc/Aaz09_-.xml', 
                  received_headers = {'Destination': uri})
+        # delete resources
+        proc.run(DELETE, '/move-test/xml/notvc/test.xml')
     
     def test_moveLockedResource(self):
         # XXX: see ticket #38 - not implemented yet

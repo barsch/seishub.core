@@ -5,7 +5,7 @@ from sqlalchemy import create_engine
 from seishub.core import Component, implements
 from seishub.exceptions import SeisHubError, InvalidParameterError
 from seishub.services.admin.interfaces import IAdminPanel
-from seishub.xmldb.defaults import DEFAULT_PREFIX, DATA_TABLE, \
+from seishub.xmldb.defaults import DEFAULT_PREFIX, DOCUMENT_TABLE, \
                                    INDEX_TABLE, INDEX_DEF_TABLE, \
                                    METADATA_TABLE, METADATA_DEF_TABLE, \
                                    RESOURCE_TABLE
@@ -63,7 +63,7 @@ class DatabaseQueryPanel(Component):
     """Query the database via http form."""
     implements(IAdminPanel)
     
-    tables = [DATA_TABLE, INDEX_TABLE, INDEX_DEF_TABLE, \
+    tables = [DOCUMENT_TABLE, INDEX_TABLE, INDEX_DEF_TABLE, \
               METADATA_TABLE, METADATA_DEF_TABLE, ALIAS_TABLE, SCHEMA_TABLE, \
               STYLESHEET_TABLE, RESOURCE_TABLE, PACKAGES_TABLE, \
               RESOURCETYPES_TABLE]

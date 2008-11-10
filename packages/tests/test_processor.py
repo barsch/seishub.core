@@ -297,7 +297,9 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
             proc.run(GET, location)
             self.fail("Expected SeisHubError")
         except SeisHubError, e:
-            self.assertEqual(e.code, http.GONE)
+            # XXX: NotFoundError is raised by the catalog as we do not have a deleted flag anymore
+            # self.assertEqual(e.code, http.GONE)
+            self.assertEqual(e.code, http.NOT_FOUND)
 
 
 def suite():

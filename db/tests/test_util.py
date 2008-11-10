@@ -210,6 +210,10 @@ class DbUtilTest(SeisHubEnvironmentTestCase):
         self.db.store(self.parent1, cascading = True)
         self.db.store(self.parent2.child2, self.parent2)
         
+        #======================================================================
+        # get w/o parameter, 
+        # order_by
+        #======================================================================
         # get all Parent objects ordered by data
         all = self.db.pickup(Parent, _order_by = {'data':'asc'})
         self.assertEqual(len(all), 2)
@@ -223,12 +227,17 @@ class DbUtilTest(SeisHubEnvironmentTestCase):
         # both parents share the same child1
         self.assertEqual(all[0].child1, all[1].child1)
         
+        #======================================================================
+        # get w/ parameter, 
+        # one-to-one, one-to-many, many-to one relations
+        # lazy and non-lazy (to-one) relations
+        # lazy attributes
+        #======================================================================
         # get by id
         parent1 = self.db.pickup(Parent, _id = self.parent1._id)
         parent2 = self.db.pickup(Parent, _id = self.parent2._id)
         self.assertEqual(len(parent1), 1)
         self.assertEqual(len(parent2), 1)
-
         parent1 = all[1]
         parent2 = all[0]
         self.assertEqual(parent1.data, "I'm parent of child 1 and child 2.")
@@ -259,7 +268,10 @@ class DbUtilTest(SeisHubEnvironmentTestCase):
         # parent2 has no grandchild:
         self.assertEqual(parent2.child2.grandchild, None)
         
-        # get by related object
+        #======================================================================
+        # get via related parameters
+        #======================================================================
+        # get via related object
         parent = self.db.pickup(Parent, child1 = self.parent1.child1)
         self.assertEqual(len(parent), 2)
         parent = self.db.pickup(Parent, child2 = self.parent2.child2)
@@ -287,6 +299,9 @@ class DbUtilTest(SeisHubEnvironmentTestCase):
         self.assertEqual(len(parent2), 1)
         self.assertEqual(parent2[0].data, "I'm parent of child 1 and child 3.")
         
+        #======================================================================
+        # get w/ limit / offset
+        #======================================================================
         # test limit / offset
         all = self.db.pickup(Parent, _order_by = {'data':'desc'}, _limit = 1)
         self.assertEqual(len(all), 1)
@@ -296,7 +311,10 @@ class DbUtilTest(SeisHubEnvironmentTestCase):
         self.assertEqual(len(all), 1)
         self.assertEqual(all[0].data, "I'm parent of child 1 and child 2.")
         
-        # test DB_LIMIT_MAX / MIN on a to many relation
+        #======================================================================
+        # limit the number of child objects via DB_LIMIT on a to-many relation
+        #======================================================================
+        # test DB_LIMIT MAX / MIN on a to many relation
         child2 = self.db.pickup(Child2, _id = self.parent1.child2._id, 
                                  grandchild = {'lego':DB_LIMIT('color', 'max')}
                                  )
@@ -314,13 +332,79 @@ class DbUtilTest(SeisHubEnvironmentTestCase):
         self.assertEqual(len(child2[0].grandchild.lego), 1)
         self.assertEqual(child2[0].grandchild.lego[0].color, 'blue')
         
+        # get grandchild directly
+        grandchild = self.db.pickup(GrandChild, 
+                                    _id = self.parent1.child2.grandchild._id,
+                                    lego = DB_LIMIT('size', 'max'))[0]
+        self.assertEqual(len(grandchild.lego), 1)
+        self.assertEqual(grandchild.lego[0].size, 2)
+        self.assertEqual(grandchild.lego[0].color, 'red')
+        
+        # w/ fixed value
+        # store another Child2
+        child4 = Child2("I'm a child2 but have no parent.", None, 
+                        [LegoBrick('black', 1)])
+        self.db.store(child4, cascading = True)
+        all_child2 = self.db.pickup(Child2)
+        self.assertEqual(len(all_child2), 3)
+        child2 = all_child2[0]
+        child3 = all_child2[1]
+        child4 = all_child2[2]
+        assert child2.grandchild
+        assert not child3.grandchild
+        assert not child4.grandchild
+        self.assertEqual(len(child2.lego), 2)
+        self.assertEqual(child2.lego[0].color, 'black')
+        self.assertEqual(child2.lego[0].size, 3)
+        self.assertEqual(child2.lego[1].color, 'white')
+        self.assertEqual(child2.lego[1].size, 4)
+        self.assertEqual(len(child3.lego), 0)
+        self.assertEqual(len(child4.lego), 1)
+        self.assertEqual(child4.lego[0].color, 'black')
+        self.assertEqual(child4.lego[0].size, 1)
+        
+        child2_with_lego = self.db.pickup(Child2, lego = DB_LIMIT('color',
+                                                                  'fixed',
+                                                                  'black'))
+        self.assertEqual(len(child2_with_lego), 2)
+        child2 = child2_with_lego[0]
+        child4 = child2_with_lego[1]
+        self.assertEqual(len(child2.lego), 1)
+        self.assertEqual(child2.lego[0].color, 'black')
+        self.assertEqual(child2.lego[0].size, 3)
+        self.assertEqual(len(child4.lego), 1)
+        self.assertEqual(child4.lego[0].color, 'black')
+        self.assertEqual(child4.lego[0].size, 1)
+        
         # TODO: not supported yet
         parent1 = self.db.pickup(Parent, _id = self.parent1._id, 
                                  child2 = {'grandchild':
                                            {'lego':DB_LIMIT('color', 'max')}}
                                  )
         
+    def testUpdate(self):
+        self.db.store(self.parent1, cascading = True)
+        self.db.store(self.parent2.child2, self.parent2)
+        parent1 = self.db.pickup(Parent, _id = self.parent1._id)[0]
+        self.assertEquals(parent1.data, "I'm parent of child 1 and child 2.")
         
+        parent1.data = "I am parent."
+        # objs to be updated need an _id
+        assert parent1._id
+        self.db.update(parent1)
+        parent1 = self.db.pickup(Parent, _id = self.parent1._id)[0]
+        self.assertEquals(parent1.data, "I am parent.")
+        
+        # add a new lego brick to child 2 and update cascading and change size 
+        # of first brick
+        parent1.child2.lego.append(LegoBrick('gray', 10))
+        parent1.child2.lego[0].size = 10
+        self.db.update(parent1, cascading = True)
+        parent1 = self.db.pickup(Parent, _id = self.parent1._id)[0]
+        self.assertEquals(len(parent1.child2.lego), 3)
+        self.assertEquals(parent1.child2.lego[2].color, 'gray')
+        self.assertEquals(parent1.child2.lego[2].size, 10)
+        self.assertEquals(parent1.child2.lego[0].size, 10)
 
     def testDrop(self):
         self.db.store(self.parent1, cascading = True)

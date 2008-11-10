@@ -50,12 +50,18 @@ class DB_NULL(object):
 
 
 class DB_LIMIT(object):
-    """Pass this object to pickup(...) to select only the object beeing maximal 
-    for the given attribute in a to-many relation.
+    """Pass this object to pickup(...) to select only the object beeing 
+    maximal, minimal or having a fixed value for the given attribute in a 
+    x-to-many relation.
     """
-    def __init__(self, attr, type = 'max'):
+    def __init__(self, attr, type = 'max', value = None):
+        """@param attr: name of the attribute to be minimized/maximized/fixed
+        @param type: 'max'|'min'|'fixed'
+        @param value: if type == 'fixed', value to be taken by attribute
+        """
         self.attr = attr
         self.type = type
+        self.value = value
 
 
 class DbEnabled(object):
@@ -209,7 +215,7 @@ class DbStorage(DbEnabled):
                     # add first table to joins on the left
                     if not joins:
                         joins = [[None, [table]]]
-                    # check if current class is already in joins
+                    # check if current table is already in joins
                     if rel_tab in zip(*joins)[0]:
                         # yes: append clause
                         for k in range(len(joins)):
@@ -219,35 +225,36 @@ class DbStorage(DbEnabled):
                         # no, add class and clause
                         joins.append([rel_tab, [parent_col == rel_col]])
                     rel_order_by = order_by.get(attr, dict())
-                    if not isinstance(value, DB_LIMIT):
-                        q, joins = self._generate_query(q, rel_tab, 
-                                                        col.cls.db_mapping, 
-                                                        value, joins, 
-                                                        rel_order_by)
-                    else:
-                        rel_tabA = rel_tab.alias()
-                        # column to maximize / minimize
+                    if isinstance(value, DB_LIMIT):
+                        # column to maximize / minimize / fix
                         limit_col = col.cls.db_mapping[value.attr]
-                        # select rows where limit_col is maximal/minimal only
-                        if value.type == 'max':
-                            cl = rel_tab.c[limit_col] < rel_tabA.c[limit_col]
-                        else:
-                            cl = rel_tab.c[limit_col] > rel_tabA.c[limit_col]
-                        joins.append([rel_tabA, 
-                                      [and_(rel_col == rel_tabA.c[relname], cl)
-                                      ]])
-                        q = q.where(rel_tabA.c[relname] == None)
+                        if value.type == 'fixed':
+                            # select rows with given value only
+                            q = q.where(rel_tab.c[limit_col] == value.value)
+                        else: 
+                            # select rows where limit_col is maximal / minimal 
+                            rel_tabA = rel_tab.alias()
+                            if value.type == 'max':
+                                cl = rel_tab.c[limit_col] < rel_tabA.c[limit_col]
+                            else:
+                                cl = rel_tab.c[limit_col] > rel_tabA.c[limit_col]
+                            joins.append([rel_tabA, 
+                                         [and_(rel_col == rel_tabA.c[relname], 
+                                               cl)
+                                         ]])
+                            q = q.where(rel_tabA.c[relname] == None)
+                        value = None
+                    q, joins = self._generate_query(q, rel_tab, 
+                                                    col.cls.db_mapping, 
+                                                    value, joins, 
+                                                    rel_order_by)
             elif value == DB_NULL:
                 q = q.where(table.c[colname] == None)
             elif value:
                 q = q.where(table.c[colname] == value)
             # don't read lazy attribute columns
-            if not ILazyAttribute.providedBy(col):
-                if IRelation.providedBy(col) and\
-                    col.relation_type == 'to-many':
-                    pass
-#                    q = q.group_by(col.cls.db_table.c[relname])
-                else:
+            if not ILazyAttribute.providedBy(col) and not \
+                (IRelation.providedBy(col) and col.relation_type == 'to-many'):
                     q.append_column(table.c[colname])
                 
         return q, joins
@@ -271,6 +278,9 @@ class DbStorage(DbEnabled):
             if IRelation.providedBy(col): # object relation
                 if col.relation_type == 'to-one':
                     rel_id = result[str(table) + '_' + col.name]
+                    if not rel_id:
+                        # skip empty relation attributes
+                        continue
                     if col.lazy:
                         values[attr] = col.cls()
                         if rel_id:
@@ -361,6 +371,7 @@ class DbStorage(DbEnabled):
         if hasattr(self,'debug') and self.debug:
             start = time.time()
         cascading = kwargs.get('cascading', False)
+        update = kwargs.get('update', False)
         if cascading:
             casc_objs = list()
             for o in objs:
@@ -375,9 +386,14 @@ class DbStorage(DbEnabled):
                     raise DoesNotImplement(ISerializable)
                 table = o.db_table
                 kwargs = self._to_kwargs(o)
-                r = conn.execute(table.insert(), **kwargs)
-                o._id = r.last_inserted_ids()[0]
-                
+                if not update or not o._id:
+                    r = conn.execute(table.insert(), **kwargs)
+                    o._id = r.last_inserted_ids()[0]
+                else:
+                    w = (table.c[o.db_mapping['_id']] == o._id)
+                    r = conn.execute(table.update(w), **kwargs)
+                    # inform new children about object id by setting it again
+                    o._id = o._id
             txn.commit()
         except IntegrityError, e:
             txn.rollback()
@@ -391,6 +407,20 @@ class DbStorage(DbEnabled):
             print "DBUTIL: Stored %i objects in %s seconds." %\
                   (len(objs), time.time()-start)
         return True
+    
+    def update(self, *objs, **kwargs):
+        """Update a (list of) Serializable object(s).  
+        if objs is a list, all objects in list will be updated within the same 
+        transaction.
+        Objects to update have to provide an _id attribute to be identified.
+        
+        @keyword cascading: If True, also underlying related objects are 
+                            updated, default is False.
+        @type cascading:    bool
+        """
+        kwargs['update'] = True
+        self.store(*objs, **kwargs)
+        
 
     def pickup(self, cls, **keys):
         """Read Serializable objects with given keys from database.
@@ -474,6 +504,7 @@ class DbStorage(DbEnabled):
             start = time.time()
         table = cls.db_table
         map = cls.db_mapping
+        ret = True
         # begin transaction:
         db = self.getDb()
         conn = db.connect()
@@ -492,9 +523,11 @@ class DbStorage(DbEnabled):
                         relkey = rel.name + '_id'
                     res = conn.execute(q).fetchall()
                     for r in res:
-                        self.drop(rel.cls, **{relkey:r[0]})
+                        ret *= self.drop(rel.cls, **{relkey:r[0]})
             # delete parent
-            conn.execute(table.delete(w))
+            result = conn.execute(table.delete(w))
+            if not result.rowcount:
+                ret *= False
             txn.commit()
         except:
             txn.rollback()
@@ -504,7 +537,7 @@ class DbStorage(DbEnabled):
         if hasattr(self,'debug') and self.debug:
             print "DBUTIL: Deletion completed in %s seconds." %\
                   (time.time()-start)
-        return True
+        return ret
 
 
 class Serializable(object):
@@ -541,6 +574,8 @@ class Serializable(object):
                 objs = self.__getattribute__(name)
                 if not objs:
                     continue
+                if not isinstance(objs, list):
+                    objs = [objs]
                 for o in objs:
                     rel_attr = col.name + '_id'
                     o.__setattr__(rel_attr, id)

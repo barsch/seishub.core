@@ -9,9 +9,8 @@ from seishub.util.text import validate_id
 from seishub.util.xml import toUnicode, parseXMLDeclaration, addXMLDeclaration 
 from seishub.util.text import hash
 from seishub.packages.package import PackageWrapper, ResourceTypeWrapper
-from seishub.xmldb.defaults import resource_tab, data_tab, data_meta_tab
+from seishub.xmldb.defaults import resource_tab, document_tab, document_meta_tab
 from seishub.xmldb.interfaces import IResource, IXmlDocument, IDocumentMeta
-from seishub.xmldb.package import PackageSpecific 
 
 
 XML_DECLARATION_LENGTH = len(addXMLDeclaration(""))
@@ -24,7 +23,7 @@ class DocumentMeta(Serializable):
     
     implements (IDocumentMeta)
     
-    db_table = data_meta_tab
+    db_table = document_meta_tab
     
     db_mapping = {'_id':'id',
                   'uid':'uid',
@@ -82,18 +81,19 @@ class XmlDocument(Serializable):
     
     implements (IXmlDocument)
     
-    db_table = data_tab
-    db_mapping = {'data':LazyAttribute('data'),
-                  '_id':'id',
+    db_table = document_tab
+    db_mapping = {'_id':'id',
+                  'revision':'revision',
+                  'data':LazyAttribute('data'),
                   'meta':Relation(DocumentMeta, 'id', cascading_delete = True,
                                   lazy = False)
                   }
     
-    def __init__(self, data = None, id = None, uid = None):
+    def __init__(self, data = None, revision = None, uid = None):
         self._xml_doc = None
         self.meta = DocumentMeta(uid = uid)
         self.data = data
-        self.datetime = None
+        # self.datetime = None
         Serializable.__init__(self)
     
     def setData(self, data):
@@ -140,6 +140,14 @@ class XmlDocument(Serializable):
     
     meta = db_property(getMeta, setMeta, "Document metadata", attr = '_meta')
     
+    def getRevision(self):
+        return self._revision
+    
+    def setRevision(self, revision):
+        self._revision = revision
+    
+    revision = property(getRevision, setRevision, "Document revision")
+    
     def _validateXml_data(self,value):
         return self._parseXml_data(value)
     
@@ -152,61 +160,32 @@ class XmlDocument(Serializable):
             raise InvalidObjectError("Invalid XML document.", e)
 
 
-#class XmlStylesheetDocument(XmlDocument):
-#    def getXml_doc(self):
-#        return self._xml_doc
-#    
-#    def setXml_doc(self,xml_doc):
-#        if not IXmlStylesheet.providedBy(xml_doc):
-#            raise TypeError("%s is not an IXmlStylesheet" % str(xml_doc))
-#        else:
-#            self._xml_doc = xml_doc
-#    
-#    xml_doc = property(getXml_doc, setXml_doc, 
-#                       'Parsed xml document (IXmlStylesheet)')
-#    
-#    def transform(self, document):
-#        return self.xml_doc.transform(document.xml_doc)
-#    
-#
-#class XmlSchemaDocument(XmlDocument):
-#    def getXml_doc(self):
-#        return self._xml_doc
-#    
-#    def setXml_doc(self,xml_doc):
-#        if not IXmlSchema.providedBy(xml_doc):
-#            raise TypeError("%s is not an IXmlSchema" % str(xml_doc))
-#        else:
-#            self._xml_doc = xml_doc
-#    
-#    xml_doc = property(getXml_doc, setXml_doc, 
-#                       'Parsed xml document (IXmlSchema)')
-#    
-#    def validate(self, document):
-#        return self.xml_doc.validate(document.xml_doc)
-
-
-class Resource(Serializable, PackageSpecific):
+class Resource(Serializable):
     
     implements(IResource)
     
     db_table = resource_tab
     db_mapping = {'_id':'id',  # external id
-                  'revision':'revision',
-                  'document':Relation(XmlDocument, 'resource_id', lazy = False),
-                  'package':Relation(PackageWrapper,'package_id'),
-                  'resourcetype':Relation(ResourceTypeWrapper,
+                  #'package':Relation(PackageWrapper,'package_id'),
+                  'resourcetype':Relation(ResourceTypeWrapper, 
                                           'resourcetype_id'),
-                  'name':'name'
+                  'name':'name',
+                  'document':Relation(XmlDocument, 'resource_id', 
+                                      lazy = False, relation_type = 'to-many',
+                                      cascading_delete = True),
                   }
     
-    def __init__(self, package = PackageWrapper(), 
-                 resourcetype = ResourceTypeWrapper(), id = None, 
-                 revision = None, document = None, name = None):
-        self._id = id
-        self.revision = revision
+    def __init__(self, 
+                 # package = PackageWrapper(), 
+                 resourcetype = ResourceTypeWrapper(), 
+                 id = None, 
+                 # revision = None, 
+                 document = None, 
+                 name = None):
         self.document = document
-        self.package = package
+        self._id = id
+        #self.revision = revision
+        #self.package = package
         self.resourcetype = resourcetype
         self.name = name
         
@@ -226,7 +205,7 @@ class Resource(Serializable, PackageSpecific):
     def setId(self, id):
         return self._setId(id)
         
-    id = property(getId, setId, "External resource id")
+    id = property(getId, setId, "Unique resource id (integer)")
         
     def getResourceType(self):
         return self._resourcetype
@@ -238,41 +217,47 @@ class Resource(Serializable, PackageSpecific):
                                "Resource type", attr = '_resourcetype')
     
     def getPackage(self):
-        return self._package
+        return self.resourcetype.package
     
     def setPackage(self, data):
-        self._package = data
+        pass
         
-    package = db_property(getPackage, setPackage, "Package", attr = '_package')
+    package = property(getPackage, setPackage, "Package")
     
     def getDocument(self):
-        return self._document
+        # return document as a list only if multiple revisions are there
+        if len(self._document) == 1:
+            return self._document[0]
+        else:
+            return self._document
     
     def setDocument(self, data):
-        if data and not IXmlDocument.providedBy(data):
-            raise TypeError("%s is not an IXmlDocument." % str(data))
+        if not isinstance(data, list):
+            data = [data]
+#        if data and not IXmlDocument.providedBy(data[0]):
+#            raise TypeError("%s is not an IXmlDocument." % str(data))
         self._document = data
     
     document = db_property(getDocument, setDocument, "xml document", 
-                            attr = '_document')
+                           attr = '_document')
     
-    def getRevision(self):
-        return self._revision
+#    def getRevision(self):
+#        return self._revision
+#    
+#    def setRevision(self, data):
+#        self._revision = 1
+#        if hasattr(self, 'resourcetype') and self.resourcetype.version_control:
+#            self._revision = data
+#         
+#    revision = property(getRevision, setRevision, "revision")
     
-    def setRevision(self, data):
-        self._revision = 1
-        if hasattr(self, 'resourcetype') and self.resourcetype.version_control:
-            self._revision = data
-         
-    revision = property(getRevision, setRevision, "revision")
-    
-    def getId(self):
-        return self._id
-    
-    def setId(self, data):
-        self._id = data
-        
-    id = property(getId, setId, "Integer identification number (external id)")
+#    def getId(self):
+#        return self._id
+#    
+#    def setId(self, data):
+#        self._id = data
+#        
+#    id = property(getId, setId, "Integer identification number (external id)")
     
     def getName(self):
         if not self._name:
@@ -280,7 +265,12 @@ class Resource(Serializable, PackageSpecific):
         return self._name
     
     def setName(self, data):
-        self._name = validate_id(data)        
+        try:
+            data = validate_id(data)
+        except ValueError:
+            msg = "Invalid resource name: %s"
+            raise InvalidParameterError(msg % str(data))
+        self._name = data
         
     name = property(getName, setName, "Alphanumeric name (optional)")
 
