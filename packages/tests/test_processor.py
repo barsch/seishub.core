@@ -12,7 +12,6 @@ from seishub.packages.processor import MAX_URI_LENGTH, ALLOWED_HTTP_METHODS
 from seishub.packages.processor import NOT_IMPLEMENTED_HTTP_METHODS
 from seishub.core import Component, implements
 from seishub.packages.builtins import IResourceType, IPackage
-from seishub.packages.installer import PackageInstaller
 
 
 XML_DOC = """<?xml version="1.0" encoding="utf-8"?>
@@ -65,8 +64,8 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
         self.env.disableComponent(AVersionControlledResourceType)
         self.env.disableComponent(AResourceType)
     
-    def test_failes(self):
-        """XXX: BUG - see ticket #37 - This test should not fail!""" 
+    def test_orderOfAddingResourcesMatters(self):
+        """This test in this specific order failed in a previous revision.""" 
         proc = Processor(self.env)
         proc.run(PUT, '/processor-test/xml/vc/test.xml', StringIO(XML_DOC))
         proc.run(POST, '/processor-test/xml/vc/test.xml', StringIO(XML_DOC))
@@ -297,8 +296,6 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
             proc.run(GET, location)
             self.fail("Expected SeisHubError")
         except SeisHubError, e:
-            # XXX: NotFoundError is raised by the catalog as we do not have a deleted flag anymore
-            # self.assertEqual(e.code, http.GONE)
             self.assertEqual(e.code, http.NOT_FOUND)
 
 

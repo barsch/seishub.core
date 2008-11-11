@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 import unittest
 from StringIO import StringIO
 
@@ -12,7 +11,6 @@ from seishub.packages.processor import PUT, POST, DELETE, GET, MOVE
 from seishub.packages.processor import MAX_URI_LENGTH
 from seishub.core import Component, implements
 from seishub.packages.builtins import IResourceType, IPackage
-from seishub.packages.installer import PackageInstaller
 
 
 XML_DOC = """<?xml version="1.0" encoding="utf-8"?>
@@ -264,7 +262,7 @@ class ProcessorMOVETestSuite(SeisHubEnvironmentTestCase):
         proc.run(DELETE, '/move-test/xml/vc/test2.xml')
     
     def test_moveToExistingResource(self):
-        """XXX: SeisHub does not allow to overwrite existing resources."""
+        """SeisHub does not allow to overwrite existing resources."""
         proc = Processor(self.env)
         # create resources
         proc.run(PUT, '/move-test/xml/notvc/test1.xml', StringIO(XML_DOC))
@@ -276,12 +274,7 @@ class ProcessorMOVETestSuite(SeisHubEnvironmentTestCase):
                      received_headers = {'Destination': uri})
             self.fail("Expected SeisHubError")
         except SeisHubError, e:
-            # XXX: BUG - see ticket #61 - processor should raise FORBIDDEN
-            # XXX: ticket #61 is fixed, but a DuplicateObjectError is raised,
-            # of course we could also raise a ForbiddenError, not sure what 
-            # makes more sense
             self.assertEqual(e.code, http.CONFLICT)
-            # self.assertEqual(e.code, http.FORBIDDEN)
         # delete resources
         proc.run(DELETE, '/move-test/xml/notvc/test1.xml')
         proc.run(DELETE, '/move-test/xml/notvc/test2.xml')
@@ -311,17 +304,14 @@ class ProcessorMOVETestSuite(SeisHubEnvironmentTestCase):
             self.assertEqual(e.code, http.FORBIDDEN)
     
     def test_moveToInvalidResourcename(self):
-        """XXX: Destination file name may not start with '@', '.', '_' or '-'.
+        """Destination file name may not start with '@', '.', '_' or '-'.
         
         SeisHub restricts the destination filename to distinct between 
-        ~mappers, @aliases and .properties.
+        mappers, @aliases and .properties.
         """
         proc = Processor(self.env)
         # create resources
         proc.run(PUT, '/move-test/xml/notvc/test.xml', StringIO(XML_DOC))
-        # XXX: BUG see ticket #36 - no exception raised from catalog!
-        # XXX: ticket #36 is fixed, InvalidParameterError is raised => changed 
-        # test to catch http.BAD_REQUEST
         # starting tilde (~)
         uri = self.env.getRestUrl() + '/move-test/xml/notvc/~test'
         try:
@@ -329,7 +319,6 @@ class ProcessorMOVETestSuite(SeisHubEnvironmentTestCase):
                      received_headers = {'Destination': uri})
             self.fail("Expected SeisHubError")
         except SeisHubError, e:
-            #self.assertEqual(e.code, http.CONFLICT
             self.assertEqual(e.code, http.BAD_REQUEST)
         # starting dot (.)
         uri = self.env.getRestUrl() + '/move-test/xml/notvc/.test'
@@ -338,7 +327,6 @@ class ProcessorMOVETestSuite(SeisHubEnvironmentTestCase):
                      received_headers = {'Destination': uri})
             self.fail("Expected SeisHubError")
         except SeisHubError, e:
-            # self.assertEqual(e.code, http.CONFLICT)
             self.assertEqual(e.code, http.BAD_REQUEST)
         # starting at sign (@)
         uri = self.env.getRestUrl() + '/move-test/xml/notvc/@test'
@@ -347,7 +335,6 @@ class ProcessorMOVETestSuite(SeisHubEnvironmentTestCase):
                      received_headers = {'Destination': uri})
             self.fail("Expected SeisHubError")
         except SeisHubError, e:
-            # self.assertEqual(e.code, http.CONFLICT)
             self.assertEqual(e.code, http.BAD_REQUEST)
         # starting underscore (_)
         uri = self.env.getRestUrl() + '/move-test/xml/notvc/_test'
@@ -357,7 +344,6 @@ class ProcessorMOVETestSuite(SeisHubEnvironmentTestCase):
             self.fail("Expected SeisHubError")
         except SeisHubError, e:
             self.assertEqual(e.code, http.BAD_REQUEST)
-            #self.assertEqual(e.code, http.CONFLICT)
         # starting minus (-)
         uri = self.env.getRestUrl() + '/move-test/xml/notvc/-test'
         try:
@@ -365,7 +351,6 @@ class ProcessorMOVETestSuite(SeisHubEnvironmentTestCase):
                      received_headers = {'Destination': uri})
             self.fail("Expected SeisHubError")
         except SeisHubError, e:
-            # self.assertEqual(e.code, http.CONFLICT)
             self.assertEqual(e.code, http.BAD_REQUEST)
         # but this should go
         uri = self.env.getRestUrl() + '/move-test/xml/notvc/Aaz09_-.xml'

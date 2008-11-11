@@ -1,16 +1,9 @@
 # -*- coding: utf-8 -*-
 import unittest
-from StringIO import StringIO
-
-from twisted.web import http
 
 from seishub.test import SeisHubEnvironmentTestCase
-from seishub.packages.processor import Processor
-from seishub.exceptions import SeisHubError
-from seishub.packages.processor import PUT, POST, DELETE, GET
 from seishub.core import Component, implements
 from seishub.packages.builtins import IResourceType, IPackage
-from seishub.packages.installer import PackageInstaller
 
 
 XML_DOC = """<?xml version="1.0" encoding="UTF-8"?>

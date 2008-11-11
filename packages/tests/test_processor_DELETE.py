@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 import unittest
 from StringIO import StringIO
 
@@ -11,7 +10,6 @@ from seishub.exceptions import SeisHubError
 from seishub.packages.processor import PUT, POST, DELETE, GET
 from seishub.core import Component, implements
 from seishub.packages.builtins import IResourceType, IPackage
-from seishub.packages.installer import PackageInstaller
 
 
 XML_DOC = """<?xml version="1.0" encoding="utf-8"?>
@@ -181,8 +179,6 @@ class ProcessorDELETETestSuite(SeisHubEnvironmentTestCase):
             proc.run(GET, '/delete-test/xml/vc/test.xml')
             self.fail("Expected SeisHubError")
         except SeisHubError, e:
-            # XXX: NotFoundError is raised by the catalog as we do not have a deleted flag anymore
-            #self.assertEqual(e.code, http.GONE)
             self.assertEqual(e.code, http.NOT_FOUND)
     
     def test_deleteResource(self):
@@ -205,7 +201,7 @@ class ProcessorDELETETestSuite(SeisHubEnvironmentTestCase):
             self.assertEqual(e.code, http.NOT_FOUND)
     
     def test_putOnDeletedVersionControlledResource(self):
-        """XXX: see #71 - PUT on deleted versionized resource should create new resource."""
+        """PUT on deleted versionized resource should create new resource."""
         proc = Processor(self.env)
         # create resource
         proc.run(PUT, '/delete-test/xml/vc/test.xml', StringIO(XML_DOC))
