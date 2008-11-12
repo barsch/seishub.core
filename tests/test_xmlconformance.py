@@ -11,7 +11,8 @@ from seishub.test import SeisHubEnvironmentTestCase
 
 class XMLConformanceTestCase(SeisHubEnvironmentTestCase):
     """Wrapper class for the XML Conformance Test Suite 20080205 provided by 
-    W3C (see http://www.w3.org/XML/Test/)."""
+    W3C (see http://www.w3.org/XML/Test/).
+    """
     
     def setUp(self):
         #setup a test
@@ -26,40 +27,47 @@ class XMLConformanceTestCase(SeisHubEnvironmentTestCase):
         self.env.registry.db_deletePackage('test')
         
     def test_IBMInvalid(self):
+        """Parses invalid documents of the IBM XML test suite."""
         path = self.test_path
         testcase = 'ibm'
         filename = 'ibm_oasis_invalid.xml'
         self._runXMLTestCase(path, testcase, filename)
     
-#    def test_Xmltest(self):
-#        path = self.test_path
-#        testcase = 'xmltest'
-#        filename = 'xmltest.xml'
-#        self._runXMLTestCase(path, testcase, filename)
-#    
-#    def test_Japanese(self):
-#        path = self.test_path
-#        testcase = 'japanese'
-#        filename = 'japanese.xml'
-#        self._runXMLTestCase(path, testcase, filename)
-#    
-#    def test_Oasis(self):
-#        path = self.test_path
-#        testcase = 'oasis'
-#        filename = 'oasis.xml'
-#        self._runXMLTestCase(path, testcase, filename)
-#    
-#    def test_EduniXML11(self):
-#        path = self.test_path
-#        testcase = os.path.join('eduni', 'xml-1.1')
-#        filename = 'xml11.xml'
-#        self._runXMLTestCase(path, testcase, filename)
-#    
-#    def test_EduniErrata4e(self):
-#        path = self.test_path
-#        testcase = os.path.join('eduni', 'errata-4e')
-#        filename = 'errata4e.xml'
-#        self._runXMLTestCase(path, testcase, filename)
+    def test_Xmltest(self):
+        """Parses the xmltest XML test suite."""
+        path = self.test_path
+        testcase = 'xmltest'
+        filename = 'xmltest.xml'
+        self._runXMLTestCase(path, testcase, filename)
+    
+    def test_Japanese(self):
+        """XXX: these tests fail, see ticket #76
+        Parses the Japanese XML test suite."""
+        path = self.test_path
+        testcase = 'japanese'
+        filename = 'japanese.xml'
+        self._runXMLTestCase(path, testcase, filename)
+    
+    def test_Oasis(self):
+        """Parses the xmltest Oasis test suite."""
+        path = self.test_path
+        testcase = 'oasis'
+        filename = 'oasis.xml'
+        self._runXMLTestCase(path, testcase, filename)
+    
+    def test_EduniXML11(self):
+        """Parses the Eduni XML 1.1 test suite."""
+        path = self.test_path
+        testcase = os.path.join('eduni', 'xml-1.1')
+        filename = 'xml11.xml'
+        self._runXMLTestCase(path, testcase, filename)
+    
+    def test_EduniErrata4e(self):
+        """Parses the Eduni errata-4e XML test suite."""
+        path = self.test_path
+        testcase = os.path.join('eduni', 'errata-4e')
+        filename = 'errata4e.xml'
+        self._runXMLTestCase(path, testcase, filename)
     
     def _runXMLTestCase(self, path, testcase, filename):
         """Parse and evaluate a given test case."""
