@@ -84,9 +84,10 @@ class ProcessorGETTest(SeisHubEnvironmentTestCase):
             self.assertTrue(data.has_key(field))
             self.assertTrue(isinstance(data.get(field), list))
         self.assertEquals(len(data.keys()), 4)
-        # check entries in resourcetypes - should be only 1 entry with xml
+        # check entries in resourcetypes - should be only xml and fs
         self.assertTrue('/get-test/xml' in data.get('resourcetype'))
-        self.assertEquals(len(data.get('resourcetype')), 1)
+        self.assertTrue('/get-test/fs' in data.get('resourcetype'))
+        self.assertEquals(len(data.get('resourcetype')), 2)
     
     def test_getResourceTypes(self):
         proc = Processor(self.env)

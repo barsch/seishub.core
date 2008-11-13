@@ -13,12 +13,14 @@
 <div id="infobox">
   <h2>Legend</h2>
   <span class="icon icon-package">Package</span>
-  <span class="icon icon-resourcetype">Resource Type</span>
+  <span class="icon icon-resourcetype">XML Resource Type</span>
+  <span class="icon icon-resource">XML Resource</span>
+  <span class="icon icon-folder">Folder</span>
+  <span class="icon icon-file">File</span>  
   <span class="icon icon-property">Property</span>
   <span class="icon icon-alias">Alias</span>
-  <span class="icon icon-mapping">Mapping</span>
+  <span class="icon icon-mapping">Mapper</span>
   <span class="icon icon-index">Index</span>
-  <span class="icon icon-resource">Resource</span>
 </div>
 
 <h1>Component Browser</h1>
@@ -36,7 +38,7 @@
       var nodeTitle = encodeURI(node.title);
       var sUrl = "/json" + nodeTitle;
       var elements = ['package', 'resourcetype', 'property', 'alias', 
-                      'mapping', 'resource', 'index'];
+                      'mapping', 'resource', 'index', 'folder', 'file'];
       
       //prepare our callback object
       var callback = {
@@ -93,7 +95,7 @@
       var root = tree.getRoot();
       // root node
       var tmp = new YAHOO.widget.TextNode("/", root, true);
-      tmp.labelStyle = "icon icon-package";
+      tmp.labelStyle = "icon icon-folder";
       tmp.href = "$resturl";
       tmp.title = "/";
       

@@ -13,13 +13,23 @@
         no-repeat;
 }
 
+.icon-folder {
+    background: transparent url(/yui/assets/treeview-sprite.png) 0 -112px
+        no-repeat;
+}
+
 .icon-resource {
     background: transparent url(/yui/assets/treeview-sprite.png) 0 -28px
         no-repeat;
 }
 
-.icon-mapping {
+.icon-file {
     background: transparent url(/yui/assets/treeview-sprite.png) 0 -98px
+        no-repeat;
+}
+
+.icon-mapping {
+    background: transparent url(/yui/assets/treeview-sprite.png) 0 -126px
         no-repeat;
 }
 

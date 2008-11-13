@@ -144,7 +144,7 @@ class SFTPServiceProtocol:
         filelist.append(('..', {}))
         
         # packages, resourcetypes, aliases and mappings are directories
-        for t in ['package', 'resourcetype', 'alias', 'mapping']:
+        for t in ['package', 'resourcetype', 'alias', 'mapping', 'folder']:
             for d in data.get(t,[]):
                 name = d.split('/')[-1]
                 filelist.append((name, {}))

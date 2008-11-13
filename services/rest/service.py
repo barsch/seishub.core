@@ -98,7 +98,8 @@ class RESTRequest(Processor, http.Request):
         """Resource list handler for the inheriting class."""
         doc = ''
         # generate a list of standard elements
-        for tag in ['package', 'resourcetype', 'property', 'alias', 'mapping']:
+        for tag in ['package', 'resourcetype', 'property', 'alias', 'mapping',
+                    'folder']:
             for uri in kwargs.get(tag, []):
                 content = absPath(uri[len(self.path):])[1:]
                 doc += RESOURCELIST_NODE % (tag, uri, content, tag)

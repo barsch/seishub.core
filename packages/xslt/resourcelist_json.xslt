@@ -36,6 +36,19 @@
                 <xsl:text>],</xsl:text>
             </xsl:if>
 
+            <xsl:if test="//folder">
+                <xsl:text>"folder":[</xsl:text>
+                <xsl:for-each select="//folder">
+                    <xsl:text>"</xsl:text>
+                    <xsl:value-of select="@xlink:href" />
+                    <xsl:text>"</xsl:text>
+                    <xsl:if test="not (position()=last())">
+                        <xsl:text>,</xsl:text>
+                    </xsl:if>
+                </xsl:for-each>
+                <xsl:text>],</xsl:text>
+            </xsl:if>
+
             <xsl:if test="//mapping">
                 <xsl:text>"mapping":[</xsl:text>
                 <xsl:for-each select="//mapping">

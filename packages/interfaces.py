@@ -23,8 +23,8 @@ class IPackage(Interface):
 class IPackageWrapper(IPackage):
     """Interface definition for a PackageWrapper class.
     
-    A PackageWrapper is returned by the registry whenever a Package isn't present
-    in the file system anymore but only in the database.
+    A PackageWrapper is returned by the registry whenever a Package isn't 
+    present in the file system anymore but only in the database.
     """
 
 
@@ -128,4 +128,12 @@ class IResourceTypeProperty(IPackageProperty):
         
         Single string representing a unique package id. Leave this attribute
         empty to implement this property for all resource types.
+        """)
+
+
+class IFSDirectory(IPackage):
+    """Interface definition for a file system view of a package."""
+    
+    directory_id = Attribute("""
+        Defines the ID of the file system directory.
         """)

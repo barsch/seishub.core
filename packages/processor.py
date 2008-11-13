@@ -10,6 +10,7 @@ from seishub.util.text import isInteger
 from seishub.util.path import splitPath
 from seishub.util.xml import addXMLDeclaration
 
+
 # @see: http://www.boutell.com/newfaq/misc/urllength.html
 MAX_URI_LENGTH = 1000
 
@@ -82,11 +83,17 @@ class Processor:
         # check if property
         if '.' in self.postpath_firstchar:
             return self._processProperty()
-        # check if resource
-        if len(self.postpath)>=3 and self.postpath[1]=='xml':
-            if self.env.registry.isResourceTypeId(self.postpath[0], 
-                                                  self.postpath[2]):
-                return self._processResource()
+        # handle direct access to file system or XML resources
+        if len(self.postpath)>=3:
+            # check if XML resource
+            if self.postpath[1]=='xml':
+                if self.env.registry.isResourceTypeId(self.postpath[0], 
+                                                      self.postpath[2]):
+                    return self._processResource()
+            # check if file system
+            elif self.postpath[1]=='fs':
+                if self._isFSDirectoryId(self.postpath[0], self.postpath[2]):
+                    return self._processFileSystem()
         # more GET processing
         if self.method==GET:
             # check if root GET request
@@ -96,10 +103,15 @@ class Processor:
             if len(self.postpath)==1:
                 if self.env.registry.isPackageId(self.postpath[0]):
                     return self._getPackage(self.postpath[0])
-            # check if resource types XML directory
-            if len(self.postpath)==2 and self.postpath[1]=='xml':
+            # check if root of XML or file system directories
+            if len(self.postpath)==2:
                 if self.env.registry.isPackageId(self.postpath[0]):
-                    return self._getResourceTypes(self.postpath[0])
+                    # check if XML resource directory
+                    if self.postpath[1]=='xml':
+                        return self._getResourceTypes(self.postpath[0])
+                    # check if file system directory
+                    elif self.postpath[1]=='fs':
+                        return self._getFSDirectories(self.postpath[0])
         # test if it fits directly to a valid mapping
         if self.postpath and self.method in ALLOWED_MAPPER_METHODS:
             if self.env.registry.mappers.get(self.path, self.method):
@@ -150,6 +162,19 @@ class Processor:
             return self._moveResource(self.postpath[0], 
                                       self.postpath[2],
                                       self.postpath[3])
+        raise ForbiddenError()
+    
+    def _processFileSystem(self):
+        """Process a file system request."""
+        # check for method
+        if self.method == GET:
+            if len(self.postpath)==3:
+                return self._getFileSystem(self.postpath[0], 
+                                           self.postpath[2])
+            elif len(self.postpath)>3:
+                return self._getFileSystem(self.postpath[0], 
+                                           self.postpath[2],
+                                           self.postpath[3:])
         raise ForbiddenError()
     
     def _processProperty(self):
@@ -207,12 +232,16 @@ class Processor:
             return self.renderResource(result)
         # result must be a dictionary with either mapping or resource entries
         if not isinstance(result, dict):
-            msg = "A mapper must return a dictionary containing mapping " + \
-                  "or resource elements."
+            msg = "A mapper must return a dictionary containing folder," + \
+                  "file or resource elements."
             raise SeisHubError(msg, code=http.INTERNAL_SERVER_ERROR)
         mapping_urls = result.get('mapping', [])
+        folder_urls = result.get('folder', [])
+        file_urls = result.get('file', [])
         resource_urls = result.get('resource', [])
-        return self.renderResourceList(mapping=mapping_urls, 
+        return self.renderResourceList(mapping=mapping_urls,
+                                       folder=folder_urls,
+                                       file=file_urls,
                                        resource=resource_urls)
     
     def _processAlias(self, package_id, resourcetype_id, alias):
@@ -458,17 +487,18 @@ class Processor:
         # fetch all package properties
         # XXX: missing yet
         property_urls = []
-        # special xml directory
-        resourcetype_urls = ['/' + package_id + '/xml',]
+        # special xml and fs directory
+        folder_urls = ['/' + package_id + '/xml', 
+                             '/' + package_id + '/fs']
         return self.renderResourceList(alias=alias_urls,
                                        mapping=mapping_urls,
                                        property=property_urls,
-                                       resourcetype=resourcetype_urls)
+                                       folder=folder_urls)
     
     def _getResourceTypes(self, package_id):
         """GET request on the resource types XML directory.
         
-        This resource list only contains all package specific resource types.
+        This resource list contains all package specific resource types.
         """
         # fetch all resource types of this package
         resourcetype_urls = self.env.registry.getResourceTypeURLs(package_id)
@@ -509,10 +539,48 @@ class Processor:
                 raise NotFoundError()
         pos = len(self.postpath)+2
         mapping_ids = ['/'.join(uri.split('/')[0:pos]) for uri in uris]
-        return self.renderResourceList(mapping=mapping_ids)
+        return self.renderResourceList(folder=mapping_ids)
+    
+    def _getFSDirectories(self, package_id):
+        """GET request on the root of the file system directory.
+        
+        This resource list contains all package specific file system views.
+        """
+        from seishub.core import PackageManager
+        from seishub.packages.interfaces import IFSDirectory
+        all = PackageManager.getClasses(IFSDirectory, package_id)
+        enabled = [cls for cls in all if self.env.isComponentEnabled(cls)]
+        ids = [cls.directory_id for cls in enabled]
+        ids.sort()
+        urls = ['/' + package_id + '/fs/' + id for id in ids]
+        return self.renderResourceList(resourcetype=urls)
+    
+    def _isFSDirectoryId(self, package_id, directory_id):
+        """Checks for a valid file system directory."""
+        from seishub.core import PackageManager
+        from seishub.packages.interfaces import IFSDirectory
+        all = PackageManager.getClasses(IFSDirectory, package_id)
+        enabled = [cls for cls in all if self.env.isComponentEnabled(cls)]
+        ids = [cls.directory_id for cls in enabled]
+        if directory_id in ids:
+            return True
+        return False
+    
+    def _getFileSystem(self, package_id, directory_id, path=None):
+        """GET request on a file system directory."""
+        id = package_id + '.' + directory_id
+        # XXX: here is stuff missing yet
+        if self.env.config.has_site_option('fs', id):
+            ids_and_paths = self.env.config.getlist('fs', id)
+            
+            return self.renderResourceList(folder=ids_and_paths)
+        else:
+            self.env.config.set('fs', id, '')
+            self.env.config.save()
+            return self.renderResourceList(resourcetype=[])
     
     def renderResource(self, data):
-        """Resource handler. Returns content of this resource as utf-8 string.
+        """Resource handler.
         
         This method should be overwritten by the inheriting class in order to
         further validate and format the output of this document.
