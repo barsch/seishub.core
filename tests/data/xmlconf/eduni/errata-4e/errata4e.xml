@@ -1,8 +1,23 @@
 <TESTCASES PROFILE="University of Edinburgh tests for XML 1.0 5th edition">
+ <TEST NAMESPACE="yes" RECOMMENDATION="XML1.0-errata4e" TYPE="invalid" ENTITIES="general" ID="invalid-bo-1" URI="inclbom_be.xml" SECTIONS="4.3.3" VERSION="1.0" OUTPUT="inclbom_out.xml">Byte order mark in general entity should go away (big-endian)</TEST>
+ <TEST NAMESPACE="yes" RECOMMENDATION="XML1.0-errata4e" TYPE="invalid" ENTITIES="general" ID="invalid-bo-2" URI="inclbom_le.xml" SECTIONS="4.3.3" VERSION="1.0" OUTPUT="inclbom_out.xml">Byte order mark in general entity should go away (little-endian)</TEST>
+ <TEST NAMESPACE="yes" RECOMMENDATION="XML1.0-errata4e" TYPE="invalid" ENTITIES="general" ID="invalid-bo-3" URI="incl8bom.xml" SECTIONS="4.3.3" VERSION="1.0" OUTPUT="inclbom_out.xml">Byte order mark in general entity should go away (utf-8)</TEST>
+ <TEST NAMESPACE="yes" RECOMMENDATION="XML1.0-errata4e" TYPE="invalid" ENTITIES="general" ID="invalid-bo-4" URI="inclbombom_be.xml" SECTIONS="4.3.3" VERSION="1.0" OUTPUT="inclbombom_out.xml">Two byte order marks in general entity produce only one (big-endian)</TEST>
+ <TEST NAMESPACE="yes" RECOMMENDATION="XML1.0-errata4e" TYPE="invalid" ENTITIES="general" ID="invalid-bo-5" URI="inclbombom_le.xml" SECTIONS="4.3.3" VERSION="1.0" OUTPUT="inclbombom_out.xml">Two byte order marks in general entity produce only one (little-endian)</TEST>
+ <TEST NAMESPACE="yes" RECOMMENDATION="XML1.0-errata4e" TYPE="invalid" ENTITIES="general" ID="invalid-bo-6" URI="incl8bombom.xml" SECTIONS="4.3.3" VERSION="1.0" OUTPUT="inclbombom_out.xml">Two byte order marks in general entity produce only one (utf-8)</TEST>
+ <TEST NAMESPACE="yes" RECOMMENDATION="XML1.0-errata4e" TYPE="error" ENTITIES="general" ID="invalid-bo-7" URI="inclbomboom_be.xml" SECTIONS="4.3.3" VERSION="1.0">A byte order mark and a backwards one in general entity cause an illegal char. error (big-endian)</TEST>
+ <TEST NAMESPACE="yes" RECOMMENDATION="XML1.0-errata4e" TYPE="error" ENTITIES="general" ID="invalid-bo-8" URI="inclbomboom_le.xml" SECTIONS="4.3.3" VERSION="1.0">A byte order mark and a backwards one in general entity cause an illegal char. error (little-endian)</TEST>
+ <TEST NAMESPACE="yes" RECOMMENDATION="XML1.0-errata4e" TYPE="error" ENTITIES="general" ID="invalid-bo-9" URI="incl8bomboom.xml" SECTIONS="4.3.3" VERSION="1.0">A byte order mark and a backwards one in general entity cause an illegal char. error (utf-8)</TEST> 
  <TEST NAMESPACE="yes" RECOMMENDATION="XML1.0-errata4e" TYPE="invalid" ENTITIES="none" ID="invalid-sa-140" URI="140.xml" SECTIONS="2.3 [4]" EDITION="5" VERSION="1.0">Character
 '&amp;#x309a;' is a CombiningChar, not a Letter, but as of 5th edition, may begin a name (c.f. xmltest/not-wf/sa/140.xml).</TEST>
  <TEST NAMESPACE="yes" RECOMMENDATION="XML1.0-errata4e" TYPE="invalid" ENTITIES="none" ID="invalid-sa-141" URI="141.xml" SECTIONS="2.3 [5]" EDITION="5" VERSION="1.0">As of 5th edition, character
 #x0E5C is legal in XML names (c.f. xmltest/not-wf/sa/141.xml).</TEST>
+<TEST VERSION="1.0" RECOMMENDATION="XML1.0-errata4e" SECTIONS="2.8 4.3.4" URI="008.xml" ID="x-rmt-008" TYPE="error" EDITION="1 2 3 4">
+a document with version=1.7, illegal in XML 1.0 through 4th edition
+</TEST>
+<TEST VERSION="1.0" RECOMMENDATION="XML1.0-errata4e" SECTIONS="2.8 4.3.4" URI="008.xml" ID="x-rmt-008b" TYPE="valid" EDITION="5">
+a document with version=1.7, legal in XML 1.0 from 5th edition
+</TEST>
  <TEST NAMESPACE="yes" ENTITIES="none" RECOMMENDATION="XML1.0-errata4e" SECTIONS="2.3" URI="014.xml" ID="x-rmt5-014" TYPE="invalid" EDITION="5" VERSION="1.0">Has
 a "long s" in a name, legal in XML 1.1, legal in XML 1.0 5th edition</TEST>
  <TEST NAMESPACE="yes" ENTITIES="none" RECOMMENDATION="XML1.0-errata4e" SECTIONS="2.3" URI="016.xml" ID="x-rmt5-016" TYPE="invalid" VERSION="1.0" EDITION="5">Has
