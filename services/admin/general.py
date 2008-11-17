@@ -14,7 +14,7 @@ from seishub.core import Component, implements
 from seishub.services.admin.interfaces import IAdminPanel
 from seishub.defaults import DEFAULT_COMPONENTS
 from seishub.util.text import getFirstSentence
-from seishub.auth import UserGenerationError
+from seishub.exceptions import SeisHubError
 
 
 class BasicPanel(Component):
@@ -154,7 +154,7 @@ class PermissionsPanel(Component):
             try:
                 self.auth.addUser(id=id, name=name, password=password, 
                                   email=email, institution=institution)
-            except UserGenerationError, e:
+            except SeisHubError, e:
                 # password checks are made in self.auth.addUser method 
                 data['error'] = e.message
             except Exception, e:
@@ -173,7 +173,7 @@ class PermissionsPanel(Component):
         else:
             try:
                 self.auth.deleteUser(id=id)
-            except UserGenerationError, e:
+            except SeisHubError(), e:
                 # checks are made in self.auth.deleteUser method 
                 data['error'] = e.message
             except Exception, e:
@@ -205,7 +205,6 @@ class PluginsPanel(Component):
     def _refreshPlugins(self):
         from seishub.loader import ComponentLoader
         ComponentLoader(self.env)
-        #XXX: run autoinstaller here 
     
     def _updatePlugins(self, request):
         """Update components."""

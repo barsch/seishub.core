@@ -5,11 +5,10 @@ import time
 import StringIO
 
 from zope.interface import implements
-
 from twisted.application import internet
-from twisted.conch.ssh import factory, keys, common, session, filetransfer
-from twisted.conch.interfaces import ISFTPFile, ISFTPServer, IConchUser
 from twisted.conch import avatar
+from twisted.conch.interfaces import ISFTPFile, ISFTPServer, IConchUser
+from twisted.conch.ssh import factory, keys, common, session, filetransfer
 from twisted.cred import portal
 from twisted.python import components
 
@@ -245,13 +244,8 @@ class SFTPServiceAvatar(avatar.ConchUser):
         avatar.ConchUser.__init__(self)
         self.username = username
         self.env = env
-        self.listeners = {}
         self.channelLookup.update({"session": session.SSHSession})
         self.subsystemLookup.update({"sftp": filetransfer.FileTransferServer})
-    
-    def logout(self):
-        self.env.log.info('User %s logging out (%i)' % (self.username, 
-                                                        len(self.listeners)))
 
 components.registerAdapter(SFTPServiceProtocol, SFTPServiceAvatar, ISFTPServer)
 
@@ -264,8 +258,8 @@ class SFTPServiceRealm:
     
     def requestAvatar(self, avatarId, mind, *interfaces):
         if IConchUser in interfaces:
-            return interfaces[0], SFTPServiceAvatar(avatarId, self.env), \
-                   lambda: None
+            logout = lambda: None
+            return IConchUser, SFTPServiceAvatar(avatarId, self.env), logout
         else:
             raise Exception, "No supported interfaces found."
 

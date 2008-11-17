@@ -10,11 +10,8 @@ from twisted.cred import checkers, credentials, error
 from twisted.internet import defer
 
 from seishub.util.text import hash
-from seishub.exceptions import SeisHubError as SeisHubMessageError
-
-
-class UserGenerationError(SeisHubMessageError):
-    """An exception raised during an user generation or adaption error."""
+from seishub.exceptions import NotFoundError, DuplicateObjectError
+from seishub.exceptions import SeisHubError
 
 
 class PasswordDictChecker:
@@ -22,8 +19,8 @@ class PasswordDictChecker:
     implements(checkers.ICredentialsChecker)
     credentialInterfaces = (credentials.IUsernamePassword,)
     
-    def __init__(self, passwords):
-        self.passwords = passwords
+    def __init__(self, env):
+        self.env = env
     
     def requestAvatarId(self, credentials):
         """
@@ -36,8 +33,8 @@ class PasswordDictChecker:
         Alternatively, return the result itself.
         """
         username = credentials.username
-        if self.passwords.has_key(username):
-            if hash(credentials.password) == self.passwords[username]:
+        if self.env.auth.passwords.has_key(username):
+            if hash(credentials.password) == self.env.auth.passwords[username]:
                 return defer.succeed(username)
         err = error.UnauthorizedLogin("No such user or bad password")
         return defer.fail(err)
@@ -81,7 +78,7 @@ class AuthenticationManager(object):
         metadata = UserBase.metadata
         metadata.create_all(engine, checkfirst = True)
         self.Session = sessionmaker(bind=engine)
-        self._refresh()
+        self.refresh()
         # add admin if no account exists and check for the default password
         if not self.users:
             self.env.log.warn("An administrative account with both username "
@@ -93,18 +90,17 @@ class AuthenticationManager(object):
             self.env.log.warn("The administrative account is accessible via "
                               "the standard password! Please change this as "
                               "soon as possible!")
-        
     
     def _validatePassword(self, password):
         """All kind of password checks."""
         min_length = self.env.config.getint('webadmin', 'min_password_length')
         if len(password) < min_length:
-            raise UserGenerationError("Password is way to short!")
+            raise SeisHubError("Password is way to short!")
     
     def addUser(self, id, name, password, institution='', email=''):
         """Adds an user."""
         if id in self.passwords.keys():
-            raise UserGenerationError("User already exists!")
+            raise DuplicateObjectError("User already exists!")
         self._validatePassword(password)
         user = User(id, name, hash(password), institution, email)
         session = self.Session()
@@ -113,13 +109,12 @@ class AuthenticationManager(object):
             session.commit()
         except:
             session.rollback()
-        else:
-            self._refresh()
+        self.refresh()
     
     def checkPassword(self, id, password):
         """Check current password."""
         if id not in self.passwords.keys():
-            raise UserGenerationError("User does not exists!")
+            raise SeisHubError("User does not exists!")
         return self.passwords[id]==hash(password)
     
     def changePassword(self, id, password):
@@ -129,7 +124,7 @@ class AuthenticationManager(object):
     def updateUser(self, id, name='', password='', institution='', email=''):
         """Modifies user information."""
         if id not in self.passwords.keys():
-            raise UserGenerationError("User does not exists!")
+            raise SeisHubError("User does not exists!")
         session = self.Session()
         user = session.query(User).filter_by(id=id).one()
         if name:
@@ -146,13 +141,12 @@ class AuthenticationManager(object):
             session.commit()
         except:
             session.rollback()
-        else:
-            self._refresh()
+        self.refresh()
     
     def deleteUser(self, id):
         """Deletes a user."""
         if id not in self.passwords.keys():
-            raise UserGenerationError("User does not exists!")
+            raise NotFoundError("User does not exists!")
         session = self.Session()
         user = session.query(User).filter_by(id=id).one()
         session.delete(user)
@@ -160,10 +154,9 @@ class AuthenticationManager(object):
             session.commit()
         except:
             session.rollback()
-        else:
-            self._refresh()
+        self.refresh()
     
-    def _refresh(self):
+    def refresh(self):
         """Refreshes the internal list of users and passwords from database."""
         session = self.Session()
         passwords = {}
@@ -176,4 +169,5 @@ class AuthenticationManager(object):
     
     def getCheckers(self):
         """Returns a tuple of checkers used by Twisted portal objects."""
-        return (PasswordDictChecker(self.passwords),)
+        self.refresh()
+        return (PasswordDictChecker(self.env),)

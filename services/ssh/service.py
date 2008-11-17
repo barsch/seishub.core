@@ -3,11 +3,13 @@
 import os
 
 from zope.interface import implements
-from twisted.cred import portal
-from twisted.conch import recvline, avatar, interfaces as conchinterfaces
-from twisted.conch.ssh import factory, keys, common, session
-from twisted.conch.insults import insults
 from twisted.application import internet
+from twisted.conch import avatar, recvline
+from twisted.conch.insults import insults
+from twisted.conch.interfaces import IConchUser, ISession
+from twisted.conch.ssh import factory, keys, common, session
+from twisted.cred import portal
+from twisted.python import components
 
 from seishub import __version__ as SEISHUB_VERSION
 from seishub.services.ssh.interfaces import ISSHCommand
@@ -15,15 +17,15 @@ from seishub.core import ExtensionPoint
 from seishub.defaults import SSH_PORT, SSH_PRIVATE_KEY, SSH_PUBLIC_KEY, \
                              SSH_AUTOSTART
 from seishub.config import IntOption, Option, BoolOption
-from seishub.auth import UserGenerationError
+from seishub.exceptions import SeisHubError
 
 
 class SSHServiceProtocol(recvline.HistoricRecvLine):
     
-    def __init__(self, user, env):
+    def __init__(self, avatar):
         recvline.HistoricRecvLine.__init__(self)
-        self.env = env
-        self.user = user
+        self.user = avatar
+        self.env = avatar.env
         self.status = {}
         plugins = ExtensionPoint(ISSHCommand).extensions(self.env)
         self.plugin_cmds = dict([(p.getCommandId().upper(), p) 
@@ -177,7 +179,7 @@ class SSHServiceProtocol(recvline.HistoricRecvLine):
             else:
                 try:
                     self.env.auth.changePassword(uid, password)
-                except UserGenerationError, e:
+                except SeisHubError(), e:
                     self.writeln(e.message)
                 except Exception ,e:
                     raise e
@@ -187,42 +189,44 @@ class SSHServiceProtocol(recvline.HistoricRecvLine):
             self.status = {}
             self.showPrompt()
             return
-    
-    # XXX: this should be removed in a productive environment
-    def cmd_DEBUG(self):
-        """Starts debugger."""
-        import pdb;pdb.set_trace()
 
 
-class SSHServiceAvatar(avatar.ConchUser):
-    implements(conchinterfaces.ISession)
+class SSHServiceSession:
     
-    def __init__(self, username, env):
-        avatar.ConchUser.__init__(self)
-        self.username = username
-        self.env = env
-        self.channelLookup.update({'session': session.SSHSession})
+    def __init__(self, avatar):
+        self.avatar = avatar
+    
+    def getPty(self, term, windowSize, attrs):
+        pass
+    
+    def execCommand(self, proto, cmd):
+        raise NotImplementedError
     
     def openShell(self, protocol):
-        serverProtocol = insults.ServerProtocol(SSHServiceProtocol, self, 
-                                                self.env)
+        serverProtocol = insults.ServerProtocol(SSHServiceProtocol, 
+                                                self.avatar)
         serverProtocol.makeConnection(protocol)
         protocol.makeConnection(session.wrapProtocol(serverProtocol))
     
-    def getPty(self, terminal, windowSize, attrs):
+    def eofReceived(self):
         pass
-    
-    def execCommand(self, protocol, cmd):
-        raise NotImplementedError
     
     def closed(self):
         pass
     
     def windowChanged(self, windowSize):
         pass
+
+
+class SFTPServiceAvatar(avatar.ConchUser):
     
-    def eofReceived(self):
-        pass
+    def __init__(self, username, env):
+        avatar.ConchUser.__init__(self)
+        self.username = username
+        self.env = env
+        self.channelLookup.update({"session": session.SSHSession})
+
+components.registerAdapter(SSHServiceSession, SFTPServiceAvatar, ISession)
 
 
 class SSHServiceRealm:
@@ -232,9 +236,9 @@ class SSHServiceRealm:
         self.env = env
     
     def requestAvatar(self, avatarId, mind, *interfaces):
-        if conchinterfaces.IConchUser in interfaces:
-            return interfaces[0], SSHServiceAvatar(avatarId, self.env), \
-                   lambda: None
+        if IConchUser in interfaces:
+            logout = lambda: None
+            return IConchUser, SFTPServiceAvatar(avatarId, self.env), logout
         else:
             raise Exception, "No supported interfaces found."
 
