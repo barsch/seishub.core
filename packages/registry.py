@@ -52,21 +52,9 @@ class ComponentRegistry(DbStorage):
         enabled.sort()
         return enabled
     
-    def getPackageURLs(self, base=''):
-        """Returns sorted list of all enabled package URLs.  Optional a base 
-        path can be added in front of each URL.
-        """
-        return [base + '/' + id for id in self.getPackageIds()]
-    
     def isPackageId(self, package_id):
         """Checks if the given package id belongs to an enabled package."""
         return package_id in self.getPackageIds()
-    
-    def isPackageURL(self, url):
-        """Checks if the given URL fits to a URL of an enabled package."""
-        if not url.startswith('/'):
-            return False
-        return self.isPackageId(url[1:])
     
     def getAllPackagesAndResourceTypes(self):
         """Returns dictionary of enabled resource type ids and package ids, 
@@ -105,23 +93,9 @@ class ComponentRegistry(DbStorage):
         enabled.sort()
         return enabled
     
-    def getResourceTypeURLs(self, package_id, base=''):
-        """Returns a sorted list of resource type URLs filtered by a given
-        package id. Optional a base path can be added in front of each URL.
-        """
-        ids = self.getResourceTypeIds(package_id)
-        return [base + '/' + package_id + '/xml/' + id for id in ids]
-    
     def isResourceTypeId(self, package_id, resourcetype_id):
         """Checks if a given resource type is an enabled resource type.""" 
         return resourcetype_id in self.getResourceTypeIds(package_id)
-    
-    def isResourceTypeURL(self, url):
-        """Checks if the given URL fits to a resource type URL.""" 
-        parts = url.split('/')
-        if len(parts)!=4 or parts[0]!='' or parts[2]!='xml':
-            return False
-        return self.isResourceTypeId(parts[1], parts[3])
     
     # XXX: refactor the rest into different module
     
@@ -517,8 +491,6 @@ class MapperRegistry(dict):
         methods = PackageManager.getClasses(IMapperMethod)
         for m in methods:
             self.methods[m.id] = m.mapper
-#            self._registry[m.id] = dict()
-#            self._uris[m.id] = list()
         self.update()
     
     def _merge_dicts(self, source, target):
@@ -647,4 +619,15 @@ class MapperRegistry(dict):
                         mappings[cls.mapping_url].append(method)
                 else:
                     mappings[cls.mapping_url] = [method]
+        return mappings
+    
+    def getAllMappers(self):
+        """return a dict of all known mappings of the form 
+        {uri : [allowed methods]}
+        """
+        mappings = dict()
+        for method, interface in self.methods.iteritems():
+            mapper_classes = self._getEnabledClasses(interface)
+            for cls in mapper_classes:
+                mappings[cls.mapping_url] = cls
         return mappings

@@ -9,6 +9,7 @@ from seishub.util.list import unique
 from seishub.util.text import isInteger
 from seishub.util.path import splitPath
 from seishub.util.xml import addXMLDeclaration
+from seishub.util.tree import Tree
 
 
 # @see: http://www.boutell.com/newfaq/misc/urllength.html
@@ -42,6 +43,13 @@ class Processor:
         # set content
         self.content = StringIO()
         self.data = StringIO()
+        self.tree = Tree()
+        self.tree.add('/xml', 'xml')
+        # set all mappers
+        mappers = self.env.registry.mappers.getAllMappers()
+        for url, cls in mappers.items():
+            self.tree.add(url, cls)
+        print str(self.tree)
     
     def run(self, method, path='/', content=None, received_headers={}):
         """A shortcut to call Processor.process with default arguments."""
@@ -60,7 +68,7 @@ class Processor:
             raise SeisHubError(code=http.REQUEST_URI_TOO_LONG)
         # post process self.path
         self.postpath = splitPath(self.path)
-        self.postpath_firstchar = [pp[0] for pp in self.postpath]
+        self.postpath_firstchars = [pp[0] for pp in self.postpath]
         
         # we like upper case method names
         self.method = self.method.upper()
@@ -78,48 +86,40 @@ class Processor:
         self.data=self.content.read()
         
         # check if alias
-        if '@' in self.postpath_firstchar:
+        if '@' in self.postpath_firstchars:
             return self._processAlias()
         # check if property
-        if '.' in self.postpath_firstchar:
+        if '.' in self.postpath_firstchars:
             return self._processProperty()
-        # handle direct access to file system or XML resources
-        if len(self.postpath)>=3:
-            # check if XML resource
-            if self.postpath[1]=='xml':
-                if self.env.registry.isResourceTypeId(self.postpath[0], 
+        # handle XML resource directory
+        if len(self.postpath)>0 and self.postpath[0]=='xml':
+            # check if GET on XML directory
+            if len(self.postpath)==1 and self.method==GET:
+                return self._getPackages()
+            # check if GET on XML package
+            elif len(self.postpath)==2 and self.method==GET:
+                if self.env.registry.isPackageId(self.postpath[1]):
+                    return self._getPackage(self.postpath[1])
+            elif len(self.postpath)>=3:
+                if self.env.registry.isResourceTypeId(self.postpath[1], 
                                                       self.postpath[2]):
                     return self._processResource()
-            # check if file system
-            elif self.postpath[1]=='fs':
-                if self._isFSDirectoryId(self.postpath[0], self.postpath[2]):
-                    return self._processFileSystem()
-        # more GET processing
+#        # test if it fits directly to a valid mapping
+#        if self.postpath and self.method in ALLOWED_MAPPER_METHODS:
+#            if self.env.registry.mappers.get(self.path, self.method):
+#                return self._processMapping()
+        # finally it could be some sub path of our tree
         if self.method==GET:
-            # check if root GET request
-            if len(self.postpath)==0:
-                return self._getRoot()
-            # check if package GET request
-            if len(self.postpath)==1:
-                if self.env.registry.isPackageId(self.postpath[0]):
-                    return self._getPackage(self.postpath[0])
-            # check if root of XML or file system directories
-            if len(self.postpath)==2:
-                if self.env.registry.isPackageId(self.postpath[0]):
-                    # check if XML resource directory
-                    if self.postpath[1]=='xml':
-                        return self._getResourceTypes(self.postpath[0])
-                    # check if file system directory
-                    elif self.postpath[1]=='fs':
-                        return self._getFSDirectories(self.postpath[0])
-        # test if it fits directly to a valid mapping
-        if self.postpath and self.method in ALLOWED_MAPPER_METHODS:
-            if self.env.registry.mappers.get(self.path, self.method):
-                return self._processMapping()
-        # finally it could be a sub path of a mapping
-        if self.method==GET:
-            return self._checkForMappingSubPath()
+            return self._processFolder()
         raise ForbiddenError('This operation is not allowed.')
+    
+    def _processFolder(self):
+        result = self.tree.get(self.postpath)
+        if isinstance(result, dict):
+            ids = result.keys()
+            folder_urls = ['/' + '/'.join(self.postpath) + '/' + id for id in ids]
+            return self.renderResourceList(folder=folder_urls)
+        raise NotFoundError()
     
     def _processResource(self):
         """Process a resource request."""
@@ -127,54 +127,41 @@ class Processor:
         if self.method == GET:
             # a resource type directory
             if len(self.postpath)==3:
-                return self._getResourceType(self.postpath[0], 
+                return self._getResourceType(self.postpath[1], 
                                              self.postpath[2])
             # a non version controlled resource
             if len(self.postpath)==4:
-                return self._getResource(self.postpath[0], 
-                                         self.postpath[2],
-                                         self.postpath[3])
+                return self._getXMLResource(self.postpath[1], 
+                                            self.postpath[2],
+                                            self.postpath[3])
             # a version controlled resource
             if len(self.postpath)==5 and isInteger(self.postpath[4]):
-                return self._getResource(self.postpath[0], 
-                                         self.postpath[2],
-                                         self.postpath[3],
-                                         self.postpath[4])
+                return self._getXMLResource(self.postpath[1], 
+                                            self.postpath[2],
+                                            self.postpath[3],
+                                            self.postpath[4])
         elif self.method == POST and len(self.postpath)==4:
-            return self._modifyResource(self.postpath[0], 
+            return self._modifyResource(self.postpath[1], 
                                         self.postpath[2],
                                         self.postpath[3])
         elif self.method == PUT:
             # without a given name
             if len(self.postpath)==3:
-                return self._createResource(self.postpath[0], 
+                return self._createResource(self.postpath[1], 
                                             self.postpath[2])
             # with a given name
             if len(self.postpath)==4:
-                return self._createResource(self.postpath[0], 
+                return self._createResource(self.postpath[1], 
                                             self.postpath[2],
                                             self.postpath[3])
         elif self.method == DELETE and len(self.postpath)==4:
-            return self._deleteResource(self.postpath[0], 
+            return self._deleteResource(self.postpath[1], 
                                         self.postpath[2],
                                         self.postpath[3])
         elif self.method == MOVE and len(self.postpath)==4:
-            return self._moveResource(self.postpath[0], 
+            return self._moveResource(self.postpath[1], 
                                       self.postpath[2],
                                       self.postpath[3])
-        raise ForbiddenError()
-    
-    def _processFileSystem(self):
-        """Process a file system request."""
-        # check for method
-        if self.method == GET:
-            if len(self.postpath)==3:
-                return self._getFileSystem(self.postpath[0], 
-                                           self.postpath[2])
-            elif len(self.postpath)>3:
-                return self._getFileSystem(self.postpath[0], 
-                                           self.postpath[2],
-                                           self.postpath[3:])
         raise ForbiddenError()
     
     def _processProperty(self):
@@ -263,8 +250,11 @@ class Processor:
         else:
             return self.renderResourceList(resource=resource_objs)
     
-    def _getResource(self, package_id, resourcetype_id, name, revision=None):
-        """Fetches the content of an existing resource.
+    def _getXMLResource(self, package_id, resourcetype_id, name, revision=None):
+        """Returns the content of a XML resource.
+        
+        Before returning the resource, we add a XML declaration header and 
+        encode it as UTF-8 string.
         
         @see: http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.4.1
         for all possible error codes.
@@ -441,28 +431,14 @@ class Processor:
         self.response_header['Location'] = self.env.getRestUrl() + destination
         return ''
     
-    def _getRoot(self):
-        """GET request on the root element of SeisHub.
+    def _getPackages(self):
+        """GET request on the XML directory.
         
-        The root element shows a list of all available packages, root mappings 
-        and properties.
+        This resource list contains all packages.
         """
-        package_urls = self.env.registry.getPackageURLs()
-        # get all root mappings not starting with a package name
-        urls = self.env.registry.mappers.getMappings(method=self.method)
-        mapping_urls = []
-        for url in urls:
-            parts = url.split('/')
-            if parts[1] in self.env.registry.getPackageIds():
-                continue
-            mapping_urls.append('/'.join(parts[0:2]))
-        mapping_urls=unique(mapping_urls)
-        mapping_urls.sort()
-        # XXX: missing yet
-        property_urls = []
-        return self.renderResourceList(package=package_urls, 
-                                       mapping=mapping_urls,
-                                       property=property_urls)
+        # fetch all packages
+        package_urls = ['/xml/' + p for p in self.env.registry.getPackageIds()]
+        return self.renderResourceList(package=package_urls)
     
     def _getPackage(self, package_id):
         """GET request on a package directory. 
@@ -487,22 +463,13 @@ class Processor:
         # fetch all package properties
         # XXX: missing yet
         property_urls = []
-        # special xml and fs directory
-        folder_urls = ['/' + package_id + '/xml', 
-                             '/' + package_id + '/fs']
+        # fetch resource types
+        ids = self.env.registry.getResourceTypeIds(package_id)
+        resourcetype_urls = ['/xml/' + package_id + '/' + id for id in ids]
         return self.renderResourceList(alias=alias_urls,
                                        mapping=mapping_urls,
                                        property=property_urls,
-                                       folder=folder_urls)
-    
-    def _getResourceTypes(self, package_id):
-        """GET request on the resource types XML directory.
-        
-        This resource list contains all package specific resource types.
-        """
-        # fetch all resource types of this package
-        resourcetype_urls = self.env.registry.getResourceTypeURLs(package_id)
-        return self.renderResourceList(resourcetype=resourcetype_urls)
+                                       resourcetype=resourcetype_urls)
     
     def _getResourceType(self, package_id, resourcetype_id):
         """GET request on a single resource type root of a package. 
@@ -540,44 +507,6 @@ class Processor:
         pos = len(self.postpath)+2
         mapping_ids = ['/'.join(uri.split('/')[0:pos]) for uri in uris]
         return self.renderResourceList(folder=mapping_ids)
-    
-    def _getFSDirectories(self, package_id):
-        """GET request on the root of the file system directory.
-        
-        This resource list contains all package specific file system views.
-        """
-        from seishub.core import PackageManager
-        from seishub.packages.interfaces import IFSDirectory
-        all = PackageManager.getClasses(IFSDirectory, package_id)
-        enabled = [cls for cls in all if self.env.isComponentEnabled(cls)]
-        ids = [cls.directory_id for cls in enabled]
-        ids.sort()
-        urls = ['/' + package_id + '/fs/' + id for id in ids]
-        return self.renderResourceList(resourcetype=urls)
-    
-    def _isFSDirectoryId(self, package_id, directory_id):
-        """Checks for a valid file system directory."""
-        from seishub.core import PackageManager
-        from seishub.packages.interfaces import IFSDirectory
-        all = PackageManager.getClasses(IFSDirectory, package_id)
-        enabled = [cls for cls in all if self.env.isComponentEnabled(cls)]
-        ids = [cls.directory_id for cls in enabled]
-        if directory_id in ids:
-            return True
-        return False
-    
-    def _getFileSystem(self, package_id, directory_id, path=None):
-        """GET request on a file system directory."""
-        id = package_id + '.' + directory_id
-        # XXX: here is stuff missing yet
-        if self.env.config.has_site_option('fs', id):
-            ids_and_paths = self.env.config.getlist('fs', id)
-            
-            return self.renderResourceList(folder=ids_and_paths)
-        else:
-            self.env.config.set('fs', id, '')
-            self.env.config.save()
-            return self.renderResourceList(resourcetype=[])
     
     def renderResource(self, data):
         """Resource handler.
