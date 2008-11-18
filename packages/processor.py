@@ -5,11 +5,11 @@ from StringIO import StringIO
 from twisted.web import http
 
 from seishub.exceptions import SeisHubError, ForbiddenError, NotFoundError
-from seishub.util.list import unique
 from seishub.util.text import isInteger
-from seishub.util.path import splitPath
+from seishub.util.path import splitPath, addBaseToList
 from seishub.util.xml import addXMLDeclaration
 from seishub.util.tree import Tree
+from seishub.packages.interfaces import IMapper
 
 
 # @see: http://www.boutell.com/newfaq/misc/urllength.html
@@ -43,13 +43,14 @@ class Processor:
         # set content
         self.content = StringIO()
         self.data = StringIO()
+        
+        # build resource tree
         self.tree = Tree()
         self.tree.add('/xml', 'xml')
         # set all mappers
-        mappers = self.env.registry.mappers.getAllMappers()
+        mappers = self.env.registry.mappers.get()
         for url, cls in mappers.items():
             self.tree.add(url, cls)
-        print str(self.tree)
     
     def run(self, method, path='/', content=None, received_headers={}):
         """A shortcut to call Processor.process with default arguments."""
@@ -95,40 +96,35 @@ class Processor:
         if len(self.postpath)>0 and self.postpath[0]=='xml':
             # check if GET on XML directory
             if len(self.postpath)==1 and self.method==GET:
-                return self._getPackages()
+                return self._getXMLRootFolder()
             # check if GET on XML package
             elif len(self.postpath)==2 and self.method==GET:
                 if self.env.registry.isPackageId(self.postpath[1]):
-                    return self._getPackage(self.postpath[1])
+                    return self._getPackageFolder(self.postpath[1])
             elif len(self.postpath)>=3:
                 if self.env.registry.isResourceTypeId(self.postpath[1], 
                                                       self.postpath[2]):
-                    return self._processResource()
-#        # test if it fits directly to a valid mapping
-#        if self.postpath and self.method in ALLOWED_MAPPER_METHODS:
-#            if self.env.registry.mappers.get(self.path, self.method):
-#                return self._processMapping()
-        # finally it could be some sub path of our tree
-        if self.method==GET:
-            return self._processFolder()
-        raise ForbiddenError('This operation is not allowed.')
+                    return self._processXMLResource()
+        # finally it could be some sub path of our resource tree
+        return self._processResourceTree()
     
-    def _processFolder(self):
+    def _processResourceTree(self):
         result = self.tree.get(self.postpath)
         if isinstance(result, dict):
-            ids = result.keys()
-            folder_urls = ['/' + '/'.join(self.postpath) + '/' + id for id in ids]
+            folder_urls = addBaseToList(self.path, result.keys())
             return self.renderResourceList(folder=folder_urls)
-        raise NotFoundError()
+        elif IMapper.implementedBy(result):
+            return self._processMapping(result)
+        raise ForbiddenError('This operation is not allowed.')
     
-    def _processResource(self):
+    def _processXMLResource(self):
         """Process a resource request."""
         # check for method
         if self.method == GET:
             # a resource type directory
             if len(self.postpath)==3:
-                return self._getResourceType(self.postpath[1], 
-                                             self.postpath[2])
+                return self._getResourceTypeFolder(self.postpath[1], 
+                                                   self.postpath[2])
             # a non version controlled resource
             if len(self.postpath)==4:
                 return self._getXMLResource(self.postpath[1], 
@@ -141,27 +137,27 @@ class Processor:
                                             self.postpath[3],
                                             self.postpath[4])
         elif self.method == POST and len(self.postpath)==4:
-            return self._modifyResource(self.postpath[1], 
-                                        self.postpath[2],
-                                        self.postpath[3])
+            return self._modifyXMLResource(self.postpath[1], 
+                                           self.postpath[2],
+                                           self.postpath[3])
         elif self.method == PUT:
             # without a given name
             if len(self.postpath)==3:
-                return self._createResource(self.postpath[1], 
-                                            self.postpath[2])
+                return self._createXMLResource(self.postpath[1], 
+                                               self.postpath[2])
             # with a given name
             if len(self.postpath)==4:
-                return self._createResource(self.postpath[1], 
-                                            self.postpath[2],
-                                            self.postpath[3])
+                return self._createXMLResource(self.postpath[1], 
+                                               self.postpath[2],
+                                               self.postpath[3])
         elif self.method == DELETE and len(self.postpath)==4:
-            return self._deleteResource(self.postpath[1], 
-                                        self.postpath[2],
-                                        self.postpath[3])
+            return self._deleteXMLResource(self.postpath[1], 
+                                           self.postpath[2],
+                                           self.postpath[3])
         elif self.method == MOVE and len(self.postpath)==4:
-            return self._moveResource(self.postpath[1], 
-                                      self.postpath[2],
-                                      self.postpath[3])
+            return self._moveXMLResource(self.postpath[1], 
+                                         self.postpath[2],
+                                         self.postpath[3])
         raise ForbiddenError()
     
     def _processProperty(self):
@@ -169,7 +165,7 @@ class Processor:
         # XXX: missing yet
         raise NotImplementedError
     
-    def _processMapping(self):
+    def _processMapping(self, mapper):
         """Process a mapping request. 
         
         The result a HTTP GET request is either a basestring or unicode object 
@@ -178,22 +174,10 @@ class Processor:
         nothing, but status code and document location.
         
         Errors should be handled in the user-defined mapping functions by 
-        raising a ProcessError with an proper error code and message defined
+        raising a SeisHubError with an proper error code and message defined
         in twisted.web.http.
         """
-        if not self.path:
-            return
-        mapper = self.env.registry.mappers.get(url=self.path, 
-                                               method=self.method) 
-        if not mapper:
-            msg = "There is no %s mapper defined for %s." % (self.method, 
-                                                             self.path)
-            raise SeisHubError(msg, code=http.NOT_FOUND)
-        # only use first found object, but warn if multiple implementations
-        if len(mapper)>1:
-            self.log.warn('Multiple %s mappings found for %s' % 
-                          (self.method, self.path))
-        func = getattr(mapper[0], 'process'+self.method)
+        func = getattr(mapper(self.env), 'process'+self.method)
         if not func:
             msg = "Function process%s is not implemented." % (self.method)
             raise SeisHubError(msg, code=http.NOT_IMPLEMENTED)
@@ -210,7 +194,7 @@ class Processor:
         if self.method in [DELETE, POST]:
             self.response_code = http.NO_CONTENT
             return ''
-        if self.method==PUT :
+        elif self.method==PUT :
             self.response_code = http.CREATED
             self.response_header['Location'] = str(result)
             return ''
@@ -218,7 +202,7 @@ class Processor:
         if isinstance(result, basestring):
             return self.renderResource(result)
         # result must be a dictionary with either mapping or resource entries
-        if not isinstance(result, dict):
+        elif not isinstance(result, dict):
             msg = "A mapper must return a dictionary containing folder," + \
                   "file or resource elements."
             raise SeisHubError(msg, code=http.INTERNAL_SERVER_ERROR)
@@ -272,7 +256,7 @@ class Processor:
             data = addXMLDeclaration(data, 'utf-8')
         return data
     
-    def _createResource(self, package_id, resourcetype_id, name=None):
+    def _createXMLResource(self, package_id, resourcetype_id, name=None):
         """Process a resource creation request.
         
         @see: http://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html#sec9.6
@@ -309,7 +293,7 @@ class Processor:
         self.response_header['Location'] = self.env.getRestUrl() + str(res)
         return ''
     
-    def _modifyResource(self, package_id, resourcetype_id, name):
+    def _modifyXMLResource(self, package_id, resourcetype_id, name):
         """Processes a resource modification request.
         
         @see: http://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html#sec9.5
@@ -346,7 +330,7 @@ class Processor:
         self.response_code = http.NO_CONTENT
         return ''
     
-    def _deleteResource(self, package_id, resourcetype_id, name):
+    def _deleteXMLResource(self, package_id, resourcetype_id, name):
         """Processes a resource deletion request.
         
         @see: http://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html#sec9.7
@@ -378,7 +362,7 @@ class Processor:
         self.response_code = http.NO_CONTENT
         return ''
     
-    def _moveResource(self, package_id, resourcetype_id, name):
+    def _moveXMLResource(self, package_id, resourcetype_id, name):
         """Processes a resource move/rename request.
         
         @see: http://msdn.microsoft.com/en-us/library/aa142926(EXCHG.65).aspx
@@ -431,16 +415,16 @@ class Processor:
         self.response_header['Location'] = self.env.getRestUrl() + destination
         return ''
     
-    def _getPackages(self):
-        """GET request on the XML directory.
+    def _getXMLRootFolder(self):
+        """GET request on the root of the XML directory.
         
         This resource list contains all packages.
         """
         # fetch all packages
-        package_urls = ['/xml/' + p for p in self.env.registry.getPackageIds()]
+        package_urls = addBaseToList('/xml', self.env.registry.getPackageIds())
         return self.renderResourceList(package=package_urls)
     
-    def _getPackage(self, package_id):
+    def _getPackageFolder(self, package_id):
         """GET request on a package directory. 
         
         Now we search for all allowed sub types of this package (e.g., 
@@ -452,26 +436,17 @@ class Processor:
         aliases = self.env.registry.aliases.get(package_id)
         alias_urls = [str(alias) for alias in aliases]
         alias_urls.sort()
-        # fetch all package mappings
-        urls = self.env.registry.mappers.getMappings(method=self.method,
-                                                     base=self.path)
-        mapping_urls = []
-        for url in urls:
-            parts = url.split('/')
-            mapping_urls.append('/'.join(parts[0:3]))
-        mapping_urls=unique(mapping_urls)
         # fetch all package properties
         # XXX: missing yet
         property_urls = []
         # fetch resource types
         ids = self.env.registry.getResourceTypeIds(package_id)
-        resourcetype_urls = ['/xml/' + package_id + '/' + id for id in ids]
+        resourcetype_urls = addBaseToList('/xml/' + package_id, ids)
         return self.renderResourceList(alias=alias_urls,
-                                       mapping=mapping_urls,
                                        property=property_urls,
                                        resourcetype=resourcetype_urls)
     
-    def _getResourceType(self, package_id, resourcetype_id):
+    def _getResourceTypeFolder(self, package_id, resourcetype_id):
         """GET request on a single resource type root of a package. 
         
         Now we search for resource type aliases or indexes defined by the user.
@@ -494,19 +469,6 @@ class Processor:
                                        alias=alias_urls,
                                        index=index_urls,
                                        resource=resource_objs)
-    
-    def _checkForMappingSubPath(self, uris=None):
-        """This method checks if we can find at least some sub paths of 
-        registered mappings and returns it as resource list.
-        """
-        if not uris:
-            uris = self.env.registry.mappers.getMappings(method=self.method,
-                                                         base=self.path)
-            if not uris:
-                raise NotFoundError()
-        pos = len(self.postpath)+2
-        mapping_ids = ['/'.join(uri.split('/')[0:pos]) for uri in uris]
-        return self.renderResourceList(folder=mapping_ids)
     
     def renderResource(self, data):
         """Resource handler.

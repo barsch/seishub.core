@@ -29,8 +29,8 @@ class Tree:
             for part in parts:
                 temp=temp.get(part)
             return temp
-        except:
-            return False
+        except AttributeError:
+            return temp
     
     def isLeaf(self, path=''):
         """Check if the current path is a object or sub node."""

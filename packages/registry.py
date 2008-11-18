@@ -3,12 +3,10 @@
 from seishub.exceptions import SeisHubError
 from seishub.core import PackageManager
 from seishub.util.text import from_uri
-from seishub.util.list import unique
 from seishub.db.util import DbStorage, DB_NULL 
-from seishub.packages.interfaces import IPackage, IResourceType, \
-                                        IMapperMethod
-from seishub.packages.package import PackageWrapper, ResourceTypeWrapper, \
-                                     Alias, Schema, Stylesheet
+from seishub.packages.interfaces import IPackage, IResourceType, IMapper
+from seishub.packages.package import PackageWrapper, ResourceTypeWrapper
+from seishub.packages.package import Alias, Schema, Stylesheet
 from seishub.packages.util import RegistryDictProxy, RegistryListProxy
 
 
@@ -477,157 +475,27 @@ class AliasRegistry(RegistryBase):
 
 class MapperRegistry(dict):
     """
-    mappers                     list of urls
+    mappers                     list of urls:objects
     mappers.get(url, method)    get mapper object
     """
-    
-    methods = dict()
     _registry = dict()
-    _uris = dict()
+    _urls = dict()
     
     def __init__(self, env):
         self.env = env
-        # get available mapper methods
-        methods = PackageManager.getClasses(IMapperMethod)
-        for m in methods:
-            self.methods[m.id] = m.mapper
         self.update()
     
-    def _merge_dicts(self, source, target):
-        for key in source:
-            if key not in target:
-                target[key] = source[key]
-            else:
-                if isinstance(source[key], dict):
-                    target[key] = self._merge_dicts(source[key], target[key])
-        return target
-        
-    def _parse_uri(self, uri, cls):
-        if len(uri) > 1:
-            return {uri[0]:self._parse_uri(uri[1:], cls)}
-        else:
-            return {uri[0]:{'':cls}}
-        
-    def _getEnabledClasses(self, interface):
-        all = PackageManager.getClasses(interface)
-        return [cls for cls in all if self.env.isComponentEnabled(cls)]
-            
     def update(self):
-        """rebuild the mapper registry"""
-        self._uris = dict()
-        self._registry = dict()
-        for method, interface in self.methods.iteritems():
-            self._uris[method] = list()
-            self._registry[method] = dict()
-            classes = self._getEnabledClasses(interface)
-            for cls in classes:
-                if cls.mapping_url in self._uris.get(method, list()):
-                    msg = "Registration of a %s mapper failed. A mapping " +\
-                          "with url '%s' already exists." %\
-                          (str(cls.mapping_url))
-                    self.env.log.warn(msg)
-                    continue
-                self._uris[method].append(cls.mapping_url)
-                uri = cls.mapping_url.split('/')[1:]
-                uri_dict = self._parse_uri(uri, cls)
-                self._registry[method] = self._merge_dicts(uri_dict, 
-                                                      self._registry[method])
-                
-    def _getSupportedMethods(self, cls):
-        supported = []
-        for method, interface in self.methods.iteritems():
-            if interface.implementedBy(cls):
-                supported.append(method)
-        return supported
+        """Rebuild the mapper registry."""
+        self._urls = dict()
+        all = PackageManager.getClasses(IMapper)
+        for cls in all:
+            if self.env.isComponentEnabled(cls):
+                self._urls[cls.mapping_url] = cls
     
-    def _tree_find(self, url, subtree):
-        # search direction is top-to-bottom because the url might have an 
-        # arbitrary ending
-        try:
-            return self._tree_find(url[1:], subtree[url[0]])
-        except (KeyError, IndexError):
-            try:
-                return subtree[url[0]]['']
-            except KeyError:
-                try:
-                    return subtree['']
-                except KeyError:
-                    return None
-        
-    def _getMapper(self, interface, url):
-        all = self._getEnabledClasses(interface)
-        mapper = [m for m in all if m.mapping_url == url]
-        return mapper
-    
-    def getMethods(self, url):
-        """return list of methods provided by given mapping"""
-        methods = list()
-        for method, interface in self.methods.iteritems():
-            if self._getMapper(interface, url):
-                methods.append(method)
-        return methods
-                
-    def get(self, url = None, method = None):
-        """returns the mapper object on which the given url fits best, 
-        deepest path first
-        
-        if no url and no method is given: get() == getAllMappings()
-        
-        if only method is given, returns a list of all known mappers for that
-        method"""
-        if not url and not method:
-            return self.getAllMappings()
+    def get(self, url = None):
+        """Returns a dictionary of mapper objects {'/path/to': cls}."""
         if not url:
-            return self.getMappings(method)
-        url = url.split('/')[1:]
-        if not method:
-            methods = self.methods.keys()
+            return self._urls
         else:
-            methods = [method]
-        objs = list()
-        for m in methods:
-            mapper_cls = self._tree_find(url, self._registry[m])
-            if mapper_cls:
-                objs.append(mapper_cls(self.env))
-        return unique(objs)
-    
-    def getMappings(self, method, base=None):
-        """Returns a list of all mappings of a given method with an optional 
-        base path.
-        """
-        # make sure we have a trailing slash for any given base
-        if base and not base.endswith('/'):
-            base = base + '/'
-        mappings = list()
-        interface = self.methods[method]
-        mapper_classes = self._getEnabledClasses(interface)
-        for cls in mapper_classes:
-            if not base or cls.mapping_url.startswith(base):
-                mappings.append(cls.mapping_url)
-        return mappings
-    
-    def getAllMappings(self):
-        """return a dict of all known mappings of the form 
-        {uri : [allowed methods]}
-        """
-        mappings = dict()
-        for method, interface in self.methods.iteritems():
-            mapper_classes = self._getEnabledClasses(interface)
-            for cls in mapper_classes:
-                if cls.mapping_url in mappings:
-                    if method not in mappings[cls.mapping_url]: 
-                        mappings[cls.mapping_url].append(method)
-                else:
-                    mappings[cls.mapping_url] = [method]
-        return mappings
-    
-    def getAllMappers(self):
-        """return a dict of all known mappings of the form 
-        {uri : [allowed methods]}
-        """
-        mappings = dict()
-        for method, interface in self.methods.iteritems():
-            mapper_classes = self._getEnabledClasses(interface)
-            for cls in mapper_classes:
-                mappings[cls.mapping_url] = cls
-        return mappings
+            return self._urls.get(url, None)

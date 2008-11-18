@@ -5,7 +5,8 @@
     >>> root.add('/node', [])
     >>> root.add('/blub/blah', 1)
     >>> root.add('/blub/muh', 'hello')
-    # overwriting previous node
+
+# overwriting previous node
     >>> root.add('/blub/muh', 'hallo')
 
 # Tree.__str__
@@ -31,10 +32,12 @@
     'hallo'
     >>> root.get(['blub','muh'])
     'hallo'
+    >>> root.get('blub/muh/maeh/schuwps')
+    'hallo'
 
 # Tree.isLeaf
     >>> root.get('blub3/muh/')
-    False
+   
     >>> root.isLeaf('/blub/muh')
     True
     >>> root.isLeaf('/muh')

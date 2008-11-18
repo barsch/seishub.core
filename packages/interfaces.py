@@ -42,10 +42,6 @@ class IResourceTypeWrapper(IResourceType):
     """
 
 
-class IMapperMethod(Interface):
-    """General interface definition for a HTTP mapper method."""
-
-
 class IMapper(Interface):
     """General interface definition for a resource mapper."""
     
@@ -54,10 +50,6 @@ class IMapper(Interface):
         
         Single string representing a unique mapping URL.
         """)
-
-
-class IGETMapper(IMapper):
-    """Interface definition for a GET resource mapper."""
     
     def processGET(request):
         """Process a GET request.
@@ -69,10 +61,6 @@ class IGETMapper(IMapper):
         
         If an error occurs it should raise a ProcessorError.
         """
-
-
-class IPUTMapper(IMapper):
-    """Interface definition for a PUT resource mapper."""
     
     def processPUT(request):
         """Process a PUT request.
@@ -80,10 +68,6 @@ class IPUTMapper(IMapper):
         This function should return a string containing the full path to the
         new resource URL, otherwise it should raise a ProcessorError.
         """
-
-
-class IPOSTMapper(IMapper):
-    """Interface definition for a POST resource mapper."""
     
     def processPOST(request):
         """Process a POST request.
@@ -92,10 +76,6 @@ class IPOSTMapper(IMapper):
         the resource could be updated, otherwise it should raise a 
         ProcessorError.
         """
-
-
-class IDELETEMapper(IMapper):
-    """Interface definition for a DELETE resource mapper."""
     
     def processDELETE(request):
         """Process a DELETE request.
@@ -128,12 +108,4 @@ class IResourceTypeProperty(IPackageProperty):
         
         Single string representing a unique package id. Leave this attribute
         empty to implement this property for all resource types.
-        """)
-
-
-class IFSDirectory(IPackage):
-    """Interface definition for a file system view of a package."""
-    
-    directory_id = Attribute("""
-        Defines the ID of the file system directory.
         """)
