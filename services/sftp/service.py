@@ -5,7 +5,7 @@ import time
 import StringIO
 
 from zope.interface import implements
-from twisted.application import internet
+from twisted.application.internet import TCPServer #@UnresolvedImport
 from twisted.conch import avatar
 from twisted.conch.interfaces import ISFTPFile, ISFTPServer, IConchUser
 from twisted.conch.ssh import factory, keys, common, session, filetransfer
@@ -304,28 +304,24 @@ class SFTPServiceFactory(factory.SSHFactory):
         file(priv, 'w+b').write(privateKeyString)
 
 
-class SFTPService(internet.TCPServer): #@UndefinedVariable
+class SFTPService(TCPServer):
     """Service for SFTP server."""
-    
-    BoolOption('sftp', 'autostart', SFTP_AUTOSTART, 
-               'Enable service on start-up.')
+    BoolOption('sftp', 'autostart', SFTP_AUTOSTART, 'Run service on start-up.')
     IntOption('sftp', 'port', SFTP_PORT, "SFTP port number.")
-    Option('sftp', 'public_key_file', SFTP_PUBLIC_KEY, 'Public RSA key file.')
-    Option('sftp', 'private_key_file', SFTP_PRIVATE_KEY, 
-           'Private RSA key file.')
+    Option('sftp', 'public_key_file', SFTP_PUBLIC_KEY, 'Public RSA key.')
+    Option('sftp', 'private_key_file', SFTP_PRIVATE_KEY, 'Private RSA key.')
     
     def __init__(self, env):
         self.env = env
         port = env.config.getint('sftp', 'port')
-        internet.TCPServer.__init__(self, #@UndefinedVariable
-                                    port, SFTPServiceFactory(env))
+        TCPServer.__init__(self, port, SFTPServiceFactory(env))
         self.setName("SFTP")
         self.setServiceParent(env.app)
     
     def privilegedStartService(self):
         if self.env.config.getbool('sftp', 'autostart'):
-            internet.TCPServer.privilegedStartService(self) #@UndefinedVariable
+            TCPServer.privilegedStartService(self)
     
     def startService(self):
         if self.env.config.getbool('sftp', 'autostart'):
-            internet.TCPServer.startService(self) #@UndefinedVariable
+            TCPServer.startService(self)

@@ -3,7 +3,7 @@
 import os
 
 from zope.interface import implements
-from twisted.application import internet
+from twisted.application.internet import TCPServer #@UnresolvedImport
 from twisted.conch import avatar, recvline
 from twisted.conch.insults import insults
 from twisted.conch.interfaces import IConchUser, ISession
@@ -164,10 +164,10 @@ class SSHServiceProtocol(recvline.HistoricRecvLine):
                 self.status = {}
                 self.writeln("Authentication failure.")
                 self.showPrompt()
-                return
-            # prompt for new password
-            self.write("Enter new password: ")
-            self.status = dict(cmd='PASSWD', password='', hide=True)
+            else:
+                # prompt for new password
+                self.write("Enter new password: ")
+                self.status = dict(cmd='PASSWD', password='', hide=True)
         elif password=='':
             # got one new password - ask for confirmation
             self.write("Retype new password: ")
@@ -188,7 +188,6 @@ class SSHServiceProtocol(recvline.HistoricRecvLine):
             # clean up and exit
             self.status = {}
             self.showPrompt()
-            return
 
 
 class SSHServiceSession:
@@ -240,7 +239,7 @@ class SSHServiceRealm:
             logout = lambda: None
             return IConchUser, SFTPServiceAvatar(avatarId, self.env), logout
         else:
-            raise Exception, "No supported interfaces found."
+            raise Exception("No supported interfaces found.")
 
 
 class SSHServiceFactory(factory.SSHFactory):
@@ -257,7 +256,6 @@ class SSHServiceFactory(factory.SSHFactory):
     
     def _getCertificates(self):
         """Fetching certificate files from configuration."""
-        
         pub = self.env.config.get('ssh', 'public_key_file')
         priv = self.env.config.get('ssh', 'private_key_file')
         if not os.path.isfile(pub):
@@ -272,8 +270,6 @@ class SSHServiceFactory(factory.SSHFactory):
     
     def _generateRSAKeys(self):
         """Generates new private RSA keys for the SSH service."""
-        
-        print "Generate keys ..."
         from Crypto.PublicKey import RSA
         KEY_LENGTH = 1024
         rsaKey = RSA.generate(KEY_LENGTH, common.entropy.get_bytes)
@@ -285,26 +281,24 @@ class SSHServiceFactory(factory.SSHFactory):
         file(priv, 'w+b').write(privateKeyString)
 
 
-class SSHService(internet.TCPServer): #@UndefinedVariable
+class SSHService(TCPServer): 
     """Service for SSH server."""
-    BoolOption('ssh', 'autostart', SSH_AUTOSTART, 
-               "Enable service on start-up.")
+    BoolOption('ssh', 'autostart', SSH_AUTOSTART, "Run service on start-up.")
     IntOption('ssh', 'port', SSH_PORT, "SSH port number.")
-    Option('ssh', 'public_key_file', SSH_PUBLIC_KEY, 'Public RSA key file.')
-    Option('ssh', 'private_key_file', SSH_PRIVATE_KEY, 'Private RSA key file.')
+    Option('ssh', 'public_key_file', SSH_PUBLIC_KEY, 'Public RSA key.')
+    Option('ssh', 'private_key_file', SSH_PRIVATE_KEY, 'Private RSA key.')
     
     def __init__(self, env):
         self.env = env
         port = env.config.getint('ssh', 'port')
-        internet.TCPServer.__init__(self, #@UndefinedVariable
-                                    port, SSHServiceFactory(env))
+        TCPServer.__init__(self, port, SSHServiceFactory(env))
         self.setName("SSH")
         self.setServiceParent(env.app)
     
     def privilegedStartService(self):
         if self.env.config.getbool('ssh', 'autostart'):
-            internet.TCPServer.privilegedStartService(self) #@UndefinedVariable
+            TCPServer.privilegedStartService(self)
     
     def startService(self):
         if self.env.config.getbool('ssh', 'autostart'):
-            internet.TCPServer.startService(self) #@UndefinedVariable
+            TCPServer.startService(self)

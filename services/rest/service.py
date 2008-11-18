@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from twisted.web import http
-from twisted.application import internet
+from twisted.application.internet import TCPServer #@UnresolvedImport
 from twisted.internet import threads
 
 from seishub.defaults import REST_PORT
@@ -147,23 +147,22 @@ class RESTServiceFactory(http.HTTPFactory):
         self.protocol.env = env
 
 
-class RESTService(internet.TCPServer): #@UndefinedVariable
-    """Service for the REST HTTP Server."""
-    BoolOption('rest', 'autostart', 'True', "Enable service on start-up.")
+class RESTService(TCPServer):
+    """Service for REST HTTP server."""
+    BoolOption('rest', 'autostart', 'True', "Run service on start-up.")
     IntOption('rest', 'port', REST_PORT, "REST port number.")
     
     def __init__(self, env):
         self.env = env
         port = env.config.getint('rest', 'port')
-        internet.TCPServer.__init__(self, #@UndefinedVariable
-                                    port, RESTServiceFactory(env))
+        TCPServer.__init__(self, port, RESTServiceFactory(env))
         self.setName("REST")
         self.setServiceParent(env.app)
     
     def privilegedStartService(self):
         if self.env.config.getbool('rest', 'autostart'):
-            internet.TCPServer.privilegedStartService(self) #@UndefinedVariable
+            TCPServer.privilegedStartService(self)
     
     def startService(self):
         if self.env.config.getbool('rest', 'autostart'):
-            internet.TCPServer.startService(self) #@UndefinedVariable
+            TCPServer.startService(self)

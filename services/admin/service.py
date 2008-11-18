@@ -6,7 +6,7 @@ import urllib
 
 from Cheetah.Template import Template
 from pkg_resources import resource_filename #@UnresolvedImport
-from twisted.application import internet
+from twisted.application.internet import SSLServer #@UnresolvedImport
 from twisted.internet import threads, defer, ssl
 from twisted.web import static, http, util as webutil
 
@@ -340,11 +340,11 @@ class AdminServiceFactory(http.HTTPFactory):
         self.protocol.env = env
 
 
-class AdminService(internet.SSLServer): #@UndefinedVariable
+class AdminService(SSLServer):
     """Service for WebAdmin HTTP Server."""
-    BoolOption('webadmin', 'autostart', 'True', "Enable service on start-up.")
+    BoolOption('webadmin', 'autostart', 'True', "Run service on start-up.")
     IntOption('webadmin', 'port', ADMIN_PORT, "WebAdmin port number.")
-    Option('webadmin', 'private_key_file', ADMIN_PRIVATE_KEY, 
+    Option('webadmin', 'private_key_file', ADMIN_PRIVATE_KEY,  
            'Private key file.')
     Option('webadmin', 'certificate_file', ADMIN_CERTIFICATE, 
            'Certificate file.')
@@ -359,24 +359,21 @@ class AdminService(internet.SSLServer): #@UndefinedVariable
         secured = env.config.getbool('webadmin', 'secured')
         priv, cert = self._getCertificates()
         if secured:
-            ssl_context = ssl.DefaultOpenSSLContextFactory(priv, cert)
-            internet.SSLServer.__init__(self, #@UndefinedVariable
-                                        port, AdminServiceFactory(env),
-                                        ssl_context) 
+            context = ssl.DefaultOpenSSLContextFactory(priv, cert)
+            SSLServer.__init__(self, port, AdminServiceFactory(env), context)
         else:
             self.method = 'TCP'
-            internet.SSLServer.__init__(self, #@UndefinedVariable
-                                        port, AdminServiceFactory(env), 1)
+            SSLServer.__init__(self, port, AdminServiceFactory(env), 1)
         self.setName("WebAdmin")
         self.setServiceParent(env.app)
     
     def privilegedStartService(self):
         if self.env.config.getbool('webadmin', 'autostart'):
-            internet.SSLServer.privilegedStartService(self) #@UndefinedVariable
+            SSLServer.privilegedStartService(self)
     
     def startService(self):
         if self.env.config.getbool('webadmin', 'autostart'):
-            internet.SSLServer.startService(self) #@UndefinedVariable
+            SSLServer.startService(self)
     
     def _getCertificates(self):
         """Fetching certificate files from configuration."""
