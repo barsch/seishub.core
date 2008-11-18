@@ -166,7 +166,6 @@ class Resource(Serializable):
     
     db_table = resource_tab
     db_mapping = {'_id':'id',  # external id
-                  #'package':Relation(PackageWrapper,'package_id'),
                   'resourcetype':Relation(ResourceTypeWrapper, 
                                           'resourcetype_id'),
                   'name':'name',
@@ -175,17 +174,10 @@ class Resource(Serializable):
                                       cascading_delete = True),
                   }
     
-    def __init__(self, 
-                 # package = PackageWrapper(), 
-                 resourcetype = ResourceTypeWrapper(), 
-                 id = None, 
-                 # revision = None, 
-                 document = None, 
-                 name = None):
+    def __init__(self, resourcetype = ResourceTypeWrapper(), id = None, 
+                 document = None, name = None):
         self.document = document
         self._id = id
-        #self.revision = revision
-        #self.package = package
         self.resourcetype = resourcetype
         self.name = name
         
@@ -193,11 +185,6 @@ class Resource(Serializable):
         return "/%s/xml/%s/%s" % (self.package.package_id, 
                                   self.resourcetype.resourcetype_id, 
                                   str(self.name))
-    
-#    # auto update id when _Serializable__id is changed:
-#    def _setId(self, id):
-#        Serializable._setId(self, id)
-#        self.id = id
 
     def getId(self):
         return self._getId()
@@ -225,7 +212,7 @@ class Resource(Serializable):
     package = property(getPackage, setPackage, "Package")
     
     def getDocument(self):
-        # return document as a list only if multiple revisions are there
+        # return document as a list only if multiple revisions are present
         if len(self._document) == 1:
             return self._document[0]
         else:
@@ -234,30 +221,10 @@ class Resource(Serializable):
     def setDocument(self, data):
         if not isinstance(data, list):
             data = [data]
-#        if data and not IXmlDocument.providedBy(data[0]):
-#            raise TypeError("%s is not an IXmlDocument." % str(data))
         self._document = data
     
     document = db_property(getDocument, setDocument, "xml document", 
                            attr = '_document')
-    
-#    def getRevision(self):
-#        return self._revision
-#    
-#    def setRevision(self, data):
-#        self._revision = 1
-#        if hasattr(self, 'resourcetype') and self.resourcetype.version_control:
-#            self._revision = data
-#         
-#    revision = property(getRevision, setRevision, "revision")
-    
-#    def getId(self):
-#        return self._id
-#    
-#    def setId(self, data):
-#        self._id = data
-#        
-#    id = property(getId, setId, "Integer identification number (external id)")
     
     def getName(self):
         if not self._name:
@@ -281,7 +248,7 @@ def _prepare_xml_data(data):
     if isinstance(data, unicode):
         data, _ = parseXMLDeclaration(data, remove_decl = True)
     else:
-        data = toUnicode(data, remove_decl = True)
+        data, _ = toUnicode(data, remove_decl = True)
     return data
 
 def newXMLDocument(data, id = None, uid = None):

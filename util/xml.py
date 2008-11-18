@@ -3,16 +3,43 @@
 import re
 
 
-def toUnicode(data, remove_decl = False):
-    """Convert XML string to unicode by detecting the encoding."""
-    data, enc = parseXMLDeclaration(data, remove_decl)
-    encoding = detectXMLEncoding(*(data, enc))
-    if encoding:
-        data = unicode(data, encoding)
-    else:
-        data = unicode(data, 'utf-8')
-    return data
+#def toUnicode(data, remove_decl = False):
+#    """Convert a XML string to unicode by detecting the encoding and optionally
+#    remove the XML declaration.
+#    """
+#    encoding = toUnicode(data, remove_decl)
+#    data = unicode(data, encoding)
+#    return data
 
+
+def toUnicode(data, remove_decl = False):
+    """Detect the encoding of a XML string via BOM and XML declaration.
+    
+    Encoding detection works as follows:
+        - if detection of the BOM succeeds, the codec name of the
+        corresponding unicode charset is returned
+        
+        - if BOM detection fails, the xml declaration is searched for
+        the encoding attribute and its value returned. the "<"
+        character has to be the very first in the file then (it's xml
+        standard after all).
+        
+        - if BOM and xml declaration fail, utf-8 is returned. According
+        to xml 1.0 it should be utf_8 then, but it wasn't detected by
+        the means offered here. at least one can be pretty sure that a
+        character coding including most of ASCII is used :-/
+    """
+    data, enc = detectBOM(data)
+    if not enc:
+        # BOM not detected, try to parse declaration:
+        data, enc = parseXMLDeclaration(data, remove_decl)
+    elif remove_decl:
+        # BOM detected, convert to unicode and strip declaration
+        data = unicode(data, enc)
+        data, _ = parseXMLDeclaration(data, True)
+    if not isinstance(data, unicode):
+        data = unicode(data, enc)
+    return data, enc
 
 def parseXMLDeclaration(data, remove_decl = False):
     """Parse XML declaration and return (data, encoding). 
@@ -37,34 +64,25 @@ def parseXMLDeclaration(data, remove_decl = False):
     
     xmlDeclRE = re.compile(xmlDeclPattern, re.VERBOSE)
     
+#    # utf-8 encode
+#    if isinstance(data, unicode):
+#        #import pdb;pdb.set_trace()
+#        data = data.encode("utf-8")
+    # import pdb;pdb.set_trace()
     ## search and extract encoding string
     match = xmlDeclRE.search(data)
     # @see: http://www.w3.org/TR/2006/REC-xml11-20060816/#charencoding
-    enc = "UTF-8"
+    enc = "utf-8"
     if match:
-        enc = match.group("encstr") or "UTF-8"
+        enc = match.group("encstr") or "utf-8"
 
     if remove_decl:
         data = xmlDeclRE.sub('', data)
     
-    return data.strip(), enc
+    return data.strip(), enc.lower()
 
-def detectXMLEncoding(data, enc_string):
+def detectBOM(data):
     """Attempts to detect the character encoding of the given XML string.
-    
-    The return value can be:
-        - if detection of the BOM succeeds, the codec name of the
-        corresponding unicode charset is returned
-        
-        - if BOM detection fails, the xml declaration is searched for
-        the encoding attribute and its value returned. the "<"
-        character has to be the very first in the file then (it's xml
-        standard after all).
-        
-        - if BOM and xml declaration fail, None is returned. According
-        to xml 1.0 it should be utf_8 then, but it wasn't detected by
-        the means offered here. at least one can be pretty sure that a
-        character coding including most of ASCII is used :-/
     
     @author: Lars Tiede
     @since: 2005/01/20
@@ -85,24 +103,29 @@ def detectXMLEncoding(data, enc_string):
     ## go to beginning of file and get the first 4 bytes
     (byte1, byte2, byte3, byte4) = tuple(map(ord, data[0:4]))
     
-    ## try bom detection using 4 bytes, 3 bytes, or 2 bytes
+    ## try bom detection using 4 bytes, 3 bytes, or 2 bytes and strip bom
     bomDetection = bomDict.get((byte1, byte2, byte3, byte4))
     if not bomDetection :
         bomDetection = bomDict.get((byte1, byte2, byte3, None))
         if not bomDetection :
             bomDetection = bomDict.get((byte1, byte2, None, None))
+            if bomDetection:
+                data = data[2:]
+        else:
+            data = data[3:]
+    else:
+        data = data[4:]
     
     ## if BOM detected, we're done :-)
-    if bomDetection :
-        return bomDetection
-    
-    
+    if bomDetection:
+        return data, bomDetection
+
     ## still here? BOM detection failed.
     ##  now that BOM detection has failed we assume one byte character
     ##  encoding behaving ASCII - of course one could think of nice
     ##  algorithms further investigating on that matter, but I won't for now.
 
-    return enc_string
+    return data, None
 
 
 def addXMLDeclaration(data, encoding = "UTF-8", version = "1.0"):

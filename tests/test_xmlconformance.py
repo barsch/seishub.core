@@ -41,8 +41,7 @@ class XMLConformanceTestCase(SeisHubEnvironmentTestCase):
         self._runXMLTestCase(path, testcase, filename)
     
     def test_Japanese(self):
-        """XXX: these tests fail, see ticket #76
-        Parses the Japanese XML test suite."""
+        """Parses the Japanese XML test suite."""
         path = self.test_path
         testcase = 'japanese'
         filename = 'japanese.xml'

@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 from datetime import datetime
 from sqlalchemy import Table, Column
-from sqlalchemy import Integer, String, Text, Unicode, DateTime
-from sqlalchemy import UniqueConstraint, PrimaryKeyConstraint
-from sqlalchemy.sql import text, func, select
+from sqlalchemy import Integer, String, Text, Unicode, DateTime, Boolean
+from sqlalchemy import UniqueConstraint
+from sqlalchemy.sql import text
 
 from seishub.db.dbmanager import meta as metadata
 
@@ -23,9 +23,6 @@ def revision_default(ctx):
     q = text('SELECT coalesce(max(revision), 0) + 1 FROM '+\
              DEFAULT_PREFIX + DOCUMENT_TABLE + ' WHERE resource_id = %s' %\
              resource_id)
-#    q = select([func.coalesce(func.max(document_tab.c.revision))],
-#                document_tab.c.resource_id == resource_id)
-    # import pdb;pdb.set_trace()
     return ctx.connection.scalar(q)
 
 document_tab = Table(DEFAULT_PREFIX + DOCUMENT_TABLE, metadata,
@@ -53,31 +50,24 @@ resource_tab = Table(DEFAULT_PREFIX + RESOURCE_TABLE, metadata,
     Column('id', Integer, autoincrement = True, primary_key = True,
            default = text('(SELECT coalesce(max(id), 0) + 1 FROM '+\
                           DEFAULT_PREFIX + RESOURCE_TABLE +')')),
-#    Column('revision', Integer, autoincrement = True),
-#    Column('resource_id', Integer, 
-#            ForeignKey(DEFAULT_PREFIX + DOCUMENT_TABLE + '.id'),
-#           ),
-#    Column('package_id', Integer),
     Column('resourcetype_id', Integer),
     Column('name', String(255), 
            default = text('(SELECT coalesce(max(id), 0) + 1 FROM '+\
                           DEFAULT_PREFIX + RESOURCE_TABLE +')')
            ),
-    UniqueConstraint(#'package_id', 
-                     'resourcetype_id', 
-                     'name'),
-    #PrimaryKeyConstraint('id', 'revision'),
+    UniqueConstraint('resourcetype_id', 'name'),
     useexisting=True,
     )
 
-metadata_def_tab = Table(DEFAULT_PREFIX + METADATA_DEF_TABLE, metadata,
+resource_meta_def_tab = Table(DEFAULT_PREFIX + METADATA_DEF_TABLE, metadata,
     Column('id', Integer, primary_key = True, autoincrement = True),
     Column('name', Text),
     Column('type', Text),
+    # Column('maxcount', Integer),
     useexisting=True,
     )
 
-metadata_tab = Table(DEFAULT_PREFIX + METADATA_TABLE, metadata,
+resource_meta_tab = Table(DEFAULT_PREFIX + METADATA_TABLE, metadata,
     Column('resource_id', Integer),
     Column('metadata_id', Integer),
     Column('value', Text),
