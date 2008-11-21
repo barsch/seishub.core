@@ -13,13 +13,14 @@ from twisted.web import static, http, util as webutil
 from seishub import __version__ as SEISHUB_VERSION
 from seishub.config import IntOption, Option, BoolOption
 from seishub.core import ExtensionPoint
-from seishub.defaults import ADMIN_PORT, ADMIN_CERTIFICATE, \
-                             ADMIN_PRIVATE_KEY, ADMIN_MIN_PASSWORD_LENGTH
-from seishub.packages.processor import Processor, GET
+from seishub.defaults import ADMIN_PORT, ADMIN_CERTIFICATE
+from seishub.defaults import ADMIN_PRIVATE_KEY, ADMIN_MIN_PASSWORD_LENGTH
+from seishub.processor import Processor, GET
 from seishub.exceptions import SeisHubError
-from seishub.services.admin.interfaces import IAdminPanel, IAdminTheme, \
-                                              IAdminStaticContent
+from seishub.services.admin.interfaces import IAdminPanel, IAdminTheme
+from seishub.services.admin.interfaces import IAdminStaticContent
 from seishub.util import demjson
+from seishub.util.path import addBase 
 
 
 class AdminRequest(http.Request):
@@ -88,21 +89,29 @@ class AdminRequest(http.Request):
         resource request and return the resulting XML document.""" 
         proc = Processor(self.env)
         try:
-            data = proc.run(GET, self.path[5:])
+            children = proc.run(GET, self.path[5:])
         except SeisHubError, e:
             self.env.log.info('SeisHubError:', e)
         else:
-            if not isinstance(data, dict):
+            if not isinstance(children, dict):
                 self.finish()
+            
             # created paths for resource objects
-            temp = []
-            for res in data.get('resource', []):
-                temp.append(str(res))
-            data['resource'] = temp
+            ids = children.keys()
+            ids.sort()
+            # generate a list of standard elements
+            json_dict = {}
+            for id in ids:
+                obj = children.get(id)
+                tag = obj.category
+                uri = addBase(self.path[5:], id)
+                if tag not in json_dict:
+                    json_dict[tag] = []
+                json_dict[tag].append(uri)
             # format as json
             # XXX: use json module for Python 2.6
-            data = str(demjson.encode(data))
-            self.write(data)
+            json_doc = str(demjson.encode(json_dict))
+            self.write(json_doc)
             self.setHeader('content-type', 
                            'application/json; charset=UTF-8')
             self.setResponseCode(http.OK)

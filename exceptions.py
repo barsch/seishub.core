@@ -55,3 +55,7 @@ class InvalidParameterError(SeisHubError):
 
 class ForbiddenError(SeisHubError):
     code = http.FORBIDDEN # 403
+
+
+class NotImplementedError(SeisHubError):
+    code = http.NOT_IMPLEMENTED # 501

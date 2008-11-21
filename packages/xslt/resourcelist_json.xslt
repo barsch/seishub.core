@@ -10,74 +10,9 @@
     <xsl:template match="/seishub">
         <xsl:text>{</xsl:text>
 
-            <xsl:if test="//package">
-                <xsl:text>"package":[</xsl:text>
-                <xsl:for-each select="//package">
-                    <xsl:text>"</xsl:text>
-                    <xsl:value-of select="@xlink:href" />
-                    <xsl:text>"</xsl:text>
-                    <xsl:if test="not (position()=last())">
-                        <xsl:text>,</xsl:text>
-                    </xsl:if>
-                </xsl:for-each>
-                <xsl:text>],</xsl:text>
-            </xsl:if>
-
-            <xsl:if test="//resourcetype">
-                <xsl:text>"resourcetype":[</xsl:text>
-                <xsl:for-each select="//resourcetype">
-                    <xsl:text>"</xsl:text>
-                    <xsl:value-of select="@xlink:href" />
-                    <xsl:text>"</xsl:text>
-                    <xsl:if test="not (position()=last())">
-                        <xsl:text>,</xsl:text>
-                    </xsl:if>
-                </xsl:for-each>
-                <xsl:text>],</xsl:text>
-            </xsl:if>
-
             <xsl:if test="//folder">
                 <xsl:text>"folder":[</xsl:text>
                 <xsl:for-each select="//folder">
-                    <xsl:text>"</xsl:text>
-                    <xsl:value-of select="@xlink:href" />
-                    <xsl:text>"</xsl:text>
-                    <xsl:if test="not (position()=last())">
-                        <xsl:text>,</xsl:text>
-                    </xsl:if>
-                </xsl:for-each>
-                <xsl:text>],</xsl:text>
-            </xsl:if>
-
-            <xsl:if test="//mapping">
-                <xsl:text>"mapping":[</xsl:text>
-                <xsl:for-each select="//mapping">
-                    <xsl:text>"</xsl:text>
-                    <xsl:value-of select="@xlink:href" />
-                    <xsl:text>"</xsl:text>
-                    <xsl:if test="not (position()=last())">
-                        <xsl:text>,</xsl:text>
-                    </xsl:if>
-                </xsl:for-each>
-                <xsl:text>],</xsl:text>
-            </xsl:if>
-
-            <xsl:if test="//alias">
-                <xsl:text>"alias":[</xsl:text>
-                <xsl:for-each select="//alias">
-                    <xsl:text>"</xsl:text>
-                    <xsl:value-of select="@xlink:href" />
-                    <xsl:text>"</xsl:text>
-                    <xsl:if test="not (position()=last())">
-                        <xsl:text>,</xsl:text>
-                    </xsl:if>
-                </xsl:for-each>
-                <xsl:text>],</xsl:text>
-            </xsl:if>
-
-            <xsl:if test="//index">
-                <xsl:text>"index":[</xsl:text>
-                <xsl:for-each select="//index">
                     <xsl:text>"</xsl:text>
                     <xsl:value-of select="@xlink:href" />
                     <xsl:text>"</xsl:text>

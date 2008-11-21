@@ -107,10 +107,10 @@ def absPath(path):
     return "/" + "/".join(splitPath(path))
 
 
-def addBaseToList(base='/', items=[]):
-    """Adds a base path to each single element of a list."""
+def addBase(base='/', path=''):
+    """Adds a base path to a given path."""
     if not base.startswith('/'):
         base = '/' + base
     if not base.endswith('/'):
         base = base + '/'
-    return [base + i for i in items]
+    return base + path

@@ -78,8 +78,8 @@ class XmlCatalog(object):
         res = self.xmldb.deleteResource(package_id, resourcetype_id, name, 
                                         revision)
         if not res:
-            msg = "Error deleting a resource: No resource was found with the"+\
-                  "given parameters. (%s/%s/%s)"
+            msg = "Error deleting a resource: No resource was found with " + \
+                  "the given parameters. (%s/%s/%s)"
             raise NotFoundError(msg % (package_id, resourcetype_id, name))
         return res
     

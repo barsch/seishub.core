@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
-import unittest
 
-from seishub.test import SeisHubEnvironmentTestCase
 from seishub.core import Component, implements
 from seishub.packages.builtins import IResourceType, IPackage
+from seishub.test import SeisHubEnvironmentTestCase
+import unittest
 
 
 XML_DOC = """<?xml version="1.0" encoding="UTF-8"?>

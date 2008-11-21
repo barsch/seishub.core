@@ -14,7 +14,6 @@ def suite():
     suite.addTest(test_demjson.suite())
     suite.addTest(test_xml.suite())
     suite.addTest(doctest.DocFileSuite('test_http.txt'))
-    suite.addTest(doctest.DocFileSuite('test_tree.txt'))
     return suite
 
 

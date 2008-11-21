@@ -1,17 +1,14 @@
 # -*- coding: utf-8 -*-
-import unittest
+
 from StringIO import StringIO
-
-from twisted.web import http
-
-from seishub.test import SeisHubEnvironmentTestCase
-from seishub.packages.processor import Processor
-from seishub.exceptions import SeisHubError
-from seishub.packages.processor import PUT, POST, DELETE, GET, MOVE
-from seishub.packages.processor import MAX_URI_LENGTH, ALLOWED_HTTP_METHODS
-from seishub.packages.processor import NOT_IMPLEMENTED_HTTP_METHODS
 from seishub.core import Component, implements
+from seishub.exceptions import SeisHubError
 from seishub.packages.builtins import IResourceType, IPackage
+from seishub.processor import MAX_URI_LENGTH, ALLOWED_HTTP_METHODS, \
+    NOT_IMPLEMENTED_HTTP_METHODS, PUT, POST, DELETE, GET, MOVE, Processor
+from seishub.test import SeisHubEnvironmentTestCase
+from twisted.web import http
+import unittest
 
 
 XML_DOC = """<?xml version="1.0" encoding="utf-8"?>
@@ -67,12 +64,12 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
     def test_orderOfAddingResourcesMatters(self):
         """This test in this specific order failed in a previous revision.""" 
         proc = Processor(self.env)
-        proc.run(PUT, '/processor-test/xml/vc/test.xml', StringIO(XML_DOC))
-        proc.run(POST, '/processor-test/xml/vc/test.xml', StringIO(XML_DOC))
-        proc.run(POST, '/processor-test/xml/vc/test.xml', StringIO(XML_DOC))
-        proc.run(PUT, '/processor-test/xml/notvc/test.xml', StringIO(XML_DOC))
-        proc.run(DELETE, '/processor-test/xml/vc/test.xml')
-        proc.run(DELETE, '/processor-test/xml/notvc/test.xml')
+        proc.run(PUT, '/xml/processor-test/vc/test.xml', StringIO(XML_DOC))
+        proc.run(POST, '/xml/processor-test/vc/test.xml', StringIO(XML_DOC))
+        proc.run(POST, '/xml/processor-test/vc/test.xml', StringIO(XML_DOC))
+        proc.run(PUT, '/xml/processor-test/notvc/test.xml', StringIO(XML_DOC))
+        proc.run(DELETE, '/xml/processor-test/vc/test.xml')
+        proc.run(DELETE, '/xml/processor-test/notvc/test.xml')
     
     def test_oversizedURI(self):
         """Request URI ist restricted by MAX_URI_LENGTH."""
@@ -123,13 +120,13 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
         for method in [POST, PUT, DELETE, MOVE]:
             # without trailing slash
             try:
-                proc.run(method, '/test')
+                proc.run(method, '/xml/processor-test')
                 self.fail("Expected SeisHubError")
             except SeisHubError, e:
                 self.assertEqual(e.code, http.FORBIDDEN)
             # with trailing slash
             try:
-                proc.run(method, '/processor-test/')
+                proc.run(method, '/xml/processor-test/')
                 self.fail("Expected SeisHubError")
             except SeisHubError, e:
                 self.assertEqual(e.code, http.FORBIDDEN)
@@ -139,13 +136,13 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
         for method in [POST, PUT, DELETE, MOVE]:
             # without trailing slash
             try:
-                proc.run(method, '/processor-test/xml')
+                proc.run(method, '/xml/processor-test')
                 self.fail("Expected SeisHubError")
             except SeisHubError, e:
                 self.assertEqual(e.code, http.FORBIDDEN)
             # with trailing slash
             try:
-                proc.run(method, '/processor-test/xml/')
+                proc.run(method, '/xml/processor-test/')
                 self.fail("Expected SeisHubError")
             except SeisHubError, e:
                 self.assertEqual(e.code, http.FORBIDDEN)
@@ -155,30 +152,26 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
         for method in [POST, DELETE, MOVE]:
             # without trailing slash
             try:
-                proc.run(method, '/processor-test/xml/vc')
+                proc.run(method, '/xml/processor-test/vc')
                 self.fail("Expected SeisHubError")
             except SeisHubError, e:
                 self.assertEqual(e.code, http.FORBIDDEN)
             # with trailing slash
             try:
-                proc.run(method, '/processor-test/xml/vc/')
+                proc.run(method, '/xml/processor-test/vc/')
                 self.fail("Expected SeisHubError")
             except SeisHubError, e:
                 self.assertEqual(e.code, http.FORBIDDEN)
     
     def test_processResourceType(self):
         proc = Processor(self.env)
-        proc.path = '/processor-test/xml/notvc'
+        proc.path = '/xml/processor-test/notvc'
         # test valid GET method
-        data = proc.run(GET, '/processor-test/xml/notvc')
+        data = proc.run(GET, '/xml/processor-test/notvc')
         # data must be a dict
         self.assertTrue(isinstance(data, dict))
-        # should have at least 'package', 'property' and 'mapping' as keys
-        for field in ['index', 'alias', 'property', 'resource']:
-            self.assertTrue(data.has_key(field))
-            self.assertTrue(isinstance(data.get(field), list))
         # test valid PUT method
-        data = proc.run(PUT, '/processor-test/xml/notvc', StringIO(XML_DOC))
+        data = proc.run(PUT, '/xml/processor-test/notvc', StringIO(XML_DOC))
         # check response; data should be empty; we look into request
         self.assertFalse(data)
         self.assertEqual(proc.response_code, http.CREATED)
@@ -187,15 +180,8 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
         self.assertTrue(response_header.has_key('Location'))
         location = response_header.get('Location')
         self.assertTrue(location.startswith(self.env.getRestUrl() + proc.path))
-        # fetch all resources via property .all
-        data = proc.run(GET, '/processor-test/xml/notvc')
-        # only resources should be there
-        self.assertTrue(data.has_key('resource'))
-        self.assertTrue(isinstance(data.get('resource'),list))
-        # extract all resource urls and test if location exist
-        urls = [str(obj) for obj in data.get('resource')]
+        # strip REST url from location
         location = location[len(self.env.getRestUrl()):]
-        self.assertTrue(location in urls)
         # fetch resource and compare it with original
         data = proc.run(GET, location)
         self.assertTrue(data, XML_DOC)
@@ -207,21 +193,8 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
     
     def test_processResource(self):
         proc = Processor(self.env)
-        # DELETE resource
-        # package and/or resource type does not exists
-        try:
-            proc.run(DELETE, '/xxx/yyy/1')
-            self.fail("Expected SeisHubError")
-        except SeisHubError, e:
-            self.assertEqual(e.code, http.FORBIDDEN)
-        # id does not exists
-        try:
-            proc.run(DELETE, '/processor-test/xml/notvc/-1')
-            self.fail("Expected SeisHubError")
-        except SeisHubError, e:
-            self.assertEqual(e.code, http.NOT_FOUND)
         # upload a resource via PUT
-        data = proc.run(PUT, '/processor-test/xml/notvc', StringIO(XML_DOC))
+        data = proc.run(PUT, '/xml/processor-test/notvc', StringIO(XML_DOC))
         # check response; data should be empty; we look into request
         self.assertFalse(data)
         self.assertEqual(proc.response_code, http.CREATED)
@@ -253,7 +226,7 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
         """Test for a version controlled resource."""
         proc = Processor(self.env)
         # upload a resource via PUT
-        data = proc.run(PUT, '/processor-test/xml/vc', StringIO(XML_DOC))
+        data = proc.run(PUT, '/xml/processor-test/vc', StringIO(XML_DOC))
         # check response; data should be empty; we look into request
         self.assertFalse(data)
         self.assertEqual(proc.response_code, http.CREATED)

@@ -16,7 +16,7 @@
                 <span>
                     <xsl:attribute name="class">
                         <xsl:text>icon icon-</xsl:text>
-                        <xsl:value-of select="name()" />
+                        <xsl:value-of select="@category" />
                     </xsl:attribute>
                 </span>
             </td>

@@ -8,18 +8,19 @@ from seishub.defaults import REST_PORT
 from seishub import __version__ as SEISHUB_VERSION
 from seishub.exceptions import SeisHubError
 from seishub.config import IntOption, BoolOption
-from seishub.packages.processor import Processor
+from seishub.processor import Processor
 from seishub.util.http import parseAccept, validMediaType
-from seishub.util.path import absPath
+from seishub.util.path import addBase
 
 
 RESOURCELIST_ROOT = """<?xml version="1.0" encoding="UTF-8"?>
-            
-    <seishub xml:base="%s" xmlns:xlink="http://www.w3.org/1999/xlink">
-    %s
-    </seishub>"""
 
-RESOURCELIST_NODE = """<%s xlink:type="simple" xlink:href="%s">%s</%s>\n"""
+<seishub xml:base="%s" xmlns:xlink="http://www.w3.org/1999/xlink">%s
+</seishub>
+"""
+
+RESOURCELIST_NODE = """
+  <%s category="%s" xlink:type="simple" xlink:href="%s">%s</%s>"""
 
 
 class RESTRequest(Processor, http.Request):
@@ -82,6 +83,12 @@ class RESTRequest(Processor, http.Request):
         self.finish()
         return reason
     
+    def render(self, data):
+        if isinstance(data, dict):
+            return self.renderFolder(data)
+        else:
+            return self.renderResource(data)
+    
     def renderResource(self, data):
         # XXX: handle output/format conversion here
         #if self.format:
@@ -94,19 +101,21 @@ class RESTRequest(Processor, http.Request):
         self.setResponseCode(http.OK)
         return data
     
-    def renderResourceList(self, **kwargs):
-        """Resource list handler for the inheriting class."""
-        doc = ''
+    def renderFolder(self, children={}):
+        """Renders a folder object."""
+        ids = children.keys()
+        ids.sort()
         # generate a list of standard elements
-        for tag in ['package', 'resourcetype', 'property', 'alias', 'mapping',
-                    'folder']:
-            for uri in kwargs.get(tag, []):
-                content = absPath(uri[len(self.path):])[1:]
-                doc += RESOURCELIST_NODE % (tag, uri, content, tag)
-        # generate a list of resources
-        for uri in kwargs.get('resource',[]):
-            doc += RESOURCELIST_NODE % ('resource', uri, uri, 'resource')
-        result = str(RESOURCELIST_ROOT % (self.env.getRestUrl(), doc))
+        xml_doc = ''
+        for id in ids:
+            obj = children.get(id)
+            tag = 'resource'
+            category = obj.category
+            if obj.folderish:
+                tag = 'folder'
+            uri = addBase(self.path, id)
+            xml_doc += RESOURCELIST_NODE % (tag, category, uri, id, tag)
+        xml_doc = str(RESOURCELIST_ROOT % (self.env.getRestUrl(), xml_doc))
         # set default content type to XML
         self.setHeader('content-type', 'application/xml; charset=UTF-8')
         # handle output/format conversion
@@ -118,14 +127,14 @@ class RESTRequest(Processor, http.Request):
                                        type='resourcelist.%s' % self.format)
             if len(xslt):
                 xslt = xslt[0]
-                result = xslt.transform(result)
+                xml_doc = xslt.transform(xml_doc)
                 if xslt.content_type:
                     self.setHeader('content-type', 
                                    xslt.content_type + '; charset=UTF-8')
         # set header
-        self._setHeaders(result)
+        self._setHeaders(xml_doc)
         self.setResponseCode(http.OK)
-        return result 
+        return xml_doc 
 
 
 class RESTHTTPChannel(http.HTTPChannel):

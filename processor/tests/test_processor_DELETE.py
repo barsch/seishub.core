@@ -1,15 +1,13 @@
 # -*- coding: utf-8 -*-
-import unittest
+
 from StringIO import StringIO
-
-from twisted.web import http
-
-from seishub.test import SeisHubEnvironmentTestCase
-from seishub.packages.processor import Processor
-from seishub.exceptions import SeisHubError
-from seishub.packages.processor import PUT, POST, DELETE, GET
 from seishub.core import Component, implements
+from seishub.exceptions import SeisHubError
 from seishub.packages.builtins import IResourceType, IPackage
+from seishub.processor import Processor, PUT, POST, DELETE, GET
+from seishub.test import SeisHubEnvironmentTestCase
+from twisted.web import http
+import unittest
 
 
 XML_DOC = """<?xml version="1.0" encoding="utf-8"?>
@@ -60,13 +58,13 @@ class ProcessorDELETETestSuite(SeisHubEnvironmentTestCase):
         proc = Processor(self.env)
         # without trailing slash
         try:
-            proc.run(DELETE, '/delete-test')
+            proc.run(DELETE, '/xml/delete-test')
             self.fail("Expected SeisHubError")
         except SeisHubError, e:
             self.assertEqual(e.code, http.FORBIDDEN)
         # with trailing slash
         try:
-            proc.run(DELETE, '/delete-test/')
+            proc.run(DELETE, '/xml/delete-test/')
             self.fail("Expected SeisHubError")
         except SeisHubError, e:
             self.assertEqual(e.code, http.FORBIDDEN)
@@ -76,25 +74,13 @@ class ProcessorDELETETestSuite(SeisHubEnvironmentTestCase):
         proc = Processor(self.env)
         # without trailing slash
         try:
-            proc.run(DELETE, '/delete-test/xml/notvc')
+            proc.run(DELETE, '/xml/delete-test/notvc')
             self.fail("Expected SeisHubError")
         except SeisHubError, e:
             self.assertEqual(e.code, http.FORBIDDEN)
         # with trailing slash
         try:
-            proc.run(DELETE, '/delete-test/xml/notvc/')
-            self.fail("Expected SeisHubError")
-        except SeisHubError, e:
-            self.assertEqual(e.code, http.FORBIDDEN)
-        # without trailing slash
-        try:
-            proc.run(DELETE, '/delete-test/xml')
-            self.fail("Expected SeisHubError")
-        except SeisHubError, e:
-            self.assertEqual(e.code, http.FORBIDDEN)
-        # with trailing slash
-        try:
-            proc.run(DELETE, '/delete-test/xml/')
+            proc.run(DELETE, '/xml/delete-test/notvc/')
             self.fail("Expected SeisHubError")
         except SeisHubError, e:
             self.assertEqual(e.code, http.FORBIDDEN)
@@ -104,7 +90,7 @@ class ProcessorDELETETestSuite(SeisHubEnvironmentTestCase):
         proc = Processor(self.env)
         # with trailing slash
         try:
-            proc.run(DELETE, '/delete-test/xml/notvc/test.xml')
+            proc.run(DELETE, '/xml/delete-test/notvc/test.xml')
             self.fail("Expected SeisHubError")
         except SeisHubError, e:
             self.assertEqual(e.code, http.NOT_FOUND)
@@ -113,10 +99,10 @@ class ProcessorDELETETestSuite(SeisHubEnvironmentTestCase):
         """SeisHub builtin resources can't be deleted."""
         proc = Processor(self.env)
         # fetch a seishub stylesheet
-        data = proc.run(GET, '/seishub/xml/stylesheet')
-        url = str(data.get('resource')[0])
+        data = proc.run(GET, '/xml/seishub/stylesheet')
+        id = data.keys()[0]
         try:
-            proc.run(DELETE, url)
+            proc.run(DELETE, '/xml/seishub/stylesheet/' + id)
             self.fail("Expected SeisHubError")
         except SeisHubError, e:
             self.assertEqual(e.code, http.FORBIDDEN)
@@ -126,57 +112,66 @@ class ProcessorDELETETestSuite(SeisHubEnvironmentTestCase):
         proc = Processor(self.env)
         # with trailing slash
         try:
-            proc.run(DELETE, '/delete-test/xml/notvc2/test.xml')
+            proc.run(DELETE, '/xml/delete-test/notvc2/test.xml')
             self.fail("Expected SeisHubError")
         except SeisHubError, e:
-            self.assertEqual(e.code, http.FORBIDDEN)
+            self.assertEqual(e.code, http.NOT_FOUND)
     
     def test_deleteResourceInNonExistingPackage(self):
         """Resource can't be deleted from non existing package."""
         proc = Processor(self.env)
         # with trailing slash
         try:
-            proc.run(DELETE, '/delete-test2/xml/notvc/test.xml')
+            proc.run(DELETE, '/xml/delete-test2/notvc/test.xml')
             self.fail("Expected SeisHubError")
         except SeisHubError, e:
-            self.assertEqual(e.code, http.FORBIDDEN)
+            self.assertEqual(e.code, http.NOT_FOUND)
+    
+    def test_deleteNonExistingNode(self):
+        """A non-existing resource node can't be deleted."""
+        proc = Processor(self.env)
+        try:
+            proc.run(DELETE, '/xxx/yyy/1')
+            self.fail("Expected SeisHubError")
+        except SeisHubError, e:
+            self.assertEqual(e.code, http.NOT_FOUND)
     
     def test_deleteRevision(self):
         """Revisions may not be deleted via the processor."""
         proc = Processor(self.env)
         # create resource
-        proc.run(PUT, '/delete-test/xml/vc/test.xml', StringIO(XML_DOC))
-        proc.run(POST, '/delete-test/xml/vc/test.xml', StringIO(XML_DOC))
-        proc.run(POST, '/delete-test/xml/vc/test.xml', StringIO(XML_DOC))
+        proc.run(PUT, '/xml/delete-test/vc/test.xml', StringIO(XML_DOC))
+        proc.run(POST, '/xml/delete-test/vc/test.xml', StringIO(XML_DOC))
+        proc.run(POST, '/xml/delete-test/vc/test.xml', StringIO(XML_DOC))
         # with trailing slash
         try:
-            proc.run(DELETE, '/delete-test/xml/vc/test.xml/1')
+            proc.run(DELETE, '/xml/delete-test/vc/test.xml/1')
             self.fail("Expected SeisHubError")
         except SeisHubError, e:
             self.assertEqual(e.code, http.FORBIDDEN)
         # delete resource
-        proc.run(DELETE, '/delete-test/xml/vc/test.xml')
+        proc.run(DELETE, '/xml/delete-test/vc/test.xml')
     
     def test_deleteVersionControlledResource(self):
         """Successful deletion of version controlled resources."""
         proc = Processor(self.env)
         # create resource
-        proc.run(PUT, '/delete-test/xml/vc/test.xml', StringIO(XML_DOC))
-        proc.run(POST, '/delete-test/xml/vc/test.xml', StringIO(XML_VCDOC % 1))
-        proc.run(POST, '/delete-test/xml/vc/test.xml', StringIO(XML_VCDOC % 2))
+        proc.run(PUT, '/xml/delete-test/vc/test.xml', StringIO(XML_DOC))
+        proc.run(POST, '/xml/delete-test/vc/test.xml', StringIO(XML_VCDOC % 1))
+        proc.run(POST, '/xml/delete-test/vc/test.xml', StringIO(XML_VCDOC % 2))
         # check latest resource - should be #20
-        data = proc.run(GET, '/delete-test/xml/vc/test.xml')
+        data = proc.run(GET, '/xml/delete-test/vc/test.xml')
         self.assertEqual(data, XML_VCDOC % 2)
         # check oldest resource -> revision start with 1
-        data = proc.run(GET, '/delete-test/xml/vc/test.xml/1')
+        data = proc.run(GET, '/xml/delete-test/vc/test.xml/1')
         self.assertEqual(data, XML_DOC)
         # delete resource
-        data = proc.run(DELETE, '/delete-test/xml/vc/test.xml')
+        data = proc.run(DELETE, '/xml/delete-test/vc/test.xml')
         self.assertEqual(data, '')
         self.assertEqual(proc.response_code, http.NO_CONTENT)
         # fetch resource again
         try:
-            proc.run(GET, '/delete-test/xml/vc/test.xml')
+            proc.run(GET, '/xml/delete-test/vc/test.xml')
             self.fail("Expected SeisHubError")
         except SeisHubError, e:
             self.assertEqual(e.code, http.NOT_FOUND)
@@ -185,37 +180,26 @@ class ProcessorDELETETestSuite(SeisHubEnvironmentTestCase):
         """Successful deletion of resources."""
         proc = Processor(self.env)
         # create resource
-        proc.run(PUT, '/delete-test/xml/notvc/test.xml', StringIO(XML_DOC))
+        proc.run(PUT, '/xml/delete-test/notvc/test.xml', StringIO(XML_DOC))
         # check resource
-        data = proc.run(GET, '/delete-test/xml/notvc/test.xml')
+        data = proc.run(GET, '/xml/delete-test/notvc/test.xml')
         self.assertEqual(data, XML_DOC)
         # delete resource
-        data = proc.run(DELETE, '/delete-test/xml/notvc/test.xml')
+        data = proc.run(DELETE, '/xml/delete-test/notvc/test.xml')
         self.assertEqual(data, '')
         self.assertEqual(proc.response_code, http.NO_CONTENT)
-        # fetch resource again
+        # delete again
         try:
-            proc.run(GET, '/delete-test/xml/notvc/test.xml')
+            proc.run(DELETE, '/xml/delete-test/notvc/test.xml')
             self.fail("Expected SeisHubError")
         except SeisHubError, e:
             self.assertEqual(e.code, http.NOT_FOUND)
-    
-    def test_putOnDeletedVersionControlledResource(self):
-        """PUT on deleted versionized resource should create new resource."""
-        proc = Processor(self.env)
-        # create resource
-        proc.run(PUT, '/delete-test/xml/vc/test.xml', StringIO(XML_DOC))
-        proc.run(POST, '/delete-test/xml/vc/test.xml', StringIO(XML_VCDOC % 2))
-        proc.run(POST, '/delete-test/xml/vc/test.xml', StringIO(XML_VCDOC % 3))
-        # delete resource
-        proc.run(DELETE, '/delete-test/xml/vc/test.xml')
-        # upload again
-        proc.run(PUT, '/delete-test/xml/vc/test.xml', StringIO(XML_VCDOC % 10))
-        # should be only latest upload
-        data=proc.run(GET, '/delete-test/xml/vc/test.xml/1')
-        self.assertEqual(data, XML_VCDOC % 10)
-        # delete resource
-        proc.run(DELETE, '/delete-test/xml/vc/test.xml')
+        # fetch resource again
+        try:
+            proc.run(GET, '/xml/delete-test/notvc/test.xml')
+            self.fail("Expected SeisHubError")
+        except SeisHubError, e:
+            self.assertEqual(e.code, http.NOT_FOUND)
 
 
 def suite():

@@ -42,49 +42,6 @@ class IResourceTypeWrapper(IResourceType):
     """
 
 
-class IMapper(Interface):
-    """General interface definition for a resource mapper."""
-    
-    mapping_url = Attribute("""
-        Defines the absolute URL of this mapping.
-        
-        Single string representing a unique mapping URL.
-        """)
-    
-    def processGET(request):
-        """Process a GET request.
-        
-        This function may return a resource list - a dict in form of 
-        {'resource': ['/path/to/resource',], 'mapping': ['/path/to/mapping',]} 
-        or a basestring containing a valid XML document. A request at the plain
-        mapping_url *must* return a resource list.
-        
-        If an error occurs it should raise a ProcessorError.
-        """
-    
-    def processPUT(request):
-        """Process a PUT request.
-        
-        This function should return a string containing the full path to the
-        new resource URL, otherwise it should raise a ProcessorError.
-        """
-    
-    def processPOST(request):
-        """Process a POST request.
-        
-        This function should return a string containing the new resource URL if
-        the resource could be updated, otherwise it should raise a 
-        ProcessorError.
-        """
-    
-    def processDELETE(request):
-        """Process a DELETE request.
-        
-        This function should return True if the resource could be deleted 
-        otherwise it should raise a ProcessorError.
-        """
-
-
 class IProperty(Interface):
     """General interface definition for a property file."""
 
@@ -109,3 +66,15 @@ class IResourceTypeProperty(IPackageProperty):
         Single string representing a unique package id. Leave this attribute
         empty to implement this property for all resource types.
         """)
+
+
+# XXX: must be combined with processor intefaces
+class IMapper(Interface):
+    """General interface definition for a mapper resource."""
+    
+    mapping_url = Attribute("""
+        Defines the absolute URL of this mapping.
+        
+        Single string representing a unique mapping URL.
+        """)
+    

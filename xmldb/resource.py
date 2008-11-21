@@ -182,9 +182,9 @@ class Resource(Serializable):
         self.name = name
         
     def __str__(self):
-        return "/%s/xml/%s/%s" % (self.package.package_id, 
-                                  self.resourcetype.resourcetype_id, 
-                                  str(self.name))
+        return "/%s/%s/%s" % (self.package.package_id, 
+                              self.resourcetype.resourcetype_id, 
+                              str(self.name))
 
     def getId(self):
         return self._getId()

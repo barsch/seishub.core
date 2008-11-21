@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+
 from zope.interface import implements
 
 from seishub.util.text import validate_id, to_uri, to_xpath_query
@@ -9,6 +10,7 @@ import seishub.xmldb.resource
 from seishub.packages.interfaces import IPackageWrapper, IResourceTypeWrapper
 from seishub.packages.defaults import schema_tab, stylesheet_tab, alias_tab,\
                                       packages_tab, resourcetypes_tab
+
 
 class PackageWrapper(Serializable):
     """Wrapped around packages for storage in database."""
@@ -47,6 +49,7 @@ class PackageWrapper(Serializable):
         return self._version
     
     version = property(getVersion, setVersion, 'version of package')
+
 
 class ResourceTypeWrapper(Serializable):
     """Wrapped around resource types for storage in database."""
@@ -123,7 +126,7 @@ class ResourceTypeWrapper(Serializable):
     
     version_control = property(getVersion_control, setVersion_control, 
                             'Boolean indicating if version control is enabled')
-    
+
 
 class Alias(Serializable):
     db_table = alias_tab
@@ -193,6 +196,7 @@ class Alias(Serializable):
         """return query string"""
         return to_xpath_query(self.package.package_id, 
                               self.resourcetype.resourcetype_id, self._expr)
+
 
 class DocBase(Serializable):
     db_mapping = {'resourcetype':Relation(ResourceTypeWrapper, 
@@ -268,6 +272,7 @@ class DocBase(Serializable):
 
     resource = property(getResource, doc = "XmlResource (read only)")
 
+
 class Schema(DocBase):
     db_table = schema_tab
     
@@ -279,7 +284,7 @@ class Schema(DocBase):
         if not self._parsed_doc:
             self._parsed_doc = XmlSchema(self.resource.document.data)
         return self._parsed_doc.validate(resource.document.xml_doc)
-        
+
 
 class Stylesheet(DocBase):
     db_table = stylesheet_tab
@@ -299,7 +304,7 @@ class Stylesheet(DocBase):
         if not self.parsed_doc.content_type:
             return None
         return self.parsed_doc.content_type[0]
-        
+    
     content_type = property(getContentType, None, "content-type (readonly)")
     
     def transform(self, resource):

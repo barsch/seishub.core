@@ -17,6 +17,8 @@ from seishub.db.dbmanager import DatabaseManager
 from seishub.log import Logger
 from seishub.defaults import DEFAULT_COMPONENTS
 from seishub.packages.registry import ComponentRegistry
+from seishub.processor.resources import Site, FileSystemResource
+from seishub.processor.resources import XMLRootFolder, MapperResource
 
 __all__ = ['Environment']
 
@@ -72,6 +74,19 @@ class Environment(ComponentManager):
         # make sure seishub packages are installed first
         PackageInstaller.install(self, 'seishub')
         PackageInstaller.install(self)
+        # initialize the resource tree
+        self.updateResourceTree()
+    
+    def updateResourceTree(self):
+        self.tree = Site()
+        # set XML directory
+        self.tree.addChild('xml', XMLRootFolder())
+        # set all mappings
+        for url, cls in self.registry.mappers.get().items():
+            self.tree.addChild(url, MapperResource(cls(self)))
+        # set all file system folder
+        for url, path in self.config.options('fs'):
+            self.tree.addChild(url, FileSystemResource(path)) 
     
     def getSeisHubPath(self):
         """Returns the absolute path to the SeisHub directory."""

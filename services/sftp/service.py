@@ -15,10 +15,10 @@ from twisted.python import components
 from seishub.defaults import SFTP_PORT, SFTP_PRIVATE_KEY, SFTP_PUBLIC_KEY
 from seishub.defaults import SFTP_AUTOSTART
 from seishub.config import IntOption, Option, BoolOption
-from seishub.packages.processor import Processor
-from seishub.exceptions import SeisHubError
-from seishub.packages.processor import PUT, POST, DELETE, GET, MOVE
+from seishub.processor import Processor, PUT, POST, DELETE, GET, MOVE
+from seishub.exceptions import SeisHubError, NotFoundError
 from seishub.util.path import absPath, lsLine
+from seishub.processor.interfaces import IXMLResource
 
 
 DEFAULT_GID = 1000
@@ -142,36 +142,32 @@ class SFTPServiceProtocol:
         filelist.append(('.', {}))
         filelist.append(('..', {}))
         
-        # packages, resourcetypes, aliases and mappings are directories
-        for t in ['package', 'resourcetype', 'alias', 'mapping', 'folder']:
-            for d in data.get(t,[]):
-                name = d.split('/')[-1]
-                filelist.append((name, {}))
-        # properties are XML documents
-        # XXX: missing yet
-        
-        # fetch all resources
-        resources = data.get('resource',[])
-        for obj in resources:
-            if isinstance(obj, basestring):
-                # XXX: workaround for mappers, should be removed 
-                file_name = obj.split('/')[-1:][0]
-                filelist.append((file_name, {'permissions': 0100644}))
-            else:
-                # resource object
-                file_name = str(obj).split('/')[-1:][0]
-                temp = obj.document.meta.datetime
-                file_datetime = int(time.mktime(temp.timetuple()))
-                file_size = obj.document.meta.size
-                file_uid = obj.document.meta.uid or 0
-                filelist.append((file_name, {'permissions': 0100644,
-                                             'uid': file_uid,
-                                             'size': file_size,
-                                             'atime': file_datetime,
-                                             'mtime': file_datetime}))
+        if isinstance(data, dict):
+            ids = data.keys()
+            ids.sort()
+            for id in ids:
+                obj = data.get(id)
+                if obj.folderish:
+                    # folder object
+                    filelist.append((id, {}))
+                elif IXMLResource.providedBy(obj):
+                    # resource object
+                    meta = obj.document.meta 
+                    file_datetime = int(time.mktime(meta.datetime.timetuple()))
+                    file_size = meta.size
+                    file_uid = meta.uid or 0
+                    filelist.append((id, {'permissions': 0100644,
+                                          'uid': file_uid,
+                                          'size': file_size,
+                                          'atime': file_datetime,
+                                          'mtime': file_datetime}))
+        else:
+            # XXX: todo
+            raise SeisHubError('no dict!!!!')
         return DirList(self.env, iter(filelist))
     
     def getAttrs(self, filename, followLinks):
+        """Return the attributes for the given path."""
         # remove trailing slashes
         filename = absPath(filename)
         # process resource
@@ -179,7 +175,7 @@ class SFTPServiceProtocol:
         data = None
         try:
             data = proc.run(GET, filename)
-        except SeisHubError, e:
+        except NotFoundError, e:
             pass
         except Exception, e:
             raise filetransfer.SFTPError(filetransfer.FX_FAILURE, e.message)

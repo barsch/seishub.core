@@ -24,7 +24,7 @@ class ComponentRegistry(DbStorage):
         self._schema_reg = SchemaRegistry(self)
         self._alias_reg = AliasRegistry(self)
         self._mapper_reg = MapperRegistry(self.env)
-        
+    
     def getComponents(self, interface, package_id = None):
         """Returns components implementing a certain interface with a given 
         package_id.
