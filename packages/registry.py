@@ -402,7 +402,7 @@ class StylesheetRegistry(RegistryBase):
          - get(package_id) -> package specific
          - get() -> all stylesheets
         """
-        return RegistryBase.get(self, package_id, resourcetype_id or DB_NULL, 
+        return RegistryBase.get(self, package_id, resourcetype_id,  
                                 type, document_id, uri)
         
     def delete(self, package_id = None, resourcetype_id = None, type = None,
