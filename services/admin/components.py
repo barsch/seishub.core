@@ -260,5 +260,6 @@ class QuickinstallerPanel(Component):
                 'aliases': self.env.registry.aliases,
                 'mappers': self.env.registry.mappers,
                 'stylesheets': self.env.registry.stylesheets,
-                'schemas': self.env.registry.schemas,}
+                'schemas': self.env.registry.schemas,
+                'tree': self.env.tree,}
         return ('components_quickinstaller.tmpl', data)

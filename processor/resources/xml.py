@@ -15,7 +15,7 @@ class XMLResource(Resource):
     """A XML resource node."""
     implements(IXMLResource)
     
-    def __init__(self, package_id, resourcetype_id, name, document):
+    def __init__(self, package_id, resourcetype_id, name, document=None):
         Resource.__init__(self)
         self.category = 'resource'
         self.is_leaf = True
@@ -320,6 +320,10 @@ class XMLPackageFolder(Folder):
 
 class XMLRootFolder(Folder):
     """A XML root folder."""
+    
+    def __init__(self):
+        Folder.__init__(self)
+        self.category = 'xmlroot'
     
     def getChildren(self, request):
         """Returns a dictionary of all SeisHub packages."""

@@ -52,12 +52,11 @@
       <td>
         <input type="checkbox" name="index[]" 
                value="$index.__str__()" />
-        $index.__str__()
-      </td> 
-      <td>XXX: index.package.package_id missing yet!</td>
-      <td>XXX: index.resourcetype.resourcetype_id missing yet!</td>
-      <td>$index.type</td>
-      <td>XXX: index.expr missing yet!</td>
+      </td>
+      <td>#echo index.getValue_path().split('/')[0]#</td>
+      <td>#echo index.getValue_path().split('/')[1]#</td>
+      <td>$index.getType()</td>
+      <td>#echo index.getValue_path().split('/')[2]#/$index.getKey_path()</td>
     </tr>
     #end for
   </table>

@@ -19,6 +19,7 @@ from seishub.defaults import DEFAULT_COMPONENTS
 from seishub.packages.registry import ComponentRegistry
 from seishub.processor.resources import Site, FileSystemResource
 from seishub.processor.resources import XMLRootFolder, MapperResource
+#from seishub.processor.resources import XMLPackageFolder, XMLResourceTypeFolder, XMLResource
 
 __all__ = ['Environment']
 
@@ -81,6 +82,11 @@ class Environment(ComponentManager):
         self.tree = Site()
         # set XML directory
         self.tree.addChild('xml', XMLRootFolder())
+#        # demo - we shouldn't do that but it is possible
+#        self.tree.addChild('/demo/1/package', XMLPackageFolder('seishub'))
+#        self.tree.addChild('/demo/1/rt', XMLResourceTypeFolder('seishub','schema'))
+#        self.tree.addChild('/demo/xml-root', XMLRootFolder())
+#        self.tree.addChild('/demo/1/resource', XMLResource('seishub','stylesheet','1'))
         # set all mappings
         for url, cls in self.registry.mappers.get().items():
             self.tree.addChild(url, MapperResource(cls(self)))

@@ -1,6 +1,37 @@
 <h1>Quickinstaller</h1>
 
-<h2>Packages + Resourcetypes</h2>
+<h2>Resource Tree</h2>
+<form method="post" id="tree" action="">
+  <table class="list">
+    <tr>
+      <th></th>
+      <th>Path</th>
+      <th>Object</th>
+    </tr>
+    #for $path, $obj in $tree._registry.items()
+    #filter WebSafe
+    <tr> 
+      <td>
+        <input type="checkbox" name="obj[]" 
+               value="$obj" />
+      </td>
+      <td>$path</td>
+      <td>$obj</td>
+    </tr>
+    #end filter
+    #end for
+  </table>
+  
+  <div class="button">
+    <input type="submit" name="reindex" value="Reload" /> 
+    <input disabled="disabled" type="submit" name="delete" value="Delete" />
+  </div>
+</form>
+
+<br />
+<br />
+
+<h2>Packages + Resource Types</h2>
 
 #filter WebSafe
 #for $p in $packages
@@ -13,12 +44,5 @@
 </ol>
 #end if
 #end for
-<hr />
-$mappers
-<hr />
-$schemas
-<hr />
-$stylesheets
-<hr />
-$aliases
+
 #end filter
