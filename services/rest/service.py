@@ -98,6 +98,18 @@ class RESTRequest(Processor, http.Request):
             #label = self.format
             #data = self._transformContent(package_id, resourcetype_id, label, 
             #                              data)
+        # gzip encoding
+        if not data:
+            return
+        encoding = self.getHeader("accept-encoding")
+        if encoding and encoding.find("gzip")>=0:
+            import cStringIO,gzip
+            zbuf = cStringIO.StringIO()
+            zfile = gzip.GzipFile(None, 'wb', 9, zbuf)
+            zfile.write(data)
+            zfile.close()
+            self.setHeader("Content-encoding", "gzip")
+            return zbuf.getvalue()
         self.setResponseCode(http.OK)
         return data
     
