@@ -3,12 +3,12 @@
 from seishub import __version__ as SEISHUB_VERSION
 from seishub.config import IntOption, BoolOption
 from seishub.defaults import REST_PORT
-from seishub.exceptions import SeisHubError, NotAllowedError
+from seishub.exceptions import SeisHubError
 from seishub.processor import Processor
 from seishub.util.http import parseAccept, validMediaType
 from seishub.util.path import addBase
 from twisted.application.internet import TCPServer #@UnresolvedImport
-from twisted.internet import defer, threads
+from twisted.internet import defer
 from twisted.python import failure
 from twisted.web import http, server, util
 
@@ -35,10 +35,13 @@ class RESTRequest(Processor, http.Request):
         """Process a request."""
         
         # process request
-        try:
-            self.render()
-        except:
-            self.processingFailed(failure.Failure())
+        from twisted.internet import threads
+        threads.deferToThread(self.render)
+#        return server.NOT_DONE_YET
+#        try:
+#            self.render()
+#        except:
+#            self.processingFailed(failure.Failure())
     
     def render(self):
         # set standard HTTP headers

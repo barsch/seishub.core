@@ -8,7 +8,6 @@ from seishub.processor.resources import Resource, Folder
 from seishub.util.path import splitPath
 from seishub.util.text import isInteger
 from seishub.util.xml import addXMLDeclaration
-from twisted.web import http
 from zope.interface import implements
 
 
@@ -63,7 +62,6 @@ class XMLResource(Resource):
         # set XML declaration inclusive UTF-8 encoding string
         if not data.startswith('<xml'):
             data = addXMLDeclaration(data, 'utf-8')
-        # return XML resource
         return data
     
     def process_PUT(self, request):

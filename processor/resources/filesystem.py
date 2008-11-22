@@ -2,6 +2,7 @@
 
 from seishub.exceptions import NotFoundError, ForbiddenError
 from seishub.processor.resources.resource import Resource
+from seishub.util.text import isInteger
 from twisted.web import static, http, server
 import errno
 import os
@@ -54,21 +55,46 @@ class FileSystemResource(Resource):
         
         st = os.stat(path)
         
-        # cached
+        # XXX: cached ? not sure about that yet ...
         last_modified = int(float(st.st_mtime))
         if request.setLastModified(last_modified) is http.CACHED:
             return ''
         
         # file size
-        fsize = st.st_size
+        fsize = size = st.st_size
         request.setHeader('content-length', str(fsize))
         if request.method == 'HEAD':
             return ''
-        # return data
+        
+        # accept range
+        request.setHeader('accept-ranges', 'bytes')
+        
+        range = request.getHeader('range')
+        
+        if range and 'bytes=' in range and '-' in range.split('=')[1]:
+            # a request for partial data, e.g. Range: bytes=160694272-
+            parts = range.split('bytes=')[1].strip().split('-')
+            if len(parts)==2:
+                start = parts[0]
+                end = parts[1]
+                if isInteger(start):
+                    fp.seek(int(start))
+                if isInteger(end):
+                    end = int(end)
+                    size = end
+                else:
+                    end = size
+                request.setResponseCode(http.PARTIAL_CONTENT)
+                request.setHeader('content-range',"bytes %s-%s/%s " % (
+                     str(start), str(end), str(size)))
+                #content-length should be the actual size of the stuff we're
+                #sending, not the full size of the on-server entity.
+                fsize = end - int(start)
+                request.setHeader('content-length', str(fsize))
+        
         static.FileTransfer(fp, fsize, request)
         # and make sure the connection doesn't get closed
         return server.NOT_DONE_YET
-
     
     def _listDir(self, path):
         """Returns all children."""
