@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
 
-from twisted.web import http
-from twisted.application.internet import TCPServer #@UnresolvedImport
-from twisted.internet import threads
-
-from seishub.defaults import REST_PORT
 from seishub import __version__ as SEISHUB_VERSION
-from seishub.exceptions import SeisHubError
 from seishub.config import IntOption, BoolOption
+from seishub.defaults import REST_PORT
+from seishub.exceptions import SeisHubError, NotAllowedError
 from seishub.processor import Processor
 from seishub.util.http import parseAccept, validMediaType
 from seishub.util.path import addBase
+from twisted.application.internet import TCPServer #@UnresolvedImport
+from twisted.internet import defer, threads
+from twisted.python import failure
+from twisted.web import http, server, util
 
 
 RESOURCELIST_ROOT = """<?xml version="1.0" encoding="UTF-8"?>
@@ -27,20 +27,36 @@ class RESTRequest(Processor, http.Request):
     """A REST request via the http(s) protocol."""
     
     def __init__(self, channel, queued):
-        http.Request.__init__(self, channel, queued)
         Processor.__init__(self, self.env)
+        http.Request.__init__(self, channel, queued)
+        self.notifications = []
     
     def process(self):
-        """Start processing a request."""
-        # process headers 
-        self._processHeaders()
-        # process content in thread
-        d = threads.deferToThread(self._processContent)
-        d.addErrback(self._processingFailed)
+        """Process a request."""
+        
+        # process request
+        try:
+            self.render()
+        except:
+            self.processingFailed(failure.Failure())
     
-    def _processHeaders(self):
-        # fetch method
-        self.method = self.method.upper()
+    def render(self):
+        # set standard HTTP headers
+        self.setHeader('server', 'SeisHub ' + SEISHUB_VERSION)
+        self.setHeader('date', http.datetimeToString())
+        
+        try:
+            # call the processor
+            data = self._process()
+        except SeisHubError, e:
+            self.setResponseCode(e.code)
+            self.env.log.error(http.responses.get(e.code))
+            self.write('')
+            self.finish()
+        
+        if data == server.NOT_DONE_YET:
+            return
+        
         # fetch output type
         self.accept = parseAccept(self.getHeader('accept'))
         self.format = ''
@@ -51,45 +67,39 @@ class RESTRequest(Processor, http.Request):
         if self.format and validMediaType(self.format):
             # add the valid format to the front of the list!
             self.accept = [(1.0, self.format, {}, {})] + self.accept
-    
-    def _processContent(self):
-        try:
-            content = Processor.process(self)
-        except SeisHubError, e:
-            self.response_code = e.code
-            content = ''
-            self.env.log.error(http.responses.get(self.response_code))
-        content=str(content)
-        self._setHeaders(content)
-        self.write(content)
-        self.finish()
-    
-    def _setHeaders(self, content=None):
-        """Sets standard HTTP headers."""
-        self.setHeader('server', 'SeisHub ' + SEISHUB_VERSION)
-        self.setHeader('date', http.datetimeToString())
-        # content length
-        if content:
-            self.setHeader('content-length', str(len(str(content))))
-        # set response code
-        self.setResponseCode(int(self.response_code))
+        
+        # check result
+        if isinstance(data, dict):
+            body = self._renderFolder(data)
+        elif isinstance(data, basestring):
+            body = self._renderResource(data)
+        else:
+            raise SeisHubError()
+        
         # set additional headers
         for k, v in self.response_header.iteritems():
             self.setHeader(k, v)
-    
-    def _processingFailed(self, reason):
-        self.env.log.error(reason)
+        
+        self.setHeader('content-length', str(len(body)))
+        if self.method == "HEAD":
+            self.write('')
+        else:
+            self.write(body)
+        self.finish()
+
+    def processingFailed(self, reason):
+        body = ("<html><head><title>web.Server Traceback (most recent call last)</title></head>"
+                "<body><b>web.Server Traceback (most recent call last):</b>\n\n"
+                "%s\n\n</body></html>\n"
+                % util.formatFailure(reason))
         self.setResponseCode(http.INTERNAL_SERVER_ERROR)
+        self.setHeader('content-type',"text/html")
+        self.setHeader('content-length', str(len(body)))
+        self.write(body)
         self.finish()
         return reason
     
-    def render(self, data):
-        if isinstance(data, dict):
-            return self.renderFolder(data)
-        else:
-            return self.renderResource(data)
-    
-    def renderResource(self, data):
+    def _renderResource(self, data):
         # XXX: handle output/format conversion here
         #if self.format:
             # XXX: how to fetch that???
@@ -113,7 +123,7 @@ class RESTRequest(Processor, http.Request):
         self.setResponseCode(http.OK)
         return data
     
-    def renderFolder(self, children={}):
+    def _renderFolder(self, children={}):
         """Renders a folder object."""
         ids = children.keys()
         ids.sort()
@@ -144,10 +154,30 @@ class RESTRequest(Processor, http.Request):
                     self.setHeader('content-type', 
                                    xslt.content_type + '; charset=UTF-8')
         # set header
-        self._setHeaders(xml_doc)
         self.setResponseCode(http.OK)
         return xml_doc 
-
+    
+    def notifyFinish(self):
+        """Notify when finishing the request
+        
+        @return: A deferred. The deferred will be triggered when the
+        request is finished -- with a C{None} value if the request
+        finishes successfully or with an error if the request is stopped
+        by the client.
+        """
+        self.notifications.append(defer.Deferred())
+        return self.notifications[-1]
+    
+    def connectionLost(self, reason):
+        for d in self.notifications:
+            d.errback(reason)
+        self.notifications = []
+    
+    def finish(self):
+        http.Request.finish(self)
+        for d in self.notifications:
+            d.callback(None)
+        self.notifications = []
 
 class RESTHTTPChannel(http.HTTPChannel):
     """A receiver for the HTTP requests."""

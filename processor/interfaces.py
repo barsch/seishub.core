@@ -10,20 +10,20 @@ class IResource(Interface):
     is_leaf = Attribute("""
         Marker for a leaf node. 
         
-        Leaf nodes don't have static childrens.
+        Leaf nodes don't have static children.
         """)
     
     category = Attribute("""
         Defines the category of a node.
         
         Single string representing a category name. Common values are folder, 
-        file, mapping, resource, package, resourcetype or property. The
+        file, mapping, resource, package, resource type or property. The
         requesting service may decide how to handle this information, e.g.
         appending a unique icon for this resource.
         """)
     
     folderish = Attribute("""
-        Marker for a folderish node. 
+        Marker for a folder node. 
         
         Set this to True if you want to inform the requesting service, that 
         this resource behaves like an folder.

@@ -15,7 +15,7 @@ class MapperResource(Resource):
         self.category = category
         self.folderish = folderish
     
-    def process_GET(self, request):
+    def render_GET(self, request):
         func = getattr(self.mapper, 'process_' + request.method)
         if not func:
             msg = "Method process_%s is not implemented." % (request.method)
@@ -41,7 +41,7 @@ class MapperResource(Resource):
               "a basestring for a resulting document."
         raise SeisHubError(msg, code=http.INTERNAL_SERVER_ERROR)
     
-    def process_POST(self, request):
+    def render_POST(self, request):
         func = getattr(self.mapper, 'process_' + request.method)
         if not func:
             msg = "Method process_%s is not implemented." % (request.method)
@@ -50,7 +50,7 @@ class MapperResource(Resource):
         request.response_code = http.NO_CONTENT
         return ''
     
-    def process_DELETE(self, request):
+    def render_DELETE(self, request):
         func = getattr(self.mapper, 'process_' + request.method)
         if not func:
             msg = "Method process_%s is not implemented." % (request.method)
@@ -59,7 +59,7 @@ class MapperResource(Resource):
         request.response_code = http.NO_CONTENT
         return ''
     
-    def process_PUT(self, request):
+    def render_PUT(self, request):
         func = getattr(self.mapper, 'process_' + request.method)
         if not func:
             msg = "Method process_%s is not implemented." % (request.method)

@@ -1,23 +1,25 @@
 # -*- coding: utf-8 -*-
 
-from seishub.exceptions import NotFoundError, NotImplementedError, ForbiddenError
+"""General resources."""
+
+from seishub.exceptions import NotAllowedError
 from seishub.processor.interfaces import IResource
 from zope.interface import implements
 
 
 class Resource:
-    """A general resource node."""
+    """A general resource."""
     implements(IResource)
     
     def __init__(self):
-        self._children = {}
+        self.children = {}
         self.category = 'resource'
         self.folderish = True
         self.is_leaf = False
     
     def addChild(self, id, child):
         """Register a static child."""
-        self._children[id] = child
+        self.children[id] = child
     
     def getChild(self, id, request):
         """Retrieve a single child resource from me.
@@ -47,14 +49,6 @@ class Resource:
         """
         return self.getChildren(request).get(id, None)
     
-    def getChildren(self, request):
-        """Retrieves a list of all dynamically generated child resources.
-        
-        Implement this for dynamic resource generation. This will not be 
-        called if the class-level variable 'is_leaf' is set in your subclass.
-        """
-        return {}
-    
     def getChildWithDefault(self, id, request):
         """Retrieve a static or dynamically generated child resource from me.
         
@@ -66,63 +60,41 @@ class Resource:
         This will check to see if I have a pre-registered child resource of the
         given name, and call getChild if I do not.
         """
-        if self._children.has_key(id):
-            return self._children[id]
+        if self.children.has_key(id):
+            return self.children[id]
         return self.getChild(id, request)
     
-    def getAllChildren(self, request):
-        """Retrieve all static or dynamically generated child resources.
-        """
-        temp = self._children.copy()
-        temp.update(self.getChildren(request))
-        return temp 
-    
-    def process(self, request):
-        """Process the given request.
+    def render(self, request):
+        """Render a given resource. See L{IResource}'s render method.
         
-        I delegate to methods of self with the form 'process_METHOD' where 
-        METHOD is the HTTP that was used to make the request, e.g. process_GET,
-        process_POST, and so on. Generally you should implement those methods 
-        instead of overriding this one.
+        I delegate to methods of self with the form 'render_METHOD'
+        where METHOD is the HTTP that was used to make the
+        request. Examples: render_GET, render_HEAD, render_POST, and
+        so on. Generally you should implement those methods instead of
+        overriding this one.
+        
+        render_METHOD methods are expected to return a string which
+        will be the rendered page, unless the return value is
+        twisted.web.server.NOT_DONE_YET, in which case it is this
+        class's responsibility to write the results to
+        request.write(data), then call request.finish().
+        
+        Old code that overrides render() directly is likewise expected
+        to return a string or NOT_DONE_YET.
         """
-        func = getattr(self, 'process_' + request.method, None)
+        func = getattr(self, 'render_' + request.method, None)
         if not func:
-            msg = "Method process_%s is not implemented." % (request.method)
-            raise NotImplementedError(msg)
+            raise NotAllowedError(getattr(self, 'allowedMethods', ()))
         return func(request)
 
 
 class Folder(Resource):
-    """A folder resource containing other objects implementing L{IResource}."""
+    """A folder resource containing resource objects."""
     
     def __init__(self):
         Resource.__init__(self)
         self.category = 'folder'
     
-    def process_GET(self, request):
-        """Returns content of this folder node."""
-        if len(request.postpath) > 0:
-            raise NotFoundError()
-        return self.getAllChildren(request)
-    
-    def process_POST(self, request):
-        """Default behaviour for a resource modification request."""
-        if len(request.postpath) > 0:
-            raise NotFoundError()
-        raise ForbiddenError("Operation is not allowed here.")
-    
-    def process_PUT(self, request):
-        """Default behaviour for a resource creation request."""
-        raise ForbiddenError("Operation is not allowed here.")
-    
-    def process_DELETE(self, request):
-        """Default behaviour for a resource deletion request."""
-        if len(request.postpath) > 0:
-            raise NotFoundError()
-        raise ForbiddenError("Operation is not allowed here.")
-    
-    def process_MOVE(self, request):
-        """Default behaviour for a resource move request."""
-        if len(request.postpath) > 0:
-            raise NotFoundError()
-        raise ForbiddenError("Operation is not allowed here.")
+    def render_GET(self, request):
+        """Returns content of this folder node as dictionary."""
+        return self.children

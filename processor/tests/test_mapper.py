@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+"""A test suite for mapper resources."""
+
 from seishub.core import Component, implements
 from seishub.packages.builtins import IPackage
 from seishub.packages.interfaces import IMapper
@@ -83,8 +85,8 @@ class TestMapper5(Component):
         pass
 
 
-class ProcessorMapperTest(SeisHubEnvironmentTestCase):
-    """Test case for processing of mappers."""
+class MapperTests(SeisHubEnvironmentTestCase):
+    """A test suite for mapper resources."""
     
     def setUp(self):
         self.env.enableComponent(APackage)
@@ -119,7 +121,7 @@ class ProcessorMapperTest(SeisHubEnvironmentTestCase):
 
 def suite():
     suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(ProcessorMapperTest, 'test'))
+    suite.addTest(unittest.makeSuite(MapperTests, 'test'))
     return suite
 
 

@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
 
+"""A test suite for POST request on REST resources."""
+
 from seishub.core import Component, implements
 from seishub.packages.builtins import IResourceType, IPackage
+from seishub.processor.resources import RESTFolder
 from seishub.test import SeisHubEnvironmentTestCase
 import unittest
 
@@ -33,12 +36,13 @@ class AVersionControlledResourceType(Component):
     version_control = True
 
 
-class ProcessorPOSTTest(SeisHubEnvironmentTestCase):
-    """Test case for HTTP MOVE processing."""
+class RestPOSTTests(SeisHubEnvironmentTestCase):
+    """A test suite for POST request on REST resources."""
     
     def setUp(self):
         self.env.enableComponent(AVersionControlledResourceType)
         self.env.enableComponent(AResourceType)
+        self.env.tree = RESTFolder()
     
     def tearDown(self):
         self.env.disableComponent(AVersionControlledResourceType)
@@ -50,7 +54,7 @@ class ProcessorPOSTTest(SeisHubEnvironmentTestCase):
 
 def suite():
     suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(ProcessorPOSTTest, 'test'))
+    suite.addTest(unittest.makeSuite(RestPOSTTests, 'test'))
     return suite
 
 

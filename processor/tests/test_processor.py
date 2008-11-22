@@ -1,15 +1,21 @@
 # -*- coding: utf-8 -*-
 
+"""A test suite for the Processor."""
+
 from StringIO import StringIO
 from seishub.core import Component, implements
 from seishub.exceptions import SeisHubError
 from seishub.packages.builtins import IResourceType, IPackage
-from seishub.processor import MAX_URI_LENGTH, ALLOWED_HTTP_METHODS, \
-    NOT_IMPLEMENTED_HTTP_METHODS, PUT, POST, DELETE, GET, MOVE, Processor
+from seishub.processor import MAX_URI_LENGTH, ALLOWED_HTTP_METHODS, PUT, POST, \
+    DELETE, GET, Processor
 from seishub.test import SeisHubEnvironmentTestCase
 from twisted.web import http
 import unittest
 
+
+NOT_IMPLEMENTED_HTTP_METHODS = ['TRACE', 'OPTIONS', 'COPY', 'HEAD', 'PROPFIND',
+                                'PROPPATCH', 'MKCOL', 'CONNECT', 'PATCH',
+                                'LOCK', 'UNLOCK']
 
 XML_DOC = """<?xml version="1.0" encoding="utf-8"?>
 
@@ -51,8 +57,9 @@ class AVersionControlledResourceType(Component):
     version_control = True
 
 
-class ProcessorTest(SeisHubEnvironmentTestCase):
-    """Processor test case."""
+class ProcessorTests(SeisHubEnvironmentTestCase):
+    """A test suite for the Processor."""
+    
     def setUp(self):
         self.env.enableComponent(AVersionControlledResourceType)
         self.env.enableComponent(AResourceType)
@@ -60,16 +67,6 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
     def tearDown(self):
         self.env.disableComponent(AVersionControlledResourceType)
         self.env.disableComponent(AResourceType)
-    
-    def test_orderOfAddingResourcesMatters(self):
-        """This test in this specific order failed in a previous revision.""" 
-        proc = Processor(self.env)
-        proc.run(PUT, '/xml/processor-test/vc/test.xml', StringIO(XML_DOC))
-        proc.run(POST, '/xml/processor-test/vc/test.xml', StringIO(XML_DOC))
-        proc.run(POST, '/xml/processor-test/vc/test.xml', StringIO(XML_DOC))
-        proc.run(PUT, '/xml/processor-test/notvc/test.xml', StringIO(XML_DOC))
-        proc.run(DELETE, '/xml/processor-test/vc/test.xml')
-        proc.run(DELETE, '/xml/processor-test/notvc/test.xml')
     
     def test_oversizedURI(self):
         """Request URI ist restricted by MAX_URI_LENGTH."""
@@ -80,88 +77,6 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
                 self.fail("Expected SeisHubError")
             except SeisHubError, e:
                 self.assertEqual(e.code, http.REQUEST_URI_TOO_LONG)
-    
-    def test_notImplementedMethods(self):
-        proc = Processor(self.env)
-        for method in NOT_IMPLEMENTED_HTTP_METHODS:
-            try:
-                proc.run(method, '/')
-                self.fail("Expected SeisHubError")
-            except SeisHubError, e:
-                self.assertEqual(e.code, http.NOT_IMPLEMENTED)
-    
-    def test_invalidMethods(self):
-        proc = Processor(self.env)
-        for method in ['MUH', 'XXX', 'GETPUT']:
-            try:
-                proc.run(method, '/')
-                self.fail("Expected SeisHubError")
-            except SeisHubError, e:
-                self.assertEqual(e.code, http.NOT_ALLOWED)
-    
-    def test_forbiddenMethodsOnRoot(self):
-        proc = Processor(self.env)
-        for method in [POST, PUT, DELETE, MOVE]:
-            # without slash
-            try:
-                proc.run(method, '')
-                self.fail("Expected SeisHubError")
-            except SeisHubError, e:
-                self.assertEqual(e.code, http.FORBIDDEN)
-            # with slash
-            try:
-                proc.run(method, '/')
-                self.fail("Expected SeisHubError")
-            except SeisHubError, e:
-                self.assertEqual(e.code, http.FORBIDDEN)
-    
-    def test_forbiddenMethodsOnPackage(self):
-        proc = Processor(self.env)
-        for method in [POST, PUT, DELETE, MOVE]:
-            # without trailing slash
-            try:
-                proc.run(method, '/xml/processor-test')
-                self.fail("Expected SeisHubError")
-            except SeisHubError, e:
-                self.assertEqual(e.code, http.FORBIDDEN)
-            # with trailing slash
-            try:
-                proc.run(method, '/xml/processor-test/')
-                self.fail("Expected SeisHubError")
-            except SeisHubError, e:
-                self.assertEqual(e.code, http.FORBIDDEN)
-    
-    def test_forbiddenMethodsOnResourceTypes(self):
-        proc = Processor(self.env)
-        for method in [POST, PUT, DELETE, MOVE]:
-            # without trailing slash
-            try:
-                proc.run(method, '/xml/processor-test')
-                self.fail("Expected SeisHubError")
-            except SeisHubError, e:
-                self.assertEqual(e.code, http.FORBIDDEN)
-            # with trailing slash
-            try:
-                proc.run(method, '/xml/processor-test/')
-                self.fail("Expected SeisHubError")
-            except SeisHubError, e:
-                self.assertEqual(e.code, http.FORBIDDEN)
-    
-    def test_forbiddenMethodsOnResourceType(self):
-        proc = Processor(self.env)
-        for method in [POST, DELETE, MOVE]:
-            # without trailing slash
-            try:
-                proc.run(method, '/xml/processor-test/vc')
-                self.fail("Expected SeisHubError")
-            except SeisHubError, e:
-                self.assertEqual(e.code, http.FORBIDDEN)
-            # with trailing slash
-            try:
-                proc.run(method, '/xml/processor-test/vc/')
-                self.fail("Expected SeisHubError")
-            except SeisHubError, e:
-                self.assertEqual(e.code, http.FORBIDDEN)
     
     def test_processResourceType(self):
         proc = Processor(self.env)
@@ -274,7 +189,7 @@ class ProcessorTest(SeisHubEnvironmentTestCase):
 
 def suite():
     suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(ProcessorTest, 'test'))
+    suite.addTest(unittest.makeSuite(ProcessorTests, 'test'))
     return suite
 
 

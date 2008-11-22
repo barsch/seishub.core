@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 
-from seishub.exceptions import ForbiddenError, NotFoundError, SeisHubError
-from seishub.processor import MAX_URI_LENGTH, PUT, GET
+from seishub.exceptions import ForbiddenError, NotFoundError, SeisHubError, \
+    NotAllowedError
 from seishub.processor.interfaces import IXMLResource
+from seishub.processor.processor import MAX_URI_LENGTH, PUT, GET
 from seishub.processor.resources import Resource, Folder
 from seishub.util.path import splitPath
 from seishub.util.text import isInteger
@@ -15,6 +16,9 @@ class XMLResource(Resource):
     """A XML resource node."""
     implements(IXMLResource)
     
+    # XXX: revision should be eventually a extra resource type ...
+    # this would solve the issue about http.FORBIDDEN and http.NOT_ALLOWED
+    
     def __init__(self, package_id, resourcetype_id, name, document=None):
         Resource.__init__(self)
         self.category = 'resource'
@@ -25,7 +29,7 @@ class XMLResource(Resource):
         self.name = name
         self.document = document
     
-    def process_GET(self, request):
+    def render_GET(self, request):
         """Process a resource query request.
         
         A query at the root of a resource type folder returns a list of all
@@ -43,6 +47,8 @@ class XMLResource(Resource):
                 revision = request.postpath[0]
             else:
                 raise NotFoundError()
+        elif len(request.postpath)>1:
+            raise ForbiddenError()
         else:
             revision = None
         # fetch resource
@@ -79,9 +85,9 @@ class XMLResource(Resource):
         Adding documents can be done directly on an existing resource type or 
         via user defined mapping.
         """
-        self.process_POST(request)
+        self.render_POST(request)
     
-    def process_POST(self, request):
+    def render_POST(self, request):
         """Processes a resource modification request.
         
         @see: http://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html#sec9.5
@@ -101,6 +107,8 @@ class XMLResource(Resource):
         Modifying a document always needs a valid path to a resource or uses a
         user defined mapping.
         """
+        if len(request.postpath)!=0:
+            raise ForbiddenError() 
         # seishub directory is not directly changeable
         if self.package_id=='seishub':
             msg = "SeisHub resources may not be modified directly."
@@ -114,14 +122,16 @@ class XMLResource(Resource):
         request.response_code = http.NO_CONTENT
         return ''
     
-    def process_MOVE(self, request):
+    def render_MOVE(self, request):
         """Processes a resource move/rename request.
         
         @see: http://msdn.microsoft.com/en-us/library/aa142926(EXCHG.65).aspx
         """
         # only resources may be moved
+        if len(request.postpath)==1:
+            raise ForbiddenError("Revisions may not be moved.") 
         if len(request.postpath)!=0:
-            raise ForbiddenError()
+            raise ForbiddenError() 
         # seishub directory is not directly changeable
         if self.package_id=='seishub':
             msg = "SeisHub resources may not be moved directly."
@@ -164,7 +174,7 @@ class XMLResource(Resource):
         request.response_header['Location'] = url
         return ''
     
-    def process_DELETE(self, request):
+    def render_DELETE(self, request):
         """Processes a resource deletion request.
         
         @see: http://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html#sec9.7
@@ -180,9 +190,11 @@ class XMLResource(Resource):
         Deleting a document always needs a valid path to a resource or may use 
         a user defined mapping.
         """
-        # revisions may not be deleted via the processor
+        # only resource may be deleted
         if len(request.postpath)==1:
             raise ForbiddenError("Revisions may not be deleted directly.") 
+        if len(request.postpath)!=0:
+            raise ForbiddenError() 
         # resource in SeisHub directory are not directly deletable
         if self.package_id=='seishub':
             msg = "SeisHub resources may not be deleted directly."
@@ -206,8 +218,8 @@ class XMLIndex(Resource):
         self.folderish = False
 
 
-class XMLResourceTypeFolder(Folder):
-    """A XML resource type folder."""
+class RESTResourceTypeFolder(Folder):
+    """A REST resource type folder."""
     
     def __init__(self, package_id, resourcetype_id):
         Folder.__init__(self)
@@ -215,20 +227,6 @@ class XMLResourceTypeFolder(Folder):
         self.is_leaf = True
         self.package_id = package_id
         self.resourcetype_id = resourcetype_id
-    
-    def getChildren(self, request):
-        """Returns all resources and indexes of this resource type."""
-        temp = {}
-        for res in request.env.catalog.getResourceList(self.package_id,
-                                                       self.resourcetype_id):
-            temp[res.name] = XMLResource(self.package_id, 
-                                         self.resourcetype_id, 
-                                         res.name,
-                                         res.document)
-        for id in request.env.catalog.listIndexes(self.package_id,
-                                                  self.resourcetype_id):
-            temp[str(id)] = XMLIndex()
-        return temp
     
     def getChild(self, id, request):
         """Returns a L{XMLResource} object if a valid id is given."""
@@ -243,21 +241,21 @@ class XMLResourceTypeFolder(Folder):
         except NotFoundError:
             pass
     
-    def process(self, request):
+    def render(self, request):
         if request.method==GET and len(request.postpath)==0:
-            return self.getChildren(request)
+            return self.render_GET(request)
         elif request.method==PUT:
-            return self.process_PUT(request)
+            return self.render_PUT(request)
         elif len(request.postpath)>=1:
             id = request.postpath.pop(0)
             request.prepath.append(id)
             child = self.getChild(id, request)
             if child:
-                return child.process(request)
+                return child.render(request)
             raise NotFoundError
-        raise ForbiddenError("Operation is not allowed here.")
+        raise NotAllowedError("Operation is not allowed here.")
     
-    def process_PUT(self, request):
+    def render_PUT(self, request):
         """Create a new XML resource for this resource type.
         
         "The PUT method requests that the enclosed entity be stored under the 
@@ -295,44 +293,60 @@ class XMLResourceTypeFolder(Folder):
         url = request.env.getRestUrl() + request.path + '/' + str(res.name)
         request.response_header['Location'] = url
         return ''
+    
+    def render_GET(self, request):
+        """Returns all resources and indexes of this resource type."""
+        temp = {}
+        for res in request.env.catalog.getResourceList(self.package_id,
+                                                       self.resourcetype_id):
+            temp[res.name] = XMLResource(self.package_id, 
+                                         self.resourcetype_id, 
+                                         res.name,
+                                         res.document)
+        for id in request.env.catalog.listIndexes(self.package_id,
+                                                  self.resourcetype_id):
+            temp[str(id)] = XMLIndex()
+        return temp
 
 
-class XMLPackageFolder(Folder):
-    """A XML package folder."""
+class RESTPackageFolder(Folder):
+    """A REST package folder."""
     
     def __init__(self, package_id):
         Folder.__init__(self)
         self.category = 'package'
         self.package_id = package_id
     
-    def getChildren(self, request):
+    def getChild(self, id, request):
+        """Returns a L{RESTResourceTypeFolder} object for a valid id."""
+        if request.env.registry.isResourceTypeId(self.package_id, id):
+            return RESTResourceTypeFolder(self.package_id, id)
+        raise NotFoundError
+    
+    def render_GET(self, request):
         """Returns a dictionary of all resource types of this package."""
         temp = {}
         for id in request.env.registry.getResourceTypeIds(self.package_id):
-            temp[id] = XMLResourceTypeFolder(self.package_id, id)
+            temp[id] = RESTResourceTypeFolder(self.package_id, id)
         return temp
-    
-    def getChild(self, id, request):
-        """Returns a L{XMLResourceTypeFolder} object if a valid id is given."""
-        if request.env.registry.isResourceTypeId(self.package_id, id):
-            return XMLResourceTypeFolder(self.package_id, id)
 
 
-class XMLRootFolder(Folder):
-    """A XML root folder."""
+class RESTFolder(Folder):
+    """A REST root folder."""
     
     def __init__(self):
         Folder.__init__(self)
         self.category = 'xmlroot'
     
-    def getChildren(self, request):
+    def getChild(self, id, request):
+        """Returns a L{XMLPackageFolder} object for a valid id."""
+        if request.env.registry.isPackageId(id):
+            return RESTPackageFolder(id)
+        raise NotFoundError
+    
+    def render_GET(self, request):
         """Returns a dictionary of all SeisHub packages."""
         temp = {}
         for id in request.env.registry.getPackageIds():
-            temp[id] = XMLPackageFolder(id)
+            temp[id] = RESTPackageFolder(id)
         return temp
-    
-    def getChild(self, id, request):
-        """Returns a L{XMLPackageFolder} object if a valid id is given."""
-        if request.env.registry.isPackageId(id):
-            return XMLPackageFolder(id)
