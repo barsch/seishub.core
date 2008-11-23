@@ -4,10 +4,11 @@ from seishub.exceptions import ForbiddenError, NotFoundError, SeisHubError, \
     NotAllowedError
 from seishub.processor.interfaces import IXMLResource
 from seishub.processor.processor import MAX_URI_LENGTH, PUT, GET
-from seishub.processor.resources import Resource, Folder
+from seishub.processor.resources.resource import Resource, Folder
 from seishub.util.path import splitPath
 from seishub.util.text import isInteger
 from seishub.util.xml import addXMLDeclaration
+from twisted.web import http
 from zope.interface import implements
 
 

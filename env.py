@@ -81,18 +81,18 @@ class Environment(ComponentManager):
     def updateResourceTree(self):
         self.tree = Site()
         # set XML directory
-        self.tree.addChild('xml', RESTFolder())
+        self.tree.putChild('xml', RESTFolder())
 #        # demo - we shouldn't do that but it is possible
-#        self.tree.addChild('/demo/1/package', XMLPackageFolder('seishub'))
-#        self.tree.addChild('/demo/1/rt', XMLResourceTypeFolder('seishub','schema'))
-#        self.tree.addChild('/demo/xml-root', XMLRootFolder())
-#        self.tree.addChild('/demo/1/resource', XMLResource('seishub','stylesheet','1'))
+#        self.tree.putChild('/demo/1/package', XMLPackageFolder('seishub'))
+#        self.tree.putChild('/demo/1/rt', XMLResourceTypeFolder('seishub','schema'))
+#        self.tree.putChild('/demo/xml-root', XMLRootFolder())
+#        self.tree.putChild('/demo/1/resource', XMLResource('seishub','stylesheet','1'))
         # set all mappings
         for url, cls in self.registry.mappers.get().items():
-            self.tree.addChild(url, MapperResource(cls(self)))
+            self.tree.putChild(url, MapperResource(cls(self)))
         # set all file system folder
         for url, path in self.config.options('fs'):
-            self.tree.addChild(url, FileSystemResource(path)) 
+            self.tree.putChild(url, FileSystemResource(path))
     
     def getSeisHubPath(self):
         """Returns the absolute path to the SeisHub directory."""

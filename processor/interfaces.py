@@ -1,11 +1,16 @@
 # -*- coding: utf-8 -*-
 
-from seishub.core import Interface
 from zope.interface import Attribute
+from twisted.web import resource
 
 
-class IResource(Interface):
-    """A general processor resource node."""
+class IResource(resource.IResource):
+    """A resource node.
+    
+    This is an extension of the twisted.web.resource.IResource interface 
+    definition. All SeisHub resources should implement this and only this 
+    interface!
+    """
     
     is_leaf = Attribute("""
         Marker for a leaf node. 
@@ -30,15 +35,24 @@ class IResource(Interface):
         """)
 
 
-class IXMLResource(Interface):
+class IFileResource(IResource):
+    """A marker interface for a file resource."""
+    
+    statinfo = Attribute("""
+        Result of os.stat system call.
+        
+        Tuple of ten entries, e.g.:
+        (16895, 0L, 0, 0, 0, 0, 16384L, 1227234912, 1227234912, 1180095351).
+        
+        Please refer to to os.stat documentation for more information.
+        """) 
+
+
+class IXMLResource(IResource):
     """A marker interface for a XML document resource."""
 
 
-class IFileResource(Interface):
-    """A marker interface for a file resource."""
-
-
-class IMapperResource(Interface):
+class IMapperResource(IResource):
     """General interface definition for a mapper resource."""
     
     mapping_url = Attribute("""

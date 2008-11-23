@@ -15,7 +15,7 @@ class Site(Folder):
         Folder.__init__(self)
         self._registry = {}
     
-    def addChild(self, path, obj):
+    def putChild(self, path, obj):
         """Register a static child to the root node.
         
         The root node also accepts absolute paths. Missing sub folders are

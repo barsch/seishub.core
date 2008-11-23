@@ -9,8 +9,9 @@ from seishub.util.http import parseAccept, validMediaType
 from seishub.util.path import addBase
 from twisted.application.internet import TCPServer #@UnresolvedImport
 from twisted.internet import defer
-from twisted.python import failure
-from twisted.web import http, server, util
+from twisted.web import http, server
+import StringIO
+import gzip
 
 
 RESOURCELIST_ROOT = """<?xml version="1.0" encoding="UTF-8"?>
@@ -33,15 +34,10 @@ class RESTRequest(Processor, http.Request):
     
     def process(self):
         """Process a request."""
-        
-        # process request
-        from twisted.internet import threads
-        threads.deferToThread(self.render)
-#        return server.NOT_DONE_YET
-#        try:
-#            self.render()
-#        except:
-#            self.processingFailed(failure.Failure())
+        # XXX: this screwing up with multiple download a 1000 MB - works much
+        # better without deferToThread ???
+        #threads.deferToThread(self.render)
+        self.render()
     
     def render(self):
         # set standard HTTP headers
@@ -56,6 +52,7 @@ class RESTRequest(Processor, http.Request):
             self.env.log.error(http.responses.get(e.code))
             self.write('')
             self.finish()
+            return
         
         if data == server.NOT_DONE_YET:
             return
@@ -90,18 +87,6 @@ class RESTRequest(Processor, http.Request):
             self.write(body)
         self.finish()
 
-    def processingFailed(self, reason):
-        body = ("<html><head><title>web.Server Traceback (most recent call last)</title></head>"
-                "<body><b>web.Server Traceback (most recent call last):</b>\n\n"
-                "%s\n\n</body></html>\n"
-                % util.formatFailure(reason))
-        self.setResponseCode(http.INTERNAL_SERVER_ERROR)
-        self.setHeader('content-type',"text/html")
-        self.setHeader('content-length', str(len(body)))
-        self.write(body)
-        self.finish()
-        return reason
-    
     def _renderResource(self, data):
         # XXX: handle output/format conversion here
         #if self.format:
@@ -116,8 +101,7 @@ class RESTRequest(Processor, http.Request):
             return
         encoding = self.getHeader("accept-encoding")
         if encoding and encoding.find("gzip")>=0:
-            import cStringIO,gzip
-            zbuf = cStringIO.StringIO()
+            zbuf = StringIO.StringIO()
             zfile = gzip.GzipFile(None, 'wb', 9, zbuf)
             zfile.write(data)
             zfile.close()

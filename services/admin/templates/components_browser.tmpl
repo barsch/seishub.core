@@ -69,7 +69,7 @@
                   tmp.contentStyle = "icon icon-index";
                 } else {
                   var tmp = new YAHOO.widget.TextNode({label:text, target:"_blank"}, node, false);
-                  tmp.href = "$resturl" + item;
+                  tmp.href = "$resturl" + item + "?format=xhtml";
                   tmp.title = item;
                   tmp.labelStyle = "icon icon-"+element;
                 }
@@ -97,7 +97,7 @@
       // root node
       var tmp = new YAHOO.widget.TextNode("/", root, true);
       tmp.labelStyle = "icon icon-folder";
-      tmp.href = "$resturl";
+      tmp.href = "$resturl?format=xhtml";
       tmp.title = "/";
       
       tree.draw();

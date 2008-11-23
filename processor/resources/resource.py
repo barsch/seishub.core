@@ -17,7 +17,7 @@ class Resource:
         self.folderish = True
         self.is_leaf = False
     
-    def addChild(self, id, child):
+    def putChild(self, id, child):
         """Register a static child."""
         self.children[id] = child
     
@@ -47,7 +47,7 @@ class Resource:
         @param request: a twisted.web.server.Request specifying meta-information
                         about the request that is being made for this child.
         """
-        return self.getChildren(request).get(id, None)
+        return self.children.get(id, None)
     
     def getChildWithDefault(self, id, request):
         """Retrieve a static or dynamically generated child resource from me.

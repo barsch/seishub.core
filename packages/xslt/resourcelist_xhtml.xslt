@@ -44,9 +44,16 @@
             </head>
             <body>
                 <h1>
-                    <xsl:value-of select="@xml:base" />
+                    <a>
+                        <xsl:attribute name="href">
+                            <xsl:value-of select="@xml:base" />
+                            <xsl:text>?format=xhtml</xsl:text>
+                        </xsl:attribute>
+                        <xsl:value-of select="@xml:base" />
+                    </a>
                 </h1>
                 <p>
+                    <xsl:text>Formats: </xsl:text>
                     <a href="?format=xml">[XML]</a>
                     <xsl:text> </xsl:text>
                     <a href="?format=json">[JSON]</a>
