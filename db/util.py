@@ -481,6 +481,7 @@ class DbStorage(DbEnabled):
             r.close()
         # create objects from results
         objs = {cls:list()}
+        #import pdb;pdb.set_trace()
         for res in results:
             objs = self._generate_objs(cls, res, objs)
         if hasattr(self,'debug') and self.debug:
@@ -579,7 +580,6 @@ class Serializable(object):
                 for o in objs:
                     rel_attr = col.name + '_id'
                     o.__setattr__(rel_attr, id)
-                    o.db_mapping[rel_attr] = col.name
         
     _id = property(_getId, _setId, 'Internal id (integer)')
     
@@ -680,6 +680,9 @@ class Relation(object):
         self.lazy = lazy
         self.cascading_delete = cascading_delete
         self.relation_type = relation_type
+        if relation_type == 'to-many':
+            # inject backreference attribute into db_mapping:
+            cls.db_mapping.setdefault(name + '_id', name)
         
 
 class LazyAttribute(object):
