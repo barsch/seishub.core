@@ -548,6 +548,9 @@ class Serializable(object):
     db_property descriptor.
     All arguments of the __init__ method of a Serializable object have to be 
     optional and should default to None!
+    
+    The db_mapping attribute is a dict of the following structure:
+    db_mapping = {'attribute name' : 'name of column in db_table', ... }
     """
     
     implements(ISerializable)

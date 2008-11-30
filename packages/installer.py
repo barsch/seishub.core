@@ -104,25 +104,25 @@ class PackageInstaller(object):
                                  "%s/%s/@%s (%s)") %\
                                 (package_id, resourcetype_id, entry['name'], 
                                  e))
-        
-        if hasattr(o, '_registry_indexes'):
-            for entry in o._registry_indexes:
-                # check, if already there
-                if env.catalog.getIndex(package_id, resourcetype_id, **entry):
-                    env.log.info("'%s': Skipping index '%s'." %\
-                                 (package_id, entry))
-                    continue
-                try:
-                    env.catalog.registerIndex(package_id, 
-                                              resourcetype_id,
-                                              **entry)
-                    env.log.info("'%s': Registered index '%s'." %\
-                                 (package_id, entry))
-                except Exception, e:
-                    env.log.warn(("Registration of index failed: " +\
-                                 "/%s/%s%s (%s)") %\
-                                (package_id, resourcetype_id, entry['xpath'], 
-                                 e))
+        # XXX: !!! inactive due to indexcatalog revamp !!!
+#        if hasattr(o, '_registry_indexes'):
+#            for entry in o._registry_indexes:
+#                # check, if already there
+#                if env.catalog.getIndex(package_id, resourcetype_id, **entry):
+#                    env.log.info("'%s': Skipping index '%s'." %\
+#                                 (package_id, entry))
+#                    continue
+#                try:
+#                    env.catalog.registerIndex(package_id, 
+#                                              resourcetype_id,
+#                                              **entry)
+#                    env.log.info("'%s': Registered index '%s'." %\
+#                                 (package_id, entry))
+#                except Exception, e:
+#                    env.log.warn(("Registration of index failed: " +\
+#                                 "/%s/%s%s (%s)") %\
+#                                (package_id, resourcetype_id, entry['xpath'], 
+#                                 e))
                     
     @staticmethod
     def _pre_register(*args, **kwargs):

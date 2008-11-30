@@ -288,6 +288,7 @@ class PackageRegistryTest(SeisHubEnvironmentTestCase):
         self.assertEqual(len(schema), 0)
 
     def test_StylesheetRegistry(self):
+        """XXX: this test fails since [384], see ticket #81"""
         # with resourcetype
         self.env.registry.stylesheets.register('testpackage0', 'weapon', 
                                                'xhtml', TEST_STYLESHEET)
@@ -303,7 +304,7 @@ class PackageRegistryTest(SeisHubEnvironmentTestCase):
         self.assertEqual(stylesheet[0].resourcetype.resourcetype_id, 'weapon')
         self.assertEqual(stylesheet[0].type, 'xhtml')
         self.assertEquals(stylesheet[0].content_type, 'application/json')
-        
+
         stylesheet_nort = self.env.registry.stylesheets.get(package_id =\
                                                             'testpackage0')
         self.assertEqual(len(stylesheet_nort), 1)

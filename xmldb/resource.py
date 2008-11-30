@@ -8,7 +8,7 @@ from seishub.util.xmlwrapper import IXmlDoc, XmlTreeDoc, InvalidXmlDataError
 from seishub.util.text import validate_id
 from seishub.util.xml import toUnicode, parseXMLDeclaration, addXMLDeclaration 
 from seishub.util.text import hash
-from seishub.packages.package import PackageWrapper, ResourceTypeWrapper
+from seishub.packages.package import ResourceTypeWrapper
 from seishub.xmldb.defaults import resource_tab, document_tab, document_meta_tab
 from seishub.xmldb.interfaces import IResource, IXmlDocument, IDocumentMeta
 

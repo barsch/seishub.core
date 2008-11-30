@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 from datetime import datetime
 from sqlalchemy import Table, Column
-from sqlalchemy import Integer, String, Text, Unicode, DateTime, Boolean
-from sqlalchemy import UniqueConstraint
+from sqlalchemy import Integer, String, Text, Unicode, DateTime, Boolean 
+from sqlalchemy import Numeric
+from sqlalchemy import UniqueConstraint, PrimaryKeyConstraint
 from sqlalchemy.sql import text
 
 from seishub.db.dbmanager import meta as metadata
@@ -75,22 +76,70 @@ resource_meta_tab = Table(DEFAULT_PREFIX + METADATA_TABLE, metadata,
     )
 
 # xmlindexcatalog tables:
+#index_def_tab = Table(DEFAULT_PREFIX + INDEX_DEF_TABLE, metadata,
+#    Column('id', Integer, primary_key = True, autoincrement = True),
+#    Column('value_path', Text),
+#    Column('key_path', Text),
+#    Column('data_type', String(20)),
+#    UniqueConstraint('value_path','key_path'),
+#    useexisting=True,
+#)
+#
+#index_tab = Table(DEFAULT_PREFIX + INDEX_TABLE, metadata,
+#    Column('id', Integer, primary_key = True, autoincrement = True),
+#    Column('index_id', Integer),
+#    Column('key', Text),
+#    Column('value', Integer),
+#    UniqueConstraint('index_id','key','value'),
+#    useexisting=True
+#)
+
 index_def_tab = Table(DEFAULT_PREFIX + INDEX_DEF_TABLE, metadata,
     Column('id', Integer, primary_key = True, autoincrement = True),
-#    Column('package_id', Text),
-#    Column('resourcetype_id', Text),
-    Column('value_path', Text),
-    Column('key_path', Text),
-    Column('data_type', String(20)),
-    UniqueConstraint('value_path','key_path'),
+    Column('resourcetype_id', Integer),
+    Column('xpath', Text),
+    Column('type', Integer),
+    Column('options', Text),
+    UniqueConstraint('resourcetype_id', 'xpath'),
     useexisting=True,
 )
 
-index_tab = Table(DEFAULT_PREFIX + INDEX_TABLE, metadata,
-    Column('id', Integer, primary_key = True, autoincrement = True),
+# the following tables correspond to the different possible index types
+index_text_tab = Table(DEFAULT_PREFIX + 'text_' + INDEX_TABLE, metadata,
     Column('index_id', Integer),
-    Column('key', Text),
-    Column('value', Integer),
-    UniqueConstraint('index_id','key','value'),
+    Column('key', Unicode),
+    Column('document_id', Integer),
+    PrimaryKeyConstraint('index_id','key','document_id'),
+    useexisting=True
+)
+
+index_numeric_tab = Table(DEFAULT_PREFIX + 'numeric_'+ INDEX_TABLE, metadata,
+    Column('index_id', Integer),
+    Column('key', Numeric),
+    Column('document_id', Integer),
+    PrimaryKeyConstraint('index_id','key','document_id'),
+    useexisting=True
+)
+
+index_datetime_tab = Table(DEFAULT_PREFIX + 'datetime_'+ INDEX_TABLE, metadata,
+    Column('index_id', Integer),
+    Column('key', DateTime),
+    Column('document_id', Integer),
+    PrimaryKeyConstraint('index_id','key','document_id'),
+    useexisting=True
+)
+
+index_boolean_tab = Table(DEFAULT_PREFIX + 'boolean_'+ INDEX_TABLE, metadata,
+    Column('index_id', Integer),
+    Column('key', Boolean),
+    Column('document_id', Integer),
+    PrimaryKeyConstraint('index_id','key','document_id'),
+    useexisting=True
+)
+
+index_keyless_tab = Table(DEFAULT_PREFIX + 'keyless_'+ INDEX_TABLE, metadata,
+    Column('index_id', Integer),
+    Column('document_id', Integer),
+    PrimaryKeyConstraint('index_id','document_id'),
     useexisting=True
 )

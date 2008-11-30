@@ -12,31 +12,23 @@ from seishub.db.util import DbStorage, DbError
 from seishub.xmldb.interfaces import IXmlIndexCatalog, IIndexRegistry, \
                                      IResourceIndexing, IXmlIndex, \
                                      IResourceStorage, IXPathQuery
-from seishub.xmldb.defaults import index_def_tab, index_tab, \
+from seishub.xmldb.defaults import index_def_tab, \
                                    resource_tab
 from seishub.xmldb.index import XmlIndex
 from seishub.xmldb.xpath import IndexDefiningXpathExpression
 
 
 class XmlIndexCatalog(DbStorage):
-    implements(IIndexRegistry,
-               IResourceIndexing,
-               IXmlIndexCatalog)
-    
     def __init__(self, db, resource_storage = None):
-        super(XmlIndexCatalog, self).__init__(db)
-        if resource_storage and not \
-           IResourceStorage.providedBy(resource_storage):
-            raise DoesNotImplement(IResourceStorage)
+        DbStorage.__init__(self, db)
         self._storage = resource_storage
     
-    def _parse_xpath_query(expr):
-        pass
-    _parse_xpath_query=staticmethod(_parse_xpath_query)
-            
-    # methods from IIndexRegistry:
+#    def _parse_xpath_query(expr):
+#        pass
+#    _parse_xpath_query=staticmethod(_parse_xpath_query)
+
     def registerIndex(self, xml_index):
-        """@see: L{seishub.xmldb.xmlindexcatalog.interfaces.IIndexRegistry}"""
+        """Register given index in the catalog."""
         if not IXmlIndex.providedBy(xml_index):
             raise DoesNotImplement(IXmlIndex)
         try:
@@ -49,77 +41,31 @@ class XmlIndexCatalog(DbStorage):
             raise SeisHubError(msg % str(xml_index), e)
         return xml_index
     
-    def removeIndex(self,value_path, key_path):
-        """@see: L{seishub.xmldb.xmlindexcatalog.interfaces.IIndexRegistry}"""
-        if value_path.startswith('/'):
-            value_path = value_path[1:]
-        # flush index first:
-        self.flushIndex(key_path = key_path, value_path = value_path)
-        # then remove index definition:
-        self.drop(XmlIndex, key_path = key_path, value_path = value_path)
-        return True
-
-    def getIndex(self, value_path=None, key_path=None, expr=None, type = None):
-        """@see: L{seishub.xmldb.xmlindexcatalog.interfaces.IIndexRegistry}"""
-        if not (isinstance(key_path,basestring) and 
-                isinstance(value_path,basestring)):
-            try:
-                expr_o = IndexDefiningXpathExpression(expr)
-                value_path = expr_o.value_path
-                key_path = expr_o.key_path
-            except Exception, e:
-                msg = "Error getting an Index: Invalid index expression: " +\
-                      "%s, %s, %s"
-                raise InvalidParameterError(msg % (value_path, key_path, expr), 
-                                            e)
-        
-        index = self.getIndexes(value_path, key_path, type)
-        assert len(index) <= 1
-        if not index:
-            return None
-        return index[0]
+    def removeIndex(self, package_id, resourcetype_id, xpath):
+        """Remove an index and all indexed data."""
+#        if value_path.startswith('/'):
+#            value_path = value_path[1:]
+        self.flushIndex(package_id, resourcetype_id, xpath)
+        self.drop(XmlIndex, 
+                  resourcetype = {'package':{'package_id':package_id}, 
+                                  'resourcetype_id':resourcetype_id}, 
+                  xpath = xpath)
     
-    def getIndexes(self,value_path = None, key_path = None, data_type = None):
-        """@see: L{seishub.xmldb.xmlindexcatalog.interfaces.IIndexRegistry}"""
-        w = ClauseList(operator = "AND")
-        if isinstance(value_path, basestring):
-            if value_path.startswith('/'):
-                value_path = value_path[1:]
-            like_value_path = self.to_sql_like(value_path)
-            if like_value_path == value_path:
-                w.append(index_def_tab.c.value_path == value_path)
-            else:
-                w.append(index_def_tab.c.value_path.like(like_value_path))
-        if isinstance(key_path, basestring):
-            w.append(index_def_tab.c.key_path == key_path)
-        if isinstance(data_type, basestring):
-            w.append(index_def_tab.c.data_type == data_type)
-        query = index_def_tab.select(w)
-        
-        res = self._db.execute(query)
-        try:
-            results = res.fetchall()
-            res.close()
-        except:
-            return None    
-        
-        indexes = list()
-        for res in results:
-                index = XmlIndex(key_path = res['key_path'],
-                                 value_path = res['value_path'],
-                                 type = res['data_type'])
-                # inject the internal id into obj:
-                index._setId(res[0])
-                indexes.append(index)
+    def getIndexes(self, package_id = None, resourcetype_id = None, 
+                   xpath = None, type = None):
+        """Return a list of all applicable indexes."""
+        res = self.pickup(XmlIndex, 
+                          resourcetype = {'package':{'package_id':package_id}, 
+                                          'resourcetype_id':resourcetype_id}, 
+                          xpath = xpath,
+                          type = type)
+        return res
 
-        return indexes
-
-    def updateIndex(self,key_path,value_path,new_index):
-        """@see: L{seishub.xmldb.xmlindexcatalog.interfaces.IIndexRegistry}"""
-        #TODO: updateIndex implementation
-        pass
+#    def updateIndex(self,key_path,value_path,new_index):
+#        """Update index."""
+#        #TODO: updateIndex implementation
+#        pass
     
-    # methods from IResourceIndexing:
     def indexResource(self, document_id, value_path, key_path):
         """@see: L{seishub.xmldb.xmlindexcatalog.interfaces.IResourceIndexing}"""
         #TODO: do this not index specific but resource type specific     
@@ -154,16 +100,24 @@ class XmlIndexCatalog(DbStorage):
         
         return True
 
-    def flushIndex(self, value_path, key_path):
-        """@see: L{seishub.xmldb.interfaces.IResourceIndexing}""" 
-        self._db.execute(index_tab.delete(
-                         index_tab.c.index_id.in_
-                           (select([index_def_tab.c.id],
-                                   and_ 
-                                   (index_def_tab.c.key_path == key_path,
-                                   index_def_tab.c.value_path == value_path))
-                            )
-                         ))
+    def flushIndex(self, package_id = None, resourcetype_id = None, 
+                   xpath = None, xmlindex = None):
+        """Remove all indexed data for given index."""
+        if not (package_id and resourcetype_id and xpath) or xmlindex:
+            raise TypeError("flushIndex: invalid number of arguments.")
+        if not xmlindex:
+            xmlindex = self.getIndexes(package_id, resourcetype_id, xpath)[0]
+        element_cls = xmlindex._getElementCls()
+        self.drop(element_cls, index = xmlindex)
+        
+#        self._db.execute(index_tab.delete(
+#                         index_tab.c.index_id.in_
+#                           (select([index_def_tab.c.id],
+#                                   and_ 
+#                                   (index_def_tab.c.key_path == key_path,
+#                                   index_def_tab.c.value_path == value_path))
+#                            )
+#                         ))
         
     def _to_sql(self, q):
         """translate query predicates to SQL where clause"""

@@ -165,26 +165,17 @@ class IIndexRegistry(Interface):
     """Manages index creation, retrieval, update and removal"""
     
     def registerIndex(xml_index):
-        """@param xml_index: register given XmlIndex
-        @return: deferred which will fire the unique index id on success
-        """
+        """"""
     
     def removeIndex(xpath_expr=None,key_path=None,value_path=None):
-        """Remove an index and its data.
-        All indexed data belonging to the index will be removed.
-        To update an existing index without data loss use updateIndex.
-        Pass an id or a key_path and value_path or a XmlIndex instance
-        @param key_path: key path
-        @param value_path: value path
-        @param xpath_expr: index defining xpath expression 
-        @return: Deferred"""
+        """"""
         
     def updateIndex(xpath_expr,new_index):
         """@param new_index: new XmlIndex instance
         @param xpath_expr: index defining xpath expression"""
         
     def getIndex(xpath_expr=None,key_path=None,value_path=None):
-        """@return: Deferred which will return a XmlIndex on success"""
+        """"""
         
     def getIndexes(res_type=None,key_path=None,data_type=None):
         """@param res_type: resource type (string)
@@ -218,12 +209,7 @@ class IResourceIndexing(Interface):
         """
         
     def flushIndex(value_path, key_path):
-        """Remove all indexed data for given index.
-        To completely remove an index use removeIndex.
-
-        @param value_path: value path
-        @param key_path: key path
-        @return: True on success"""
+        """"""
         
 class IXmlIndexCatalog(Interface):
     """Catalog providing methods for xml resource indexing and searching
