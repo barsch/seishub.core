@@ -186,12 +186,7 @@ class IIndexRegistry(Interface):
 class IResourceIndexing(Interface):
     """Index resources"""
     def indexResource(uri, value_path, key_path):
-        """Index the given resource with the given index.
-        
-        @param uri: uri of resource to be indexed
-        @param key_path: key path
-        @param value_path: value path
-        @return: Deferred returning True on success
+        """
         """
         
     def reindexResources(resource_storage,

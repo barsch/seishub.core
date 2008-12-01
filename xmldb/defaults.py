@@ -106,40 +106,45 @@ index_def_tab = Table(DEFAULT_PREFIX + INDEX_DEF_TABLE, metadata,
 
 # the following tables correspond to the different possible index types
 index_text_tab = Table(DEFAULT_PREFIX + 'text_' + INDEX_TABLE, metadata,
+    Column('id', Integer, primary_key = True, autoincrement = True),
     Column('index_id', Integer),
     Column('key', Unicode),
     Column('document_id', Integer),
-    PrimaryKeyConstraint('index_id','key','document_id'),
+    UniqueConstraint('index_id','key','document_id'),
     useexisting=True
 )
 
 index_numeric_tab = Table(DEFAULT_PREFIX + 'numeric_'+ INDEX_TABLE, metadata,
+    Column('id', Integer, primary_key = True, autoincrement = True),
     Column('index_id', Integer),
     Column('key', Numeric),
     Column('document_id', Integer),
-    PrimaryKeyConstraint('index_id','key','document_id'),
+    UniqueConstraint('index_id','key','document_id'),
     useexisting=True
 )
 
 index_datetime_tab = Table(DEFAULT_PREFIX + 'datetime_'+ INDEX_TABLE, metadata,
+    Column('id', Integer, primary_key = True, autoincrement = True),
     Column('index_id', Integer),
     Column('key', DateTime),
     Column('document_id', Integer),
-    PrimaryKeyConstraint('index_id','key','document_id'),
+    UniqueConstraint('index_id','key','document_id'),
     useexisting=True
 )
 
 index_boolean_tab = Table(DEFAULT_PREFIX + 'boolean_'+ INDEX_TABLE, metadata,
+    Column('id', Integer, primary_key = True, autoincrement = True),
     Column('index_id', Integer),
     Column('key', Boolean),
     Column('document_id', Integer),
-    PrimaryKeyConstraint('index_id','key','document_id'),
+    UniqueConstraint('index_id','key','document_id'),
     useexisting=True
 )
 
 index_keyless_tab = Table(DEFAULT_PREFIX + 'keyless_'+ INDEX_TABLE, metadata,
+    Column('id', Integer, primary_key = True, autoincrement = True),
     Column('index_id', Integer),
     Column('document_id', Integer),
-    PrimaryKeyConstraint('index_id','document_id'),
+    UniqueConstraint('index_id','document_id'),
     useexisting=True
 )

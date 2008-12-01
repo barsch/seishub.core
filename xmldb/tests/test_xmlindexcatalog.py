@@ -70,6 +70,7 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
     def __init__(self, *args, **kwargs):
         SeisHubEnvironmentTestCase.__init__(self, *args,**kwargs)
         self.catalog = self.env.catalog.index_catalog
+        self.xmldb = self.env.catalog.xmldb
         self.so_ids = list()
 
     def setUp(self):
@@ -144,27 +145,7 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         for i in so_indexes:
             self.env.catalog.removeIndex(xpath = i)
         for res in self.so_ids:
-            self.env.catalog.deleteResource(res[0],res[1],res[2])    
-    
-    def _assertClassAttributesEqual(self,first,second):
-        return self.assertEquals(first.__dict__,second.__dict__)
-    
-    def _assertClassCommonAttributesEqual(self,first,second):
-        # compare two classes' common attributes
-        f = dict(first.__dict__)
-        s = dict(second.__dict__)
-        for k in s:
-            if k not in f:
-                f[k]=s[k]
-        for k in f:
-            if k not in s:
-                s[k]=f[k]
-        return self.assertEquals(f,s)
-    
-    def _assertClassAttributeListEqual(self,first,second,attribute_list):
-        for attr in attribute_list:
-            self.assertEqual(first.__getattribute__(attr),
-                             second.__getattribute__(attr))
+            self.env.catalog.deleteResource(res[0],res[1],res[2])
     
     def testRegisterIndex(self):
         index = XmlIndex(self.rt1, "/station/XY/paramXY", DATETIME_INDEX, 
@@ -265,115 +246,142 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
                                  self.rt2.resourcetype_id,
                                  "/station/XY/paramXY")
     
-#    def testIndexResource(self):
-#        dbmgr = XmlDbManager(self.db)
-#        catalog = XmlIndexCatalog(db = self.db,
-#                                  resource_storage = dbmgr)
-#        bad_catalog = XmlIndexCatalog(db = self.db)
-#        
-#        # register a test resource:
-#        test_res = Resource(self.rt3, document = newXMLDocument(RAW_XML1))
-#        dbmgr.addResource(test_res)
-#
-#        # register a test index:
-#        test_index=XmlIndex(key_path = self._test_kp,
-#                            value_path = self._test_vp)
-#        catalog.registerIndex(test_index)
-#        
-#        # index test resource:
-#        catalog.indexResource(test_res.document._id, 
-#                              test_index.getValue_path(), 
-#                              test_index.getKey_path())
-#        
-#        #TODO: check db entries made
-#                
-#        # pass unknown index:
-#        self.assertRaises(NotFoundError, catalog.indexResource,
-#                          test_res.document._id, value_path="blub", 
-#                          key_path="blah")
-#        
-#        # clean up:
-#        catalog.removeIndex(key_path=self._test_kp, value_path=self._test_vp)
-#        dbmgr.deleteResource(id = test_res.id)
+    def testIndexResource(self):
+        # set up
+        res = Resource(self.rt1, document = newXMLDocument(RAW_XML2))
+        self.xmldb.addResource(res)
+        index1 = XmlIndex(self.rt1, "/station/station_code")
+        index2 = XmlIndex(self.rt1, "/station/XY/paramXY")
+        self.catalog.registerIndex(index1)
+        self.catalog.registerIndex(index2)
+        
+        # index resource
+        r = self.catalog.indexResource(res)
+        self.assertEquals(len(r), 4)
+        el = self.catalog.dumpIndex(self.pkg1.package_id, 
+                                    self.rt1.resourcetype_id, 
+                                    "/station/station_code")
+        self.assertEquals(len(el), 1)
+        self.assertEquals(el[0].key, "GENF")
+        self.assertEquals(el[0].document.data, res.document.data)
+        el = self.catalog.dumpIndex(self.pkg1.package_id, 
+                                    self.rt1.resourcetype_id, 
+                                    "/station/XY/paramXY")
+        self.assertEqual(len(el), 3)
+        self.assertEquals(el[0].key, "0")
+        self.assertEquals(el[0].document.data, res.document.data)
+        self.assertEquals(el[1].key, "2.5")
+        self.assertEquals(el[1].document.data, res.document.data)
+        self.assertEquals(el[2].key, "99")
+        self.assertEquals(el[2].document.data, res.document.data)
+        
+        # clean up
+        self.catalog.removeIndex(self.rt1.package.package_id,
+                                 self.rt1.resourcetype_id,
+                                 "/station/station_code")
+        self.catalog.removeIndex(self.rt1.package.package_id,
+                                 self.rt1.resourcetype_id,
+                                 "/station/XY/paramXY")
+        self.xmldb.deleteResource(id = res.id)
     
-#    def testFlushIndex(self):
-#        dbmgr=XmlDbManager(self.db)
-#        catalog=XmlIndexCatalog(self.db,dbmgr)
-#        #first register an index and add some data:
-#        test_index=XmlIndex(key_path = self._test_kp,
-#                            value_path = self._test_vp)
-#        try:
-#            catalog.registerIndex(test_index)
-#        except:
-#            print "Error registering index."
-#        
-#        test_res = Resource(self.rt3, document = newXMLDocument(RAW_XML1))
-#        try:
-#            dbmgr.addResource(test_res)
-#        except:
-#            raise
-#            print "Error adding resource."
-#
-#        catalog.indexResource(test_res.document._id, 
-#                              test_index.getValue_path(),
-#                              test_index.getKey_path())
-#        #flush index:
-#        catalog.flushIndex(value_path=self._test_vp, 
-#                           key_path=self._test_kp)
-#        
-#        #TODO: check if index is properly flushed
-#        
-#        # clean up:
-#        catalog.removeIndex(test_index.getValue_path(), test_index.getKey_path())
-#        dbmgr.deleteResource(id = test_res.id)
-#        
-#    def testQuery(self):
-#        """XXX: these tests fail, will be fixed with #75"""
-#        # create test catalog
-#        self._setup_testdata()
-#        
-#        q0 = "/testpackage/station/station[lon != 12.51200 and lat = 55.23200]"
-#        q1 = "/testpackage/station/station[lat]"
-#        q2 = "/testpackage/station/station[XY/paramXY or lon = 12.51200]"
-#        q3 = "/".join(['',str(self.pkg1._id), str(self.rt2._id), 'testml'])
-#
-#        res0 = self.catalog.query(XPathQuery(q0))
-#        res1 = self.catalog.query(XPathQuery(q1))
-#        res2 = self.catalog.query(XPathQuery(q2))
-#        res3 = self.catalog.query(XPathQuery(q3))
-#        res0.sort(); res1.sort(); res2.sort(); res3.sort()
-#        self.assertEqual(res0, [self.res2.document._id])
-#        self.assertEqual(res1, [self.res1.document._id, 
-#                                self.res2.document._id])
-#        self.assertEqual(res2, [self.res1.document._id, 
-#                                self.res2.document._id])
-#        self.assertEqual(res3, [self.res3.document._id])
-#
-#        # sort order tests
-#        so1 = "/sortordertests/sotest/sortorder[int1]"
-#        so2 = "/".join(['',str(self.pkg2._id), str(self.rt4._id), 'sortorder'])
-#        res1 = self.catalog.query(
-#            XPathQuery(so1, [["/sortordertests/sotest/sortorder/int1","asc"]])
-#            )
-#        res2 = self.catalog.query(XPathQuery(so1, [["/sortordertests/sotest/sortorder/int1","desc"]], 
-#                                             limit = 3))
-#        res3 = self.catalog.query(XPathQuery(so1, [["/sortordertests/sotest/sortorder/int2","asc"],
-#                                                   ["/sortordertests/sotest/sortorder/str2","desc"]], 
-#                                             limit = 5))
-#        res4 = self.catalog.query(XPathQuery(so2,[["/sortordertests/sotest/sortorder/int2","desc"]],
-#                                             limit = 3))
-#        
-#        sot_res = [res[3] for res in self.so_ids]
-#        self.assertEqual(res1,sot_res)
-#        sot_res.reverse()
-#        self.assertEqual(res2,sot_res[:3])
-#        sot_res.reverse()
-#        self.assertEqual(res3,[sot_res[0],sot_res[3],sot_res[4],
-#                               sot_res[1],sot_res[2]])
-#        self.assertEqual(res4,[sot_res[1],sot_res[2],sot_res[0]])
-#        
-#        # remove test catalog
-#        self._cleanup_testdata()
+    def testFlushIndex(self):
+        # set up
+        index1 = XmlIndex(self.rt1, "/station/station_code")
+        index2 = XmlIndex(self.rt1, "/station/XY/paramXY")
+        self.catalog.registerIndex(index1)
+        self.catalog.registerIndex(index2)
+        res = Resource(self.rt1, document = newXMLDocument(RAW_XML2))
+        self.xmldb.addResource(res)
+        self.catalog.indexResource(res)
+        
+        # index1 and index2 contain data
+        el = self.catalog.dumpIndex(self.pkg1.package_id, 
+                                    self.rt1.resourcetype_id, 
+                                    "/station/station_code")
+        self.assertEquals(len(el), 1)
+        el = self.catalog.dumpIndex(self.pkg1.package_id, 
+                                    self.rt1.resourcetype_id, 
+                                    "/station/XY/paramXY")
+        self.assertEquals(len(el), 3)
+        # flush index1
+        self.catalog.flushIndex(self.rt1.package.package_id,
+                                 self.rt1.resourcetype_id,
+                                 "/station/station_code")
+        # index1 data has gone
+        el = self.catalog.dumpIndex(self.pkg1.package_id, 
+                                    self.rt1.resourcetype_id, 
+                                    "/station/station_code")
+        self.assertEquals(len(el), 0)
+        # index2 data still there
+        el = self.catalog.dumpIndex(self.pkg1.package_id, 
+                                    self.rt1.resourcetype_id, 
+                                    "/station/XY/paramXY")
+        self.assertEquals(len(el), 3)
+        # flush index2
+        self.catalog.flushIndex(self.rt1.package.package_id,
+                                self.rt1.resourcetype_id,
+                                "/station/XY/paramXY")
+        el = self.catalog.dumpIndex(self.pkg1.package_id, 
+                                    self.rt1.resourcetype_id, 
+                                    "/station/XY/paramXY")
+        self.assertEquals(len(el), 0)
+        
+        # clean up:
+        self.catalog.removeIndex(self.rt1.package.package_id,
+                                 self.rt1.resourcetype_id,
+                                 "/station/station_code")
+        self.catalog.removeIndex(self.rt1.package.package_id,
+                                 self.rt1.resourcetype_id,
+                                 "/station/XY/paramXY")
+        self.xmldb.deleteResource(id = res.id)
+        
+    def testQuery(self):
+        """XXX: these tests fail, will be fixed with #75"""
+        # create test catalog
+        self._setup_testdata()
+        
+        q0 = "/testpackage/station/station[lon != 12.51200 and lat = 55.23200]"
+        q1 = "/testpackage/station/station[lat]"
+        q2 = "/testpackage/station/station[XY/paramXY or lon = 12.51200]"
+        q3 = "/".join(['',str(self.pkg1._id), str(self.rt2._id), 'testml'])
+
+        res0 = self.catalog.query(XPathQuery(q0))
+        res1 = self.catalog.query(XPathQuery(q1))
+        res2 = self.catalog.query(XPathQuery(q2))
+        res3 = self.catalog.query(XPathQuery(q3))
+        res0.sort(); res1.sort(); res2.sort(); res3.sort()
+        self.assertEqual(res0, [self.res2.document._id])
+        self.assertEqual(res1, [self.res1.document._id, 
+                                self.res2.document._id])
+        self.assertEqual(res2, [self.res1.document._id, 
+                                self.res2.document._id])
+        self.assertEqual(res3, [self.res3.document._id])
+
+        # sort order tests
+        so1 = "/sortordertests/sotest/sortorder[int1]"
+        so2 = "/".join(['',str(self.pkg2._id), str(self.rt4._id), 'sortorder'])
+        res1 = self.catalog.query(
+            XPathQuery(so1, [["/sortordertests/sotest/sortorder/int1","asc"]])
+            )
+        res2 = self.catalog.query(XPathQuery(so1, [["/sortordertests/sotest/sortorder/int1","desc"]], 
+                                             limit = 3))
+        res3 = self.catalog.query(XPathQuery(so1, [["/sortordertests/sotest/sortorder/int2","asc"],
+                                                   ["/sortordertests/sotest/sortorder/str2","desc"]], 
+                                             limit = 5))
+        res4 = self.catalog.query(XPathQuery(so2,[["/sortordertests/sotest/sortorder/int2","desc"]],
+                                             limit = 3))
+        
+        sot_res = [res[3] for res in self.so_ids]
+        self.assertEqual(res1,sot_res)
+        sot_res.reverse()
+        self.assertEqual(res2,sot_res[:3])
+        sot_res.reverse()
+        self.assertEqual(res3,[sot_res[0],sot_res[3],sot_res[4],
+                               sot_res[1],sot_res[2]])
+        self.assertEqual(res4,[sot_res[1],sot_res[2],sot_res[0]])
+        
+        # remove test catalog
+        self._cleanup_testdata()
 
 
 def suite():

@@ -53,7 +53,7 @@ class XmlIndex(Serializable):
     
     def __str__(self):
         return '/' + self.resourcetype.package.package_id + '/' + \
-                self.resourcetype.resourcetype_id + '/' + self.xpath
+                self.resourcetype.resourcetype_id + self.xpath
                 
     def getResourceType(self):
         return self._resourcetype
@@ -112,9 +112,10 @@ class KeyIndexElement(Serializable):
                   'document':Relation(XmlDocument, 'document_id')
                   }
     
-    def __init__(self, index, key, document):
+    def __init__(self, index = None, key = None, document = None):
         self.index = index
-        self.key = self._filter_key(key)
+        if key:
+            self.key = self._filter_key(key)
         self.document = document
         
     def _filter_key(self, data):
@@ -152,7 +153,7 @@ class QualifierIndexElement(Serializable):
                   'document':Relation(XmlDocument, 'document_id')
                   }
     
-    def __init__(self, index, key, document):
+    def __init__(self, index = None, key = None, document = None):
         self.index = index
         # ignore key
         self.key = None

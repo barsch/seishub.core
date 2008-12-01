@@ -147,43 +147,24 @@ class XmlCatalog(object):
     def registerIndex(self, package_id = None, resourcetype_id = None, 
                       xpath = None, type = "text"):
         """@see: L{seishub.xmldb.interfaces.IXmlCatalog}"""
-#        if package_id and resourcetype_id:
-#            expr = self._to_xpath(package_id, resourcetype_id, xpath)
-#        else:
-#            # assume that xpath starts with '/package_id/resourcetype_id'
-#            expr = xpath
-        
-        # exp_obj = IndexDefiningXpathExpression(expr)
         type = INDEX_TYPES.get(type, TEXT_INDEX)
         _, resourcetype = self.env.registry.objects_from_id(package_id, 
                                                             resourcetype_id)
         index = XmlIndex(resourcetype, xpath, type)
         index = self.index_catalog.registerIndex(index)
-        # XXX: not working yet
-        # self.reindex(package_id, resourcetype_id, xpath)
+        self.reindex(package_id, resourcetype_id, xpath)
         return index
         
     
     def removeIndex(self, package_id = None, resourcetype_id = None, 
                     xpath = None):
         """@see: L{seishub.xmldb.interfaces.IXmlCatalog}"""
-#        if package_id and resourcetype_id:
-#            expr = self._to_xpath(package_id, resourcetype_id, xpath)
-#        else:
-#            # assume that xpath starts with '/package_id/resourcetype_id'
-#            expr = xpath
-        # exp_obj = IndexDefiningXpathExpression(expr)
         return self.index_catalog.removeIndex(package_id, resourcetype_id, 
                                               xpath)
         
     def getIndex(self, package_id = None, resourcetype_id = None, 
                  xpath = None, type = None):
         """@see: L{seishub.xmldb.interfaces.IXmlCatalog}"""
-#        if package_id and resourcetype_id:
-#            expr = self._to_xpath(package_id, resourcetype_id, xpath)
-#        else:
-#            # assume that xpath starts with '/package_id/resourcetype_id'
-#            expr = xpath
         return self.index_catalog.getIndexes(package_id, resourcetype_id, 
                                              xpath, type)
         

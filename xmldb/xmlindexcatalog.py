@@ -1,17 +1,17 @@
 # -*- coding: utf-8 -*-
-from zope.interface import implements
 from zope.interface.exceptions import DoesNotImplement
 from sqlalchemy import select #@UnresolvedImport
 from sqlalchemy.sql import and_, or_ #@UnresolvedImport
 from sqlalchemy.sql.expression import _BinaryExpression, ClauseList #@UnresolvedImport
 
+from seishub.core import implements
 from seishub.exceptions import SeisHubError, NotFoundError
 from seishub.exceptions import InvalidParameterError
 from seishub.exceptions import DuplicateObjectError
 from seishub.db.util import DbStorage, DbError
 from seishub.xmldb.interfaces import IXmlIndexCatalog, IIndexRegistry, \
                                      IResourceIndexing, IXmlIndex, \
-                                     IResourceStorage, IXPathQuery
+                                     IResourceStorage, IXPathQuery, IResource
 from seishub.xmldb.defaults import index_def_tab, \
                                    resource_tab
 from seishub.xmldb.index import XmlIndex
@@ -43,8 +43,6 @@ class XmlIndexCatalog(DbStorage):
     
     def removeIndex(self, package_id, resourcetype_id, xpath):
         """Remove an index and all indexed data."""
-#        if value_path.startswith('/'):
-#            value_path = value_path[1:]
         self.flushIndex(package_id, resourcetype_id, xpath)
         self.drop(XmlIndex, 
                   resourcetype = {'package':{'package_id':package_id}, 
@@ -66,39 +64,22 @@ class XmlIndexCatalog(DbStorage):
 #        #TODO: updateIndex implementation
 #        pass
     
-    def indexResource(self, document_id, value_path, key_path):
-        """@see: L{seishub.xmldb.xmlindexcatalog.interfaces.IResourceIndexing}"""
-        #TODO: do this not index specific but resource type specific     
-        #get objs and evaluate index on resource:
-        resource = self._storage.getResource(document_id = document_id)
-        index = self.getIndex(value_path, key_path)
-        if not index:
-            raise NotFoundError("No index found for (%s,%s)" % 
-                                    (value_path, key_path))
-        keysvals = index.eval(resource.document)
-        #data_type = index.getType()
-        index_id = index._getId()
-        if not keysvals: # index does not apply
-            return
-        
-        conn = self._db.connect()
-        # begin transaction:
-        txn = conn.begin()
-        try:
-            for keyval in keysvals:
-                conn.execute(index_tab.insert(),
-                             index_id = index_id,
-                             key = str(keyval['key']),
-                             value = str(keyval['value']))
-            txn.commit()
-        except Exception, e:
-            txn.rollback()
-            raise SeisHubError("Error indexing document with id %s" %\
-                               document_id, e)
-        finally:
-            conn.close()
-        
-        return True
+    def indexResource(self, resource):
+        """Index the given resource."""
+        if not IResource.providedBy(resource):
+            raise TypeError("%s is not an IResource." % str(resource))
+        idx_list = self.getIndexes(resource.package.package_id, 
+                                   resource.resourcetype.resourcetype_id)
+        elements = []
+        for idx in idx_list:
+            elements.extend(idx.eval(resource.document))
+        self.store(*elements)
+        return elements
+    
+    def dumpIndex(self, package_id, resourcetype_id, xpath):
+        """Return all indexed values for the given index."""
+        xmlindex = self.getIndexes(package_id, resourcetype_id, xpath)[0]
+        return self.pickup(xmlindex._getElementCls(), index = xmlindex)
 
     def flushIndex(self, package_id = None, resourcetype_id = None, 
                    xpath = None, xmlindex = None):
@@ -109,15 +90,6 @@ class XmlIndexCatalog(DbStorage):
             xmlindex = self.getIndexes(package_id, resourcetype_id, xpath)[0]
         element_cls = xmlindex._getElementCls()
         self.drop(element_cls, index = xmlindex)
-        
-#        self._db.execute(index_tab.delete(
-#                         index_tab.c.index_id.in_
-#                           (select([index_def_tab.c.id],
-#                                   and_ 
-#                                   (index_def_tab.c.key_path == key_path,
-#                                   index_def_tab.c.value_path == value_path))
-#                            )
-#                         ))
         
     def _to_sql(self, q):
         """translate query predicates to SQL where clause"""
@@ -162,7 +134,6 @@ class XmlIndexCatalog(DbStorage):
         
     def query(self, query):
         """@see: L{seishub.xmldb.interfaces.IXmlIndexCatalog}"""
-        # XXX: query should return ResourceInformation objects
         if not IXPathQuery.providedBy(query):
             raise DoesNotImplement(IXPathQuery)
         
