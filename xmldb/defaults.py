@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 from datetime import datetime
 from sqlalchemy import Table, Column
-from sqlalchemy import Integer, String, Text, Unicode, DateTime, Boolean 
+from sqlalchemy import Integer, String, Text, Unicode, DateTime, Boolean , Float
 from sqlalchemy import Numeric
 from sqlalchemy import UniqueConstraint, PrimaryKeyConstraint
 from sqlalchemy.sql import text
+from sqlalchemy.types import TypeDecorator
 
 from seishub.db.dbmanager import meta as metadata
 
@@ -16,6 +17,21 @@ INDEX_DEF_TABLE = 'index_def'
 METADATA_TABLE = 'meta'
 METADATA_DEF_TABLE = 'meta_def'
 RESOURCE_TABLE = 'resource'
+
+#class MyFloat(TypeDecorator):
+#    impl = Float
+#    
+#    def process_bind_param(self, value, dialect):
+#        a = 1
+#        return value
+#        
+##    def result_processor(self, dialect):
+##        a = 1
+##        import pdb;pdb.set_trace()
+#        
+#    def process_result_value(self, value, dialect):
+#        a = 1
+#        import pdb;pdb.set_trace()
 
 # xmldbms tables:
 
@@ -108,36 +124,48 @@ index_def_tab = Table(DEFAULT_PREFIX + INDEX_DEF_TABLE, metadata,
 index_text_tab = Table(DEFAULT_PREFIX + 'text_' + INDEX_TABLE, metadata,
     Column('id', Integer, primary_key = True, autoincrement = True),
     Column('index_id', Integer),
-    Column('key', Unicode),
+    Column('keyval', Unicode),
     Column('document_id', Integer),
-    UniqueConstraint('index_id','key','document_id'),
+    UniqueConstraint('index_id','keyval','document_id'),
     useexisting=True
 )
 
 index_numeric_tab = Table(DEFAULT_PREFIX + 'numeric_'+ INDEX_TABLE, metadata,
     Column('id', Integer, primary_key = True, autoincrement = True),
     Column('index_id', Integer),
-    Column('key', Numeric),
+    # Column('key', Numeric(precision = 23, scale = 9, asdecimal = True)),
+    Column('keyval', Numeric(precision = 53, scale = 11)),
+    # Column('key', Float(precision = 53)),
+    # Column('key', Numeric),
     Column('document_id', Integer),
-    UniqueConstraint('index_id','key','document_id'),
+    UniqueConstraint('index_id','keyval','document_id'),
+    useexisting=True
+)
+
+index_float_tab = Table(DEFAULT_PREFIX + 'float_'+ INDEX_TABLE, metadata,
+    Column('id', Integer, primary_key = True, autoincrement = True),
+    Column('index_id', Integer),
+    Column('keyval', Float(precision = 52, asdecimal = False)),
+    Column('document_id', Integer),
+    UniqueConstraint('index_id','keyval','document_id'),
     useexisting=True
 )
 
 index_datetime_tab = Table(DEFAULT_PREFIX + 'datetime_'+ INDEX_TABLE, metadata,
     Column('id', Integer, primary_key = True, autoincrement = True),
     Column('index_id', Integer),
-    Column('key', DateTime),
+    Column('keyval', DateTime),
     Column('document_id', Integer),
-    UniqueConstraint('index_id','key','document_id'),
+    UniqueConstraint('index_id','keyval','document_id'),
     useexisting=True
 )
 
 index_boolean_tab = Table(DEFAULT_PREFIX + 'boolean_'+ INDEX_TABLE, metadata,
     Column('id', Integer, primary_key = True, autoincrement = True),
     Column('index_id', Integer),
-    Column('key', Boolean),
+    Column('keyval', Boolean),
     Column('document_id', Integer),
-    UniqueConstraint('index_id','key','document_id'),
+    UniqueConstraint('index_id','keyval','document_id'),
     useexisting=True
 )
 

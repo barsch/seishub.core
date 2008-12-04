@@ -1,21 +1,24 @@
 # -*- coding: utf-8 -*-
 from zope.interface.exceptions import DoesNotImplement
-from sqlalchemy import select #@UnresolvedImport
-from sqlalchemy.sql import and_, or_ #@UnresolvedImport
+from sqlalchemy import select, sql
 from sqlalchemy.sql.expression import _BinaryExpression, ClauseList #@UnresolvedImport
 
 from seishub.core import implements
 from seishub.exceptions import SeisHubError, NotFoundError
 from seishub.exceptions import InvalidParameterError
 from seishub.exceptions import DuplicateObjectError
+from seishub.packages.defaults import packages_tab, resourcetypes_tab
 from seishub.db.util import DbStorage, DbError
 from seishub.xmldb.interfaces import IXmlIndexCatalog, IIndexRegistry, \
                                      IResourceIndexing, IXmlIndex, \
                                      IResourceStorage, IXPathQuery, IResource
-from seishub.xmldb.defaults import index_def_tab, \
-                                   resource_tab
+from seishub.xmldb.defaults import index_def_tab, resource_tab, document_tab
 from seishub.xmldb.index import XmlIndex
-from seishub.xmldb.xpath import IndexDefiningXpathExpression
+from seishub.xmldb.xpath import IndexDefiningXpathExpression, PredicateExpression
+
+OPERATORS = {'and':sql.and_,
+             'or':sql.or_
+             }
 
 
 class XmlIndexCatalog(DbStorage):
@@ -64,12 +67,13 @@ class XmlIndexCatalog(DbStorage):
 #        #TODO: updateIndex implementation
 #        pass
     
-    def indexResource(self, resource):
+    def indexResource(self, resource, xpath = None):
         """Index the given resource."""
         if not IResource.providedBy(resource):
             raise TypeError("%s is not an IResource." % str(resource))
         idx_list = self.getIndexes(resource.package.package_id, 
-                                   resource.resourcetype.resourcetype_id)
+                                   resource.resourcetype.resourcetype_id,
+                                   xpath)
         elements = []
         for idx in idx_list:
             elements.extend(idx.eval(resource.document))
@@ -91,88 +95,168 @@ class XmlIndexCatalog(DbStorage):
         element_cls = xmlindex._getElementCls()
         self.drop(element_cls, index = xmlindex)
         
-    def _to_sql(self, q):
-        """translate query predicates to SQL where clause"""
-        value_path = q.getValue_path()
-        predicates = q.getPredicates()
-        idx_aliases = list()
+#    def _to_sql(self, xpq, q = None):
+#        """translate query predicates to SQL where clause"""
+#        # value_path = q.getValue_path()
+#        # node_test = q.node_test
+#        predicates = xpq.getPredicates()
+#        idx_aliases = list()
+#        
+#        def _walk(p):
+#            # recursively walk through predicate tree and convert to sql 
+#            if p._op == 'and':
+#                return and_(_walk(p._left),_walk(p._right))
+#            elif p._op == 'or':
+#                return or_(_walk(p._left),_walk(p._right))
+#            else:
+#                # find appropriate index:
+#                idx = self.getIndex(value_path, str(p._left))
+#                if not idx:
+#                    msg = "Error processing query %s: No Index found for %s/%s"
+#                    raise NotFoundError(msg % (str(q), value_path, 
+#                                               str(p._left)))
+#                idx_id = idx._getId()
+#                # XXX: maybe simple counter instead of hash
+#                alias_id = abs(hash(str(idx_id) + str(p._right)))
+#                alias = index_tab.alias("idx_" + str(alias_id))
+#                print alias_cnt
+#                idx_aliases.append(alias)
+#
+#                if p._op == '':
+#                    return _BinaryExpression(alias.c.index_id, idx_id,'=')
+#
+#                return and_(_BinaryExpression(alias.c.index_id, idx_id,'='),
+#                            _BinaryExpression(alias.c.key, 
+#                                              '\'' + str(p._right) + '\'',
+#                                              p._op))
+#                
+#        w = _walk(predicates)
+#        
+#        for alias in idx_aliases:
+#            w = and_(w,alias.c.value == index_tab.c.value)
+#            
+#        return w
+
+    def findIndex(self, query_base, expr):
+        """Tries to find the index fitting best for expr."""
+        # TODO: caching?
+        expr = '/' + query_base[2] + '/' + expr
+        idx = self.getIndexes(query_base[0], query_base[1], expr)
+        if idx:
+            return idx[0]
+        return None
+
+    def _process_predicates(self, p, query_base, q, joins = None, 
+                            prev_op = None):
+        # try to find a fitting index
+        left = p._left
+        right = p._right
+        op = p._op
+        left_idx = self.findIndex(query_base, str(left))
+        right_idx = self.findIndex(query_base, str(right))
         
-        def _walk(p):
-            # recursively walk through predicate tree and convert to sql 
-            if p._op == 'and':
-                return and_(_walk(p._left),_walk(p._right))
-            elif p._op == 'or':
-                return or_(_walk(p._left),_walk(p._right))
+        if left_idx and right_idx: 
+            # - rel op => join
+            # - log op => keyless query
+            print ("join")
+        elif left_idx: 
+            # - rel op => right = Value => key query
+            # - log op => right = expr => left: keyless query, right: recursion step
+            # - no op => keyless query 
+            # left:
+            idx_tab = left_idx._getElementCls().db_table.alias()
+            if not joins:
+                joins = document_tab.outerjoin(idx_tab, 
+                                     onclause = (idx_tab.c['document_id'] ==\
+                                                 document_tab.c['id']))
             else:
-                # find appropriate index:
-                idx = self.getIndex(value_path, str(p._left))
-                if not idx:
-                    msg = "Error processing query %s: No Index found for %s/%s"
-                    raise NotFoundError(msg % (str(q), value_path, 
-                                               str(p._left)))
-                idx_id = idx._getId()
-                # XXX: maybe simple counter instead of hash
-                alias_id = abs(hash(str(idx_id) + str(p._right)))
-                alias = index_tab.alias("idx_" + str(alias_id))
-                #print alias_cnt
-                idx_aliases.append(alias)
+                joins = joins.outerjoin(idx_tab, 
+                                     onclause = (idx_tab.c['document_id'] ==\
+                                                 document_tab.c['id']))
+            if prev_op == 'or':
+                # OR operator...
+                pass
+            else:
+                q = q.where(idx_tab.c['index_id'] == left_idx._id)
+            # right:
+            if right and op in PredicateExpression._relational_ops:
+                # key query => leaf
+                q = q.where(p.applyOperator(idx_tab.c.keyval, 
+                                            unicode(str(right))))
+                return q, joins
+            else:
+                left = None
 
-                if p._op == '':
-                    return _BinaryExpression(alias.c.index_id, idx_id,'=')
-
-                return and_(_BinaryExpression(alias.c.index_id, idx_id,'='),
-                            _BinaryExpression(alias.c.key, 
-                                              '\'' + str(p._right) + '\'',
-                                              p._op))
-                
-        w = _walk(predicates)
-        
-        for alias in idx_aliases:
-            w = and_(w,alias.c.value == index_tab.c.value)
-            
-        return w
+        # => recursion step
+        if op in PredicateExpression._relational_ops:
+            # still here with relational operator => no index found
+            msg = "Error processing query. No index found for: %s"
+            raise NotFoundError(msg % str(p))
+        # logical operator
+        if left:
+            q, joins = self._process_predicates(left, query_base, q, joins)
+        if right:
+            q, joins = self._process_predicates(right, query_base, q, 
+                                                joins)
+        # w = OPERATORS[p._op](l, r)
+        return q, joins
         
     def query(self, query):
         """@see: L{seishub.xmldb.interfaces.IXmlIndexCatalog}"""
         if not IXPathQuery.providedBy(query):
             raise DoesNotImplement(IXPathQuery)
         
-        if query.has_predicates(): 
-            # query w/ key path expression(s)
-            value_col = index_tab.c.value
-            w = self._to_sql(query)
-            q = select([value_col],w)
-        else:
-            # value path only: => resource type query
-            value_col = resource_tab.c.resource_id
-            w = ClauseList(operator = 'AND')
-            if query.package_id:
-                w.append(resource_tab.c.package_id==query.package_id)
-            if query.resourcetype_id:
-                w.append(resource_tab.c.resourcetype_id==query.resourcetype_id)
-            q = select([value_col], w)
-        q = q.group_by(value_col)
-        
-        # order by
-        alias_id = 0
-        limit = query.getLimit()
-        for ob in query.getOrder_by():
-            # find appropriate index
-            idx = self.getIndex(ob[0].value_path, ob[0].key_path)
-            if not idx:
-                msg = "Error processing query %s: No Index found for %s."
-                raise NotFoundError(msg % (str(query), str(ob[0])))
-            alias = index_tab.alias("idx_" + str(alias_id))
-            alias_id += 1
-            q = q.where(and_(alias.c.index_id == idx._getId(), 
-                             alias.c.value == value_col)) \
-                 .group_by(alias.c.key)
-            if ob[1].lower() == "desc": 
-                q = q.order_by(alias.c.key.desc())
-            else:
-                q = q.order_by(alias.c.key.asc())
-        if limit:
-            q = q.limit(limit)
+        query_base = query.getQueryBase()
+        q = select([document_tab.c['id']], use_labels = True)
+        q, joins = self._process_predicates(query.getPredicates(), 
+                                            query_base, q)
+        q = q.select_from(joins)
+        q = q.group_by(document_tab.c['id'])
         res = self._db.execute(q).fetchall()
-        results = [result[0] for result in res]
-        return results
+        return [result[0] for result in res]
+#        if query.has_predicates(): 
+#            # query w/ key path expression(s)
+#            value_col = index_tab.c.value
+#            q = self._to_sql(query)
+#            q = select([value_col],w)
+#        else:
+#            # all resources with specified resourcetype / package having the 
+#            # specified rootnode
+#            id_col = resource_tab.c['id']
+#            q = select([id_col])
+#            # w = ClauseList(operator = 'AND')
+#            q = q.join(resourcetypes_tab, 
+#                       resourcetypes_tab.c['resourcetype_id'] ==\
+#                       resource_tab.c['resourcetype_id'])
+#            q = q.join(packages_tab, 
+#                       resourcetypes_tab.c['package_id'] ==\
+#                       packages_tab.c['id'])
+#            if query.package_id:
+#                q = q.where(packages_tab.c['name'] == query.package_id)
+#            if query.resourcetype_id:
+#                q = q.where(resourcetypes_tab.c['name'] ==\
+#                            query.resourcetype_id)
+#        q = q.group_by(id_col)
+#        # order by
+#        alias_id = 0
+#        limit = query.getLimit()
+#        for ob in query.getOrder_by():
+#            # find appropriate index
+#            idx = self.getIndex(ob[0].value_path, ob[0].key_path)
+#            if not idx:
+#                msg = "Error processing query %s: No Index found for %s."
+#                raise NotFoundError(msg % (str(query), str(ob[0])))
+#            alias = idx._getElementCls().db_table.alias("idx_" + str(alias_id))
+#            alias_id += 1
+#            q = q.where(and_(alias.c.index_id == idx._getId(), 
+#                             alias.c.value == value_col)) \
+#                 .group_by(alias.c.key)
+#            if ob[1].lower() == "desc": 
+#                q = q.order_by(alias.c.key.desc())
+#            else:
+#                q = q.order_by(alias.c.key.asc())
+#        if limit:
+#            q = q.limit(limit)
+#        res = self._db.execute(q).fetchall()
+#        results = [result[0] for result in res]
+#        return results

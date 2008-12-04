@@ -10,7 +10,7 @@ from seishub.test import SeisHubEnvironmentTestCase
 from seishub.exceptions import NotFoundError, DuplicateObjectError
 from seishub.xmldb.xmlindexcatalog import XmlIndexCatalog
 from seishub.xmldb.xmldbms import XmlDbManager
-from seishub.xmldb.index import XmlIndex, DATETIME_INDEX
+from seishub.xmldb.index import XmlIndex, DATETIME_INDEX, NUMERIC_INDEX, FLOAT_INDEX
 from seishub.xmldb.resource import Resource, newXMLDocument
 from seishub.xmldb.defaults import index_def_tab, DEFAULT_PREFIX, \
                                    INDEX_DEF_TABLE
@@ -38,10 +38,13 @@ RAW_XML2 = """<station rel_uri="genf">
         <paramXY>0</paramXY>
         <paramXY>99</paramXY>
     </XY>
+    <test_date>20081212010102.123456789</test_date>
+    <test_date2>20081212010102.050300000</test_date2>
 </station>"""
 
 RAW_XML3 = """<?xml version="1.0"?>
 <testml>
+<res_link>BERN</res_link>
 <blah1 id="3"><blahblah1>blahblahblah</blahblah1></blah1>
 </testml>
 """
@@ -50,10 +53,10 @@ URI1 = "/real/bern"
 URI2 = "/fake/genf"
 URI3 = "/testml/res1"
 
-IDX1 = "/testpackage/station/station/lon"
-IDX2 = "/testpackage/station/station/lat"
-IDX3 = "/testpackage/testml/testml/blah1/@id"
-IDX4 = "/testpackage/station/station/XY/paramXY"
+IDX1 = "/station/lon"
+IDX2 = "/station/lat"
+IDX3 = "/testml/blah1/@id"
+IDX4 = "/station/XY/paramXY"
 
 so_tests = ['so1.xml','so2.xml','so3.xml','so4.xml','so5.xml']
 so_indexes = ['/sortordertests/sotest/sortorder/int1', 
@@ -72,6 +75,9 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         self.catalog = self.env.catalog.index_catalog
         self.xmldb = self.env.catalog.xmldb
         self.so_ids = list()
+        
+#    def _config(self):
+#        self.config.set('db', 'verbose', True)
 
     def setUp(self):
         self.pkg1 = self.env.registry.db_registerPackage("testpackage")
@@ -104,14 +110,14 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         self.res3 = self.env.catalog.addResource(self.pkg1.package_id, 
                                                  self.rt2.resourcetype_id, 
                                                  RAW_XML3)
-        self.env.catalog.registerIndex(xpath = IDX1)
-        self.env.catalog.registerIndex(xpath = IDX2)
-        self.env.catalog.registerIndex(xpath = IDX3)
-        self.env.catalog.registerIndex(xpath = IDX4)
-        self.env.catalog.reindex(xpath = IDX1)
-        self.env.catalog.reindex(xpath = IDX2)
-        self.env.catalog.reindex(xpath = IDX3)
-        self.env.catalog.reindex(xpath = IDX4)
+        self.env.catalog.registerIndex("testpackage", "station", IDX1)
+        self.env.catalog.registerIndex("testpackage", "station", IDX2)
+        self.env.catalog.registerIndex("testpackage", "testml", IDX3)
+        self.env.catalog.registerIndex("testpackage", "station", IDX4)
+        self.env.catalog.reindex("testpackage", "station", IDX1)
+        self.env.catalog.reindex("testpackage", "station", IDX2)
+        self.env.catalog.reindex("testpackage", "testml", IDX3)
+        self.env.catalog.reindex("testpackage", "station", IDX4)
         # add sort order test resources
         path = os.path.dirname(inspect.getsourcefile(self.__class__))
         test_path = os.path.join(path,'data')
@@ -125,8 +131,8 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
                                 res.resourcetype.resourcetype_id, 
                                 res.id, res.document._id])
         for i in so_indexes:
-            self.env.catalog.registerIndex(xpath = i)
-            self.env.catalog.reindex(xpath = i)
+            self.env.catalog.registerIndex('sortordertests', 'sotest', i)
+            self.env.catalog.reindex('sortordertests', 'sotest', i)
         
     def _cleanup_testdata(self):
         self.env.catalog.removeIndex(xpath = IDX1)
@@ -160,6 +166,7 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         self.assertEquals(res.xpath, "/station/XY/paramXY")
         self.assertEquals(res.type, DATETIME_INDEX)
         self.assertEquals(res.options, "%Y/%m")
+        
         
         
         # try to add a duplicate:
@@ -255,8 +262,16 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         self.catalog.registerIndex(index1)
         self.catalog.registerIndex(index2)
         
+        #index3 = XmlIndex(self.rt1, "/station/test_date", FLOAT_INDEX)
+        #self.catalog.registerIndex(index3)
+        
         # index resource
+        
         r = self.catalog.indexResource(res)
+#        el = self.catalog.dumpIndex(self.pkg1.package_id, 
+#                                    self.rt1.resourcetype_id, 
+#                                    "/station/test_date")
+#        import pdb;pdb.set_trace()
         self.assertEquals(len(r), 4)
         el = self.catalog.dumpIndex(self.pkg1.package_id, 
                                     self.rt1.resourcetype_id, 
@@ -335,27 +350,86 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
                                  "/station/XY/paramXY")
         self.xmldb.deleteResource(id = res.id)
         
-    def testQuery(self):
-        """XXX: these tests fail, will be fixed with #75"""
+    def testIndexQuery(self):
+        pass
+        
+    def testXPathQuery(self):
+        """XXX: these tests fail, will be fixed with #75
+        XXX: rootnode still ignored"""
         # create test catalog
         self._setup_testdata()
         
-        q0 = "/testpackage/station/station[lon != 12.51200 and lat = 55.23200]"
-        q1 = "/testpackage/station/station[lat]"
-        q2 = "/testpackage/station/station[XY/paramXY or lon = 12.51200]"
-        q3 = "/".join(['',str(self.pkg1._id), str(self.rt2._id), 'testml'])
+        #======================================================================
+        # location path queries
+        #======================================================================
+        # all resources of package testpackage, resourcetype 'station'
+        q = "/testpackage/station/station" 
+        
+        #======================================================================
+        # node existance queries
+        #====================================================================== 
+        q = "/testpackage/station/station[lat]"
+        res = self.catalog.query(XPathQuery(q))
+        self.assertEqual(len(res), 2)
+        self.assertTrue(self.res1.document._id in res)
+        self.assertTrue(self.res2.document._id in res)
+        
+        #======================================================================
+        # key queries
+        #======================================================================
+        # single key query
+        q = "/testpackage/station/station[lon = 12.51200]"
+        res = self.catalog.query(XPathQuery(q))
+        self.assertEqual(res, [self.res1.document._id])
+        
+        # multiple key queries
+        q = "/testpackage/station/station[lon != 12.51200 and lat = 55.23200]"
+        res = self.catalog.query(XPathQuery(q))
+        self.assertEqual(res, [self.res2.document._id])
+        q = "/testpackage/station/station[lat = 55.23200 and lon != 12.51200]"
+        res = self.catalog.query(XPathQuery(q))
+        self.assertEqual(res, [self.res2.document._id])
+        
+        #======================================================================
+        # combined queries
+        #======================================================================
+        # nodex existance AND key query
+        q = "/testpackage/station/station[XY/paramXY and lon = 12.51200]"
+        res = self.catalog.query(XPathQuery(q))
+        self.assertEqual(len(res), 0)
+        q = "/testpackage/station/station[XY/paramXY and lon = 22.51200]"
+        res = self.catalog.query(XPathQuery(q))
+        self.assertEqual(res, [self.res2.document._id])
+        q = "/testpackage/station/station[lon = 12.51200 and XY/paramXY]"
+        res = self.catalog.query(XPathQuery(q))
+        self.assertEqual(len(res), 0)
+        q = "/testpackage/station/station[lon = 22.51200 and XY/paramXY]"
+        res = self.catalog.query(XPathQuery(q))
+        self.assertEqual(res, [self.res2.document._id])
+        
+        # node existance OR key query
+        q = "/testpackage/station/station[XY/paramXY or lon = 12.51200]"
+        res = self.catalog.query(XPathQuery(q))
+        # import pdb;pdb.set_trace()
+        self.assertEqual(len(res), 2)
+        self.assertTrue(self.res1.document._id in res)
+        self.assertTrue(self.res2.document._id in res)
+        
+        # import pdb;pdb.set_trace()
+        q4 = "/".join(['',str(self.pkg1._id), str(self.rt2._id), 'testml'])
 
-        res0 = self.catalog.query(XPathQuery(q0))
-        res1 = self.catalog.query(XPathQuery(q1))
-        res2 = self.catalog.query(XPathQuery(q2))
-        res3 = self.catalog.query(XPathQuery(q3))
-        res0.sort(); res1.sort(); res2.sort(); res3.sort()
-        self.assertEqual(res0, [self.res2.document._id])
-        self.assertEqual(res1, [self.res1.document._id, 
-                                self.res2.document._id])
-        self.assertEqual(res2, [self.res1.document._id, 
-                                self.res2.document._id])
-        self.assertEqual(res3, [self.res3.document._id])
+        
+        
+#        res1 = self.catalog.query(XPathQuery(q1))
+#        res2 = self.catalog.query(XPathQuery(q2))
+#        res3 = self.catalog.query(XPathQuery(q3))
+#        res0.sort(); res1.sort(); res2.sort(); res3.sort()
+#        
+#        self.assertEqual(res1, [self.res1.document._id, 
+#                                self.res2.document._id])
+#        self.assertEqual(res2, [self.res1.document._id, 
+#                                self.res2.document._id])
+#        self.assertEqual(res3, [self.res3.document._id])
 
         # sort order tests
         so1 = "/sortordertests/sotest/sortorder[int1]"

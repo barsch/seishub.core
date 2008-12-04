@@ -217,32 +217,32 @@ class XmlCatalog(object):
         
     def reindex(self, package_id = None, resourcetype_id = None, xpath = None):
         """@see: L{seishub.xmldb.interfaces.IXmlCatalog}"""
-        return
-        if package_id and resourcetype_id:
-            expr = self._to_xpath(package_id, resourcetype_id, xpath)
-        else:
-            # assume that xpath starts with '/package_id/resourcetype_id'
-            expr = xpath
+#        if package_id and resourcetype_id:
+#            expr = self._to_xpath(package_id, resourcetype_id, xpath)
+#        else:
+#            # assume that xpath starts with '/package_id/resourcetype_id'
+#            expr = xpath
             
-        # get index
-        index = self.index_catalog.getIndex(expr = expr)
+#        # get index
+#        index = self.index_catalog.getIndexes(package_id, resourcetype_id, 
+#                                              xpath)
+#        
+#        # flush index
         
-        # flush index
-        self.flushIndex(xpath = expr)
-        
-        # find all resources the index applies to by resource type
-        value_path = index.value_path
-        key_path = index.key_path
-        if value_path.startswith('/'):
-            value_path = value_path[1:]
-        #XXX: rootnode to be removed
-        package, type, rootnode  = value_path.split('/')
-        reslist = self.getResourceList(package_id = package, 
-                                       resourcetype_id = type)
+#        
+#        # find all resources the index applies to by resource type
+#        # value_path = index.value_path
+#        # key_path = index.key_path
+#        xpath = index.xpath
+##        if value_path.startswith('/'):
+##            value_path = value_path[1:]
+#        #XXX: rootnode ??
+#        # package, type, rootnode  = value_path.split('/')
+        self.flushIndex(package_id, resourcetype_id, xpath)
+        reslist = self.getResourceList(package_id, resourcetype_id)
         # reindex
         for res in reslist:
-            self.index_catalog.indexResource(res.document._id, 
-                                             value_path, key_path)
+            self.index_catalog.indexResource(res, xpath)
         
         return True
         

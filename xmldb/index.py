@@ -9,12 +9,12 @@ from seishub.xmldb import defaults
 from seishub.xmldb.interfaces import IXmlDocument, IXmlIndex
 from seishub.xmldb.resource import XmlDocument
 
-
 TEXT_INDEX = 0
 NUMERIC_INDEX = 1
-DATETIME_INDEX = 2
-BOOLEAN_INDEX = 3
-NONETYPE_INDEX = 4
+FLOAT_INDEX = 2
+DATETIME_INDEX = 3
+BOOLEAN_INDEX = 4
+NONETYPE_INDEX = 5
 
 ISO_FORMAT = "%Y%m%dT%H:%M:%S"
 
@@ -85,6 +85,8 @@ class XmlIndex(Serializable):
             self._element_cls = BooleanIndexElement
         elif type == NONETYPE_INDEX:
             self._element_cls = NoneTypeIndexElement
+        elif type == FLOAT_INDEX:
+            self._element_cls = FloatIndexElement
         else:
             self._element_cls = TextIndexElement
     
@@ -108,7 +110,7 @@ class XmlIndex(Serializable):
     
 class KeyIndexElement(Serializable):
     db_mapping = {'index':Relation(XmlIndex, 'index_id'),
-                  'key':'key',
+                  'key':'keyval',
                   'document':Relation(XmlDocument, 'document_id')
                   }
     
@@ -188,7 +190,21 @@ class NumericIndexElement(KeyIndexElement):
     db_table = defaults.index_numeric_tab
     
     def _filter_key(self, data):
-        return float(data.getStrContent())
+        data = data.getStrContent()
+        # don't pass floats directly to db
+        # check if data has correct type
+        float(data)
+        return data
+    
+class FloatIndexElement(KeyIndexElement):
+    db_table = defaults.index_float_tab
+    
+    def _filter_key(self, data):
+        data = data.getStrContent()
+        # check if data has correct type
+        # but don't pass floats to db as string
+        float(data)
+        return data
 
 
 class DateTimeIndexElement(KeyIndexElement):

@@ -31,6 +31,7 @@ class XpathTest(SeisHubEnvironmentTestCase):
 class XPathQueryTest(SeisHubEnvironmentTestCase):
     test_expr = "/testpackage/testtype/rootnode[./element1/element2 = 'blub' and ./element1/@id <= 5]"
     wildcard_expr = "/*/*/rootnode[./element1/element2 = 'blub']"
+    join_expr = "/seispkg/network/*[../event/*/station = ../network/*/station and ./@id = ../station/*/@id and ../event/*/datetime = yesterday]"
     invalid_expr = "/testtype/rootnode[./element1]"
     invalid2_expr = "/rootnode[./element1]"
     
@@ -39,7 +40,8 @@ class XPathQueryTest(SeisHubEnvironmentTestCase):
         q = XPathQuery(self.test_expr)
         self.assertEqual(q.package_id, "testpackage")
         self.assertEqual(q.resourcetype_id, "testtype")
-        self.assertEqual(q.getValue_path(), "testpackage/testtype/rootnode")
+        self.assertEqual(q.node_test, "rootnode")
+        # self.assertEqual(q.getValue_path(), "testpackage/testtype/rootnode")
         p = q.getPredicates()
         self.assertEqual(str(p['op']), "and")
         self.assertEqual(str(p['left']), "element1/element2 = blub")
@@ -55,7 +57,11 @@ class XPathQueryTest(SeisHubEnvironmentTestCase):
         q1 = XPathQuery(self.wildcard_expr)
         self.assertEqual(q1.package_id, None)
         self.assertEqual(q1.resourcetype_id, None)
-        self.assertEqual(q1.getValue_path(), "None/None/rootnode")
+        self.assertEqual(q1.node_test, "rootnode")
+        
+        # join expression
+        q2 = XPathQuery(self.join_expr)
+        # import pdb;pdb.set_trace()
         
         # invalid expression:
         self.assertRaises(InvalidParameterError,

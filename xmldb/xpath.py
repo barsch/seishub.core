@@ -83,6 +83,7 @@ class RestrictedXpathExpression(object):
         
         return True
 
+
 class IndexDefiningXpathExpression(object):
     """XPath expression defining an XmlIndex.
     IndexDefiningXpathExpressions mustn't contain any predicate blocks,
@@ -124,8 +125,12 @@ class IndexDefiningXpathExpression(object):
         
         return True
     
+    
 class PredicateExpression(object):
     """Representation of a parsed XPath predicates node."""
+    
+    _logical_ops = ['and', 'or']
+    _relational_ops = ['=', '<', '>', '<=', '>=', '!=']
     
     # logical operators
     _logOp = r"""
@@ -178,21 +183,6 @@ class PredicateExpression(object):
     
     def __getitem__(self, key):
         return self.getOperation()[key]
-    
-#    def __iter__(self):
-#        return self._get_nodes(self)
-#    
-#    @staticmethod
-#    def _get_nodes(node):
-##        print node
-##        print node.__class__
-#        if node and not isinstance(node,basestring):
-#            for x in PredicateExpression._get_nodes(node._left):
-#                yield x
-#            yield node
-#            if hasattr(node,'_right'):
-#                for x in PredicateExpression._get_nodes(node._right):
-#                    yield x
 
     def _str_expr(self,expr):
         expr = expr.strip()
@@ -204,16 +194,30 @@ class PredicateExpression(object):
             expr = expr[2:]
         return expr            
         
-    def _parse(self,expr,patterns):
+    def _parse(self, expr, patterns):
         for pattern in patterns:
             m = pattern.search(expr)
-            if m: 
+            if m:
+                self._op = m.group('op')
                 self._left = PredicateExpression(m.group('left'))
                 self._right = PredicateExpression(m.group('right'))
-                self._op = m.group('op')
                 return
-
         self._left = self._str_expr(expr)
+        
+    def applyOperator(self, left, right):
+        if self._op == '==' or self._op == '=':
+            return left == right
+        elif self._op == '!=':
+            return left != right
+        elif self._op == '<':
+            return left < right
+        elif self._op == '>':
+            return left > right
+        elif self._op == '<=':
+            return left <= right
+        elif self._op == '>=':
+            return left >= right
+        raise InvalidParameterError("Operator '%s' not specified." % self._op)
         
     def getOperation(self):
         return {'left': self._left,
@@ -222,6 +226,18 @@ class PredicateExpression(object):
     
     def getOperator(self):
         return self._op
+    
+#    def getLeftLocationPath(self):
+#        return self.location_path
+    
+
+class RelationalExpression(PredicateExpression):
+    pass
+
+
+class LogicalExpression(PredicateExpression):
+    pass
+
 
 class XPathQuery(RestrictedXpathExpression):
     """Query types supported by now:
@@ -251,7 +267,7 @@ class XPathQuery(RestrictedXpathExpression):
     )
     """
     
-    def __init__(self,query,order_by=None,limit=None):
+    def __init__(self, query, order_by = None, limit = None):
         self.order_by = list()
         if order_by:
             order_by = list(order_by)
@@ -265,7 +281,7 @@ class XPathQuery(RestrictedXpathExpression):
             try:
                 limit = int(limit)
             except:
-                raise TypeError("Invalid limit, Integer expected.")
+                raise TypeError("Invalid limit, integer expected.")
         self.limit = limit
         
         # cut off package and resource type from query
@@ -276,7 +292,8 @@ class XPathQuery(RestrictedXpathExpression):
         self.parsed_predicates = self._parsePredicates(self.predicates)
 
     def __str__(self):
-        return "/" + self.node_test + "[%s]" % str(self.parsed_predicates)
+        return "/" + self.package_id + "/" + self.resourcetype_id + "/" +\
+               self.node_test + "[%s]" % str(self.parsed_predicates)
     
     def _parsePrefix(self, expr):
         re_pf = re.compile(self.__r_prefix, re.VERBOSE)
@@ -299,13 +316,16 @@ class XPathQuery(RestrictedXpathExpression):
         return expr
     
     # methods from IXPathQuery    
-    def getValue_path(self):
-        """@see: L{seishub.xmldb.interfaces.IXPathQuery}"""
-        #XXX: maybe completely remove value path from indexes and replace by seperate
-        # packageid resourcetypeid fields; rootnode is needed as XXML Schema allows
-        # different rootnodes for different files
-        return str(self.package_id) + '/' + str(self.resourcetype_id) + '/' +\
-               self.node_test
+#    def getValue_path(self):
+#        """@see: L{seishub.xmldb.interfaces.IXPathQuery}"""
+#        #XXX: maybe completely remove value path from indexes and replace by seperate
+#        # packageid resourcetypeid fields; rootnode is needed as XXML Schema allows
+#        # different rootnodes for different files
+#        return str(self.package_id) + '/' + str(self.resourcetype_id) + '/' +\
+#               self.node_test
+
+    def getQueryBase(self):
+        return (self.package_id, self.resourcetype_id, self.node_test)
     
     def getPredicates(self):
         """@see: L{seishub.xmldb.interfaces.IXPathQuery}"""
