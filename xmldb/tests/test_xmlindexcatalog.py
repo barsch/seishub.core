@@ -114,6 +114,9 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         self.env.catalog.registerIndex("testpackage", "station", IDX2)
         self.env.catalog.registerIndex("testpackage", "testml", IDX3)
         self.env.catalog.registerIndex("testpackage", "station", IDX4)
+        # index rootnode, too
+        self.env.catalog.registerIndex("testpackage", "station", "/station")
+        
         self.env.catalog.reindex("testpackage", "station", IDX1)
         self.env.catalog.reindex("testpackage", "station", IDX2)
         self.env.catalog.reindex("testpackage", "testml", IDX3)
@@ -362,8 +365,19 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         #======================================================================
         # location path queries
         #======================================================================
-        # all resources of package testpackage, resourcetype 'station'
-        q = "/testpackage/station/station" 
+        # all resources of package testpackage, resourcetype 'station' with 
+        # rootnode 'station'
+        q = "/testpackage/station/station"
+        res = self.catalog.query(XPathQuery(q))
+        self.assertEqual(len(res), 2)
+        self.assertTrue(self.res1.document._id in res)
+        self.assertTrue(self.res2.document._id in res)
+#        # all resources of package testpackage, resourcetype 'station'
+#        q = "/testpackage/station/*"
+#        res = self.catalog.query(XPathQuery(q))
+#        self.assertEqual(len(res), 2)
+#        self.assertTrue(self.res1.document._id in res)
+#        self.assertTrue(self.res2.document._id in res)
         
         #======================================================================
         # node existance queries

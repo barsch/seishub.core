@@ -53,10 +53,10 @@
         <input type="checkbox" name="index[]" 
                value="$index.__str__()" />
       </td>
-      <td>#echo index.getValue_path().split('/')[0]#</td>
-      <td>#echo index.getValue_path().split('/')[1]#</td>
+      <td>#echo index.resourcetype.package.package_id#</td>
+      <td>#echo index.resourcetype.resourcetype_id#</td>
       <td>$index.getType()</td>
-      <td>#echo index.getValue_path().split('/')[2]#/$index.getKey_path()</td>
+      <td>#echo index.xpath#</td>
     </tr>
     #end for
   </table>

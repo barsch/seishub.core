@@ -168,7 +168,7 @@ class PredicateExpression(object):
     
     _left = _right = _op = ""
     
-    def __init__(self, predicates):
+    def __init__(self, predicates = ""):
         self._parse(predicates, self._patterns)
         
     def __str__(self):

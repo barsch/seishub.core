@@ -203,17 +203,19 @@ class XmlCatalog(object):
         
     def indexResource(self, package_id, resourcetype_id, name, revision = None,
                       resource = None):
-        return
         if package_id and resourcetype_id and name:
             resource = self.getResource(package_id, resourcetype_id, name, 
                                         revision)
         elif not resource:
             raise TypeError("Invalid number of arguments.")
-        indexes = self.listIndexes(package_id, resourcetype_id)
-        for idx in indexes:
-            self.index_catalog.indexResource(resource.document._id, 
-                                             idx.value_path, 
-                                             idx.key_path)
+        return self.index_catalog.indexResource(resource)
+        
+        
+#        indexes = self.listIndexes(package_id, resourcetype_id)
+#        for idx in indexes:
+#            self.index_catalog.indexResource(resource.document._id, 
+#                                             idx.value_path, 
+#                                             idx.key_path)
         
     def reindex(self, package_id = None, resourcetype_id = None, xpath = None):
         """@see: L{seishub.xmldb.interfaces.IXmlCatalog}"""
@@ -248,27 +250,32 @@ class XmlCatalog(object):
         
     def query(self, query, order_by = None, limit = None):
         """@see: L{seishub.xmldb.interfaces.IXmlCatalog}"""
-        # XXX: query by creator, size, hash, timestamp
-        # TODO: workaround until indexes support package/resourcetype natively
-        return
-        try:
-            qu = query.get('query')
-        except AttributeError:
-            qu = query
-        qu = qu.split('/')
-        qu_wk = map(self._convert_wildcards, qu)
-        package, resourcetype = self.env.registry.\
-                                   objects_from_id(qu_wk[1], qu_wk[2])
-        if package:
-            qu[1] = str(package._id)
-        if resourcetype:
-            qu[2] = str(resourcetype._id)
-        qu = '/'.join(qu)
-        # end workaround
-        if isinstance(query,dict):
-            query['query'] = qu
-            q = XPathQuery(**query)
-        else:
-            q = XPathQuery(qu, order_by, limit)
+        # XXX: query by metadata
+#        # TODO: workaround until indexes support package/resourcetype natively
+#        try:
+#            qu = query.get('query')
+#        except AttributeError:
+#            qu = query
+#        qu = qu.split('/')
+#        qu_wk = map(self._convert_wildcards, qu)
+#        package, resourcetype = self.env.registry.\
+#                                   objects_from_id(qu_wk[1], qu_wk[2])
+#        if package:
+#            qu[1] = str(package._id)
+#        if resourcetype:
+#            qu[2] = str(resourcetype._id)
+#        qu = '/'.join(qu)
+#        # end workaround
+        
+        if isinstance(query, dict):
+            order_by = query.get('order_by', None)
+            limit = query.get('limit', None)
+            query = query.get('query', '')
+        qu = map(self._convert_wildcards, query.split('/'))
+        if len(qu) == 4 and not qu[3]:
+            # this is not an index query
+            import pdb;pdb.set_trace()
+            return self.getResourceList(qu[1], qu[2])
+        q = XPathQuery(query, order_by, limit)
         return self.index_catalog.query(q)
 

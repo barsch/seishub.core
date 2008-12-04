@@ -137,28 +137,43 @@ class XmlIndexCatalog(DbStorage):
 #            
 #        return w
 
-    def findIndex(self, query_base, expr):
+    def findIndex(self, query_base, expr = None):
         """Tries to find the index fitting best for expr."""
         # TODO: caching?
-        expr = '/' + query_base[2] + '/' + expr
-        idx = self.getIndexes(query_base[0], query_base[1], expr)
+        xpath = '/' + query_base[2] 
+        if expr:
+            xpath += '/' + expr
+        idx = self.getIndexes(query_base[0], query_base[1], xpath)
         if idx:
             return idx[0]
         return None
+    
+    def _process_location_step(self, query_base, q):
+        if query_base[2] == '*':
+            # ignore root => simple package/resourcetype query
+            pass
+        else:
+            idx = self.findIndex(query_base)
+            idx_tab = idx._getElementCls().db_table.alias()
+            joins = document_tab.outerjoin(idx_tab, 
+                                     onclause = (idx_tab.c['document_id'] ==\
+                                                 document_tab.c['id']))
+            
+            
 
     def _process_predicates(self, p, query_base, q, joins = None, 
                             prev_op = None):
-        # try to find a fitting index
         left = p._left
         right = p._right
         op = p._op
         left_idx = self.findIndex(query_base, str(left))
-        right_idx = self.findIndex(query_base, str(right))
-        
+        right_idx = None
+        if right:
+            right_idx = self.findIndex(query_base, str(right))
         if left_idx and right_idx: 
             # - rel op => join
             # - log op => keyless query
-            print ("join")
+            raise ("join not implemented yet")
         elif left_idx: 
             # - rel op => right = Value => key query
             # - log op => right = expr => left: keyless query, right: recursion step
@@ -175,7 +190,7 @@ class XmlIndexCatalog(DbStorage):
                                                  document_tab.c['id']))
             if prev_op == 'or':
                 # OR operator...
-                pass
+                raise ("'or' not implemented yet")
             else:
                 q = q.where(idx_tab.c['index_id'] == left_idx._id)
             # right:
@@ -186,12 +201,16 @@ class XmlIndexCatalog(DbStorage):
                 return q, joins
             else:
                 left = None
+            if not (left or right):
+                # no further nodes => leaf  
+                return q, joins
 
         # => recursion step
-        if op in PredicateExpression._relational_ops:
-            # still here with relational operator => no index found
+        if op not in PredicateExpression._logical_ops:
+            # still here with no or relational operator => no index found
             msg = "Error processing query. No index found for: %s"
-            raise NotFoundError(msg % str(p))
+            idx_str = '/' + '/'.join(map(str, query_base)) + '/' + str(p)
+            raise NotFoundError(msg % idx_str)
         # logical operator
         if left:
             q, joins = self._process_predicates(left, query_base, q, joins)
@@ -205,15 +224,15 @@ class XmlIndexCatalog(DbStorage):
         """@see: L{seishub.xmldb.interfaces.IXmlIndexCatalog}"""
         if not IXPathQuery.providedBy(query):
             raise DoesNotImplement(IXPathQuery)
-        
         query_base = query.getQueryBase()
+        predicates = query.getPredicates() or PredicateExpression()
         q = select([document_tab.c['id']], use_labels = True)
-        q, joins = self._process_predicates(query.getPredicates(), 
-                                            query_base, q)
+        q, joins = self._process_predicates(predicates, query_base, q)
         q = q.select_from(joins)
         q = q.group_by(document_tab.c['id'])
         res = self._db.execute(q).fetchall()
         return [result[0] for result in res]
+    
 #        if query.has_predicates(): 
 #            # query w/ key path expression(s)
 #            value_col = index_tab.c.value

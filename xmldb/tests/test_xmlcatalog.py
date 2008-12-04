@@ -67,6 +67,7 @@ rid3 = "weapon"
 IDX1 = "/station/XY/paramXY"
 IDX2 = "/testml/blah1/@id"
 IDX3 = "/weapon/damage"
+IDX4 = "/station"
 
 class XmlCatalogTest(SeisHubEnvironmentTestCase):
 #    def _config(self):
@@ -211,6 +212,8 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
     def testQuery(self):
         """XXX: these tests fail, will be fixed with #75"""
         self.env.catalog.reindex("testpackage", "station", IDX1)
+        self.env.catalog.registerIndex(pid1, rid1, IDX4)
+        self.env.catalog.reindex("testpackage", "station", IDX4)
         res1 = self.env.catalog.query('/testpackage/station/station',
                                       [['/testpackage/station/station/XY/paramXY','asc']],
                                       limit = 2)
@@ -233,6 +236,8 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         res5 = self.env.catalog.query('/testpackage/testml/testml')
         self.assertEqual(res5, [self.res3.document._id])
         
+        # clean up
+        self.env.catalog.removeIndex(pid1, rid1, IDX4)
 
 
 def suite():
