@@ -7,15 +7,16 @@ from seishub.xmldb.interfaces import IXmlCatalog
 from seishub.xmldb.xmldbms import XmlDbManager
 from seishub.xmldb.xmlindexcatalog import XmlIndexCatalog
 from seishub.xmldb.resource import Resource, newXMLDocument
-from seishub.xmldb.index import XmlIndex, TEXT_INDEX, NUMERIC_INDEX
-from seishub.xmldb.index import DATETIME_INDEX, BOOLEAN_INDEX, NONETYPE_INDEX
+from seishub.xmldb.index import XmlIndex, TEXT_INDEX
+from seishub.xmldb import index
 from seishub.xmldb.xpath import IndexDefiningXpathExpression, XPathQuery
 
-INDEX_TYPES = {"text":TEXT_INDEX,
-               "numeric":NUMERIC_INDEX,
-               "datetime":DATETIME_INDEX,
-               "boolean":BOOLEAN_INDEX,
-               "nonetype":NONETYPE_INDEX}
+INDEX_TYPES = {"text":index.TEXT_INDEX,
+               "numeric":index.NUMERIC_INDEX,
+               "float":index.FLOAT_INDEX,
+               "datetime":index.DATETIME_INDEX,
+               "boolean":index.BOOLEAN_INDEX,
+               "nonetype":index.NONETYPE_INDEX}
 
 class XmlCatalog(object):
     implements(IXmlCatalog)
