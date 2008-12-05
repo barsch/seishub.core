@@ -1,6 +1,7 @@
 import sys, os
 
 from seishub.exceptions import SeisHubError
+from seishub.xmldb.xmlcatalog import INDEX_TYPES
 
 class PackageInstaller(object):
     """The PackageInstaller allows file system based registration of:
@@ -109,6 +110,7 @@ class PackageInstaller(object):
             for entry in o._registry_indexes:
                 # check, if already there
                 if env.catalog.getIndex(package_id, resourcetype_id, **entry):
+                    # idx_type = [typestr for typestr, id in INDEX_TYPES.iteritems() if id == entry['type']][0]
                     env.log.info("'%s': Skipping index '%s'." %\
                                  (package_id, entry))
                     continue
@@ -236,4 +238,4 @@ registerAlias = lambda name, expr, limit = None, order_by = None: \
 registerIndex = lambda xpath, type = 'text': PackageInstaller._pre_register\
                                                   ('_indexes',
                                                    xpath = xpath,
-                                                   type = type)
+                                                   type = INDEX_TYPES[type])
