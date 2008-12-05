@@ -133,9 +133,15 @@ class IndexesPanel(Component):
     def renderPanel(self, request):
         packages = self.env.registry.getPackageIds()
         resourcetypes = self.env.registry.getAllPackagesAndResourceTypes()
+        index_types = sorted(INDEX_TYPES.keys())
+        index_types_dict = {}
+        for i,v in INDEX_TYPES.iteritems():
+            index_types_dict[v] = i
+        
         
         data  = {
-            'index_types': INDEX_TYPES.keys(),
+            'index_types': index_types,
+            'index_types_dict': index_types_dict,
             'indexes': [],
             'error': '',
             'xpath': '',
