@@ -23,12 +23,16 @@
     </select>
   </div>
   <div class="field">
-    <label>Alias identifier (without a leading @)</label><br />
+    <label>Alias URL</label><br />
     <input type="text" size="80" name="alias" value="$alias" />
   </div>
   <div class="field">
     <label>XPath query</label><br />
-    <input type="text" size="80" name="xpath" value="$xpath" />
+    <textarea name="xpath" rows="5" cols="80">$xpath</textarea>
+  </div>
+  <div class="field">
+    <label>SQL query</label><br />
+    <textarea name="sql" rows="5" cols="80">$sql</textarea>
   </div>
   
   <div class="button">

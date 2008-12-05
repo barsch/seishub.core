@@ -162,12 +162,15 @@ class IndexesPanel(Component):
         return ('components_indexes.tmpl', data)
     
     def _reindex(self, data=[]):
-        for xpath in data:
+        for part in data:
             try:
-                self.env.catalog.reindex(xpath = xpath)
+                _, package_id, resourcetype_id, xpath = part.split('/', 3)
+                self.env.catalog.reindex(package_id=package_id, 
+                                         resourcetype_id=resourcetype_id, 
+                                         xpath = '/' + xpath)
             except Exception, e:
-                self.log.error("Error reindexing index %s" % xpath, e)
-                return {'error': ("Error reindexing index %s" % xpath, e)}
+                self.log.error("Error reindexing index %s" % part, e)
+                return {'error': ("Error reindexing index %s" % part, e)}
         return {'info': "Index has been updated."}
     
     def _deleteIndexes(self, xpaths=[]):
@@ -204,6 +207,7 @@ class AliasesPanel(Component):
             'error': '',
             'alias': '',
             'xpath': '',
+            'sql': '',
             'packages': packages,
             'resourcetypes': resourcetypes,
             'resturl': self.env.getRestUrl(),

@@ -61,7 +61,7 @@ class DatabaseQueryPanel(Component):
     
     def renderPanel(self, request):
         db = self.env.db.engine
-        tables = db.table_names()
+        tables = sorted(db.table_names())
         data = {
             'query': 'select 1 LIMIT 0,20;', 
             'result': '',
