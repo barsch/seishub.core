@@ -251,31 +251,18 @@ class XmlCatalog(object):
     def query(self, query, order_by = None, limit = None):
         """@see: L{seishub.xmldb.interfaces.IXmlCatalog}"""
         # XXX: query by metadata
-#        # TODO: workaround until indexes support package/resourcetype natively
-#        try:
-#            qu = query.get('query')
-#        except AttributeError:
-#            qu = query
-#        qu = qu.split('/')
-#        qu_wk = map(self._convert_wildcards, qu)
-#        package, resourcetype = self.env.registry.\
-#                                   objects_from_id(qu_wk[1], qu_wk[2])
-#        if package:
-#            qu[1] = str(package._id)
-#        if resourcetype:
-#            qu[2] = str(resourcetype._id)
-#        qu = '/'.join(qu)
-#        # end workaround
-        
         if isinstance(query, dict):
             order_by = query.get('order_by', None)
             limit = query.get('limit', None)
             query = query.get('query', '')
         qu = map(self._convert_wildcards, query.split('/'))
         if len(qu) == 4 and not qu[3]:
-            # this is not an index query
-            import pdb;pdb.set_trace()
+            # XXX: this is not an index query ,but this should be handled by 
+            # the index catalog as well in case an order by clause is present
             return self.getResourceList(qu[1], qu[2])
         q = XPathQuery(query, order_by, limit)
-        return self.index_catalog.query(q)
-
+        doc_ids = self.index_catalog.query(q)
+        # XXX: this is really bad, what information is really needed in the first place?
+        return [self.xmldb.getResource(document_id = id) for id in doc_ids]
+            
+        

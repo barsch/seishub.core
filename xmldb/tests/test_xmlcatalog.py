@@ -68,6 +68,7 @@ IDX1 = "/station/XY/paramXY"
 IDX2 = "/testml/blah1/@id"
 IDX3 = "/weapon/damage"
 IDX4 = "/station"
+IDX5 = "/testml"
 
 class XmlCatalogTest(SeisHubEnvironmentTestCase):
 #    def _config(self):
@@ -211,33 +212,52 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         
     def testQuery(self):
         """XXX: these tests fail, will be fixed with #75"""
+        # set up
         self.env.catalog.reindex("testpackage", "station", IDX1)
         self.env.catalog.registerIndex(pid1, rid1, IDX4)
-        self.env.catalog.reindex("testpackage", "station", IDX4)
+        self.env.catalog.reindex(pid1, rid1, IDX4)
+        self.env.catalog.registerIndex(pid1, rid2, IDX5)
+        self.env.catalog.reindex(pid1, rid2, IDX5)
+        
         res1 = self.env.catalog.query('/testpackage/station/station',
-                                      [['/testpackage/station/station/XY/paramXY','asc']],
+                                      {'/station/XY/paramXY':'asc'},
                                       limit = 2)
+        self.assertEqual(len(res1), 2)
+        self.assertEqual(res1[0]._id, self.res2._id)
+        self.assertEqual(res1[0].document._id, self.res2.document._id)
+        self.assertEqual(res1[1]._id, self.res1._id)
+        self.assertEqual(res1[1].document._id, self.res1.document._id)
+        
         res2 = self.env.catalog.query({'query':'/testpackage/station/station',
-                                       'order_by':[['/testpackage/station/station/XY/paramXY','asc']],
+                                       'order_by':{'/station/XY/paramXY':'asc'},
                                        'limit':2})
-        self.assertEqual(res1, [self.res2.document._id, 
-                                self.res1.document._id])
-        self.assertEqual(res2, [self.res2.document._id, 
-                                self.res1.document._id])
+        self.assertEqual(len(res2), 2)
+        self.assertEqual(res2[0]._id, self.res2._id)
+        self.assertEqual(res2[0].document._id, self.res2.document._id)
+        self.assertEqual(res2[1]._id, self.res1._id)
+        self.assertEqual(res2[1].document._id, self.res1.document._id)
+
         res3 = self.env.catalog.query('/testpackage/*/*')
-        res3.sort()
-        self.assertEqual(res3, [self.res1.document._id,
-                         self.res2.document._id,
-                         self.res3.document._id])
+        self.assertEqual(len(res3), 3)
+        self.assertEqual(res3[0]._id, self.res1._id)
+        self.assertEqual(res3[0].document._id, self.res1.document._id)
+        self.assertEqual(res3[1]._id, self.res2._id)
+        self.assertEqual(res3[1].document._id, self.res2.document._id)
+        self.assertEqual(res3[2]._id, self.res3._id)
+        self.assertEqual(res3[2].document._id, self.res3.document._id)
+        
         res4 = self.env.catalog.query('/testpackage/*/station')
-        # XXX: rootnode still ignored here!!!
 #        self.assertEqual(res4, [self.res1.document._id,
 #                                self.res2.document._id])
         res5 = self.env.catalog.query('/testpackage/testml/testml')
-        self.assertEqual(res5, [self.res3.document._id])
+        self.assertEqual(len(res5), 1)
+        self.assertEqual(res5[0]._id, self.res3._id)
+        self.assertEqual(res5[0].document._id, self.res3.document._id)
         
         # clean up
         self.env.catalog.removeIndex(pid1, rid1, IDX4)
+        self.env.catalog.removeIndex(pid1, rid2, IDX5)
+        
 
 
 def suite():

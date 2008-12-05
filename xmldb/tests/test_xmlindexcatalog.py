@@ -59,10 +59,11 @@ IDX3 = "/testml/blah1/@id"
 IDX4 = "/station/XY/paramXY"
 
 so_tests = ['so1.xml','so2.xml','so3.xml','so4.xml','so5.xml']
-so_indexes = ['/sortordertests/sotest/sortorder/int1', 
-              '/sortordertests/sotest/sortorder/int2', 
-              '/sortordertests/sotest/sortorder/str1', 
-              '/sortordertests/sotest/sortorder/str2']
+so_indexes = ['/sortorder/int1', 
+              '/sortorder/int2', 
+              '/sortorder/str1', 
+              '/sortorder/str2',
+              '/sortorder']
 
 class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
     #TODO: testGetIndexes
@@ -138,10 +139,10 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
             self.env.catalog.reindex('sortordertests', 'sotest', i)
         
     def _cleanup_testdata(self):
-        self.env.catalog.removeIndex(xpath = IDX1)
-        self.env.catalog.removeIndex(xpath = IDX2)
-        self.env.catalog.removeIndex(xpath = IDX3)
-        self.env.catalog.removeIndex(xpath = IDX4)
+        self.env.catalog.removeIndex("testpackage", "station", IDX1)
+        self.env.catalog.removeIndex("testpackage", "station", IDX2)
+        self.env.catalog.removeIndex("testpackage", "testml", IDX3)
+        self.env.catalog.removeIndex("testpackage", "station", IDX4)
         self.env.catalog.deleteResource(self.res1.package.package_id,
                                         self.res1.resourcetype.resourcetype_id,
                                         self.res1.id)
@@ -152,7 +153,7 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
                                         self.res3.resourcetype.resourcetype_id,
                                         self.res3.id)
         for i in so_indexes:
-            self.env.catalog.removeIndex(xpath = i)
+            self.env.catalog.removeIndex('sortordertests', 'sotest', i)
         for res in self.so_ids:
             self.env.catalog.deleteResource(res[0],res[1],res[2])
     
@@ -357,8 +358,7 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         pass
         
     def testXPathQuery(self):
-        """XXX: these tests fail, will be fixed with #75
-        XXX: rootnode still ignored"""
+        """XXX: these tests fail, will be fixed with #75"""
         # create test catalog
         self._setup_testdata()
         
@@ -373,6 +373,7 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         self.assertTrue(self.res1.document._id in res)
         self.assertTrue(self.res2.document._id in res)
 #        # all resources of package testpackage, resourcetype 'station'
+         # XXX: query type not implemented on this level
 #        q = "/testpackage/station/*"
 #        res = self.catalog.query(XPathQuery(q))
 #        self.assertEqual(len(res), 2)
@@ -422,51 +423,43 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         self.assertEqual(res, [self.res2.document._id])
         
         # node existance OR key query
-        q = "/testpackage/station/station[XY/paramXY or lon = 12.51200]"
-        res = self.catalog.query(XPathQuery(q))
-        # import pdb;pdb.set_trace()
-        self.assertEqual(len(res), 2)
-        self.assertTrue(self.res1.document._id in res)
-        self.assertTrue(self.res2.document._id in res)
-        
-        # import pdb;pdb.set_trace()
-        q4 = "/".join(['',str(self.pkg1._id), str(self.rt2._id), 'testml'])
+        # XXX: or not implemented
+#        q = "/testpackage/station/station[XY/paramXY or lon = 12.51200]"
+#        res = self.catalog.query(XPathQuery(q))
+#        # import pdb;pdb.set_trace()
+#        self.assertEqual(len(res), 2)
+#        self.assertTrue(self.res1.document._id in res)
+#        self.assertTrue(self.res2.document._id in res)
 
+        #======================================================================
+        # queries w/ order_by and limit clause
+        #======================================================================
+        # predicate query w/ order_by
+        q = "/sortordertests/sotest/sortorder[int1]"
+        res = self.catalog.query(
+                XPathQuery(q, {"/sortorder/int1":"asc"})
+                )
+        res_ids = [id[3] for id in self.so_ids]
+        self.assertEqual(res, res_ids)
         
         
-#        res1 = self.catalog.query(XPathQuery(q1))
-#        res2 = self.catalog.query(XPathQuery(q2))
-#        res3 = self.catalog.query(XPathQuery(q3))
-#        res0.sort(); res1.sort(); res2.sort(); res3.sort()
-#        
-#        self.assertEqual(res1, [self.res1.document._id, 
-#                                self.res2.document._id])
-#        self.assertEqual(res2, [self.res1.document._id, 
-#                                self.res2.document._id])
-#        self.assertEqual(res3, [self.res3.document._id])
-
-        # sort order tests
+        
         so1 = "/sortordertests/sotest/sortorder[int1]"
-        so2 = "/".join(['',str(self.pkg2._id), str(self.rt4._id), 'sortorder'])
-        res1 = self.catalog.query(
-            XPathQuery(so1, [["/sortordertests/sotest/sortorder/int1","asc"]])
-            )
-        res2 = self.catalog.query(XPathQuery(so1, [["/sortordertests/sotest/sortorder/int1","desc"]], 
+        so2 = "/sortordertests/sotest/sortorder"
+        res2 = self.catalog.query(XPathQuery(so1, {"/sortorder/int1":"desc"}, 
                                              limit = 3))
-        res3 = self.catalog.query(XPathQuery(so1, [["/sortordertests/sotest/sortorder/int2","asc"],
-                                                   ["/sortordertests/sotest/sortorder/str2","desc"]], 
+        res3 = self.catalog.query(XPathQuery(so1, {"/sortorder/int2":"asc",
+                                                   "/sortorder/str2":"desc"}, 
                                              limit = 5))
-        res4 = self.catalog.query(XPathQuery(so2,[["/sortordertests/sotest/sortorder/int2","desc"]],
+        res4 = self.catalog.query(XPathQuery(so2,{"/sortorder/int2":"desc"},
                                              limit = 3))
         
-        sot_res = [res[3] for res in self.so_ids]
-        self.assertEqual(res1,sot_res)
-        sot_res.reverse()
-        self.assertEqual(res2,sot_res[:3])
-        sot_res.reverse()
-        self.assertEqual(res3,[sot_res[0],sot_res[3],sot_res[4],
-                               sot_res[1],sot_res[2]])
-        self.assertEqual(res4,[sot_res[1],sot_res[2],sot_res[0]])
+        res_ids.reverse()
+        self.assertEqual(res2, res_ids[:3])
+        res_ids.reverse()
+        self.assertEqual(res3,[res_ids[0],res_ids[3],res_ids[4],
+                               res_ids[1],res_ids[2]])
+        self.assertEqual(res4,[res_ids[1],res_ids[2],res_ids[0]])
         
         # remove test catalog
         self._cleanup_testdata()

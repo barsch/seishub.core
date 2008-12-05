@@ -267,22 +267,10 @@ class XPathQuery(RestrictedXpathExpression):
     )
     """
     
-    def __init__(self, query, order_by = None, limit = None):
-        self.order_by = list()
-        if order_by:
-            order_by = list(order_by)
-            for ob in order_by:
-                if not isinstance(ob[0],basestring) \
-                   or not isinstance(ob[1],basestring):
-                    raise TypeError("Invalid order_by clause, string expected.")
-                self.order_by.append([IndexDefiningXpathExpression(ob[0]),
-                                      ob[1]])
-        if limit:
-            try:
-                limit = int(limit)
-            except:
-                raise TypeError("Invalid limit, integer expected.")
+    def __init__(self, query, order_by = None, limit = None, offset = None):
+        self.order_by = order_by or dict()
         self.limit = limit
+        self.offset = offset
         
         # cut off package and resource type from query
         package, resourcetype, query = self._parsePrefix(query)
@@ -335,10 +323,14 @@ class XPathQuery(RestrictedXpathExpression):
         """@see: L{seishub.xmldb.interfaces.IXPathQuery}"""
         return self.parsed_predicates != None
     
-    def getOrder_by(self):
+    def getOrderBy(self):
         """@see: L{seishub.xmldb.interfaces.IXPathQuery}"""
         return self.order_by
     
     def getLimit(self):
         """@see: L{seishub.xmldb.interfaces.IXPathQuery}"""
         return self.limit
+    
+    def getOffset(self):
+        """@see: L{seishub.xmldb.interfaces.IXPathQuery}"""
+        return self.offset
