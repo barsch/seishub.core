@@ -224,6 +224,7 @@ class AdminRequest(http.Request):
         menuitems.sort()
         temp.navigation = menuitems
         temp.cat_id = self.cat_id
+        temp.resturl = self.env.getRestUrl()
         return temp
     
     def _renderSubMenu(self):

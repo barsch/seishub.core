@@ -3,7 +3,7 @@
 from seishub.core import Component, implements
 from seishub.exceptions import SeisHubError, InvalidParameterError
 from seishub.processor.interfaces import IAdminPanel
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine #@UnresolvedImport
 
 
 class BasicPanel(Component):
@@ -98,6 +98,9 @@ class ResourcesPanel(Component):
     def renderPanel(self, request):
         packages = self.env.registry.getPackageIds()
         resourcetypes = self.env.registry.getAllPackagesAndResourceTypes()
+        # remove seishub from packages and resourcetypes
+        packages.remove('seishub')
+        resourcetypes.pop('seishub')
         
         data = {
             'file': '', 
@@ -122,8 +125,11 @@ class ResourcesPanel(Component):
                 data['resource[]'] = args['resource[]']
                 data = self._deleteResources(data)
         # fetch all uris
-        
-        data['resources'] = self.catalog.getResourceList()
+        # XXX: remove that later!
+        temp = self.catalog.getResourceList()
+        # remove all seishub resources
+        temp = [t for t in temp if not str(t).startswith('/seishub/')]
+        data['resources'] = temp 
         return ('catalog_resources.tmpl', data)
     
     def _addResource(self, data):

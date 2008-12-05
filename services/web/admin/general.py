@@ -59,19 +59,6 @@ class ConfigPanel(Component):
         return ('general_config.tmpl', data)
 
 
-class RESTRedirect(Component):
-    """REST redirect."""
-    implements(IAdminPanel)
-    
-    def getPanelId(self):
-        return ('rest-redirect', 'REST', 'rest-redirect', 'REST')
-    
-    def renderPanel(self, request):
-        url = self.env.getRestUrl()
-        request.redirect(url)
-        return ('',{})
-
-
 class LogsPanel(Component):
     """Web based log viewer."""
     implements(IAdminPanel)
