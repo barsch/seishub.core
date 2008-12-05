@@ -179,13 +179,16 @@ class IndexesPanel(Component):
                 return {'error': ("Error reindexing index %s" % part, e)}
         return {'info': "Index has been updated."}
     
-    def _deleteIndexes(self, xpaths=[]):
-        for xpath in xpaths:
+    def _deleteIndexes(self, data=[]):
+        for part in data:
             try:
-                self.catalog.removeIndex(xpath = xpath)
+                _, package_id, resourcetype_id, xpath = part.split('/', 3)
+                self.catalog.removeIndex(package_id=package_id, 
+                                         resourcetype_id=resourcetype_id, 
+                                         xpath = '/' + xpath)
             except Exception, e:
-                self.log.error("Error removing index %s" % xpath, e)
-                return {'error': ("Error removing index %s" % xpath, e)}
+                self.log.error("Error removing index %s" % part, e)
+                return {'error': ("Error removing index %s" % part, e)}
         return {'info': "Index has been removed."}
     
     def _addIndex(self, package_id, resourcetype_id, xpath):
