@@ -126,6 +126,7 @@ class Environment(ComponentManager):
         self.registry.mappers.update()
         if hasattr(component, 'package_id'):
             PackageInstaller.install(self, component.package_id)
+        self.tree.update()
     
     def disableComponent(self, component):
         """Disables a component."""
@@ -143,6 +144,7 @@ class Environment(ComponentManager):
         self.config.save()
         self.registry.mappers.update()
         PackageInstaller.cleanup(self)
+        self.tree.update()
     
     def initOptions(self):
         """Initialize any not yet set default options in configuration file."""

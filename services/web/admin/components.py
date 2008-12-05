@@ -273,11 +273,12 @@ class QuickinstallerPanel(Component):
         packages = self.env.registry.getPackageIds()
         resourcetypes = self.env.registry.getAllPackagesAndResourceTypes()
         
+        if request.method=='POST':
+            args = request.args
+            if 'rebuild' in args.keys():
+                self.env.tree.update()
+        
         data = {'packages': packages,
                 'resourcetypes': resourcetypes,
-                'aliases': self.env.registry.aliases,
-                'mappers': self.env.registry.mappers,
-                'stylesheets': self.env.registry.stylesheets,
-                'schemas': self.env.registry.schemas,
-                'tree': self.env.tree,}
+                'tree': self.env.tree._registry }
         return ('components_quickinstaller.tmpl', data)

@@ -35,7 +35,6 @@ class ResourceTree(StaticFolder):
         if '/' not in path:
             # we got a single id
             self.children[path] = obj
-            
             self._registry['/' + path] = str(obj) 
         else:
             # we got some absolute path
@@ -55,7 +54,9 @@ class ResourceTree(StaticFolder):
         This method should be called, if the status any included resource 
         objects changes, e.g. a mapper gets disabled.
         """
+        self.env.log.debug('Updating resource tree.')
         self.children = {}
+        self._registry = {}
         # XXX: args favicon - statics from admin panels!
         favicon = os.path.join(self.env.config.path, 'seishub', 'services', 
                                'admin', 'statics', 'favicon.ico' )

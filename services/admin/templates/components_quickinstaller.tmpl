@@ -8,7 +8,7 @@
       <th>Path</th>
       <th>Object</th>
     </tr>
-    #for $path, $obj in $tree._registry.items()
+    #for $path, $obj in $tree.items()
     #filter WebSafe
     <tr> 
       <td>
@@ -23,7 +23,7 @@
   </table>
   
   <div class="button">
-    <input type="submit" name="reindex" value="Reload" /> 
+    <input type="submit" name="rebuild" value="Rebuild" /> 
     <input disabled="disabled" type="submit" name="delete" value="Delete" />
   </div>
 </form>
