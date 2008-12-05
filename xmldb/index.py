@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from datetime import datetime
+from twisted.python import log
 
 from seishub.core import implements
 from seishub.db.util import Serializable, Relation, db_property
@@ -16,12 +17,13 @@ DATETIME_INDEX = 3
 BOOLEAN_INDEX = 4
 NONETYPE_INDEX = 5
 
-ISO_FORMAT = "%Y%m%dT%H:%M:%S"
+ISO_FORMAT = "%Y%m%d %H:%M:%S"
+_FALSE_VALUES = ('no', 'false', 'off', '0', 'disabled')
 
 class XmlIndex(Serializable):
     """A XML index definition.
     
-    @param resourcetype: ReosurcetypeWrapper instance
+    @param resourcetype: ResourcetypeWrapper instance
     @param xpath: path to node in XML tree to be indexed, or any arbitrary 
     xpath expression, that returns a value of correct type
     @param type: TEXT_INDEX | NUMERIC_INDEX | DATETIME_INDEX | BOOLEAN_INDEX |
@@ -104,9 +106,13 @@ class XmlIndex(Serializable):
         for node in nodes:
             try:
                 res.append(self._element_cls(self, node, xml_doc))
-            except:
+            except Exception, e:
+                log.err(e)
                 continue
         return res
+    
+    def prepareKey(self, data):
+        return self._element_cls()._prepare_key(data)
     
 class KeyIndexElement(Serializable):
     db_mapping = {'index':Relation(XmlIndex, 'index_id'),
@@ -123,6 +129,9 @@ class KeyIndexElement(Serializable):
     def _filter_key(self, data):
         """Overwritten to do a type specific key handling"""
         return data
+    
+    def _prepare_key(self, data):
+        return str(data)
         
     def getIndex(self):
         return self._index
@@ -184,6 +193,9 @@ class TextIndexElement(KeyIndexElement):
     
     def _filter_key(self, data):
         return unicode(data.getStrContent())
+    
+    def _prepare_key(self, data):
+        return unicode(data)
         
 
 class NumericIndexElement(KeyIndexElement):
@@ -211,7 +223,7 @@ class DateTimeIndexElement(KeyIndexElement):
     db_table = defaults.index_datetime_tab
     
     def _filter_key(self, data):
-        data = data.getStrContent()
+        data = data.getStrContent().strip()
         if self.index.options:
             return datetime.strptime(data, self.index.options)
         try:
@@ -219,27 +231,44 @@ class DateTimeIndexElement(KeyIndexElement):
             # another solution would be to have a special '%timestamp' option
             return datetime.fromtimestamp(float(data))
         except ValueError:
+            pass
+        data = data.replace("-", "")
+        data = data.replace("T", " ")
+        ms = 0
+        if '.' in data:
             data, ms = data.split('.')
             ms = int(ms.ljust(6,'0')[:6]) 
-            dt = datetime.strptime(data.replace("-", ""), ISO_FORMAT)
-            return dt.replace(microsecond = ms) 
-
+        dt = datetime.strptime(data, ISO_FORMAT)
+        dt = dt.replace(microsecond = ms)
+        return dt
+    
+    def _prepare_key(self, data):
+        data = data.replace("-", "")
+        data = data.replace("T", " ")
+        ms = 0
+        if '.' in data:
+            data, ms = data.split('.')
+            ms = int(ms.ljust(6,'0')[:6]) 
+        dt = datetime.strptime(data, ISO_FORMAT)
+        dt = dt.replace(microsecond = ms)
+        return dt
 
 class BooleanIndexElement(KeyIndexElement):
     db_table = defaults.index_boolean_tab
     
     def _filter_key(self, data):
-        data = data.getStrContent()
-        try:
-            return bool(int(data))
-        except ValueError:
-            pass
-        return not data.lower() == "false"
+        data = data.getStrContent().strip()
+        if data.lower() in _FALSE_VALUES:
+            return False
+        return bool(data)
 
 
 class NoneTypeIndexElement(QualifierIndexElement):
     db_table = defaults.index_keyless_tab
 
+type_classes = [TextIndexElement, NumericIndexElement, FloatIndexElement, 
+                DateTimeIndexElement, BooleanIndexElement, 
+                NoneTypeIndexElement]
 
 #class IndexBase(Serializable):
 #    db_table = index_def_tab

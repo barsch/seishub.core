@@ -238,4 +238,4 @@ registerAlias = lambda name, expr, limit = None, order_by = None: \
 registerIndex = lambda xpath, type = 'text': PackageInstaller._pre_register\
                                                   ('_indexes',
                                                    xpath = xpath,
-                                                   type = INDEX_TYPES[type])
+                                                   type = type)

@@ -1,20 +1,19 @@
 # -*- coding: utf-8 -*-
 
-import unittest
-import os
-import inspect
-
-from sqlalchemy.sql import and_ #@UnresolvedImport
-
-from seishub.test import SeisHubEnvironmentTestCase
 from seishub.exceptions import NotFoundError, DuplicateObjectError
-from seishub.xmldb.xmlindexcatalog import XmlIndexCatalog
-from seishub.xmldb.xmldbms import XmlDbManager
-from seishub.xmldb.index import XmlIndex, DATETIME_INDEX, NUMERIC_INDEX, FLOAT_INDEX
-from seishub.xmldb.resource import Resource, newXMLDocument
+from seishub.test import SeisHubEnvironmentTestCase
 from seishub.xmldb.defaults import index_def_tab, DEFAULT_PREFIX, \
-                                   INDEX_DEF_TABLE
+    INDEX_DEF_TABLE
+from seishub.xmldb.index import XmlIndex, DATETIME_INDEX, NUMERIC_INDEX, \
+    FLOAT_INDEX
+from seishub.xmldb.resource import Resource, newXMLDocument
+from seishub.xmldb.xmldbms import XmlDbManager
+from seishub.xmldb.xmlindexcatalog import XmlIndexCatalog
 from seishub.xmldb.xpath import XPathQuery
+from sqlalchemy.sql import and_ #@UnresolvedImport
+import inspect
+import os
+import unittest
 
 
 RAW_XML1="""<station rel_uri="bern">
@@ -394,7 +393,8 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         #======================================================================
         # single key query
         q = "/testpackage/station/station[lon = 12.51200]"
-        res = self.catalog.query(XPathQuery(q))
+        xpq = XPathQuery(q)
+        res = self.catalog.query(xpq)
         self.assertEqual(res, [self.res1.document._id])
         
         # multiple key queries
@@ -463,7 +463,19 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         
         # remove test catalog
         self._cleanup_testdata()
-
+        
+    def testIndexTypes(self):
+        text_idx = self.env.catalog.registerIndex("testpackage", "station", 
+                                                  "/station/station_code", 
+                                                  "text")
+        float_idx = self.env.catalog.registerIndex("testpackage", "station", 
+                                                   "/station/lon", "float")
+        self.env.catalog.reindex("testpackage", "station", "/station/station_code")
+        self.env.catalog.reindex("testpackage", "station", "/station/lon")
+        
+        # print self.catalog.dumpIndex("testpackage", "station", "/station/station_code")
+        
+        
 
 def suite():
     suite = unittest.TestSuite()

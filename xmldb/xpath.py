@@ -205,6 +205,7 @@ class PredicateExpression(object):
         self._left = self._str_expr(expr)
         
     def applyOperator(self, left, right):
+        # create sqlalchemy clauses from string operators
         if self._op == '==' or self._op == '=':
             return left == right
         elif self._op == '!=':

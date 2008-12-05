@@ -55,6 +55,7 @@ class XmlCatalog(object):
                        document = newXMLDocument(xml_data, uid = uid), 
                        name = name)
         self.xmldb.addResource(res)
+        self.indexResource(resource = res)
         return res
     
     def moveResource(self, package_id, resourcetype_id, old_name, new_name):
@@ -80,6 +81,11 @@ class XmlCatalog(object):
         If no revision is specified all revisions of the resource all deleted;
         otherwise only the specified revision is removed.
         """
+        # remove indexed data:
+        # XXX: workaround!
+        res = self.getResource(package_id, resourcetype_id, name, revision)
+        self.index_catalog.flushIndex(resource = res)
+        # END workaround
         if revision:
             return self.xmldb.deleteRevision(package_id, resourcetype_id, name, 
                                              revision = revision)
@@ -148,7 +154,7 @@ class XmlCatalog(object):
     def registerIndex(self, package_id = None, resourcetype_id = None, 
                       xpath = None, type = "text"):
         """@see: L{seishub.xmldb.interfaces.IXmlCatalog}"""
-        type = INDEX_TYPES.get(type, TEXT_INDEX)
+        type = INDEX_TYPES.get(type.lower(), TEXT_INDEX)
         _, resourcetype = self.env.registry.objects_from_id(package_id, 
                                                             resourcetype_id)
         index = XmlIndex(resourcetype, xpath, type)
@@ -164,8 +170,9 @@ class XmlCatalog(object):
                                               xpath)
         
     def getIndex(self, package_id = None, resourcetype_id = None, 
-                 xpath = None, type = None):
+                 xpath = None, type = "text"):
         """@see: L{seishub.xmldb.interfaces.IXmlCatalog}"""
+        type = INDEX_TYPES.get(type.lower(), TEXT_INDEX)
         return self.index_catalog.getIndexes(package_id, resourcetype_id, 
                                              xpath, type)
         
@@ -182,7 +189,7 @@ class XmlCatalog(object):
                                              xpath)
         
     def listIndexes(self, package_id = None, resourcetype_id = None, 
-                    type = None):
+                    type = "text"):
         """@see: L{seishub.xmldb.interfaces.IXmlCatalog}"""
 #        if not (package_id or resourcetype_id):
 #            return self.index_catalog.getIndexes(data_type = data_type)
@@ -199,11 +206,12 @@ class XmlCatalog(object):
 #        else:
 #            value_path += '*/'
 #        value_path += '*'
+        type = INDEX_TYPES.get(type.lower(), TEXT_INDEX)
         return self.index_catalog.getIndexes(package_id, resourcetype_id, 
                                              type = type)
         
-    def indexResource(self, package_id, resourcetype_id, name, revision = None,
-                      resource = None):
+    def indexResource(self, package_id = None, resourcetype_id = None, 
+                      name = None, revision = None, resource = None):
         if package_id and resourcetype_id and name:
             resource = self.getResource(package_id, resourcetype_id, name, 
                                         revision)
@@ -246,7 +254,6 @@ class XmlCatalog(object):
         # reindex
         for res in reslist:
             self.index_catalog.indexResource(res, xpath)
-        
         return True
         
     def query(self, query, order_by = None, limit = None):

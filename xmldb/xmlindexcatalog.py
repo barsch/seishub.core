@@ -7,12 +7,20 @@ from seishub.exceptions import DuplicateObjectError
 from seishub.db.util import DbStorage, DbError
 from seishub.xmldb.interfaces import IXPathQuery, IResource, IXmlIndex
 from seishub.xmldb.defaults import document_tab
-from seishub.xmldb.index import XmlIndex
+from seishub.xmldb.index import XmlIndex, type_classes
+from seishub.xmldb import index
 from seishub.xmldb.xpath import PredicateExpression
 
 OPERATORS = {'and':sql.and_,
              'or':sql.or_
              }
+
+INDEX_TYPES = {"text":index.TEXT_INDEX,
+               "numeric":index.NUMERIC_INDEX,
+               "float":index.FLOAT_INDEX,
+               "datetime":index.DATETIME_INDEX,
+               "boolean":index.BOOLEAN_INDEX,
+               "nonetype":index.NONETYPE_INDEX}
 
 class _QueryProcessor(object):
     """Mixin for XMLIndexCatalog providing query processing."""
@@ -87,7 +95,7 @@ class _QueryProcessor(object):
             if right and op in PredicateExpression._relational_ops:
                 # key query => leaf
                 q = q.where(p.applyOperator(idx_tab.c.keyval, 
-                                            unicode(str(right))))
+                                            left_idx.prepareKey(str(right))))
                 return q, joins
             else:
                 left = None
@@ -137,6 +145,18 @@ class _QueryProcessor(object):
         q = q.select_from(joins)
         q = q.group_by(document_tab.c['id'])
         q = q.limit(limit).offset(offset)
+#        from sqlalchemy.ext.serializer import dumps, loads
+#        from seishub.db.dbmanager import meta
+#        blah = dumps(q)
+#        print "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+#        print len(blah)
+#        blah = 'huihui' + blah + 'huhuhhuh'
+#        muh = loads(blah, meta)
+#        blah = q.params()
+#        bluh = q.compile()
+#        from sqlalchemy.sql import text
+#        sql = text(str(q))
+        # import pdb;pdb.set_trace() 
         res = self._db.execute(q).fetchall()
         return [result[0] for result in res]
     
@@ -295,10 +315,15 @@ class XmlIndexCatalog(DbStorage, _QueryProcessor):
         return self.pickup(xmlindex._getElementCls(), index = xmlindex)
 
     def flushIndex(self, package_id = None, resourcetype_id = None, 
-                   xpath = None, xmlindex = None):
+                   xpath = None, xmlindex = None, resource = None):
         """Remove all indexed data for given index."""
-        if not (package_id and resourcetype_id and xpath) or xmlindex:
+        if not ((package_id and resourcetype_id and xpath) or xmlindex or resource):
             raise TypeError("flushIndex: invalid number of arguments.")
+        if resource:
+            for element_cls in type_classes:
+                self.drop(element_cls, 
+                          document = {'_id':resource.document._id})
+            return
         if not xmlindex:
             xmlindex = self.getIndexes(package_id, resourcetype_id, xpath)[0]
         element_cls = xmlindex._getElementCls()
