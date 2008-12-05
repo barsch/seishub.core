@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
-
-"""A test suite for REST resources."""
+"""
+A general test suite for REST resources.
+"""
 
 from StringIO import StringIO
 from seishub.core import Component, implements
@@ -13,9 +14,8 @@ from twisted.web import http
 import unittest
 
 
-NOT_IMPLEMENTED_HTTP_METHODS = ['TRACE', 'OPTIONS', 'COPY', 'HEAD', 'PROPFIND',
-                                'PROPPATCH', 'MKCOL', 'CONNECT', 'PATCH',
-                                'LOCK', 'UNLOCK']
+NOT_IMPLEMENTED_HTTP_METHODS = ['TRACE', 'COPY', 'PROPFIND','PROPPATCH', 
+                                'MKCOL', 'CONNECT', 'PATCH', 'LOCK', 'UNLOCK']
 
 XML_DOC = """<?xml version="1.0" encoding="utf-8"?>
 
@@ -31,7 +31,9 @@ XML_VC_DOC = """<?xml version="1.0" encoding="utf-8"?>
 
 
 class AResourceType(Component):
-    """A non versioned test resource type."""
+    """
+    A non versioned test resource type.
+    """
     implements(IResourceType, IPackage)
     
     package_id = 'rest-test'
@@ -40,7 +42,9 @@ class AResourceType(Component):
 
 
 class AVersionControlledResourceType(Component):
-    """A version controlled test resource type."""
+    """
+    A version controlled test resource type.
+    """
     implements(IResourceType, IPackage)
     
     package_id = 'rest-test'
@@ -49,8 +53,9 @@ class AVersionControlledResourceType(Component):
 
 
 class RestTests(SeisHubEnvironmentTestCase):
-    """A test suite for REST resources."""
-    
+    """
+    A general test suite for REST resources.
+    """
     def setUp(self):
         self.env.enableComponent(AVersionControlledResourceType)
         self.env.enableComponent(AResourceType)
@@ -219,7 +224,9 @@ class RestTests(SeisHubEnvironmentTestCase):
         proc.run(DELETE, '/rest-test/vc/test.xml')
     
     def test_orderOfAddingResourcesMatters(self):
-        """This test in this specific order failed in a previous revision.""" 
+        """
+        This test in this specific order failed in a previous revision.
+        """ 
         proc = Processor(self.env)
         proc.run(PUT, '/rest-test/vc/test.xml', StringIO(XML_DOC))
         proc.run(POST, '/rest-test/vc/test.xml', StringIO(XML_DOC))

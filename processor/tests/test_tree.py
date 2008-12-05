@@ -1,18 +1,20 @@
 # -*- coding: utf-8 -*-
-
-"""A test suite for a Site resource."""
+"""
+A test suite for a ResourceTree resource.
+"""
 
 from seishub.exceptions import SeisHubError
 from seishub.processor import GET, Processor, DELETE, MOVE, PUT, POST
-from seishub.processor.resources import Site, Resource
+from seishub.processor.resources import Resource
 from seishub.test import SeisHubEnvironmentTestCase
 from twisted.web import http
 import unittest
 
 
 class ATestResource(Resource):
-    """A test resource."""
-    
+    """
+    A test resource.
+    """
     def __init__(self, text):
         Resource.__init__(self)
         self.is_leaf = True
@@ -22,19 +24,17 @@ class ATestResource(Resource):
         return 'Hello %s!' % self.text
 
 
-class SiteTests(SeisHubEnvironmentTestCase):
-    """A test suite for a Site resource."""
-    
-    def setUp(self):
-        self.env.tree = Site()
-    
+class ResourceTreeTests(SeisHubEnvironmentTestCase):
+    """
+    A test suite for a ResourceTree resource.
+    """
     def test_getRoot(self):
         proc = Processor(self.env)
         data = proc.run(GET, '/')
         # data must be a dict
         self.assertTrue(isinstance(data, dict))
         # check content
-        self.assertEqual(data.keys(), [])
+        self.assertTrue('xml' in data.keys())
     
     def test_addChild(self):
         # add a few children with absolute path to resource tree
@@ -113,7 +113,7 @@ class SiteTests(SeisHubEnvironmentTestCase):
 
 def suite():
     suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(SiteTests, 'test'))
+    suite.addTest(unittest.makeSuite(ResourceTreeTests, 'test'))
     return suite
 
 

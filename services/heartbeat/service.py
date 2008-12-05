@@ -1,14 +1,12 @@
 # -*- coding: utf-8 -*-
 
-import time
-import socket
-
-from twisted.application import internet, service
-from twisted.internet import protocol
-
 from seishub.config import IntOption, ListOption, BoolOption
 from seishub.defaults import HEARTBEAT_CHECK_PERIOD, HEARTBEAT_HUBS, \
-                             HEARTBEAT_CHECK_TIMEOUT, HEARTBEAT_UDP_PORT
+    HEARTBEAT_CHECK_TIMEOUT, HEARTBEAT_UDP_PORT, HEARTBEAT_AUTOSTART
+from twisted.application import internet, service
+from twisted.internet import protocol
+import socket
+import time
 
 
 class HeartbeatProtocol(protocol.DatagramProtocol):
@@ -79,12 +77,13 @@ class HeartbeatReceiver(internet.UDPServer): #@UndefinedVariable
 
 class HeartbeatService(service.MultiService):
     """A asynchronous events-based heartbeat server for SeisHub."""
-    BoolOption('heartbeat', 'autostart', 'True', "Enable service on start-up.")
+    BoolOption('heartbeat', 'autostart', HEARTBEAT_AUTOSTART, 
+               "Enable service on start-up.")
     IntOption('heartbeat', 'port', HEARTBEAT_UDP_PORT, 
               'Heartbeat port number.')
     ListOption('heartbeat', 'default_hubs', ','.join(HEARTBEAT_HUBS), 
                'Default IPs for very active SeisHub services.')
-    BoolOption('heartbeat', 'active_node', 'on', 'Heartbeat status')
+    BoolOption('heartbeat', 'active_node', True, 'Heartbeat status')
     
     def __init__(self, env):
         self.env = env

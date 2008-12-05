@@ -1,23 +1,21 @@
 # -*- coding: utf-8 -*-
 
-import os
-
-from zope.interface import implements
+from seishub import __version__ as SEISHUB_VERSION
+from seishub.config import IntOption, Option, BoolOption
+from seishub.core import ExtensionPoint
+from seishub.defaults import SSH_PORT, SSH_PRIVATE_KEY, SSH_PUBLIC_KEY, \
+    SSH_AUTOSTART
+from seishub.exceptions import SeisHubError
+from seishub.services.ssh.interfaces import ISSHCommand
 from twisted.application.internet import TCPServer #@UnresolvedImport
 from twisted.conch import avatar, recvline
 from twisted.conch.insults import insults
 from twisted.conch.interfaces import IConchUser, ISession
-from twisted.conch.ssh import factory, keys, common, session
+from twisted.conch.ssh import factory, keys, session
 from twisted.cred import portal
 from twisted.python import components
-
-from seishub import __version__ as SEISHUB_VERSION
-from seishub.services.ssh.interfaces import ISSHCommand
-from seishub.core import ExtensionPoint
-from seishub.defaults import SSH_PORT, SSH_PRIVATE_KEY, SSH_PUBLIC_KEY, \
-                             SSH_AUTOSTART
-from seishub.config import IntOption, Option, BoolOption
-from seishub.exceptions import SeisHubError
+from zope.interface import implements
+import os
 
 
 class SSHServiceProtocol(recvline.HistoricRecvLine):
@@ -254,31 +252,59 @@ class SSHServiceFactory(factory.SSHFactory):
         self.publicKeys = {'ssh-rsa': keys.Key.fromFile(pub)}
         self.privateKeys = {'ssh-rsa': keys.Key.fromFile(priv)}
     
-    def _getCertificates(self):
-        """Fetching certificate files from configuration."""
-        pub = self.env.config.get('ssh', 'public_key_file')
-        priv = self.env.config.get('ssh', 'private_key_file')
-        if not os.path.isfile(pub):
-            pub = os.path.join(self.env.config.path, 'conf', pub)
-            if not os.path.isfile(pub):
-                self._generateRSAKeys()
-        if not os.path.isfile(priv):
-            priv = os.path.join(self.env.config.path, 'conf', priv)
-            if not os.path.isfile(priv):
-                self._generateRSAKeys()
-        return pub, priv
     
-    def _generateRSAKeys(self):
-        """Generates new private RSA keys for the SSH service."""
+    def _getCertificates(self):
+        """
+        Fetch SSH certificate paths from configuration.
+        
+        return: Paths to public and private key files.
+        """
+        pub_file = self.env.config.get('ssh', 'public_key_file')
+        priv_file = self.env.config.get('ssh', 'private_key_file')
+        if not os.path.isabs(pub_file):
+            pub_file = os.path.join(self.env.config.path, pub_file)
+        if not os.path.isabs(priv_file):
+            priv_file = os.path.join(self.env.config.path, priv_file)
+        # test if certificates exist
+        msg = "SSH certificate file %s is missing!" 
+        if not os.path.isfile(pub_file):
+            self.env.log.warn(msg % pub_file)
+            return self._generateCertificates()
+        if not os.path.isfile(priv_file):
+            self.env.log.warn(msg % priv_file)
+            return self._generateCertificates()
+        return pub_file, priv_file
+    
+    def _generateCertificates(self):
+        """
+        Generates new private RSA keys for the SFTP service.
+        
+        return: Paths to public and private key files.
+        """
         from Crypto.PublicKey import RSA
-        KEY_LENGTH = 1024
-        rsaKey = RSA.generate(KEY_LENGTH, common.entropy.get_bytes)
-        publicKeyString = keys.makePublicKeyString(rsaKey)
-        privateKeyString = keys.makePrivateKeyString(rsaKey)
-        pub = os.path.join(self.env.config.path, 'conf', SSH_PUBLIC_KEY)
-        priv = os.path.join(self.env.config.path, 'conf', SSH_PRIVATE_KEY)
-        file(pub, 'w+b').write(publicKeyString)
-        file(priv, 'w+b').write(privateKeyString)
+        from twisted.python.randbytes import secureRandom
+        # get default path
+        pub_file = os.path.join(self.env.config.path, SSH_PUBLIC_KEY)
+        priv_file = os.path.join(self.env.config.path, SSH_PRIVATE_KEY)
+        # generate
+        msg = "Generating new certificate files for the SSH service ..."
+        self.env.log.warn(msg)
+        rsa_key = RSA.generate(1024, secureRandom)
+        # public key
+        pub_key = keys.Key(rsa_key).public().toString('openssh')
+        file(pub_file, 'w+b').write(str(pub_key))
+        msg = "Private key file %s has been created."
+        self.env.log.warn(msg % pub_file)
+        # private key
+        priv_key = keys.Key(rsa_key).toString('openssh')
+        file(priv_file, 'w+b').write(str(priv_key))
+        msg = "Private key file %s has been created."
+        self.env.log.warn(msg % priv_file)
+        # write config
+        self.env.config.set('ssh', 'public_key_file', pub_file)
+        self.env.config.set('ssh', 'private_key_file', priv_file)
+        self.env.config.save()
+        return pub_file, priv_file
 
 
 class SSHService(TCPServer): 

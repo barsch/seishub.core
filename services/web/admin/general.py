@@ -3,18 +3,16 @@
 General configuration panels for the web-based administration service.
 """
 
-import inspect
-import sys
-import os
-
-from twisted.internet import reactor
-from twisted.application import service
-
 from seishub.core import Component, implements
-from seishub.services.admin.interfaces import IAdminPanel
 from seishub.defaults import DEFAULT_COMPONENTS
-from seishub.util.text import getFirstSentence
 from seishub.exceptions import SeisHubError
+from seishub.processor.interfaces import IAdminPanel
+from seishub.util.text import getFirstSentence
+from twisted.application import service
+from twisted.internet import reactor
+import inspect
+import os
+import sys
 
 
 class BasicPanel(Component):
@@ -82,17 +80,8 @@ class LogsPanel(Component):
         return ('admin', 'General', 'logs', 'Logs')
     
     def renderPanel(self, request):
-        access_log_file = self.env.config.get('logging', 'access_log_file')
         error_log_file = self.env.config.get('logging', 'error_log_file')
-        log_dir = os.path.join(self.env.config.path, 'log')
-        log_file = os.path.join(log_dir, access_log_file)
-        try:
-            fh = open(log_file, 'r')
-            logs = fh.readlines()
-            fh.close()  
-        except:
-            logs = ["Can't open log file."]
-        access_logs = logs[-500:]
+        log_dir = os.path.join(self.env.config.path, 'logs')
         log_file = os.path.join(log_dir, error_log_file)
         try:
             fh = open(log_file, 'r')
@@ -102,7 +91,6 @@ class LogsPanel(Component):
             logs = ["Can't open log file."]
         error_logs = logs[-500:]
         data = {
-          'accesslog': access_logs, 
           'errorlog': error_logs, 
         }
         return ('general_logs.tmpl', data)

@@ -1,237 +1,20 @@
 # -*- coding: utf-8 -*-
+"""
+A SFTP server.
+"""
 
-import os
-import time
-import StringIO
-
-from zope.interface import implements
+from seishub.config import IntOption, Option, BoolOption
+from seishub.defaults import SFTP_AUTOSTART, SFTP_PORT, SFTP_PRIVATE_KEY, \
+    SFTP_PUBLIC_KEY, SFTP_LOG_FILE
+from seishub.services.sftp.protocol import SFTPServiceProtocol
 from twisted.application.internet import TCPServer #@UnresolvedImport
 from twisted.conch import avatar
-from twisted.conch.interfaces import ISFTPFile, ISFTPServer, IConchUser
-from twisted.conch.ssh import factory, keys, common, session, filetransfer
+from twisted.conch.interfaces import ISFTPServer, IConchUser
+from twisted.conch.ssh import factory, keys, session, filetransfer
 from twisted.cred import portal
 from twisted.python import components
-
-from seishub.defaults import SFTP_PORT, SFTP_PRIVATE_KEY, SFTP_PUBLIC_KEY
-from seishub.defaults import SFTP_AUTOSTART
-from seishub.config import IntOption, Option, BoolOption
-from seishub.processor import Processor, PUT, POST, DELETE, GET, MOVE
-from seishub.exceptions import SeisHubError, NotFoundError
-from seishub.util.path import absPath, lsLine
-from seishub.processor.interfaces import IXMLResource
-
-
-DEFAULT_GID = 1000
-
-
-class DirList:
-    def __init__(self, env, iter):
-        self.iter = iter
-        self.env = env
-    
-    def __iter__(self):
-        return self
-    
-    def next(self):
-        (name, attrs) = self.iter.next()
-        
-        class st:
-            pass
-        
-        s = st()
-        attrs['permissions'] = s.st_mode = attrs.get('permissions', 040755)
-        attrs['uid'] = s.st_uid = attrs.get('uid', 0)
-        attrs['gid'] = s.st_gid = attrs.get('gid', DEFAULT_GID)
-        attrs['size'] = s.st_size = attrs.get('size', 0)
-        attrs['atime'] = s.st_atime = attrs.get('atime', self.env.startup_time)
-        attrs['mtime'] = s.st_mtime = attrs.get('mtime', self.env.startup_time)
-        attrs['nlink'] = s.st_nlink = 1
-        return ( name, lsLine(name, s), attrs )
-    
-    def close(self):
-        return
-
-
-class InMemoryFile:
-    implements(ISFTPFile)
-    
-    def __init__(self, env, filename, flags, attrs):
-        self.env = env
-        self.filename = filename
-        self.flags = flags
-        self.attrs = attrs
-        self.data = StringIO.StringIO()
-        self.proc = Processor(self.env)
-        if self.flags & filetransfer.FXF_READ:
-            result = self._readResource()
-            if result:
-                self.data.write(result)
-            else:
-                raise filetransfer.SFTPError(filetransfer.FX_NO_SUCH_FILE, '')
-    
-    def _readResource(self):
-        # check if resource exists
-        data = ''
-        try:
-            data = self.proc.run(GET, self.filename)
-        except:
-            pass
-        return data
-    
-    def readChunk(self, offset, length):
-        self.data.seek(offset)
-        return self.data.read(length)
-    
-    def writeChunk(self, offset, data):
-        self.data.seek(offset)
-        self.data.write(data)
-    
-    def close(self):
-        # write file after close 
-        if not self.data:
-            return
-        if not (self.flags & filetransfer.FXF_WRITE):
-            return
-        # check for resource
-        result = self._readResource()
-        self.proc.content = self.data
-        self.proc.path = self.filename
-        if result:
-            # resource exists
-            self.proc.method = POST
-        else:
-            # new resource
-            self.proc.method = PUT
-        try:
-            self.proc.process()
-        except SeisHubError, e:
-            raise filetransfer.SFTPError(filetransfer.FX_FAILURE, e.message)
-    
-    def getAttrs(self):
-        pass
-    
-    def setAttrs(self, attrs):
-        pass
-
-
-class SFTPServiceProtocol:
-    implements(ISFTPServer)
-    
-    def __init__(self, avatar):
-        self.avatar = avatar
-        self.env = avatar.env
-    
-    def gotVersion(self, otherVersion, extData):
-        return {}
-    
-    def realPath(self, path):
-        return absPath(path)
-    
-    def openFile(self, filename, flags, attrs):
-        return InMemoryFile(self.env, filename, flags, attrs)
-    
-    def openDirectory(self, path):
-        # remove trailing slashes
-        path = absPath(path)
-        proc = Processor(self.env)
-        try:
-            data = proc.run(GET, path)
-        except Exception, e:
-            raise filetransfer.SFTPError(filetransfer.FX_FAILURE, e.message)
-        filelist = []
-        filelist.append(('.', {}))
-        filelist.append(('..', {}))
-        
-        if isinstance(data, dict):
-            ids = data.keys()
-            ids.sort()
-            for id in ids:
-                obj = data.get(id)
-                if obj.folderish:
-                    # folder object
-                    filelist.append((id, {}))
-                elif IXMLResource.providedBy(obj):
-                    # resource object
-                    meta = obj.document.meta 
-                    file_datetime = int(time.mktime(meta.datetime.timetuple()))
-                    file_size = meta.size
-                    file_uid = meta.uid or 0
-                    filelist.append((id, {'permissions': 0100644,
-                                          'uid': file_uid,
-                                          'size': file_size,
-                                          'atime': file_datetime,
-                                          'mtime': file_datetime}))
-        else:
-            # XXX: todo
-            raise SeisHubError('no dict!!!!')
-        return DirList(self.env, iter(filelist))
-    
-    def getAttrs(self, filename, followLinks):
-        """Return the attributes for the given path."""
-        # remove trailing slashes
-        filename = absPath(filename)
-        # process resource
-        proc = Processor(self.env)
-        data = None
-        try:
-            data = proc.run(GET, filename)
-        except NotFoundError, e:
-            pass
-        except Exception, e:
-            raise filetransfer.SFTPError(filetransfer.FX_FAILURE, e.message)
-        if isinstance(data, basestring):
-            # file
-            perm = 0100644
-        else:
-            # directory
-            perm = 040755
-        return {'permissions': perm, 
-                'size': 0, 
-                'uid': 0, 
-                'gid': DEFAULT_GID, 
-                'atime': self.env.startup_time, 
-                'mtime': self.env.startup_time, 
-                'nlink': 1} 
-    
-    def setAttrs(self, path, attrs):
-        return
-    
-    def removeFile(self, filename):
-        """Remove the given file.
-        
-        @param filename: the name of the file as a string.
-        """
-        # process resource
-        proc = Processor(self.env)
-        try:
-            proc.run(DELETE, filename)
-        except Exception, e:
-            raise filetransfer.SFTPError(filetransfer.FX_FAILURE, e.message)
-    
-    def renameFile(self, oldpath, newpath):
-        # process resource
-        proc = Processor(self.env)
-        destination = self.env.getRestUrl() + newpath
-        try:
-            proc.run(MOVE, oldpath, 
-                     received_headers={'Destination': destination})
-        except Exception, e:
-            raise filetransfer.SFTPError(filetransfer.FX_FAILURE, e.message)
-        return
-    
-    def makeDirectory(self, path, attrs):
-        msg = "Directories can't be added via SFTP."
-        raise filetransfer.SFTPError(filetransfer.FX_OP_UNSUPPORTED, msg)
-    
-    def removeDirectory(self, path):
-        msg = "Directories can't be deleted via SFTP."
-        raise filetransfer.SFTPError(filetransfer.FX_OP_UNSUPPORTED,msg)
-    
-    def readLink(self, path):
-        raise filetransfer.SFTPError(filetransfer.FX_OP_UNSUPPORTED, '')
-    
-    def makeLink(self, linkPath, targetPath):
-        raise filetransfer.SFTPError(filetransfer.FX_OP_UNSUPPORTED, '')
+from zope.interface import implements
+import os
 
 
 class SFTPServiceAvatar(avatar.ConchUser):
@@ -261,8 +44,9 @@ class SFTPServiceRealm:
 
 
 class SFTPServiceFactory(factory.SSHFactory):
-    """Factory for SFTP Server."""
-    
+    """
+    Factory for SFTP server.
+    """
     def __init__(self, env):
         self.env = env
         self.portal = portal.Portal(SFTPServiceRealm(env), 
@@ -271,41 +55,74 @@ class SFTPServiceFactory(factory.SSHFactory):
         pub, priv = self._getCertificates()
         self.publicKeys = {'ssh-rsa': keys.Key.fromFile(pub)}
         self.privateKeys = {'ssh-rsa': keys.Key.fromFile(priv)}
+        # log file
+        log_file = env.config.get('sftp', 'log_file') or None
+        if not os.path.isabs(log_file):
+            log_file = os.path.join(self.env.config.path, log_file)
     
     def _getCertificates(self):
-        """Fetching certificate files from configuration."""
-        pub = self.env.config.get('sftp', 'public_key_file')
-        priv = self.env.config.get('sftp', 'private_key_file')
-        if not os.path.isfile(pub):
-            pub = os.path.join(self.env.config.path, 'conf', pub)
-            if not os.path.isfile(pub):
-                self._generateRSAKeys()
-        if not os.path.isfile(priv):
-            priv = os.path.join(self.env.config.path, 'conf', priv)
-            if not os.path.isfile(priv):
-                self._generateRSAKeys()
-        return pub, priv
+        """
+        Fetch SFTP certificate paths from configuration.
+        
+        return: Paths to public and private key files.
+        """
+        pub_file = self.env.config.get('sftp', 'public_key_file')
+        priv_file = self.env.config.get('sftp', 'private_key_file')
+        if not os.path.isabs(pub_file):
+            pub_file = os.path.join(self.env.config.path, pub_file)
+        if not os.path.isabs(priv_file):
+            priv_file = os.path.join(self.env.config.path, priv_file)
+        # test if certificates exist
+        msg = "SFTP certificate file %s is missing!" 
+        if not os.path.isfile(pub_file):
+            self.env.log.warn(msg % pub_file)
+            return self._generateCertificates()
+        if not os.path.isfile(priv_file):
+            self.env.log.warn(msg % priv_file)
+            return self._generateCertificates()
+        return pub_file, priv_file
     
-    def _generateRSAKeys(self):
-        """Generates new private RSA keys for the SFTP service."""
-        print "Generate keys ..."
+    def _generateCertificates(self):
+        """
+        Generates new private RSA keys for the SFTP service.
+        
+        return: Paths to public and private key files.
+        """
         from Crypto.PublicKey import RSA
-        KEY_LENGTH = 1024
-        rsaKey = RSA.generate(KEY_LENGTH, common.entropy.get_bytes)
-        publicKeyString = keys.makePublicKeyString(rsaKey)
-        privateKeyString = keys.makePrivateKeyString(rsaKey)
-        pub = os.path.join(self.env.config.path, 'conf', SFTP_PUBLIC_KEY)
-        priv = os.path.join(self.env.config.path, 'conf', SFTP_PRIVATE_KEY)
-        file(pub, 'w+b').write(publicKeyString)
-        file(priv, 'w+b').write(privateKeyString)
+        from twisted.python.randbytes import secureRandom
+        # get default path
+        pub_file = os.path.join(self.env.config.path, SFTP_PUBLIC_KEY)
+        priv_file = os.path.join(self.env.config.path, SFTP_PRIVATE_KEY)
+        # generate
+        msg = "Generating new certificate files for the SFTP service ..."
+        self.env.log.warn(msg)
+        rsa_key = RSA.generate(1024, secureRandom)
+        # public key
+        pub_key = keys.Key(rsa_key).public().toString('openssh')
+        file(pub_file, 'w+b').write(str(pub_key))
+        msg = "Private key file %s has been created."
+        self.env.log.warn(msg % pub_file)
+        # private key
+        priv_key = keys.Key(rsa_key).toString('openssh')
+        file(priv_file, 'w+b').write(str(priv_key))
+        msg = "Private key file %s has been created."
+        self.env.log.warn(msg % priv_file)
+        # write config
+        self.env.config.set('sftp', 'public_key_file', pub_file)
+        self.env.config.set('sftp', 'private_key_file', priv_file)
+        self.env.config.save()
+        return pub_file, priv_file
 
 
 class SFTPService(TCPServer):
-    """Service for SFTP server."""
+    """
+    Service for SFTP server.
+    """
     BoolOption('sftp', 'autostart', SFTP_AUTOSTART, 'Run service on start-up.')
     IntOption('sftp', 'port', SFTP_PORT, "SFTP port number.")
     Option('sftp', 'public_key_file', SFTP_PUBLIC_KEY, 'Public RSA key.')
     Option('sftp', 'private_key_file', SFTP_PRIVATE_KEY, 'Private RSA key.')
+    Option('sftp', 'log_file', SFTP_LOG_FILE, "SFTP access log file.")
     
     def __init__(self, env):
         self.env = env

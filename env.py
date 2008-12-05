@@ -1,32 +1,32 @@
 # -*- coding: utf-8 -*-
 
+from seishub.auth import AuthenticationManager
+from seishub.config import Configuration, Option, _TRUE_VALUES
+from seishub.core import ComponentManager
+from seishub.db.dbmanager import DatabaseManager
+from seishub.defaults import DEFAULT_COMPONENTS, HTTP_PORT
+from seishub.loader import ComponentLoader
+from seishub.log import Logger
+from seishub.packages.installer import PackageInstaller
+from seishub.processor import ResourceTree
+from seishub.xmldb.xmlcatalog import XmlCatalog
+from twisted.application import service
+from twisted.internet import defer
 import os
 import sys
 import time
-
-from twisted.internet import defer
-from twisted.application import service
-
-from seishub.auth import AuthenticationManager
-from seishub.core import ComponentManager
-from seishub.config import Configuration, Option, _TRUE_VALUES
-from seishub.loader import ComponentLoader
-from seishub.packages.installer import PackageInstaller
-from seishub.xmldb.xmlcatalog import XmlCatalog
-from seishub.db.dbmanager import DatabaseManager
-from seishub.log import Logger
-from seishub.defaults import DEFAULT_COMPONENTS
 from seishub.packages.registry import ComponentRegistry
-from seishub.processor.resources import Site, FileSystemResource
-from seishub.processor.resources import RESTFolder, MapperResource
-#from seishub.processor.resources import XMLPackageFolder, XMLResourceTypeFolder, XMLResource
+
 
 __all__ = ['Environment']
 
 
 class Environment(ComponentManager):
-    """One class to rule them all: Environment is the base class to handle
-    configuration, XML catalog, database and logging access.
+    """
+    The one class to rule them all.
+    
+    Environment is the base class to handle configuration, XML catalog, 
+    database and logging access.
     
     A SeisHub environment consists of:
         * a configuration handler env.config
@@ -76,23 +76,7 @@ class Environment(ComponentManager):
         PackageInstaller.install(self, 'seishub')
         PackageInstaller.install(self)
         # initialize the resource tree
-        self.updateResourceTree()
-    
-    def updateResourceTree(self):
-        self.tree = Site()
-        # set XML directory
-        self.tree.putChild('xml', RESTFolder())
-#        # demo - we shouldn't do that but it is possible
-#        self.tree.putChild('/demo/1/package', XMLPackageFolder('seishub'))
-#        self.tree.putChild('/demo/1/rt', XMLResourceTypeFolder('seishub','schema'))
-#        self.tree.putChild('/demo/xml-root', XMLRootFolder())
-#        self.tree.putChild('/demo/1/resource', XMLResource('seishub','stylesheet','1'))
-        # set all mappings
-        for url, cls in self.registry.mappers.get().items():
-            self.tree.putChild(url, MapperResource(cls(self)))
-        # set all file system folder
-        for url, path in self.config.options('fs'):
-            self.tree.putChild(url, FileSystemResource(path))
+        self.tree = ResourceTree(self)
     
     def getSeisHubPath(self):
         """Returns the absolute path to the SeisHub directory."""
@@ -101,9 +85,9 @@ class Environment(ComponentManager):
     
     def getRestUrl(self):
         """Returns the root URL of the REST pages."""
-        rest_host = self.config.get('seishub', 'host')
-        rest_port = self.config.getint('rest', 'port')
-        return 'http://'+ str(rest_host) + ':' + str(rest_port)
+        rest_host = self.config.get('seishub', 'host') or 'localhost'
+        rest_port = self.config.getint('http_port', 'port') or HTTP_PORT
+        return 'http://'+ rest_host + ':' + str(rest_port)
     
     @defer.inlineCallbacks
     def enableService(self, srv_name):

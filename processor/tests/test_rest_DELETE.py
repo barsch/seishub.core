@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
-
-"""A test suite for DELETE request on REST resources."""
+"""
+A test suite for DELETE request on REST resources.
+"""
 
 from StringIO import StringIO
 from seishub.core import Component, implements
@@ -28,7 +29,9 @@ XML_VCDOC = """<?xml version="1.0" encoding="utf-8"?>
 
 
 class AResourceType(Component):
-    """A non version controlled test resource type."""
+    """
+    A non version controlled test resource type.
+    """
     implements(IResourceType, IPackage)
     
     package_id = 'delete-test'
@@ -37,7 +40,9 @@ class AResourceType(Component):
 
 
 class AVersionControlledResourceType(Component):
-    """A version controlled test resource type."""
+    """
+    A version controlled test resource type.
+    """
     implements(IResourceType, IPackage)
     
     package_id = 'delete-test'
@@ -46,8 +51,9 @@ class AVersionControlledResourceType(Component):
 
 
 class RestDELETETests(SeisHubEnvironmentTestCase):
-    """A test suite for DELETE request on REST resources."""
-    
+    """
+    A test suite for DELETE request on REST resources.
+    """
     def setUp(self):
         self.env.enableComponent(AVersionControlledResourceType)
         self.env.enableComponent(AResourceType)
@@ -58,7 +64,9 @@ class RestDELETETests(SeisHubEnvironmentTestCase):
         self.env.disableComponent(AResourceType)
     
     def test_deletePackage(self):
-        """SeisHub processor does not allow deletion of packages."""
+        """
+        SeisHub processor does not allow deletion of packages.
+        """
         proc = Processor(self.env)
         # without trailing slash
         try:
@@ -74,7 +82,9 @@ class RestDELETETests(SeisHubEnvironmentTestCase):
             self.assertEqual(e.code, http.NOT_ALLOWED)
     
     def test_deleteNotExistingPackage(self):
-        """A not existing resource package can't be deleted."""
+        """
+        A not existing resource package can't be deleted.
+        """
         proc = Processor(self.env)
         # without trailing slash
         try:
@@ -91,7 +101,9 @@ class RestDELETETests(SeisHubEnvironmentTestCase):
             self.assertEqual(e.code, http.NOT_FOUND)
     
     def test_deleteResourceType(self):
-        """SeisHub processor does not allow deletion of resource types."""
+        """
+        SeisHub processor does not allow deletion of resource types.
+        """
         proc = Processor(self.env)
         # without trailing slash
         try:
@@ -107,7 +119,9 @@ class RestDELETETests(SeisHubEnvironmentTestCase):
             self.assertEqual(e.code, http.NOT_ALLOWED)
     
     def test_deleteNotExistingResourceType(self):
-        """A not existing resource type can't be deleted."""
+        """
+        A not existing resource type can't be deleted.
+        """
         proc = Processor(self.env)
         # without trailing slash
         try:
@@ -124,7 +138,9 @@ class RestDELETETests(SeisHubEnvironmentTestCase):
             self.assertEqual(e.code, http.NOT_FOUND)
     
     def test_deleteResource(self):
-        """Successful deletion of XML resources."""
+        """
+        Successful deletion of XML resources.
+        """
         proc = Processor(self.env)
         # create resource
         proc.run(PUT, '/delete-test/notvc/test.xml', StringIO(XML_DOC))
@@ -134,7 +150,7 @@ class RestDELETETests(SeisHubEnvironmentTestCase):
         # delete resource
         data = proc.run(DELETE, '/delete-test/notvc/test.xml')
         self.assertEqual(data, '')
-        self.assertEqual(proc.response_code, http.NO_CONTENT)
+        self.assertEqual(proc.code, http.NO_CONTENT)
         # fetch resource again
         try:
             proc.run(GET, '/delete-test/notvc/test.xml')
@@ -143,7 +159,9 @@ class RestDELETETests(SeisHubEnvironmentTestCase):
             self.assertEqual(e.code, http.NOT_FOUND)
     
     def test_deleteNotExistingResource(self):
-        """Not existing resource can't be deleted."""
+        """
+        Not existing resource can't be deleted.
+        """
         proc = Processor(self.env)
         try:
             proc.run(DELETE, '/delete-test/notvc/test.xml')
@@ -152,7 +170,9 @@ class RestDELETETests(SeisHubEnvironmentTestCase):
             self.assertEqual(e.code, http.NOT_FOUND)
     
     def test_deleteBuiltinResource(self):
-        """SeisHub built-in resources can't be deleted."""
+        """
+        SeisHub built-in resources can't be deleted.
+        """
         proc = Processor(self.env)
         # fetch a seishub stylesheet
         data = proc.run(GET, '/seishub/stylesheet')
@@ -164,7 +184,9 @@ class RestDELETETests(SeisHubEnvironmentTestCase):
             self.assertEqual(e.code, http.FORBIDDEN)
     
     def test_deleteVersionControlledBuiltinResource(self):
-        """SeisHub controlled built-in resources can't be deleted."""
+        """
+        SeisHub controlled built-in resources can't be deleted.
+        """
         proc = Processor(self.env)
         # fetch a seishub stylesheet
         data = proc.run(GET, '/seishub/stylesheet')
@@ -176,7 +198,9 @@ class RestDELETETests(SeisHubEnvironmentTestCase):
             self.assertEqual(e.code, http.FORBIDDEN)
     
     def test_deleteRevision(self):
-        """Revisions may not be deleted via the processor."""
+        """
+        Revisions may not be deleted via the processor.
+        """
         proc = Processor(self.env)
         # create resource
         proc.run(PUT, '/delete-test/vc/test.xml', StringIO(XML_DOC))
@@ -191,7 +215,9 @@ class RestDELETETests(SeisHubEnvironmentTestCase):
         proc.run(DELETE, '/delete-test/vc/test.xml')
     
     def test_deleteNotExistingRevision(self):
-        """Also not existing revisions may not be deleted via the processor."""
+        """
+        Also not existing revisions may not be deleted via the processor.
+        """
         proc = Processor(self.env)
         # create resource
         proc.run(PUT, '/delete-test/vc/test.xml', StringIO(XML_DOC))
@@ -206,7 +232,9 @@ class RestDELETETests(SeisHubEnvironmentTestCase):
         proc.run(DELETE, '/delete-test/vc/test.xml')
     
     def test_deleteResourceInNotExistingResourceType(self):
-        """Resource can't be deleted from not existing resource type."""
+        """
+        Resource can't be deleted from not existing resource type.
+        """
         proc = Processor(self.env)
         try:
             proc.run(DELETE, '/delete-test/notvc2/test.xml')
@@ -215,7 +243,9 @@ class RestDELETETests(SeisHubEnvironmentTestCase):
             self.assertEqual(e.code, http.NOT_FOUND)
     
     def test_deleteResourceInNotExistingPackage(self):
-        """Resource can't be deleted from not existing package."""
+        """
+        Resource can't be deleted from not existing package.
+        """
         proc = Processor(self.env)
         # with trailing slash
         try:
@@ -225,7 +255,9 @@ class RestDELETETests(SeisHubEnvironmentTestCase):
             self.assertEqual(e.code, http.NOT_FOUND)
     
     def test_deleteVersionControlledResource(self):
-        """Successful deletion of version controlled resources."""
+        """
+        Successful deletion of version controlled resources.
+        """
         proc = Processor(self.env)
         # create resource
         proc.run(PUT, '/delete-test/vc/test.xml', StringIO(XML_DOC))
@@ -240,7 +272,7 @@ class RestDELETETests(SeisHubEnvironmentTestCase):
         # delete resource
         data = proc.run(DELETE, '/delete-test/vc/test.xml')
         self.assertEqual(data, '')
-        self.assertEqual(proc.response_code, http.NO_CONTENT)
+        self.assertEqual(proc.code, http.NO_CONTENT)
         # fetch resource again
         try:
             proc.run(GET, '/delete-test/vc/test.xml')

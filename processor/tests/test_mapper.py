@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
-
-"""A test suite for mapper resources."""
+"""
+A test suite for mapper resources.
+"""
 
 from seishub.core import Component, implements
 from seishub.packages.builtins import IPackage
@@ -20,17 +21,21 @@ XML_DOC = """<?xml version="1.0" encoding="utf-8"?>
 
 
 class APackage(Component):
-    """A test package."""
+    """
+    A test package.
+    """
     implements(IPackage)
     
     package_id = 'mapper-test'
 
 
 class TestMapper(Component):
-    """A test mapper."""
+    """
+    A test mapper.
+    """
     implements(IMapper)
     
-    mapping_url = '/test/testmapping'
+    mapping_url = '/mapper-test/testmapping'
     
     def process_GET(self, request):
         return "muh"
@@ -46,7 +51,9 @@ class TestMapper(Component):
 
 
 class TestMapper2(Component):
-    """Another test mapper."""
+    """
+    Another test mapper.
+    """
     implements(IMapper)
     
     mapping_url = '/mapper-test/testmapping2'
@@ -56,7 +63,9 @@ class TestMapper2(Component):
 
 
 class TestMapper3(Component):
-    """And one more test mapper."""
+    """
+    And one more test mapper.
+    """
     implements(IMapper)
     
     mapping_url = '/mapper-test/testmapping3'
@@ -66,7 +75,9 @@ class TestMapper3(Component):
 
 
 class TestMapper4(Component):
-    """And one more test mapper."""
+    """
+    And one more test mapper.
+    """
     implements(IMapper)
     
     mapping_url = '/testmapping4'
@@ -76,7 +87,9 @@ class TestMapper4(Component):
 
 
 class TestMapper5(Component):
-    """An unregistered mapper."""
+    """
+    An unregistered mapper.
+    """
     implements(IMapper)
     
     mapping_url = '/mapper-test/testmapping5'
@@ -86,15 +99,16 @@ class TestMapper5(Component):
 
 
 class MapperTests(SeisHubEnvironmentTestCase):
-    """A test suite for mapper resources."""
-    
+    """
+    A test suite for mapper resources.
+    """
     def setUp(self):
         self.env.enableComponent(APackage)
         self.env.enableComponent(TestMapper)
         self.env.enableComponent(TestMapper2)
         self.env.enableComponent(TestMapper3)
         self.env.enableComponent(TestMapper4)
-        self.env.updateResourceTree()
+        self.env.tree.update()
         
     def tearDown(self):
         self.env.disableComponent(APackage)
@@ -103,19 +117,27 @@ class MapperTests(SeisHubEnvironmentTestCase):
         self.env.disableComponent(TestMapper3)
         self.env.disableComponent(TestMapper4)
     
-    def test_getRootMappers(self):
+    def test_checkRegisteredMappers(self):
+        """
+        Fetch mapper resource at different levels.
+        """
         proc = Processor(self.env)
         # root level
         data = proc.run(GET, '/')
-        self.assertTrue('test' in data.keys())
+        self.assertTrue('mapper-test' in data.keys())
         self.assertTrue('testmapping4' in data.keys())
         # virtual level
         proc = Processor(self.env)
-        data = proc.run(GET, '/test')
+        data = proc.run(GET, '/mapper-test')
+        # registered mappers
         self.assertTrue('testmapping' in data.keys())
+        self.assertTrue('testmapping2' in data.keys())
+        self.assertTrue('testmapping3' in data.keys())
+        # unregistered mapper
+        self.assertFalse('testmapping5' in data.keys())
         # content
         proc = Processor(self.env)
-        data = proc.run(GET, '/test/testmapping')
+        data = proc.run(GET, '/mapper-test/testmapping')
         self.assertEqual(data, 'muh')
 
 

@@ -6,15 +6,13 @@ import urllib
 
 from Cheetah.Template import Template
 from pkg_resources import resource_filename #@UnresolvedImport
-from twisted.application.internet import SSLServer #@UnresolvedImport
-from twisted.internet import threads, defer, ssl
+from twisted.application.internet import TCPServer #@UnresolvedImport
+from twisted.internet import threads, defer
 from twisted.web import static, http, util as webutil
 
 from seishub import __version__ as SEISHUB_VERSION
 from seishub.config import IntOption, Option, BoolOption
 from seishub.core import ExtensionPoint
-from seishub.defaults import ADMIN_PORT, ADMIN_CERTIFICATE
-from seishub.defaults import ADMIN_PRIVATE_KEY, ADMIN_MIN_PASSWORD_LENGTH
 from seishub.processor import Processor, GET
 from seishub.exceptions import SeisHubError
 from seishub.services.admin.interfaces import IAdminPanel, IAdminTheme
@@ -349,52 +347,26 @@ class AdminServiceFactory(http.HTTPFactory):
         self.protocol.env = env
 
 
-class AdminService(SSLServer):
+class AdminService(TCPServer):
     """Service for WebAdmin HTTP Server."""
     BoolOption('webadmin', 'autostart', 'True', "Run service on start-up.")
-    IntOption('webadmin', 'port', ADMIN_PORT, "WebAdmin port number.")
-    Option('webadmin', 'private_key_file', ADMIN_PRIVATE_KEY,  
-           'Private key file.')
-    Option('webadmin', 'certificate_file', ADMIN_CERTIFICATE, 
-           'Certificate file.')
-    BoolOption('webadmin', 'secured', 'True', "Enable HTTPS connection.")
-    Option('webadmin', 'theme', 'default', "WebAdmin Theme.")
-    IntOption('webadmin', 'min_password_length', ADMIN_MIN_PASSWORD_LENGTH,
+    IntOption('webadmin', 'port', 40443, "WebAdmin port number.")
+    Option('webadmin', 'theme', 'magic', "WebAdmin Theme.")
+    IntOption('webadmin', 'min_password_length', 5,
               'Minimal password length for secured services.')
     
     def __init__(self, env):
         self.env = env
         port = env.config.getint('webadmin', 'port')
-        secured = env.config.getbool('webadmin', 'secured')
-        priv, cert = self._getCertificates()
-        if secured:
-            context = ssl.DefaultOpenSSLContextFactory(priv, cert)
-            SSLServer.__init__(self, port, AdminServiceFactory(env), context)
-        else:
-            self.method = 'TCP'
-            SSLServer.__init__(self, port, AdminServiceFactory(env), 1)
+        self.method = 'TCP'
+        TCPServer.__init__(self, port, AdminServiceFactory(env), 1)
         self.setName("WebAdmin")
         self.setServiceParent(env.app)
     
     def privilegedStartService(self):
         if self.env.config.getbool('webadmin', 'autostart'):
-            SSLServer.privilegedStartService(self)
+            TCPServer.privilegedStartService(self)
     
     def startService(self):
         if self.env.config.getbool('webadmin', 'autostart'):
-            SSLServer.startService(self)
-    
-    def _getCertificates(self):
-        """Fetching certificate files from configuration."""
-        priv = self.env.config.get('webadmin', 'private_key_file')
-        cert = self.env.config.get('webadmin', 'certificate_file')
-        if not os.path.isfile(priv):
-            priv = os.path.join(self.env.config.path, 'conf', priv)
-            if not os.path.isfile(priv):
-                raise SeisHubError('Missing file ' + priv)
-        if not os.path.isfile(cert):
-            cert = os.path.join(self.env.config.path, 'conf', cert)
-            if not os.path.isfile(cert):
-                raise SeisHubError('Missing file ' + cert)
-        return priv, cert
-        
+            TCPServer.startService(self)

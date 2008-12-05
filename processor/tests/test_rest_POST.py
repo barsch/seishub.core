@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
-
-"""A test suite for POST request on REST resources."""
+"""
+A test suite for POST request on REST resources.
+"""
 
 from seishub.core import Component, implements
 from seishub.packages.builtins import IResourceType, IPackage
@@ -19,7 +20,9 @@ XML_DOC = """<?xml version="1.0" encoding="UTF-8"?>
 
 
 class AResourceType(Component):
-    """A non versioned test resource type."""
+    """
+    A non versioned test resource type.
+    """
     implements(IResourceType, IPackage)
     
     package_id = 'post-test'
@@ -28,7 +31,9 @@ class AResourceType(Component):
 
 
 class AVersionControlledResourceType(Component):
-    """A version controlled test resource type."""
+    """
+    A version controlled test resource type.
+    """
     implements(IResourceType, IPackage)
     
     package_id = 'post-test'
@@ -37,8 +42,9 @@ class AVersionControlledResourceType(Component):
 
 
 class RestPOSTTests(SeisHubEnvironmentTestCase):
-    """A test suite for POST request on REST resources."""
-    
+    """
+    A test suite for POST request on REST resources.
+    """
     def setUp(self):
         self.env.enableComponent(AVersionControlledResourceType)
         self.env.enableComponent(AResourceType)

@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
-
-"""A test suite for MOVE request on REST resources."""
+"""
+A test suite for MOVE request on REST resources.
+"""
 
 from StringIO import StringIO
 from seishub.core import Component, implements
 from seishub.exceptions import SeisHubError
 from seishub.packages.builtins import IResourceType, IPackage
-from seishub.processor import MAX_URI_LENGTH, PUT, POST, DELETE, GET, MOVE, \
+from seishub.processor import MAXIMAL_URL_LENGTH, PUT, POST, DELETE, GET, MOVE, \
     Processor
 from seishub.processor.resources import RESTFolder
 from seishub.test import SeisHubEnvironmentTestCase
@@ -24,7 +25,9 @@ XML_DOC = """<?xml version="1.0" encoding="utf-8"?>
 
 
 class AResourceType(Component):
-    """A non version controlled test resource type."""
+    """
+    A non version controlled test resource type.
+    """
     implements(IResourceType, IPackage)
     
     package_id = 'move-test'
@@ -33,7 +36,9 @@ class AResourceType(Component):
 
 
 class AVersionControlledResourceType(Component):
-    """A version controlled test resource type."""
+    """
+    A version controlled test resource type.
+    """
     implements(IResourceType, IPackage)
     
     package_id = 'move-test'
@@ -42,8 +47,9 @@ class AVersionControlledResourceType(Component):
 
 
 class RestMOVETests(SeisHubEnvironmentTestCase):
-    """A test suite for MOVE request on REST resources."""
-    
+    """
+    A test suite for MOVE request on REST resources.
+    """
     def setUp(self):
         self.env.enableComponent(AVersionControlledResourceType)
         self.env.enableComponent(AResourceType)
@@ -54,7 +60,9 @@ class RestMOVETests(SeisHubEnvironmentTestCase):
         self.env.disableComponent(AResourceType)
     
     def test_moveWithoutDestinationHeader(self):
-        """WebDAV HTTP MOVE request must submit a Destination header."""
+        """
+        WebDAV HTTP MOVE request must submit a Destination header.
+        """
         # create resource
         proc = Processor(self.env)
         proc.run(PUT, '/move-test/notvc/test.xml', StringIO(XML_DOC))
@@ -67,7 +75,9 @@ class RestMOVETests(SeisHubEnvironmentTestCase):
         proc.run(DELETE, '/move-test/notvc/test.xml')
     
     def test_moveWithoutAbsoluteDestination(self):
-        """Destination header must be the absolute path to new destination."""
+        """
+        Destination header must be the absolute path to new destination.
+        """
         proc = Processor(self.env)
         proc.run(PUT, '/move-test/notvc/test.xml', StringIO(XML_DOC))
         try:
@@ -79,11 +89,13 @@ class RestMOVETests(SeisHubEnvironmentTestCase):
         proc.run(DELETE, '/move-test/notvc/test.xml')
     
     def test_moveWithOversizedDestination(self):
-        """Destination path is restricted to MAX_URI_LENGTH chars."""
+        """
+        Destination path is restricted to MAX_URI_LENGTH chars.
+        """
         proc = Processor(self.env)
         proc.run(PUT, '/move-test/notvc/test.xml', StringIO(XML_DOC))
         uri = self.env.getRestUrl() + '/move-test/notvc/' + \
-              'a' * (MAX_URI_LENGTH + 1)
+              'a' * (MAXIMAL_URL_LENGTH + 1)
         try:
             proc.run(MOVE, '/move-test/notvc/test.xml', 
                      received_headers = {'Destination': uri})
@@ -93,7 +105,9 @@ class RestMOVETests(SeisHubEnvironmentTestCase):
         proc.run(DELETE, '/move-test/notvc/test.xml')
     
     def test_moveToOtherResourceType(self):
-        """SeisHub allows moving resources only to the same resource type."""
+        """
+        SeisHub allows moving resources only to the same resource type.
+        """
         proc = Processor(self.env)
         proc.run(PUT, '/move-test/notvc/test.xml', StringIO(XML_DOC))
         # try different resource type
@@ -107,7 +121,9 @@ class RestMOVETests(SeisHubEnvironmentTestCase):
         proc.run(DELETE, '/move-test/notvc/test.xml')
     
     def test_moveToInvalidResourceTypePath(self):
-        """Expecting a xml directory before package and resource type."""
+        """
+        Expecting a xml directory before package and resource type.
+        """
         proc = Processor(self.env)
         # create resource
         proc.run(PUT, '/move-test/notvc/test.xml', StringIO(XML_DOC))
@@ -123,7 +139,9 @@ class RestMOVETests(SeisHubEnvironmentTestCase):
         proc.run(DELETE, '/move-test/notvc/test.xml')
     
     def test_moveToNonExistingResourceType(self):
-        """SeisHub allows moving resources only to existing resource types."""
+        """
+        SeisHub allows moving resources only to existing resource types.
+        """
         proc = Processor(self.env)
         proc.run(PUT, '/move-test/notvc/test.xml', StringIO(XML_DOC))
         uri = self.env.getRestUrl() + '/muh/kuh/test2.xml'
@@ -136,7 +154,9 @@ class RestMOVETests(SeisHubEnvironmentTestCase):
         proc.run(DELETE, '/move-test/notvc/test.xml')
     
     def test_moveWithoutFilename(self):
-        """SeisHub expects as destination a full filename."""
+        """
+        SeisHub expects as destination a full filename.
+        """
         proc = Processor(self.env)
         proc.run(PUT, '/move-test/notvc/test.xml', StringIO(XML_DOC))
         # directory only with trailing slash
@@ -158,7 +178,9 @@ class RestMOVETests(SeisHubEnvironmentTestCase):
         proc.run(DELETE, '/move-test/notvc/test.xml')
     
     def test_moveToNewResource(self):
-        """Resource was moved successfully to the specified destination URI."""
+        """
+        Resource was moved successfully to the specified destination URI.
+        """
         proc = Processor(self.env)
         # create resource
         proc.run(PUT, '/move-test/notvc/test.xml', StringIO(XML_DOC))
@@ -168,12 +190,11 @@ class RestMOVETests(SeisHubEnvironmentTestCase):
                         received_headers = {'Destination': uri})
         # test if right response code
         self.assertFalse(data)
-        self.assertEqual(proc.response_code, http.CREATED)
+        self.assertEqual(proc.code, http.CREATED)
         # test if location header is set
-        self.assertTrue(isinstance(proc.response_header, dict))
-        response_header = proc.response_header
-        self.assertTrue(response_header.has_key('Location'))
-        location = response_header.get('Location')
+        self.assertTrue(isinstance(proc.headers, dict))
+        self.assertTrue(proc.headers.has_key('Location'))
+        location = proc.headers.get('Location')
         self.assertEquals(location, uri)
         # get original resource
         try:
@@ -200,7 +221,9 @@ class RestMOVETests(SeisHubEnvironmentTestCase):
         proc.run(DELETE, '/move-test/notvc/test.xml')
     
     def test_moveRevisionToRevision(self):
-        """SeisHub does not allow to move revisions to revisions."""
+        """
+        SeisHub does not allow to move revisions to revisions.
+        """
         proc = Processor(self.env)
         # create resource
         proc.run(PUT, '/move-test/vc/test.xml', StringIO(XML_DOC))
@@ -219,7 +242,9 @@ class RestMOVETests(SeisHubEnvironmentTestCase):
         proc.run(DELETE, '/move-test/vc/test.xml')
     
     def test_moveRevisionToNewResource(self):
-        """SeisHub does not allow to move revisions to resources."""
+        """
+        SeisHub does not allow to move revisions to resources.
+        """
         proc = Processor(self.env)
         # create resource
         proc.run(PUT, '/move-test/vc/test.xml', StringIO(XML_DOC))
@@ -236,7 +261,9 @@ class RestMOVETests(SeisHubEnvironmentTestCase):
         proc.run(DELETE, '/move-test/vc/test.xml')
     
     def test_moveToExistingRevision(self):
-        """SeisHub does not allow to move resources to revisions."""
+        """
+        SeisHub does not allow to move resources to revisions.
+        """
         proc = Processor(self.env)
         # create resources
         proc.run(PUT, '/move-test/vc/test1.xml', StringIO(XML_DOC))
@@ -257,7 +284,9 @@ class RestMOVETests(SeisHubEnvironmentTestCase):
         proc.run(DELETE, '/move-test/vc/test2.xml')
     
     def test_moveToNewRevision(self):
-        """SeisHub does not allow to move a resource to a new revision."""
+        """
+        SeisHub does not allow to move a resource to a new revision.
+        """
         proc = Processor(self.env)
         # create resources
         proc.run(PUT, '/move-test/vc/test1.xml', StringIO(XML_DOC))
@@ -278,7 +307,9 @@ class RestMOVETests(SeisHubEnvironmentTestCase):
         proc.run(DELETE, '/move-test/vc/test2.xml')
     
     def test_moveToExistingResource(self):
-        """SeisHub does not allow to overwrite existing resources."""
+        """
+        SeisHub does not allow to overwrite existing resources.
+        """
         proc = Processor(self.env)
         # create resources
         proc.run(PUT, '/move-test/notvc/test1.xml', StringIO(XML_DOC))
@@ -296,7 +327,9 @@ class RestMOVETests(SeisHubEnvironmentTestCase):
         proc.run(DELETE, '/move-test/notvc/test2.xml')
     
     def test_moveBuiltinResource(self):
-        """SeisHub builtin resources can't be renamed or moved."""
+        """
+        SeisHub builtin resources can't be renamed or moved.
+        """
         proc = Processor(self.env)
         # fetch a seishub stylesheet
         data = proc.run(GET, '/seishub/stylesheet')
@@ -309,7 +342,9 @@ class RestMOVETests(SeisHubEnvironmentTestCase):
             self.assertEqual(e.code, http.FORBIDDEN)
     
     def test_moveToSameURI(self):
-        """The source URI and the destination URI must not be the same."""
+        """
+        The source URI and the destination URI must not be the same.
+        """
         proc = Processor(self.env)
         proc.run(PUT, '/move-test/notvc/test.xml', StringIO(XML_DOC))
         uri = self.env.getRestUrl() + '/move-test/notvc/test.xml'
@@ -322,7 +357,8 @@ class RestMOVETests(SeisHubEnvironmentTestCase):
         proc.run(DELETE, '/move-test/notvc/test.xml')
     
     def test_moveToInvalidResourcename(self):
-        """Destination file name may not start with '@', '.', '_' or '-'.
+        """
+        Destination file name may not start with '@', '.', '_' or '-'.
         
         SeisHub restricts the destination filename to distinct between 
         mappers, @aliases and .properties.
@@ -380,12 +416,16 @@ class RestMOVETests(SeisHubEnvironmentTestCase):
         proc.run(DELETE, '/move-test/notvc/test.xml')
     
     def test_moveLockedResource(self):
-        # XXX: see ticket #38 - not implemented yet
+        """XXX: see ticket #38 - not implemented yet
+        Locked resources can't be moved.
+        """
         #423 (Locked)    The destination resource is locked.
         pass
     
     def test_moveToDifferentServer(self):
-        """The destination URI is located on a different server."""
+        """
+        The destination URI is located on a different server.
+        """
         proc = Processor(self.env)
         proc.run(PUT, '/move-test/notvc/test.xml', StringIO(XML_DOC))
         uri = 'http://somewhere:8080/move-test/notvc/test.xml'
@@ -396,6 +436,22 @@ class RestMOVETests(SeisHubEnvironmentTestCase):
         except SeisHubError, e:
             self.assertEqual(e.code, http.BAD_GATEWAY)
         proc.run(DELETE, '/move-test/notvc/test.xml')
+    
+    def test_moveToInvalidResourceID(self):
+        """
+        Resource names have to be alphanumeric, start with a character
+        """
+        proc = Processor(self.env)
+        # create resource
+        proc.run(PUT, '/move-test/notvc/test.xml', StringIO(XML_DOC))
+        # move
+        uri = self.env.getRestUrl() + '/move-test/notvc/üö$%&'
+        try:
+            proc.run(MOVE, '/move-test/notvc/test.xml', 
+                     received_headers = {'Destination': uri})
+            self.fail("Expected SeisHubError")
+        except SeisHubError, e:
+            self.assertEqual(e.code, http.BAD_REQUEST)
 
 
 def suite():

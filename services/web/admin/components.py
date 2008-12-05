@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from seishub.core import Component, implements
-from seishub.services.admin.interfaces import IAdminPanel
+from seishub.processor.interfaces import IAdminPanel
 from seishub.xmldb.xmlcatalog import INDEX_TYPES
 
 

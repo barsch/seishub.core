@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from seishub.processor.processor import GET, PUT, POST, DELETE, MOVE, \
-    MAX_URI_LENGTH, ALLOWED_HTTP_METHODS, Processor
+from seishub.processor.processor import GET, ALLOWED_HTTP_METHODS, PUT, POST, \
+    DELETE, MOVE, MAXIMAL_URL_LENGTH, Processor, HEAD, getChildForRequest, OPTIONS
+from seishub.processor.resources.tree import ResourceTree

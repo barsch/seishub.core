@@ -1,10 +1,13 @@
 # -*- coding: utf-8 -*-
+"""
+REST based resources.
+"""
 
 from seishub.exceptions import ForbiddenError, NotFoundError, SeisHubError, \
     NotAllowedError
-from seishub.processor.interfaces import IXMLResource
-from seishub.processor.processor import MAX_URI_LENGTH, PUT, GET
-from seishub.processor.resources.resource import Resource, Folder
+from seishub.processor.interfaces import IRESTResource
+from seishub.processor.processor import MAXIMAL_URL_LENGTH, PUT, GET, HEAD
+from seishub.processor.resources.resource import Resource, Folder, StaticFolder
 from seishub.util.path import splitPath
 from seishub.util.text import isInteger
 from seishub.util.xml import addXMLDeclaration
@@ -12,9 +15,11 @@ from twisted.web import http
 from zope.interface import implements
 
 
-class XMLResource(Resource):
-    """A XML resource node."""
-    implements(IXMLResource)
+class RESTResource(Resource):
+    """
+    A REST resource node.
+    """
+    implements(IRESTResource)
     
     # XXX: revision should be eventually a extra resource type ...
     # this would solve the issue about http.FORBIDDEN and http.NOT_ALLOWED
@@ -30,7 +35,8 @@ class XMLResource(Resource):
         self.document = document
     
     def render_GET(self, request):
-        """Process a resource query request.
+        """
+        Process a resource query request.
         
         A query at the root of a resource type folder returns a list of all
         available XML resource objects of this resource type. Direct request on
@@ -38,7 +44,8 @@ class XMLResource(Resource):
         returning a XML document, we add a valid XML declaration header and 
         encode it as UTF-8 string.
         
-        @see: http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.4.1
+        @see: 
+        U{http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.4.1}
         for all possible error codes.
         """
         # test if version controlled resource
@@ -65,31 +72,11 @@ class XMLResource(Resource):
             data = addXMLDeclaration(data, 'utf-8')
         return data
     
-    def process_PUT(self, request):
-        """Create request on a existing resource.
-        
-        @see: http://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html#sec9.6
-        @see: http://thoughtpad.net/alan-dean/http-headers-status.gif
-        
-        "If the Request-URI refers to an already existing resource, the 
-        enclosed entity SHOULD be considered as a modified version of the one 
-        residing on the origin server. If an existing resource is modified, 
-        either the 200 (OK) or 204 (No Content) response codes SHOULD be sent 
-        to indicate successful completion of the request.
-        
-        If the resource could not be created or modified with the Request-URI,
-        an appropriate error response SHOULD be given that reflects the nature
-        of the problem." 
-        
-        Adding documents can be done directly on an existing resource type or 
-        via user defined mapping.
-        """
-        self.render_POST(request)
-    
     def render_POST(self, request):
-        """Processes a resource modification request.
+        """
+        Processes a resource modification request.
         
-        @see: http://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html#sec9.5
+        @see: U{http://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html#sec9.5}
         
         "The POST method is used to request that the origin server accept the 
         entity enclosed in the request as a new subordinate of the resource 
@@ -118,13 +105,15 @@ class XMLResource(Resource):
                                            self.name,
                                            request.data)
         # resource successfully modified - set status code
-        request.response_code = http.NO_CONTENT
+        request.code = http.NO_CONTENT
         return ''
     
     def render_MOVE(self, request):
-        """Processes a resource move/rename request.
+        """
+        Processes a resource move/rename request.
         
-        @see: http://msdn.microsoft.com/en-us/library/aa142926(EXCHG.65).aspx
+        @see: 
+        U{http://msdn.microsoft.com/en-us/library/aa142926(EXCHG.65).aspx}
         """
         # only resources may be moved
         if len(request.postpath)==1:
@@ -147,7 +136,7 @@ class XMLResource(Resource):
             msg = "Expected a complete destination path."
             raise SeisHubError(msg, code=http.BAD_REQUEST)
         # test size of destination URI
-        if len(destination)>=MAX_URI_LENGTH:
+        if len(destination)>=MAXIMAL_URL_LENGTH:
             msg = "Destination URI is to long."
             raise SeisHubError(msg, code=http.REQUEST_URI_TOO_LONG)
         
@@ -168,15 +157,17 @@ class XMLResource(Resource):
                                          self.name, 
                                          parts[-1])
         # on successful creation - set status code and location header
-        request.response_code = http.CREATED
+        request.code = http.CREATED
         url = request.env.getRestUrl() + destination
-        request.response_header['Location'] = url
+        # won't accept unicode
+        request.headers['Location'] = str(url)
         return ''
     
     def render_DELETE(self, request):
-        """Processes a resource deletion request.
+        """
+        Processes a resource deletion request.
         
-        @see: http://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html#sec9.7
+        @see: U{http://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html#sec9.7}
         
         "The DELETE method requests that the server deletes the resource 
         identified by the given request URI. 
@@ -203,12 +194,14 @@ class XMLResource(Resource):
                                            self.resourcetype_id,
                                            self.name)
         # resource deleted - set status code
-        request.response_code = http.NO_CONTENT
+        request.code = http.NO_CONTENT
         return ''
 
 
 class XMLIndex(Resource):
-    """A XML index node."""
+    """
+    A XML index node.
+    """
     
     def __init__(self):
         Resource.__init__(self)
@@ -218,7 +211,9 @@ class XMLIndex(Resource):
 
 
 class RESTResourceTypeFolder(Folder):
-    """A REST resource type folder."""
+    """
+    A REST resource type folder.
+    """
     
     def __init__(self, package_id, resourcetype_id):
         Folder.__init__(self)
@@ -228,20 +223,22 @@ class RESTResourceTypeFolder(Folder):
         self.resourcetype_id = resourcetype_id
     
     def getChild(self, id, request):
-        """Returns a L{XMLResource} object if a valid id is given."""
+        """
+        Returns a L{XMLResource} object if a valid id is given.
+        """
         try:
             res = request.env.catalog.getResource(self.package_id,
                                                   self.resourcetype_id,
                                                   id)
-            return XMLResource(self.package_id, 
-                               self.resourcetype_id, 
-                               res.name,
-                               res.document)
+            return RESTResource(self.package_id, 
+                                self.resourcetype_id, 
+                                res.name,
+                                res.document)
         except NotFoundError:
             pass
     
     def render(self, request):
-        if request.method==GET and len(request.postpath)==0:
+        if request.method in [GET, HEAD] and len(request.postpath)==0:
             return self.render_GET(request)
         elif request.method==PUT:
             return self.render_PUT(request)
@@ -255,7 +252,8 @@ class RESTResourceTypeFolder(Folder):
         raise NotAllowedError("Operation is not allowed here.")
     
     def render_PUT(self, request):
-        """Create a new XML resource for this resource type.
+        """
+        Create a new XML resource for this resource type.
         
         "The PUT method requests that the enclosed entity be stored under the 
         supplied Request-URI. If the Request-URI does not point to an existing 
@@ -268,8 +266,8 @@ class RESTResourceTypeFolder(Folder):
         an appropriate error response SHOULD be given that reflects the nature 
         of the problem." 
         
-        @see: http://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html#sec9.6
-        @see: http://thoughtpad.net/alan-dean/http-headers-status.gif
+        @see: U{http://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html#sec9.6}
+        @see: U{http://thoughtpad.net/alan-dean/http-headers-status.gif}
         """
         if len(request.postpath) not in [0, 1]:
             raise ForbiddenError("Operation is not allowed here.")
@@ -288,28 +286,33 @@ class RESTResourceTypeFolder(Folder):
                                               request.data,
                                               name=name)
         # resource created - set status code and location header
-        request.response_code = http.CREATED
+        request.code = http.CREATED
         url = request.env.getRestUrl() + request.path + '/' + str(res.name)
-        request.response_header['Location'] = url
+        # won't accept unicode
+        request.headers['Location'] = str(url)
         return ''
     
     def render_GET(self, request):
-        """Returns all resources and indexes of this resource type."""
+        """
+        Returns all resources and indexes of this resource type.
+        """
         temp = {}
         for res in request.env.catalog.getResourceList(self.package_id,
                                                        self.resourcetype_id):
-            temp[res.name] = XMLResource(self.package_id, 
-                                         self.resourcetype_id, 
-                                         res.name,
-                                         res.document)
+            temp[res.name] = RESTResource(self.package_id, 
+                                          self.resourcetype_id, 
+                                          res.name,
+                                          res.document)
         for id in request.env.catalog.listIndexes(self.package_id,
                                                   self.resourcetype_id):
             temp[str(id)] = XMLIndex()
         return temp
 
 
-class RESTPackageFolder(Folder):
-    """A REST package folder."""
+class RESTPackageFolder(StaticFolder):
+    """
+    A REST package folder.
+    """
     
     def __init__(self, package_id):
         Folder.__init__(self)
@@ -317,34 +320,44 @@ class RESTPackageFolder(Folder):
         self.package_id = package_id
     
     def getChild(self, id, request):
-        """Returns a L{RESTResourceTypeFolder} object for a valid id."""
+        """
+        Returns a L{RESTResourceTypeFolder} object for a valid id.
+        """
         if request.env.registry.isResourceTypeId(self.package_id, id):
             return RESTResourceTypeFolder(self.package_id, id)
-        raise NotFoundError
+        raise NotFoundError("XML resource type %s not found." % id)
     
     def render_GET(self, request):
-        """Returns a dictionary of all resource types of this package."""
+        """
+        Returns a dictionary of all resource types of this package.
+        """
         temp = {}
         for id in request.env.registry.getResourceTypeIds(self.package_id):
             temp[id] = RESTResourceTypeFolder(self.package_id, id)
         return temp
 
 
-class RESTFolder(Folder):
-    """A REST root folder."""
+class RESTFolder(StaticFolder):
+    """
+    A REST root folder.
+    """
     
     def __init__(self):
         Folder.__init__(self)
         self.category = 'xmlroot'
     
     def getChild(self, id, request):
-        """Returns a L{XMLPackageFolder} object for a valid id."""
+        """
+        Returns a L{XMLPackageFolder} object for a valid id.
+        """
         if request.env.registry.isPackageId(id):
             return RESTPackageFolder(id)
-        raise NotFoundError
+        raise NotFoundError("XML package %s not found." % id)
     
     def render_GET(self, request):
-        """Returns a dictionary of all SeisHub packages."""
+        """
+        Returns a dictionary of all SeisHub packages.
+        """
         temp = {}
         for id in request.env.registry.getPackageIds():
             temp[id] = RESTPackageFolder(id)

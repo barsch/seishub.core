@@ -4,15 +4,8 @@
 
 <h1>Logs</h1>
 
-<h2>Access Log</h2>
-<textarea id="accesslog" class="log" cols="80" rows="10">
-#filter WebSafe
-#for $line in $accesslog#$line#end for
-#end filter
-</textarea>
-
 <h2>Error Log</h2>
-<textarea id="errorlog" class="log" cols="80" rows="10">
+<textarea id="errorlog" class="log" cols="80" rows="40">
 #filter WebSafe
 #for $line in $errorlog#$line#end for
 #end filter
@@ -25,8 +18,6 @@
   var Event = YAHOO.util.Event;
 
   initPage = function() {
-    var ta1 = document.getElementById('accesslog');
-    ta1.scrollTop = ta1.scrollHeight;
     var ta2 = document.getElementById('errorlog');
     ta2.scrollTop = ta2.scrollHeight;
   }

@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+"""
+Mapper resources.
+"""
 
 from seishub.exceptions import NotImplementedError, SeisHubError
 from seishub.processor.resources.resource import Resource
@@ -6,8 +9,9 @@ from twisted.web import http
 
 
 class MapperResource(Resource):
-    """Processor handler of a mapping folder."""
-    
+    """
+    Processor handler of a mapping resource.
+    """
     def __init__(self, mapper, folderish=True, category='mapping'):
         Resource.__init__(self)
         self.is_leaf = True
@@ -16,9 +20,9 @@ class MapperResource(Resource):
         self.folderish = folderish
     
     def render_GET(self, request):
-        func = getattr(self.mapper, 'process_' + request.method)
+        func = getattr(self.mapper, 'process_GET')
         if not func:
-            msg = "Method process_%s is not implemented." % (request.method)
+            msg = "Method process_GET is not implemented."
             raise NotImplementedError(msg)
         result = func(request)
         # result must be either a string or a dictionary of categories and ids
@@ -42,31 +46,31 @@ class MapperResource(Resource):
         raise SeisHubError(msg, code=http.INTERNAL_SERVER_ERROR)
     
     def render_POST(self, request):
-        func = getattr(self.mapper, 'process_' + request.method)
+        func = getattr(self.mapper, 'process_POST')
         if not func:
-            msg = "Method process_%s is not implemented." % (request.method)
+            msg = "Method process_POST is not implemented."
             raise NotImplementedError(msg)
         func(request)
-        request.response_code = http.NO_CONTENT
+        request.code = http.NO_CONTENT
         return ''
     
     def render_DELETE(self, request):
-        func = getattr(self.mapper, 'process_' + request.method)
+        func = getattr(self.mapper, 'process_DELETE')
         if not func:
-            msg = "Method process_%s is not implemented." % (request.method)
+            msg = "Method process_DELETE is not implemented."
             raise NotImplementedError(msg)
         func(request)
-        request.response_code = http.NO_CONTENT
+        request.code = http.NO_CONTENT
         return ''
     
     def render_PUT(self, request):
-        func = getattr(self.mapper, 'process_' + request.method)
+        func = getattr(self.mapper, 'process_PUT')
         if not func:
-            msg = "Method process_%s is not implemented." % (request.method)
+            msg = "Method process_PUT is not implemented."
             raise NotImplementedError(msg)
         result = func(request)
-        request.response_code = http.CREATED
-        request.response_header['Location'] = str(result)
+        request.code = http.CREATED
+        request.headers['Location'] = str(result)
         return ''
     
     def _clone(self, **kwargs):

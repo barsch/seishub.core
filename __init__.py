@@ -11,13 +11,13 @@ U{http://www.seishub.org/}
 """
 __docformat__ = 'epytext en'
 
-__version__ = 'Revision 106'
+__version__ = 'Version 0.0.1'
 __url__ = 'http://www.seishub.org/'
-__copyright__ = '(C) 2007-2008 Robert Barsch & Paul Käufl'
+__copyright__ = '(C) 2007-2009 Robert Barsch & Paul Käufl'
 __license__ = 'BSD'
 __license_long__ = \
 """
-    Copyright (C) 2007-2008 Robert Barsch & Paul Käufl
+    Copyright (C) 2007-2009 Robert Barsch & Paul Käufl
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without

@@ -180,6 +180,7 @@ table.list td,table.list th {
 
 #content textarea.log {
     width: 100%;
+    height: 20em;
     margin-bottom: 2em;
 }
 

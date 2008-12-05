@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 
-from sqlalchemy import create_engine
-
 from seishub.core import Component, implements
 from seishub.exceptions import SeisHubError, InvalidParameterError
-from seishub.services.admin.interfaces import IAdminPanel
+from seishub.processor.interfaces import IAdminPanel
+from sqlalchemy import create_engine
 
 
 class BasicPanel(Component):

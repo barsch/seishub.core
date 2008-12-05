@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
+"""
+Processor and resources related test suite.
+"""
 
 from seishub.processor.tests import test_processor, test_rest_PUT, test_rest, \
     test_rest_DELETE, test_rest_POST, test_mapper, test_rest_GET, test_rest_MOVE, \
-    test_site
+    test_tree
 import doctest
 import unittest
 
@@ -16,7 +19,7 @@ def suite():
     suite.addTest(test_rest_GET.suite())
     suite.addTest(test_rest_DELETE.suite())
     suite.addTest(test_rest.suite())
-    suite.addTest(test_site.suite())
+    suite.addTest(test_tree.suite())
     suite.addTest(test_mapper.suite())
     return suite
 

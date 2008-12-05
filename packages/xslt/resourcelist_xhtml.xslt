@@ -24,7 +24,9 @@
                 <a>
                     <xsl:attribute name="href">
                         <xsl:value-of select="@xlink:href" />
-                        <xsl:text>?format=xhtml</xsl:text>
+                        <xsl:if test="name()='folder'">
+                            <xsl:text>?format=xhtml</xsl:text>
+                        </xsl:if>
                     </xsl:attribute>
                     <xsl:value-of select="." />
                 </a>
@@ -53,8 +55,8 @@
                     </a>
                 </h1>
                 <p>
-                    <xsl:text>Formats: </xsl:text>
-                    <a href="?format=xml">[XML]</a>
+                    <xsl:text>Format: </xsl:text>
+                    <a href="?">[XML]</a>
                     <xsl:text> </xsl:text>
                     <a href="?format=json">[JSON]</a>
                 </p>
@@ -69,7 +71,8 @@
                         <td><a href="..?format=xhtml">..</a></td>
                         <td></td>
                     </tr>
-                    <xsl:apply-templates />
+                    <xsl:apply-templates select="/seishub/folder"/>
+                    <xsl:apply-templates select="/seishub/resource"/>
                 </table>
             </body>
         </html>

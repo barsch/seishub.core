@@ -1,14 +1,17 @@
 # -*- coding: utf-8 -*-
-
-"""General resources."""
+"""
+General resource objects.
+"""
 
 from seishub.exceptions import NotAllowedError
-from seishub.processor.interfaces import IResource
+from seishub.processor.interfaces import IResource, IStaticResource
 from zope.interface import implements
 
 
-class Resource:
-    """A general resource."""
+class Resource(object):
+    """
+    A resource object.
+    """
     implements(IResource)
     
     def __init__(self):
@@ -17,12 +20,35 @@ class Resource:
         self.folderish = True
         self.is_leaf = False
     
+    def getMetadata(self):
+        """
+        Returns a map of arbitrary metadata. 
+        
+        As an example, here's what SFTP expects (but doesn't require):
+        {
+            'size'         : size of file in bytes,
+            'uid'          : owner of the file,
+            'gid'          : group owner of the file,
+            'permissions'  : file permissions,
+            'atime'        : last time the file was accessed,
+            'mtime'        : last time the file was modified,
+            'nlink'        : number of links to the file
+        }
+        
+        Protocols that need metadata should handle the case when a particular 
+        value isn't available as gracefully as possible.
+        """
+        return {}
+    
     def putChild(self, id, child):
-        """Register a static child."""
+        """
+        Register a static child for this resource.
+        """
         self.children[id] = child
     
     def getChild(self, id, request):
-        """Retrieve a single child resource from me.
+        """
+        Retrieve a single child resource from me.
         
         Implement this to create dynamic resource generation - resources which
         are always available may be registered with self.addChild().
@@ -50,7 +76,8 @@ class Resource:
         return self.children.get(id, None)
     
     def getChildWithDefault(self, id, request):
-        """Retrieve a static or dynamically generated child resource from me.
+        """
+        Retrieve a static or dynamically generated child resource from me.
         
         First checks if a resource was added manually by addChild, and then
         call getChild to check for dynamic resources. Only override if you want
@@ -65,7 +92,8 @@ class Resource:
         return self.getChild(id, request)
     
     def render(self, request):
-        """Render a given resource. See L{IResource}'s render method.
+        """
+        Render a given resource. See L{IResource}'s render method.
         
         I delegate to methods of self with the form 'render_METHOD'
         where METHOD is the HTTP that was used to make the
@@ -86,15 +114,46 @@ class Resource:
         if not func:
             raise NotAllowedError(getattr(self, 'allowedMethods', ()))
         return func(request)
+    
+    def render_HEAD(self, request):
+        """
+        Default handling of B{HEAD} method.
+        
+        I just return self.render_GET(request). When method is B{HEAD},
+        the framework will handle this correctly.
+        """
+        return self.render_GET(request)
+    
+    def render_OPTIONS(self, request):
+        """
+        Default handling of B{OPTIONS} method.
+        """
+        request.setHeader("content-length", 0)
+        request.setHeader("DAV", "1")
+        request.setHeader("Allow", ',' .join(request.allowed_methods))
+        return ""
 
 
 class Folder(Resource):
-    """A folder resource containing resource objects."""
-    
+    """
+    A folder resource containing resource objects.
+    """
     def __init__(self):
         Resource.__init__(self)
         self.category = 'folder'
     
     def render_GET(self, request):
-        """Returns content of this folder node as dictionary."""
+        """
+        Returns content of this folder node as dictionary.
+        """
         return self.children
+
+
+class StaticFolder(Folder):
+    """
+    A static, non-blocking folder resource containing resource objects.
+    
+    Don't use this folder if you dynamically generate child objects from
+    something which could block the whole server, e.g. a database.
+    """
+    implements(IStaticResource)

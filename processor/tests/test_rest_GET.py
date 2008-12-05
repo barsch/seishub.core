@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
-
-"""A test suite for GET request on REST resources."""
+"""
+A test suite for B{GET} request on REST resources.
+"""
 
 from StringIO import StringIO
 from seishub.core import Component, implements
@@ -25,7 +26,9 @@ XML_DOC = """<?xml version="1.0" encoding="utf-8"?>
 
 
 class AResourceType(Component):
-    """A non versioned test resource type."""
+    """
+    A non versioned test resource type.
+    """
     implements(IResourceType, IPackage)
     
     package_id = 'get-test'
@@ -34,7 +37,9 @@ class AResourceType(Component):
 
 
 class AResourceType2(Component):
-    """Another test package and resource type."""
+    """
+    Another test package and resource type.
+    """
     implements(IResourceType, IPackage)
     
     package_id = 'get-test2'
@@ -43,7 +48,9 @@ class AResourceType2(Component):
 
 
 class AResourceType3(Component):
-    """Another test package and resource type."""
+    """
+    Another test package and resource type.
+    """
     implements(IResourceType, IPackage)
     
     package_id = 'get-test'
@@ -52,7 +59,9 @@ class AResourceType3(Component):
 
 
 class AVersionControlledResourceType(Component):
-    """A version controlled test resource type."""
+    """
+    A version controlled test resource type.
+    """
     implements(IResourceType, IPackage)
     
     package_id = 'get-test'
@@ -61,8 +70,9 @@ class AVersionControlledResourceType(Component):
 
 
 class RestGETTests(SeisHubEnvironmentTestCase):
-    """A test suite for GET request on REST resources."""
-    
+    """
+    A test suite for GET request on REST resources.
+    """
     def setUp(self):
         self.env.enableComponent(AVersionControlledResourceType)
         self.env.enableComponent(AResourceType)

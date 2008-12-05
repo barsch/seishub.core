@@ -4,11 +4,14 @@ from twisted.web import http
 
 
 class SeisHubError(Exception):
-    """The general SeisHub error class."""
+    """
+    The general SeisHub error class.
+    """
     code = None
     
     def __init__(self, *args, **kwargs):
-        """@keyword message: error message
+        """
+        @keyword message: error message
         @type message: str 
         @keyword code: http error code
         @type code: int
@@ -20,9 +23,6 @@ class SeisHubError(Exception):
         code = kwargs.pop('code', http.INTERNAL_SERVER_ERROR)
         self.code = self.code or code
         Exception.__init__(self, *args, **kwargs)
-    
-#    def __str__(self):
-#        return 'Error %s: %s' % (self.code, self.message)
 
 
 class UnauthorizedError(SeisHubError):
@@ -54,7 +54,8 @@ class InvalidParameterError(SeisHubError):
 
 
 class ForbiddenError(SeisHubError):
-    """Returns HTTP Status Code 403: Forbidden.
+    """
+    Returns HTTP Status Code 403: Forbidden.
     
     The server understood the request, but is refusing to fulfill it. 
     Authorization will not help and the request SHOULD NOT be repeated. If 
@@ -68,7 +69,8 @@ class ForbiddenError(SeisHubError):
 
 
 class NotImplementedError(SeisHubError):
-    """Returns HTTP Status Code 501: Not Implemented.
+    """
+    Returns HTTP Status Code 501: Not Implemented.
     
     The server does not support the functionality required to fulfill the 
     request. This is the appropriate response when the server does not 
@@ -79,15 +81,16 @@ class NotImplementedError(SeisHubError):
 
 
 class NotAllowedError(SeisHubError):
-    """Returns HTTP Status Code 405: Method Not Allowed.
+    """
+    Returns HTTP Status Code 405: Method Not Allowed.
     
     The method specified in the Request-Line is not allowed for the resource 
     identified by the Request-URI. The response MUST include an Allow header 
     containing a list of valid methods for the requested resource.
     """
     code = http.NOT_ALLOWED
-    allowedMethods = ()
+    allowed_methods = ()
     
-    def __init__(self, allowedMethods, *args, **kwargs):
-        self.allowedMethods = allowedMethods
-        SeisHubError.__init__(self, allowedMethods, *args, **kwargs)
+    def __init__(self, allowed_methods, *args, **kwargs):
+        self.allowed_methods = allowed_methods
+        SeisHubError.__init__(self, allowed_methods, *args, **kwargs)

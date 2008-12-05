@@ -43,8 +43,8 @@ class XmlDbManagerTest(SeisHubEnvironmentTestCase):
         self.test_data = TEST_XML
         self.test_data_mod = TEST_XML_MOD
         
-    def _config(self):
-        self.config.set('db', 'verbose', True)
+#    def _config(self):
+#        self.config.set('db', 'verbose', True)
         
     def setUp(self):
         self.test_package = self.env.registry.db_getPackage('test')
