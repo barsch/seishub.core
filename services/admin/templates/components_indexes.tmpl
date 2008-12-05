@@ -21,7 +21,9 @@
   <div class="field">
     <label>Type</label><br />
     <select>
-      <option>Text</option>
+      #for $i in $index_types
+      <option value="$i">$i</option>
+      #end for
     </select><br />
   </div>
   <div class="field">

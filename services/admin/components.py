@@ -2,6 +2,7 @@
 
 from seishub.core import Component, implements
 from seishub.services.admin.interfaces import IAdminPanel
+from seishub.xmldb.xmlcatalog import INDEX_TYPES
 
 
 class SchemasPanel(Component):
@@ -14,7 +15,6 @@ class SchemasPanel(Component):
     def renderPanel(self, request):
         packages = self.env.registry.getPackageIds()
         resourcetypes = self.env.registry.getAllPackagesAndResourceTypes()
-        
         data  = {
             'packages': packages,
             'resourcetypes': resourcetypes,
@@ -135,6 +135,7 @@ class IndexesPanel(Component):
         resourcetypes = self.env.registry.getAllPackagesAndResourceTypes()
         
         data  = {
+            'index_types': INDEX_TYPES.keys(),
             'indexes': [],
             'error': '',
             'xpath': '',

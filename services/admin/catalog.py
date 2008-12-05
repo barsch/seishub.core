@@ -5,13 +5,6 @@ from sqlalchemy import create_engine
 from seishub.core import Component, implements
 from seishub.exceptions import SeisHubError, InvalidParameterError
 from seishub.services.admin.interfaces import IAdminPanel
-from seishub.xmldb.defaults import DEFAULT_PREFIX, DOCUMENT_TABLE, \
-                                   INDEX_TABLE, INDEX_DEF_TABLE, \
-                                   METADATA_TABLE, METADATA_DEF_TABLE, \
-                                   RESOURCE_TABLE
-from seishub.packages.defaults import SCHEMA_TABLE, STYLESHEET_TABLE, \
-                                      ALIAS_TABLE, PACKAGES_TABLE, \
-                                      RESOURCETYPES_TABLE
 
 
 class BasicPanel(Component):
@@ -63,21 +56,17 @@ class DatabaseQueryPanel(Component):
     """Query the database via http form."""
     implements(IAdminPanel)
     
-    tables = [DOCUMENT_TABLE, INDEX_TABLE, INDEX_DEF_TABLE, \
-              METADATA_TABLE, METADATA_DEF_TABLE, ALIAS_TABLE, SCHEMA_TABLE, \
-              STYLESHEET_TABLE, RESOURCE_TABLE, PACKAGES_TABLE, \
-              RESOURCETYPES_TABLE]
-    
     def getPanelId(self):
         return ('catalog', 'Catalog', 'dbquery', 'Query DB')
     
     def renderPanel(self, request):
         db = self.env.db.engine
+        tables = db.table_names()
         data = {
             'query': 'select 1 LIMIT 0,20;', 
             'result': '',
             'cols': '',
-            'tables': self.tables,
+            'tables': tables,
         }
         args = request.args
         if request.method=='POST':
@@ -85,10 +74,9 @@ class DatabaseQueryPanel(Component):
             if 'query' in args.keys() and 'send' in args.keys():
                 query = data['query'] = request.args['query'][0]
             else:
-                for table in self.tables:
+                for table in tables:
                     if table in args.keys():
-                        query = 'SELECT * FROM ' + DEFAULT_PREFIX + table + \
-                                ' LIMIT 0,20;'
+                        query = 'SELECT * FROM ' + table + ' LIMIT 0,20;'
             if query:
                 data['query'] = query
                 try:
