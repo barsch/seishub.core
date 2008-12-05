@@ -20,9 +20,9 @@
   </div>
   <div class="field">
     <label>Type</label><br />
-    <select>
-      #for $i in range(0,len($index_types)):
-      <option value="$index_types_dict[$i]">$index_types[$i]</option>
+    <select name="type_id" id="type_id">
+      #for $i in $index_types:
+      <option value="$i">$i</option>
       #end for
     </select><br />
   </div>

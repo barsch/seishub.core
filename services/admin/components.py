@@ -155,10 +155,11 @@ class IndexesPanel(Component):
                 xpath = args.get('xpath',[''])[0]
                 package_id = args.get('package_id',[''])[0]
                 resourcetype_id = args.get('resourcetype_id',[''])[0]
+                type_id = args.get('type_id',[''])[0]
                 if package_id in packages:
                     if resourcetype_id in resourcetypes.get(package_id, []):
                         data.update(self._addIndex(package_id, resourcetype_id,
-                                                   xpath))
+                                                   xpath, type_id))
             elif 'delete' in args.keys() and 'index[]' in args.keys():
                 data.update(self._deleteIndexes(args.get('index[]',[])))
             elif 'reindex' in args.keys() and 'index[]' in args.keys():
@@ -191,9 +192,12 @@ class IndexesPanel(Component):
                 return {'error': ("Error removing index %s" % part, e)}
         return {'info': "Index has been removed."}
     
-    def _addIndex(self, package_id, resourcetype_id, xpath):
+    def _addIndex(self, package_id, resourcetype_id, xpath, type_id):
         try:
-            self.catalog.registerIndex(package_id, resourcetype_id, xpath)
+            self.catalog.registerIndex(package_id, 
+                                       resourcetype_id, 
+                                       xpath, 
+                                       type_id)
         except Exception, e:
             self.log.error("Error registering index", e)
             return {'error': ("Error registering index", e)}
