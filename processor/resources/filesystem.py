@@ -5,11 +5,19 @@ File system based resources.
 
 from seishub.exceptions import NotFoundError, ForbiddenError, \
     InternalServerError
-from seishub.processor.interfaces import IFileSystemResource
+from seishub.processor.interfaces import IFileSystemResource, IScriptResource
 from seishub.processor.resources.resource import Resource
 from twisted.python import filepath
 from twisted.web import static, script
 from zope.interface import implements
+
+
+class PythonScript(script.PythonScript):
+    implements(IScriptResource)
+
+
+class ResourceScript(script.ResourceScriptWrapper):
+    implements(IScriptResource)
 
 
 class FileSystemResource(Resource, filepath.FilePath):
@@ -23,8 +31,8 @@ class FileSystemResource(Resource, filepath.FilePath):
     type = None
     
     def __init__(self, path, default_type="text/html", registry=None, 
-                 processors = {'.epy': script.PythonScript,
-                               '.rpy': script.ResourceScript}):
+                 processors = {'.epy': PythonScript,
+                               '.rpy': ResourceScript}):
         Resource.__init__(self)
         filepath.FilePath.__init__(self, path)
         # folder or file?
@@ -43,6 +51,18 @@ class FileSystemResource(Resource, filepath.FilePath):
         self.registry = registry or static.Registry()
         # allowed processors
         self.processors = processors
+    
+    def getMetadata(self):
+        self.restat()
+        s = self.statinfo
+        return {"size"         : s.st_size,
+                "uid"          : s.st_uid,
+                "gid"          : s.st_gid,
+                "permissions"  : s.st_mode,
+                "atime"        : s.st_atime,
+                "mtime"        : s.st_mtime,
+                "nlink"        : s.st_nlink
+        }
     
     def getChild(self, id, request):
         # refresh file meta information

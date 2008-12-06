@@ -19,6 +19,14 @@ class MapperResource(Resource):
         self.category = category
         self.folderish = folderish
     
+    def getMetadata(self):
+        if self.folderish:
+            # should be a directory
+            return {'permissions': 040755}
+        else:
+            # we got some file
+            return {'permissions': 0100644}
+    
     def render_GET(self, request):
         func = getattr(self.mapper, 'process_GET')
         if not func:

@@ -13,6 +13,7 @@ from seishub.util.text import isInteger
 from seishub.util.xml import addXMLDeclaration
 from twisted.web import http
 from zope.interface import implements
+import time
 
 
 class RESTResource(Resource):
@@ -33,6 +34,17 @@ class RESTResource(Resource):
         self.resourcetype_id = resourcetype_id
         self.name = name
         self.document = document
+    
+    def getMetadata(self):
+        meta = self.document.meta 
+        file_datetime = int(time.mktime(meta.datetime.timetuple()))
+        file_size = meta.size
+        file_uid = meta.uid or 0
+        return {'permissions': 0100644,
+                'uid': file_uid,
+                'size': file_size,
+                'atime': file_datetime,
+                'mtime': file_datetime}
     
     def render_GET(self, request):
         """

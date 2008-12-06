@@ -45,6 +45,12 @@ class IStaticResource(IResource):
     """
 
 
+class IScriptResource(IResource):
+    """
+    A marker interface for a filesystem based script resource.
+    """
+
+
 class IRESTResource(IResource):
     """
     A marker interface for a REST resource.

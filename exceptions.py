@@ -91,6 +91,6 @@ class NotAllowedError(SeisHubError):
     code = http.NOT_ALLOWED
     allowed_methods = ()
     
-    def __init__(self, allowed_methods, *args, **kwargs):
+    def __init__(self, allowed_methods=(), *args, **kwargs):
         self.allowed_methods = allowed_methods
-        SeisHubError.__init__(self, allowed_methods, *args, **kwargs)
+        SeisHubError.__init__(self, *args, **kwargs)

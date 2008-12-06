@@ -38,7 +38,7 @@ class Resource(object):
         Protocols that need metadata should handle the case when a particular 
         value isn't available as gracefully as possible.
         """
-        return {}
+        return {'permissions': 0100644}
     
     def putChild(self, id, child):
         """
@@ -112,7 +112,10 @@ class Resource(object):
         """
         func = getattr(self, 'render_' + request.method, None)
         if not func:
-            raise NotAllowedError(getattr(self, 'allowedMethods', ()))
+            allowed_methods = getattr(self, 'allowedMethods', ())
+            msg = "This operation is not allowed on this resource."
+            raise NotAllowedError(allowed_methods = allowed_methods, 
+                                  message = msg)
         return func(request)
     
     def render_HEAD(self, request):
@@ -141,6 +144,9 @@ class Folder(Resource):
     def __init__(self):
         Resource.__init__(self)
         self.category = 'folder'
+    
+    def getMetadata(self):
+        return {'permissions': 040755}
     
     def render_GET(self, request):
         """

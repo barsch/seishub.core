@@ -1,24 +1,22 @@
 # -*- coding: utf-8 -*-
 
-import os
-import string
-import urllib
-
 from Cheetah.Template import Template
 from pkg_resources import resource_filename #@UnresolvedImport
-from twisted.application.internet import TCPServer #@UnresolvedImport
-from twisted.internet import threads, defer
-from twisted.web import static, http, util as webutil
-
 from seishub import __version__ as SEISHUB_VERSION
 from seishub.config import IntOption, Option, BoolOption
 from seishub.core import ExtensionPoint
-from seishub.processor import Processor, GET
 from seishub.exceptions import SeisHubError
-from seishub.services.admin.interfaces import IAdminPanel, IAdminTheme
-from seishub.services.admin.interfaces import IAdminStaticContent
+from seishub.processor import Processor, GET
+from seishub.services.admin.interfaces import IAdminPanel, IAdminTheme, \
+    IAdminStaticContent
 from seishub.util import demjson
-from seishub.util.path import addBase 
+from seishub.util.path import addBase
+from twisted.application.internet import TCPServer #@UnresolvedImport
+from twisted.internet import threads, defer
+from twisted.web import static, http, util as webutil
+import os
+import string
+import urllib
 
 
 class AdminRequest(http.Request):

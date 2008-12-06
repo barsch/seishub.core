@@ -1,21 +1,20 @@
 # -*- coding: utf-8 -*-
 
-from seishub.exceptions import SeisHubError, NotFoundError, InternalServerError
-from seishub.processor import Processor, PUT, POST, DELETE, GET, MOVE, HEAD, \
+from seishub.exceptions import NotAllowedError, InternalServerError, \
+    ForbiddenError
+from seishub.processor import Processor, PUT, DELETE, GET, MOVE, HEAD, \
     getChildForRequest
-from seishub.processor.interfaces import IFileSystemResource, IRESTResource, \
-    IStaticResource, IResource
+from seishub.processor.interfaces import IFileSystemResource, IStaticResource, \
+    IResource, IScriptResource
 from seishub.util.path import absPath, lsLine
 from twisted.conch.interfaces import ISFTPFile, ISFTPServer
-from twisted.conch.ssh import filetransfer
-from twisted.internet import threads
+from twisted.conch.ssh.filetransfer import SFTPError, FX_FAILURE, \
+    FX_OP_UNSUPPORTED, FXF_READ, FXF_CREAT
+from twisted.internet import defer, threads
 from twisted.python.failure import Failure
-from twisted.web import server, http
-from twisted.internet import defer
 from zope.interface import implements
 import StringIO
 import sys
-import time
 
 
 DEFAULT_GID = 1000
@@ -38,125 +37,27 @@ class SFTPProcessor(Processor):
         elif IStaticResource.providedBy(result):
             # render direct
             return result.render(self)
+        elif IScriptResource.providedBy(result):
+            msg = "Script resources may not be called via SFTP."
+            raise ForbiddenError(msg)
         elif IResource.providedBy(result):
             # render in thread
-            print "--------------> THREADED %s" % self.path
             return threads.deferToThread(result.render, self)
         msg = "I don't know how to handle this resource type %s"
         raise InternalServerError(msg % type(result))
 
 
-#class InMemoryFile:
-#    implements(ISFTPFile)
-#    
-#    def __init__(self, env, filename, flags, attrs):
-#        print '===> init', filename, flags, attrs
-#        self.env = env
-#        self.filename = filename
-#        self.flags = flags
-#        self.attrs = attrs
-#        self.data = StringIO.StringIO()
-#        self.proc = Processor(self.env)
-#        # check if readable
-#        if not (self.flags & filetransfer.FXF_READ):
-#            raise filetransfer.SFTPError(filetransfer.FX_PERMISSION_DENIED, 
-#                                         "Can't read resource %s" % filename)
-#        # read resource
-#        result = self._readResource()
-#        if result:
-#            self.data.write(result)
-#        else:
-#            raise filetransfer.SFTPError(filetransfer.FX_NO_SUCH_FILE, '')
-#    
-#    def _readResource(self):
-#        print '===> _readResource'
-#        # check if resource exists
-#        try:
-#            data = self.proc.run(GET, self.filename)
-#        except:
-#            data = ''
-#        return data
-#    
-#    def readChunk(self, offset, length):
-#        print '===> readChunk', offset, length
-#        self.data.seek(offset)
-#        return self.data.read(length)
-#    
-#    def writeChunk(self, offset, data):
-#        self.data.seek(offset)
-#        self.data.write(data)
-#    
-#    def close(self):
-#        print '===> close'
-#        # write file after close 
-#        if not self.data:
-#            return
-#        if not (self.flags & filetransfer.FXF_WRITE):
-#            return
-#        # check for resource
-#        result = self._readResource()
-#        self.proc.content = self.data
-#        self.proc.path = self.filename
-#        if result:
-#            # resource exists
-#            self.proc.method = POST
-#        else:
-#            # new resource
-#            self.proc.method = PUT
-#        try:
-#            self.proc.process()
-#        except SeisHubError, e:
-#            raise filetransfer.SFTPError(filetransfer.FX_FAILURE, e.message)
-#    
-#    def getAttrs(self):
-#        print '===> getAttrs'
-#        pass
-#    
-#    def setAttrs(self, attrs):
-#        print '===> setAttrs', attrs
-#        pass
-
-
 class InMemoryFile:
     implements(ISFTPFile)
     
-    def __init__(self, data=''):
-        self.data = StringIO.StringIO()
-        self.data.write(data)
+    def __init__(self, data):
+        self.data = data
     
     def readChunk(self, offset, length):
-        print '===> readChunk', offset, length
         self.data.seek(offset)
         return self.data.read(length)
     
     def writeChunk(self, offset, data):
-        print '===> writeChunk', offset, data
-        self.data.seek(offset)
-        self.data.write(data)
-    
-    def close(self):
-        pass
-    
-    def getAttrs(self):
-        pass
-    
-    def setAttrs(self, attrs):
-        pass
-
-
-class FSFile:
-    implements(ISFTPFile)
-    
-    def __init__(self, obj):
-        self.filepath = obj
-    
-    def readChunk(self, offset, length):
-        print '===> readChunk', offset, length
-        self.data.seek(offset)
-        return self.data.read(length)
-    
-    def writeChunk(self, offset, data):
-        print '===> writeChunk', offset, data
         self.data.seek(offset)
         self.data.write(data)
     
@@ -176,13 +77,16 @@ class SFTPServiceProtocol:
     def __init__(self, avatar):
         self.avatar = avatar
         self.env = avatar.env
+        self.create_files = {}
     
     def gotVersion(self, otherVersion, extData):
         return {}
     
+    def webSafe(self, path):
+        return path.decode(sys.getfilesystemencoding()).encode('utf-8')
+    
     def realPath(self, path):
-        print '----> realPath', path
-        path = path.decode(sys.getfilesystemencoding()).encode('utf-8')
+        path = self.webSafe(path)
         return absPath(path)
     
     def openFile(self, filename, flags, attrs):
@@ -214,51 +118,34 @@ class SFTPServiceProtocol:
         Alternatively, it can return a L{Deferred} that will be called back
         with the object.
         """
-        print '----> openFile', filename, flags, attrs
-        
-        # read file
-        proc = SFTPProcessor(self.env)
-        d = defer.maybeDeferred(proc.run, "GET", filename)
-        d.addCallback(self._cbRenderFile)
-        d.addErrback(self._cbFailed)
-        return d
-#        msg = "Don't know how to handle this request"
-#        raise InternalServerError(msg)
-
-#        if IRESTResource.providedBy(obj):
-#            # RESTResource object
-#            meta = obj.document.meta 
-#            file_datetime = int(time.mktime(meta.datetime.timetuple()))
-#            file_size = meta.size
-#            file_uid = meta.uid or 0
-#            filelist.append((id, {'permissions': 0100644,
-#                                  'uid': file_uid,
-#                                  'size': file_size,
-#                                  'atime': file_datetime,
-#                                  'mtime': file_datetime}))
-#        elif IFileSystemResource.providedBy(obj):
-#                # FileResource object
-#                s = obj.statinfo
-#                filelist.append((id, {'permissions': s.st_mode,
-#                                      'uid': s.st_uid,
-#                                      'gid': s.st_gid,
-#                                      'size': s.st_size,
-#                                      'atime': s.st_atime,
-#                                      'mtime': s.st_mtime,
-#                                      'nlink': s.st_nlink, })) 
-#        if isinstance(obj, basestring):
-#            # some basestring object
-#            return InMemoryFile(self.env, filename, flags, attrs)
-#        msg = "Don't know how to handle this resource type %s"
-#        raise filetransfer.SFTPError(filetransfer.FX_FAILURE, msg % str(obj))
+        # lockup filename in utf-8
+        filename = self.webSafe(filename)
+        # query the directory via SFTP processor
+        if flags & FXF_READ == FXF_READ:
+            # read file
+            proc = SFTPProcessor(self.env)
+            d = defer.maybeDeferred(proc.run, GET, filename)
+            d.addCallback(self._cbRenderFile)
+            d.addErrback(self._cbFailed)
+            return d
+        elif flags & FXF_CREAT == FXF_CREAT:
+            # create file
+            data = StringIO.StringIO('')
+            imf = InMemoryFile(data)
+            self.create_files[filename] = (imf, flags)
+            return imf
+        msg = "Don't know how to handle this request"
+        raise SFTPError(FX_FAILURE, msg)
     
     def _cbRenderFile(self, result):
         if isinstance(result, basestring):
             # some basestring object
-            return InMemoryFile(result)
+            data = StringIO.StringIO(result)
+            return InMemoryFile(data)
         elif IFileSystemResource.providedBy(result):
             # some file system resource
-            return FSFile(result)
+            data = result.open()
+            return InMemoryFile(data)
         msg = "I don't know how to handle this resource type %s"
         raise InternalServerError(msg % type(result))
     
@@ -292,10 +179,11 @@ class SFTPServiceProtocol:
         
         @param path: the directory to open.
         """
-        print '----> openDirectory', path
-        # query the directory via processor
+        # lockup filename in utf-8
+        path = self.webSafe(path)
+        # query the directory via SFTP processor
         proc = SFTPProcessor(self.env)
-        d = defer.maybeDeferred(proc.run, "HEAD", path)
+        d = defer.maybeDeferred(proc.run, HEAD, path)
         d.addCallback(self._cbRenderFolder)
         d.addErrback(self._cbFailed)
         return d
@@ -303,19 +191,21 @@ class SFTPServiceProtocol:
     def _cbFailed(self, failure):
         if not isinstance(failure, Failure):
             raise
-        if isinstance(failure.value, filetransfer.SFTPError):
+        if isinstance(failure.value, SFTPError):
             # this is a SFTP error
             raise failure.value
         elif 'seishub.exceptions.SeisHubError' in failure.parents:
             # this is a SeisHubError
             self.env.log.http(failure.value.code, failure.value.message)
-            raise filetransfer.SFTPError(filetransfer.FX_FAILURE, 
-                                         failure.value.message)
+            if isinstance(failure, NotAllowedError):
+                err = FX_OP_UNSUPPORTED
+            else:
+                err = FX_FAILURE
+            raise SFTPError(err, failure.value.message)
         else:
             # we got something unhandled yet
             self.env.log.error(failure.getTraceback())
-            raise filetransfer.SFTPError(filetransfer.FX_FAILURE, 
-                                         failure.getErrorMEssage())
+            raise SFTPError(FX_FAILURE, failure.getErrorMessage())
     
     def _cbRenderFolder(self, obj_dict):
         # check if we got a folder
@@ -331,7 +221,7 @@ class SFTPServiceProtocol:
         ids.sort()
         for id in ids:
             obj = obj_dict.get(id)
-            attrs = getAttributes(obj)
+            attrs = obj.getMetadata()
             if attrs:
                 # return ids in system encoding
                 fsid = id.decode('utf-8').encode(sys.getfilesystemencoding())
@@ -350,23 +240,41 @@ class SFTPServiceProtocol:
             and return attributes for the real path at the base.  If it is 
             False, return attributes for the specified path.
         """
-        print '----> getattrs', path, followLinks
-        # remove trailing slashes
-        path = absPath(path)
-        
-        # query the path via processor
-        proc = Processor(self.env)
-        try:
-            obj = proc.run(HEAD, path)
-        except NotFoundError, e:
-            obj = None
-        except Exception, e:
-            raise filetransfer.SFTPError(filetransfer.FX_FAILURE, e.message)
+        # lockup filename in utf-8
+        path = self.webSafe(path)
+        # query the directory via SFTP processor
+        proc = SFTPProcessor(self.env)
+        d = defer.maybeDeferred(proc.run, HEAD, path)
+        d.addCallback(self._cbGetAttrs)
+        d.addErrback(self._cbFailed)
+        return d
+    
+    def _cbGetAttrs(self, obj):
         # check results
-        return getAttributes(obj)
+        # XXX: not very nice - there is no information about the parent 
+        # object in a dict of child objects
+        if isinstance(obj, dict):
+            return {'permissions': 040755}
+        else:
+            return {'permissions': 0100644}
     
     def setAttrs(self, path, attrs):
-        return
+        # lockup filename in utf-8
+        path = self.webSafe(path)
+        # XXX: args not good to that here!
+        if path not in self.create_files.keys():
+            return
+        (imf, flags) = self.create_files.pop(path)
+        # check for creation flag
+        if not (flags & FXF_CREAT == FXF_CREAT):
+            return
+        imf.data.seek(0)
+        # create file
+        proc = SFTPProcessor(self.env)
+        d = defer.maybeDeferred(proc.run, PUT, path, imf.data)
+        d.addErrback(self._cbFailed)
+        # XXX: IntegrityError
+        return d
     
     def removeFile(self, filename):
         """
@@ -374,73 +282,40 @@ class SFTPServiceProtocol:
         
         @param filename: the name of the file as a string.
         """
-        # process resource
-        proc = Processor(self.env)
-        try:
-            proc.run(DELETE, filename)
-        except Exception, e:
-            raise filetransfer.SFTPError(filetransfer.FX_FAILURE, e.message)
+        # lockup filename in utf-8
+        filename = self.webSafe(filename)
+        # query the directory via SFTP processor
+        proc = SFTPProcessor(self.env)
+        d = defer.maybeDeferred(proc.run, DELETE, filename)
+        d.addErrback(self._cbFailed)
+        return d
     
     def renameFile(self, oldpath, newpath):
-        # process resource
-        proc = Processor(self.env)
+        # lockup filename in utf-8
+        oldpath = self.webSafe(oldpath)
+        # query the directory via SFTP processor
+        proc = SFTPProcessor(self.env)
         destination = self.env.getRestUrl() + newpath
-        try:
-            proc.run(MOVE, oldpath, 
-                     received_headers={'Destination': destination})
-        except Exception, e:
-            raise filetransfer.SFTPError(filetransfer.FX_FAILURE, e.message)
-        return
+        d = defer.maybeDeferred(proc.run, MOVE, oldpath, 
+                                received_headers={'Destination': destination})
+        d.addErrback(self._cbFailed)
+        return d
     
     def makeDirectory(self, path, attrs):
         msg = "Directories can't be added via SFTP."
-        raise filetransfer.SFTPError(filetransfer.FX_OP_UNSUPPORTED, msg)
+        raise SFTPError(FX_OP_UNSUPPORTED, msg)
     
     def removeDirectory(self, path):
         msg = "Directories can't be deleted via SFTP."
-        raise filetransfer.SFTPError(filetransfer.FX_OP_UNSUPPORTED,msg)
+        raise SFTPError(FX_OP_UNSUPPORTED, msg)
     
     def readLink(self, path):
-        raise filetransfer.SFTPError(filetransfer.FX_OP_UNSUPPORTED, '')
+        msg = "Symbolic links are not supported yet."
+        raise SFTPError(FX_OP_UNSUPPORTED, msg)
     
     def makeLink(self, linkPath, targetPath):
-        raise filetransfer.SFTPError(filetransfer.FX_OP_UNSUPPORTED, '')
-
-
-def getAttributes(obj):
-    """
-    Creates attributes depending on the object type.
-    """
-    if IRESTResource.providedBy(obj):
-        # RESTResource object
-        meta = obj.document.meta 
-        file_datetime = int(time.mktime(meta.datetime.timetuple()))
-        file_size = meta.size
-        file_uid = meta.uid or 0
-        return {'permissions': 0100644,
-                'uid': file_uid,
-                'size': file_size,
-                'atime': file_datetime,
-                'mtime': file_datetime}
-    elif IFileSystemResource.providedBy(obj):
-        # FileResource object
-        s = obj.statinfo
-        return {'permissions': s.st_mode,
-                'uid': s.st_uid,
-                'gid': s.st_gid,
-                'size': s.st_size,
-                'atime': s.st_atime,
-                'mtime': s.st_mtime,
-                'nlink': s.st_nlink, }
-    elif isinstance(obj, basestring):
-        # we got some file
-        return {'permissions': 0100644, 
-                'gid': DEFAULT_GID, }
-    elif isinstance(obj, dict) or hasattr(obj, 'folderish'):
-        # should be a directory
-        return {'permissions': 040755, 
-                'gid': DEFAULT_GID, }
-    return {}
+        msg = "Symbolic can'T be created via SFTP."
+        raise SFTPError(FX_OP_UNSUPPORTED, msg)
 
 
 class DirList:
