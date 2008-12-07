@@ -399,7 +399,7 @@ class AResourceType(Component):
     
     package_id = 'atestpackage'
     resourcetype_id = 'aresourcetype'
-    registerStylesheet('aformat','data/weapon.xsd')
+    registerStylesheet('aformat','data/resourcelist_json.xslt')
     registerAlias('analias','/resourceroot[./a/predicate/expression]',
                   limit = 10, order_by = {'/path/to/element':'ASC'})
     
@@ -568,14 +568,13 @@ class FromFilesystemTest(SeisHubEnvironmentTestCase):
         from seishub.packages.installer import PackageInstaller
         self.env.enableComponent(APackage)
         self.env.enableComponent(AResourceType)
-        PackageInstaller.install(self.env)
         
         # stylesheets
         stylesheet = self.registry.stylesheets.get('atestpackage', 
                                                    'aresourcetype', 'aformat')
         self.assertEqual(len(stylesheet), 1)
         p = os.path.join(self.env.config.path,'seishub','packages','tests',
-                         'data','weapon.xsd')
+                         'data','resourcelist_json.xslt')
         self.assertEqual(stylesheet[0].resource.document.data, file(p).read())
         
         stylesheet = self.registry.stylesheets.get('atestpackage', None, 

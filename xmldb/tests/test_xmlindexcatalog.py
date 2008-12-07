@@ -1,16 +1,10 @@
 # -*- coding: utf-8 -*-
 
-from seishub.exceptions import NotFoundError, DuplicateObjectError
+from seishub.exceptions import DuplicateObjectError
 from seishub.test import SeisHubEnvironmentTestCase
-from seishub.xmldb.defaults import index_def_tab, DEFAULT_PREFIX, \
-    INDEX_DEF_TABLE
-from seishub.xmldb.index import XmlIndex, DATETIME_INDEX, NUMERIC_INDEX, \
-    FLOAT_INDEX
+from seishub.xmldb.index import XmlIndex, DATETIME_INDEX
 from seishub.xmldb.resource import Resource, newXMLDocument
-from seishub.xmldb.xmldbms import XmlDbManager
-from seishub.xmldb.xmlindexcatalog import XmlIndexCatalog
 from seishub.xmldb.xpath import XPathQuery
-from sqlalchemy.sql import and_ #@UnresolvedImport
 import inspect
 import os
 import unittest

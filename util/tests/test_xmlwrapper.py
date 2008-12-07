@@ -37,7 +37,7 @@ class XmlSchemaTest(unittest.TestCase):
 
 class XmlTreeTest(unittest.TestCase):
     def testEvalXPath(self):
-        tree_doc=XmlTreeDoc(xml_data=GOOD_XML)
+        tree_doc = XmlTreeDoc(xml_data = GOOD_XML)
         # an invalid expression:
         self.assertRaises(InvalidXPathExpression,
                           tree_doc.evalXPath,
@@ -51,7 +51,12 @@ class XmlTreeTest(unittest.TestCase):
         # getStrContent() concatenates all Element values:
         self.assertEquals(tree_doc.evalXPath('/a')[0].getStrContent(),
                           "<a><b>A string</b>\n<b>Another string</b>\n</a>")
-
+        
+        # expression containing namespaces
+        ns_doc = XmlTreeDoc(xml_data = TEST_SCHEMA)
+        self.assertEquals(ns_doc.evalXPath('/xsd:schema/xsd:element/@name')[0].getStrContent(),
+                          "a")
+        
 
 def suite():
     suite = unittest.TestSuite()
