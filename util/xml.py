@@ -131,3 +131,30 @@ def detectBOM(data):
 def addXMLDeclaration(data, encoding = "UTF-8", version = "1.0"):
     decl = '<?xml version="%s" encoding="%s"?>\n\n'
     return decl % (version, encoding) + data
+
+
+def applyMacros(query):
+    """
+    Replaces defined macros within the given expression.
+    
+    Macros are defined by {kw=arg, kw2=args} at the beginning of the 
+    expression. The macro section may not include one of the following chars:
+    '=', '{', ',' or '}'. After the closing bracket you may define markers
+    via {kw} which will be replaced with the defined argument in the macro 
+    section.
+    
+        >>> applyMacro('{test=world, blub=!} hello {test}{blub}')
+        'hello world!'
+    """
+    # remove line breaks
+    query = ' '.join(query.splitlines()).strip()
+    if query[0]!='{':
+        return query
+    # split macro section {} from actual query
+    macros, query = query.split('}', 1)
+    macros = macros.strip(' {}')
+    # parse the macros and replace in query
+    for macro in macros.split(','):
+        kw, arg = macro.split('=')
+        query = query.replace('{'+kw.strip()+'}', arg.strip())
+    return query.strip()

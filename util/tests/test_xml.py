@@ -2,7 +2,7 @@
 
 import unittest
 import codecs
-from seishub.util.xml import parseXMLDeclaration, toUnicode
+from seishub.util.xml import parseXMLDeclaration, toUnicode, applyMacros
 
 TEST_BASE = """<seishub xml:base="http://localhost:8080" xmlns:xlink="http://www.w3.org/1999/xlink">
     <mapping xlink:type="simple" xlink:href="/seishub/schema/browser">browser</mapping>
@@ -139,7 +139,14 @@ class XMLUtilTest(unittest.TestCase):
         temp = unicode(TEST_W_ENC % 'UTF-16').encode('UTF-16le')
         data, enc = toUnicode(temp, True)
         assert enc == 'utf-8'
-        
+    
+    def test_applyMacros(self):
+        res = applyMacros('{test=world, blub=!} hello {test}{blub}')
+        self.assertEquals(res, 'hello world!')
+        res = applyMacros('{\n test = world ,   blub\n=!} hello\n{test}{blub}')
+        self.assertEquals(res, 'hello world!')
+        res = applyMacros('{test=/muh/blub/nn, blub=!} hello {test}{blub}')
+        self.assertEquals(res, 'hello /muh/blub/nn!')
 
 
 def suite():
