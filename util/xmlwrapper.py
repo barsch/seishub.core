@@ -142,7 +142,6 @@ class XmlSchema(object):
         valid = self.schema.validate(xml_doc.getXml_doc())
         if not valid:
             return False
-        
         return True
 
 

@@ -321,6 +321,14 @@ class XmlIndexCatalog(DbStorage, _QueryProcessor):
         """Return all indexed values for the given index."""
         xmlindex = self.getIndexes(package_id, resourcetype_id, xpath)[0]
         return self.pickup(xmlindex._getElementCls(), index = xmlindex)
+    
+    def dumpIndexByDocument(self, document_id):
+        """Return all IndexElements indexed for the specified document."""
+        elements = list()
+        for cls in type_classes:
+            el = self.pickup(cls, document = {'_id':document_id})
+            elements.extend(el)
+        return elements
 
     def flushIndex(self, package_id = None, resourcetype_id = None, 
                    xpath = None, xmlindex = None, resource = None):

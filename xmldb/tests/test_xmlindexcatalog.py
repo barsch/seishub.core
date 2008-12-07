@@ -268,7 +268,6 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
 #        el = self.catalog.dumpIndex(self.pkg1.package_id, 
 #                                    self.rt1.resourcetype_id, 
 #                                    "/station/test_date")
-#        import pdb;pdb.set_trace()
         self.assertEquals(len(r), 4)
         el = self.catalog.dumpIndex(self.pkg1.package_id, 
                                     self.rt1.resourcetype_id, 
@@ -286,6 +285,22 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         self.assertEquals(el[1].document.data, res.document.data)
         self.assertEquals(el[2].key, "99")
         self.assertEquals(el[2].document.data, res.document.data)
+        
+        # dumpIndexByDocument
+        el = self.catalog.dumpIndexByDocument(res.document._id)
+        self.assertEqual(len(el), 4)
+        self.assertEquals(el[0].key, "GENF")
+        self.assertEquals(el[0].document.data, res.document.data)
+        self.assertEquals(el[0].index.xpath, "/station/station_code")
+        self.assertEquals(el[1].key, "2.5")
+        self.assertEquals(el[1].document.data, res.document.data)
+        self.assertEquals(el[1].index.xpath, "/station/XY/paramXY")
+        self.assertEquals(el[2].key, "0")
+        self.assertEquals(el[2].document.data, res.document.data)
+        self.assertEquals(el[2].index.xpath, "/station/XY/paramXY")
+        self.assertEquals(el[3].key, "99")
+        self.assertEquals(el[3].document.data, res.document.data)
+        self.assertEquals(el[3].index.xpath, "/station/XY/paramXY")
         
         # clean up
         self.catalog.removeIndex(self.rt1.package.package_id,

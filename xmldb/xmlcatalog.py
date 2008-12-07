@@ -2,7 +2,7 @@
 
 from zope.interface import implements
 
-from seishub.exceptions import NotFoundError
+from seishub.exceptions import NotFoundError, InvalidObjectError
 from seishub.xmldb.interfaces import IXmlCatalog
 from seishub.xmldb.xmldbms import XmlDbManager
 from seishub.xmldb.xmlindexcatalog import XmlIndexCatalog
@@ -56,6 +56,7 @@ class XmlCatalog(object):
         res = Resource(resourcetype, 
                        document = newXMLDocument(xml_data, uid = uid), 
                        name = name)
+        self.schemaValidate(res)
         self.xmldb.addResource(res)
         self.indexResource(resource = res)
         return res
@@ -71,9 +72,10 @@ class XmlCatalog(object):
         """
         _, resourcetype = self.env.registry.objects_from_id(package_id, 
                                                             resourcetype_id)
-        old_res = self.getResource(package_id, resourcetype_id, name)
         res = Resource(resourcetype, document = newXMLDocument(xml_data),
                        name = name)
+        self.schemaValidate(res)
+        old_res = self.getResource(package_id, resourcetype_id, name)
         self.xmldb.modifyResource(res, old_res.id)
         
     def deleteResource(self, package_id = None, resourcetype_id = None, 
@@ -158,10 +160,17 @@ class XmlCatalog(object):
         return self.xmldb.revertResource(package_id, resourcetype_id, name, 
                                          revision)
         
-#    def resourceExists(self, package_id, resourcetype_id, name):
-#        """@see: L{seishub.xmldb.interfaces.IXmlCatalog}"""
-#        raise NotImplementedError("resourceExists not implemented")
-    
+    def schemaValidate(self, resource):
+        """Do a schema validation of given resource with all known schemas of
+        corresponding resourcetype."""
+        pid = resource.package.package_id
+        rid = resource.resourcetype.resourcetype_id
+        schemas = self.env.registry.schemas.get(pid, rid)
+        for schema in schemas:
+            if not schema.validate(resource):
+                msg = "Validation of a resource against schema '%s' failed."
+                raise InvalidObjectError(msg % str(schema))
+
     # xmlindexcatalog methods
     def registerIndex(self, package_id = None, resourcetype_id = None, 
                       xpath = None, type = "text", options = None):
@@ -187,6 +196,14 @@ class XmlCatalog(object):
         type = INDEX_TYPES.get(type.lower(), TEXT_INDEX)
         return self.index_catalog.getIndexes(package_id, resourcetype_id, 
                                              xpath, type, options)
+        
+    def getIndexData(self, resource):
+        """Return all indexed data for the given resource as a dictionary."""
+        elmts = self.index_catalog.dumpIndexByDocument(resource.document._id)
+        values = {}
+        for el in elmts:
+            values[el.index.xpath] = el.key
+        return values
         
     def flushIndex(self, package_id = None, resourcetype_id = None, 
                    xpath = None):
