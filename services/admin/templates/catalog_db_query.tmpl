@@ -30,13 +30,13 @@
   <tr>
   #for $f in $r
     <td>
+      #filter WebSafe
       #if isinstance(f, unicode)
-        #filter WebSafe 
         #echo f.__repr__() #
-        #end filter
       #else
         $f
       #end if
+      #end filter
     </td>
   #end for
   </tr>
