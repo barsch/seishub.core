@@ -306,7 +306,14 @@ class XmlIndexCatalog(DbStorage, _QueryProcessor):
         elements = []
         for idx in idx_list:
             elements.extend(idx.eval(resource.document))
-        self.store(*elements)
+        for el in elements:
+            try:
+                self.store(el)
+            except DbError:
+                # tried to store an index element with same parameters as one
+                # indexed before => ignore
+                # XXX: generate debug message
+                pass
         return elements
     
     def dumpIndex(self, package_id, resourcetype_id, xpath):
