@@ -62,7 +62,7 @@ class DatabaseQueryPanel(Component):
         db = self.env.db.engine
         tables = sorted(db.table_names())
         data = {
-            'query': 'select 1 LIMIT 0,20;', 
+            'query': 'select 1 LIMIT 20;', 
             'result': '',
             'cols': '',
             'tables': tables,
@@ -75,7 +75,7 @@ class DatabaseQueryPanel(Component):
             else:
                 for table in tables:
                     if table in args.keys():
-                        query = 'SELECT * FROM ' + table + ' LIMIT 0,20;'
+                        query = 'SELECT * FROM ' + table + ' LIMIT 20;'
             if query:
                 data['query'] = query
                 try:
