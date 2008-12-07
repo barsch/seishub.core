@@ -87,8 +87,8 @@ class XmlCatalog(object):
         If a document_id is specified the resource having that document is 
         deleted, together with all other documents linked to that resource!
         """
-        if not ((package_id and resourcetype_id and name and revision and not\
-                 document_id) or document_id):
+        if not ((package_id and resourcetype_id and name and not document_id) \
+                or document_id):
             raise TypeError("deleteResource(): invalid number of arguments!")
         # remove indexed data:
         # XXX: workaround!

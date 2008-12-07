@@ -134,9 +134,9 @@ class ResourcesPanel(Component):
     
     def _addResource(self, data):
         try:
-            self.catalog.addResource(data['package_id'], 
-                                     data['resourcetype_id'], 
-                                     data['file'])
+            self.catalog.addResource(package_id=data['package_id'], 
+                                     resourcetype_id=data['resourcetype_id'], 
+                                     xml_data=data['file'])
         except InvalidParameterError, e:
             data['error'] = ("Please choose a non-empty XML document", e)
         except SeisHubError, e:
@@ -150,7 +150,9 @@ class ResourcesPanel(Component):
             if len(id)!=4:
                 continue
             try:
-                self.catalog.deleteResource(id[1],id[2],id[3])
+                self.catalog.deleteResource(package_id=id[1],
+                                            resourcetype_id=id[2],
+                                            name=id[3])
             except Exception, e:
                 self.log.info("Error deleting resource: %s" % res, e)
                 data['error'] = ("Error deleting resource: %s" % res, e)
