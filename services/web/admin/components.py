@@ -79,12 +79,11 @@ class StylesheetsPanel(Component):
                 file = args.get('file',[''])[0]
                 type = args.get('type',[''])[0]
                 package_id = args.get('package_id',[''])[0]
-                resourcetype_id = args.get('resourcetype_id',[''])[0]
+                resourcetype_id = args.get('resourcetype_id',[None])[0]
                 if type and package_id in packages:
-                    if resourcetype_id in resourcetypes.get(package_id, []):
-                        data.update(self._addStylesheet(package_id,
-                                                        resourcetype_id,
-                                                        type, file))
+                    data.update(self._addStylesheet(package_id,
+                                                    resourcetype_id,
+                                                    type, file))
             elif 'delete' in args.keys() and 'stylesheet[]' in args.keys():
                 data.update(self._deleteStylesheet(args['stylesheet[]']))
         # fetch all uris
@@ -145,6 +144,7 @@ class IndexesPanel(Component):
             'indexes': [],
             'error': '',
             'xpath': '',
+            'options': '',
             'packages': packages,
             'resourcetypes': resourcetypes,
             'resturl': self.env.getRestUrl(),
@@ -156,10 +156,11 @@ class IndexesPanel(Component):
                 package_id = args.get('package_id',[''])[0]
                 resourcetype_id = args.get('resourcetype_id',[''])[0]
                 type_id = args.get('type_id',[''])[0]
+                options = args.get('options',[None])[0]
                 if package_id in packages:
                     if resourcetype_id in resourcetypes.get(package_id, []):
                         data.update(self._addIndex(package_id, resourcetype_id,
-                                                   xpath, type_id))
+                                                   xpath, type_id, options))
             elif 'delete' in args.keys() and 'index[]' in args.keys():
                 data.update(self._deleteIndexes(args.get('index[]',[])))
             elif 'reindex' in args.keys() and 'index[]' in args.keys():
@@ -192,12 +193,13 @@ class IndexesPanel(Component):
                 return {'error': ("Error removing index %s" % part, e)}
         return {'info': "Index has been removed."}
     
-    def _addIndex(self, package_id, resourcetype_id, xpath, type_id):
+    def _addIndex(self, package_id, resourcetype_id, xpath, type_id, options):
         try:
             self.catalog.registerIndex(package_id, 
                                        resourcetype_id, 
                                        xpath, 
-                                       type_id)
+                                       type_id,
+                                       options = options)
         except Exception, e:
             self.log.error("Error registering index", e)
             return {'error': ("Error registering index", e)}

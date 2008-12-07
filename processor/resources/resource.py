@@ -135,6 +135,12 @@ class Resource(object):
         request.setHeader("DAV", "1")
         request.setHeader("Allow", ',' .join(request.allowed_methods))
         return ""
+    
+    def update(self):
+        """
+        This is only a dummy for test cases directly using certain resources.
+        """
+        pass
 
 
 class Folder(Resource):

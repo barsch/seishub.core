@@ -162,12 +162,12 @@ class XmlCatalog(object):
     
     # xmlindexcatalog methods
     def registerIndex(self, package_id = None, resourcetype_id = None, 
-                      xpath = None, type = "text"):
+                      xpath = None, type = "text", options = None):
         """@see: L{seishub.xmldb.interfaces.IXmlCatalog}"""
         type = INDEX_TYPES.get(type.lower(), TEXT_INDEX)
         _, resourcetype = self.env.registry.objects_from_id(package_id, 
                                                             resourcetype_id)
-        index = XmlIndex(resourcetype, xpath, type)
+        index = XmlIndex(resourcetype, xpath, type, options)
         index = self.index_catalog.registerIndex(index)
         self.reindex(package_id, resourcetype_id, xpath)
         return index
@@ -180,11 +180,11 @@ class XmlCatalog(object):
                                               xpath)
         
     def getIndex(self, package_id = None, resourcetype_id = None, 
-                 xpath = None, type = "text"):
+                 xpath = None, type = "text", options = None):
         """@see: L{seishub.xmldb.interfaces.IXmlCatalog}"""
         type = INDEX_TYPES.get(type.lower(), TEXT_INDEX)
         return self.index_catalog.getIndexes(package_id, resourcetype_id, 
-                                             xpath, type)
+                                             xpath, type, options)
         
     def flushIndex(self, package_id = None, resourcetype_id = None, 
                    xpath = None):
@@ -273,6 +273,8 @@ class XmlCatalog(object):
             order_by = query.get('order_by', None)
             limit = query.get('limit', None)
             query = query.get('query', '')
+        # remove line breaks
+        query = ' '.join(query.splitlines()).strip()
         qu = map(self._convert_wildcards, query.split('/'))
         if len(qu) == 4 and not qu[3]:
             # XXX: this is not an index query ,but this should be handled by 

@@ -145,17 +145,12 @@ class ResourcesPanel(Component):
         return data
     
     def _deleteResources(self, data):
-        for res in data.get('resource[]',[]):
-            id = res.split('/')
-            if len(id)!=4:
-                continue
+        for id in data.get('resource[]',[None]):
             try:
-                self.catalog.deleteResource(package_id=id[1],
-                                            resourcetype_id=id[2],
-                                            name=id[3])
+                self.catalog.deleteResource(document_id=id)
             except Exception, e:
-                self.log.info("Error deleting resource: %s" % res, e)
-                data['error'] = ("Error deleting resource: %s" % res, e)
+                self.log.info("Error deleting resource: %s" % id, e)
+                data['error'] = ("Error deleting resource: %s" % id, e)
                 return data
         return data
 

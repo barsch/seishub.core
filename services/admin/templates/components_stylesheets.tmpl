@@ -6,20 +6,18 @@
     <label>Package</label><br />
     <select name="package_id" id="package_id" onchange="changePackage();">
       #for $p in $packages
-      #if $resourcetypes[$p]
       <option value="$p">$p</option>
-      #end if
       #end for
     </select>
   </div>
   <div class="field">
-    <label>Resource type</label><br />
+    <label>Resource type (optional)</label><br />
     <select name="resourcetype_id" id="resourcetype_id">
-      <option></option>
+      <option value="">-</option>
     </select>
   </div>
   <div class="field">
-    <label>Output format identifier</label><br />
+    <label>Label</label><br />
     <input type="text" size="20" name="type" />
   </div>
   <div class="field">
@@ -43,7 +41,7 @@
       <th></th>
       <th>Package</th>
       <th>Resourcetype</th>
-      <th>Output ID</th>
+      <th>Label</th>
       <th>Document</th>
     </tr>
     #for $stylesheet in $stylesheets
@@ -56,7 +54,7 @@
       <td>$stylesheet.resourcetype.resourcetype_id</td>
       <td>$stylesheet.type</td>
       <td>
-        <a href="$resturl/xml/seishub/stylesheet/$stylesheet.document_id">[XML]</a>
+        <a href="$resturl/xml/seishub/stylesheet/$stylesheet.document_id">[XSLT]</a>
       </td>
     </tr>
     #end for
@@ -89,11 +87,13 @@
         }
         var selectbox = document.getElementById('resourcetype_id');
         selectbox.options.length = 0;
+        var emptylink = new Option('-', '');
+        selectbox.options[0] = emptylink;
         for (var i=0; i<resourcetypes[package_id].length; i++)
         {
             var link = resourcetypes[package_id][i];
             var addme = new Option(link, link);
-            selectbox.options[i] = addme;
+            selectbox.options[i+1] = addme;
         }
     }
     changePackage();

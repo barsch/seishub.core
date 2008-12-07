@@ -27,6 +27,10 @@
     </select><br />
   </div>
   <div class="field">
+    <label>Options</label><br />
+    <input type="text" size="40" name="options" value="$options" />
+  </div>
+  <div class="field">
     <label>XPath expression</label><br />
     <input type="text" size="80" name="xpath" value="$xpath" />
   </div>
@@ -47,6 +51,7 @@
       <th>Package</th>
       <th>Resourcetype</th>
       <th>Type</th>
+      <th>Options</th>
       <th>Expression</th>
     </tr>
     #for $index in $indexes
@@ -55,10 +60,11 @@
         <input type="checkbox" name="index[]" 
                value="$index.__str__()" />
       </td>
-      <td>#echo index.resourcetype.package.package_id#</td>
-      <td>#echo index.resourcetype.resourcetype_id#</td>
-      <td>$index_types_dict[$index.getType()]</td>
-      <td>#echo index.xpath#</td>
+      <td>$index.resourcetype.package.package_id</td>
+      <td>$index.resourcetype.resourcetype_id</td>
+      <td>$index_types_dict[$index.type]</td>
+      <td>$index.options</td>
+      <td>$index.xpath</td>
     </tr>
     #end for
   </table>

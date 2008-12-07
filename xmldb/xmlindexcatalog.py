@@ -282,13 +282,14 @@ class XmlIndexCatalog(DbStorage, _QueryProcessor):
                   xpath = xpath)
     
     def getIndexes(self, package_id = None, resourcetype_id = None, 
-                   xpath = None, type = None):
+                   xpath = None, type = None, options = None):
         """Return a list of all applicable indexes."""
         res = self.pickup(XmlIndex, 
                           resourcetype = {'package':{'package_id':package_id}, 
                                           'resourcetype_id':resourcetype_id}, 
                           xpath = xpath,
-                          type = type)
+                          type = type,
+                          options = options)
         return res
 
 #    def updateIndex(self,key_path,value_path,new_index):

@@ -39,15 +39,21 @@
   <table class="list">
     <tr>
       <th></th>
+      <th>Package</th>
+      <th>Resourcetype</th>
+      <th>Name</th>
       <th>Document</th>
     </tr>
     #for $resource in $resources
     <tr> 
       <td>
-        <input type="checkbox" name="resource[]" value="$resource" />
+        <input type="checkbox" name="resource[]" value="$resource.getId()" />
       </td> 
+      <td>$resource.package.package_id</td>
+      <td>$resource.resourcetype.resourcetype_id</td>
+      <td>$resource.name</td>
       <td>
-        <a href="$resturl/xml$resource">$resource</a>
+        <a href="$resturl/xml$resource">[XML]</a>
       </td>
     </tr>
     #end for

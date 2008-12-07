@@ -98,6 +98,7 @@ class XmlIndexTest(SeisHubEnvironmentTestCase):
         self.assertEquals(res.key, '12.51200')
         # elements with wrong data type are ignored
         idx = XmlIndex(self.rt1, "/station/XY/paramXY", index.NUMERIC_INDEX)
+        print "\n" + 'X'*40 + "\nXXX: ignored error in xmdb/tests/test_xmlindex.py"
         res = idx.eval(test_doc)
         self.assertEquals(len(res), 2)
         

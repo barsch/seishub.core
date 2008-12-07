@@ -221,12 +221,12 @@ class PackageInstaller(object):
     def getUpdatedResourcetypes(package_id = None):
         pass
 
-registerSchema = lambda type, filename: PackageInstaller._pre_register\
-                                                  ('_schemas', 
+registerSchema = lambda type, filename: \
+                    PackageInstaller._pre_register('_schemas', 
                                                    type = type,
                                                    filename = filename)
-registerStylesheet = lambda type, filename: PackageInstaller._pre_register\
-                                                  ('_stylesheets', 
+registerStylesheet = lambda type, filename: \
+                    PackageInstaller._pre_register('_stylesheets', 
                                                    type = type,
                                                    filename = filename)
 registerAlias = lambda name, expr, limit = None, order_by = None: \
@@ -235,7 +235,8 @@ registerAlias = lambda name, expr, limit = None, order_by = None: \
                                                    expr = expr,
                                                    limit = limit,
                                                    order_by = order_by)
-registerIndex = lambda xpath, type = 'text': PackageInstaller._pre_register\
-                                                  ('_indexes',
+registerIndex = lambda xpath, type = 'text', options = None: \
+                    PackageInstaller._pre_register('_indexes',
                                                    xpath = xpath,
-                                                   type = type)
+                                                   type = type,
+                                                   options = options)
