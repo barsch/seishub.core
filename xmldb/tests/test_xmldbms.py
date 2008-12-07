@@ -84,6 +84,9 @@ class XmlDbManagerTest(SeisHubEnvironmentTestCase):
                   " down." % (self.test_package.package_id)
 #            
     def testUnversionedResource(self):
+        #======================================================================
+        # addResource()
+        #======================================================================
         # add empty resource
         empty = Resource(document = XmlDocument())
         self.assertRaises(InvalidParameterError, self.xmldbm.addResource, empty)
@@ -97,6 +100,17 @@ class XmlDbManagerTest(SeisHubEnvironmentTestCase):
                             document = newXMLDocument(self.test_data))
         self.xmldbm.addResource(testres)
         self.xmldbm.addResource(testres2)
+        
+        # try to add a resource with same id
+        testres2b = Resource(self.test_resourcetype, 
+                             document = newXMLDocument(self.test_data),
+                             id = testres2.id)
+        self.assertRaises(DuplicateObjectError, self.xmldbm.addResource, 
+                          testres2b)
+        
+        #======================================================================
+        # getResource()
+        #======================================================================
         result = self.xmldbm.getResource(id = testres.id)
         # check lazyness of Resource.data:
         assert isinstance(result.document._data, DbAttributeProxy)
@@ -113,8 +127,20 @@ class XmlDbManagerTest(SeisHubEnvironmentTestCase):
         self.assertEquals(result.resourcetype.resourcetype_id, 
                           self.test_resourcetype.resourcetype_id)
         self.assertEquals(result.resourcetype.version_control, False)
-        # modify resource
-        modres = Resource(result.resourcetype, result.id,
+        
+        result = self.xmldbm.getResource(id = testres2.id)
+        self.assertEquals(result.document.data, self.test_data)
+        self.assertEquals(result.document.meta.uid, None)
+        self.assertEquals(result.package.package_id, 
+                          otherpackage.package_id)
+        self.assertEquals(result.resourcetype.resourcetype_id, 
+                          othertype.resourcetype_id)
+        self.assertEquals(result.resourcetype.version_control, False)
+
+        #======================================================================
+        # modifyResource()
+        #======================================================================
+        modres = Resource(testres.resourcetype, testres.id,
                           document = newXMLDocument(self.test_data_mod))
         self.xmldbm.modifyResource(modres)
         result = self.xmldbm.getResource(testres.package.package_id,
@@ -129,26 +155,28 @@ class XmlDbManagerTest(SeisHubEnvironmentTestCase):
                           self.test_resourcetype.resourcetype_id)
         self.assertEquals(result.resourcetype.version_control, False)
         
-        # delete resource
+        #======================================================================
+        # deleteResource()
+        #======================================================================
+        # by id
         self.xmldbm.deleteResource(id = testres.id)
         self.assertRaises(NotFoundError, self.xmldbm.getResource, 
                           id = testres.id)
+        self.xmldbm.addResource(testres)
+        # there again?
+        self.assertTrue(self.xmldbm.getResource(id = testres.id))
+         
+        # now by document_id
+        self.xmldbm.deleteResource(document_id = testres.document._id)
+        self.assertRaises(NotFoundError, self.xmldbm.getResource, 
+                          id = testres.id)
         
-        result = self.xmldbm.getResource(id = testres2.id)
-        self.assertEquals(result.document.data, self.test_data)
-        self.assertEquals(result.document.meta.uid, None)
-        self.assertEquals(result.package.package_id, 
-                          otherpackage.package_id)
-        self.assertEquals(result.resourcetype.resourcetype_id, 
-                          othertype.resourcetype_id)
-        self.assertEquals(result.resourcetype.version_control, False)
-        # try to add a resource with same id
-        testres_v = Resource(self.test_resourcetype, 
-                             document = newXMLDocument(self.test_data),
-                             id = result.id)
-        self.assertRaises(DuplicateObjectError, self.xmldbm.addResource, 
-                          testres_v)
-        self.xmldbm.deleteResource(id = testres2.id)
+        # by package_id, resourcetype_id and name
+        self.xmldbm.deleteResource(testres2.package.package_id, 
+                                   testres2.resourcetype.resourcetype_id, 
+                                   testres2.name)
+        self.assertRaises(NotFoundError, self.xmldbm.getResource, 
+                          id = testres2.id)
         
         # cleanup
         self.env.registry.db_deleteResourceType(otherpackage.package_id,

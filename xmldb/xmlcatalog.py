@@ -74,27 +74,37 @@ class XmlCatalog(object):
                        name = name)
         self.xmldb.modifyResource(res, old_res.id)
         
-    def deleteResource(self, package_id, resourcetype_id, name, revision=None):
+    def deleteResource(self, package_id = None, resourcetype_id = None, 
+                       name = None, revision = None, document_id = None):
         """Remove a resource from the database.
+        By either (package_id, resourcetype_id, name, revision = None) or
+        by document_id.
         
         Note for version controlled resources:
         If no revision is specified all revisions of the resource all deleted;
         otherwise only the specified revision is removed.
+        
+        If a document_id is specified the resource having that document is 
+        deleted, together with all other documents linked to that resource!
         """
+        if not ((package_id and resourcetype_id and name and revision and not\
+                 document_id) or document_id):
+            raise TypeError("deleteResource(): invalid number of arguments!")
         # remove indexed data:
         # XXX: workaround!
-        res = self.getResource(package_id, resourcetype_id, name, revision)
+        res = self.xmldb.getResource(package_id, resourcetype_id, name, 
+                                     revision, document_id)
         self.index_catalog.flushIndex(resource = res)
         # END workaround
         if revision:
             return self.xmldb.deleteRevision(package_id, resourcetype_id, name, 
                                              revision = revision)
         res = self.xmldb.deleteResource(package_id, resourcetype_id, name, 
-                                        revision)
+                                        revision, document_id)
         if not res:
             msg = "Error deleting a resource: No resource was found with " + \
-                  "the given parameters. (%s/%s/%s)"
-            raise NotFoundError(msg % (package_id, resourcetype_id, name))
+                  "the given parameters."
+            raise NotFoundError(msg)
         return res
     
     def deleteAllResources(self, package_id, resourcetype_id):

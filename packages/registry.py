@@ -293,7 +293,7 @@ class RegistryBase(DbStorage, list):
         if len(o) == 0:
             raise SeisHubError("Error deleting a schema or stylesheet: " +\
                                "No objects found with the given parameters.")
-        self.catalog.xmldb.deleteResource(document_id = o[0].document_id)
+        self.catalog.deleteResource(document_id = o[0].document_id)
         self.drop(self.cls, document_id = o[0].document_id)
         return True
     

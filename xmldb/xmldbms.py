@@ -194,6 +194,8 @@ class XmlDbManager(DbStorage):
                  document_id):
             raise TypeError("deleteResource(): Invalid number of arguments.")
         if document_id:
+            # this is needed because db.util.drop doesn't support drop via
+            # a parameter of an 'one-to-many' related object
             res = self.getResource(document_id = document_id)
             id = res.id
         if id:

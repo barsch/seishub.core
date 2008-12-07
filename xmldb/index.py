@@ -101,8 +101,12 @@ class XmlIndex(Serializable):
         if not IXmlDocument.providedBy(xml_doc):
             raise TypeError("%s is not an IXmlDocument." % str(xml_doc))
         parsed_doc = xml_doc.getXml_doc()
-        nodes = parsed_doc.evalXPath(self.xpath)
         res = list()
+        try:
+            nodes = parsed_doc.evalXPath(self.xpath)
+        except Exception, e:
+            log.err(e)
+            return res
         for node in nodes:
             try:
                 res.append(self._element_cls(self, node, xml_doc))
