@@ -66,15 +66,3 @@ class IResourceTypeProperty(IPackageProperty):
         Single string representing a unique package id. Leave this attribute
         empty to implement this property for all resource types.
         """)
-
-
-# XXX: must be combined with processor intefaces
-class IMapper(Interface):
-    """General interface definition for a mapper resource."""
-    
-    mapping_url = Attribute("""
-        Defines the absolute URL of this mapping.
-        
-        Single string representing a unique mapping URL.
-        """)
-    

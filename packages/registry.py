@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 
-from seishub.exceptions import SeisHubError
 from seishub.core import PackageManager
-from seishub.util.text import from_uri
-from seishub.db.util import DbStorage, DB_NULL 
-from seishub.packages.interfaces import IPackage, IResourceType, IMapper
-from seishub.packages.package import PackageWrapper, ResourceTypeWrapper
-from seishub.packages.package import Alias, Schema, Stylesheet
+from seishub.db.util import DbStorage, DB_NULL
+from seishub.exceptions import SeisHubError
+from seishub.packages.interfaces import IPackage, IResourceType
+from seishub.packages.package import Alias, Schema, Stylesheet, PackageWrapper, \
+    ResourceTypeWrapper
 from seishub.packages.util import RegistryDictProxy, RegistryListProxy
+from seishub.processor.interfaces import IMapperResource
+from seishub.util.text import from_uri
 
 
 class ComponentRegistry(DbStorage):
@@ -490,7 +491,7 @@ class MapperRegistry(dict):
     def update(self):
         """Rebuild the mapper registry."""
         self._urls = dict()
-        all = PackageManager.getClasses(IMapper)
+        all = PackageManager.getClasses(IMapperResource)
         for cls in all:
             if self.env.isComponentEnabled(cls):
                 self._urls[cls.mapping_url] = cls

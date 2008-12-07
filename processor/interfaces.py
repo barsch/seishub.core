@@ -39,6 +39,12 @@ class IResource(Interface):
         """)
 
 
+class IFolderish(IResource):
+    """
+    A marker interface for a folder containing further resources.
+    """
+
+
 class IStaticResource(IResource):
     """
     A marker interface for a static, non blocking resource.
