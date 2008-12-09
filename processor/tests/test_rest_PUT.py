@@ -82,17 +82,39 @@ class RestPUTTests(SeisHubEnvironmentTestCase):
         # delete resource
         proc.run(DELETE, '/put-test/vc/test.xml')
     
-    def test_putHeaders(self):
-        """Put request expects Location header and 201 status code."""
+    def test_putHeadersWithFilename(self):
+        """
+        Put request expects Location header and 201 status code.
+        """
         proc = Processor(self.env)
         # create resource
-        proc.run(PUT, '/put-test/vc/test.xml', StringIO(XML_DOC))
+        proc.run(PUT, '/put-test/notvc/test.xml', StringIO(XML_DOC))
         # needs a location
         self.assertTrue('Location' in proc.headers)
+        self.assertEquals(proc.headers.get('Location'), 
+                          self.env.getRestUrl() + '/put-test/notvc/test.xml')
         # response code
         self.assertEquals(proc.code, http.CREATED)
         # delete resource
-        proc.run(DELETE, '/put-test/vc/test.xml')
+        proc.run(DELETE, '/put-test/notvc/test.xml')
+    
+    def test_putHeadersWithoutFilename(self):
+        """
+        Put request expects Location header and 201 status code.
+        """
+        proc = Processor(self.env)
+        # create resource
+        proc.run(PUT, '/put-test/notvc', StringIO(XML_DOC))
+        # needs a location
+        self.assertTrue('Location' in proc.headers)
+        loc = proc.headers.get('Location')
+        url = self.env.getRestUrl() + '/put-test/notvc/'
+        self.assertTrue(loc.startswith(url))
+        self.assertTrue(int(loc.split('/')[-1]))
+        # response code
+        self.assertEquals(proc.code, http.CREATED)
+        # delete resource
+        proc.run(DELETE, loc[len(self.env.getRestUrl()):])
     
     def test_putOnExistingResource(self):
         """

@@ -5,7 +5,7 @@ A test suite for mapper resources.
 
 from seishub.core import Component, implements
 from seishub.packages.builtins import IPackage
-from seishub.packages.interfaces import IMapper
+from seishub.processor.interfaces import IMapperResource
 from seishub.processor import GET, Processor
 from seishub.test import SeisHubEnvironmentTestCase
 import unittest
@@ -33,7 +33,7 @@ class TestMapper(Component):
     """
     A test mapper.
     """
-    implements(IMapper)
+    implements(IMapperResource)
     
     mapping_url = '/mapper-test/testmapping'
     
@@ -54,7 +54,7 @@ class TestMapper2(Component):
     """
     Another test mapper.
     """
-    implements(IMapper)
+    implements(IMapperResource)
     
     mapping_url = '/mapper-test/testmapping2'
     
@@ -66,7 +66,7 @@ class TestMapper3(Component):
     """
     And one more test mapper.
     """
-    implements(IMapper)
+    implements(IMapperResource)
     
     mapping_url = '/mapper-test/testmapping3'
     
@@ -78,19 +78,19 @@ class TestMapper4(Component):
     """
     And one more test mapper.
     """
-    implements(IMapper)
+    implements(IMapperResource)
     
     mapping_url = '/testmapping4'
     
     def process_GET(self, request):
-        pass
+        return u"MÜH"
 
 
 class TestMapper5(Component):
     """
     An unregistered mapper.
     """
-    implements(IMapper)
+    implements(IMapperResource)
     
     mapping_url = '/mapper-test/testmapping5'
     
@@ -139,6 +139,16 @@ class MapperTests(SeisHubEnvironmentTestCase):
         proc = Processor(self.env)
         data = proc.run(GET, '/mapper-test/testmapping')
         self.assertEqual(data, 'muh')
+    
+    def test_dontReturnUnicodeFromMapper(self):
+        """
+        Unicodes returned from a mapper should be encoded into UTF-8 strings.
+        """
+        proc = Processor(self.env)
+        data = proc.run(GET, '/testmapping4')
+        self.assertFalse(isinstance(data, unicode))
+        self.assertTrue(isinstance(data, basestring))
+        self.assertEqual('MÜH', data)
 
 
 def suite():

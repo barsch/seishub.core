@@ -189,35 +189,30 @@ class WebRequest(Processor, http.Request):
         @param data: content of the document to be rendered
         @return:     None
         """
-        # parse request headers for output type
-        self.accept = parseAccept(self.getHeader('accept'))
-        self.format = ''
-        if 'format' in self.args.keys():
-            self.format = self.args.get('format')[0]
-        if 'output' in self.args.keys():
-            self.format = self.args.get('output')[0]
-        if self.format and validMediaType(self.format):
-            # add the valid format to the front of the list!
-            self.accept = [(1.0, self.format, {}, {})] + self.accept
-        # HEAD
-        if self.method == HEAD:
-            self.setHeader('content-length', str(len(data)))
-            self.write('')
-            self.finish()
-            return
         # set default content type to XML
         if 'content-type' not in self.headers:
             self.setHeader('content-type', 'application/xml; charset=UTF-8')
+        # parse request headers for output type
+        accept = parseAccept(self.getHeader('accept'))
+        format = ''
+        if 'format' in self.args.keys():
+            format = self.args.get('format')[0]
+        elif 'output' in self.args.keys():
+            format = self.args.get('output')[0]
+        if format and validMediaType(format):
+            # add the valid format to the front of the list!
+            accept = [(1.0, format, {}, {})] + accept
         # handle output/format conversion
-        if self.format and len(self.prepath)>3 and self.prepath[0]=='xml':
+        if format and len(self.prepath)>3 and self.prepath[0]=='xml':
             reg = self.env.registry
             # fetch a xslt document object
             xslt = reg.stylesheets.get(package_id=self.prepath[1],
                                        resourcetype_id=self.prepath[2],
-                                       type=self.format)
+                                       type=format)
             if len(xslt):
                 xslt = xslt[0]
                 data = xslt.transform(data)
+                # set additional content-type if given in XSLT
                 if xslt.content_type:
                     self.setHeader('content-type', 
                                    xslt.content_type + '; charset=UTF-8')
@@ -233,9 +228,13 @@ class WebRequest(Processor, http.Request):
             zfile.close()
             self.setHeader("Content-encoding", "gzip")
             data = zbuf.getvalue()
-        # set header + write output
+        # set header
         self.setHeader('content-length', str(len(data)))
-        self.write(data)
+        # write output
+        if self.method == HEAD:
+            self.write('')
+        else:
+            self.write(data)
         self.finish()
     
     def _renderFolder(self, children={}):
@@ -245,16 +244,6 @@ class WebRequest(Processor, http.Request):
         @param children: dict of child objects implementing L{IResource}
         @return:         None
         """
-        # parse request headers for output type
-        self.accept = parseAccept(self.getHeader('accept'))
-        self.format = ''
-        if 'format' in self.args.keys():
-            self.format = self.args.get('format')[0]
-        if 'output' in self.args.keys():
-            self.format = self.args.get('output')[0]
-        if self.format and validMediaType(self.format):
-            # add the valid format to the front of the list!
-            self.accept = [(1.0, self.format, {}, {})] + self.accept
         ids = children.keys()
         ids.sort()
         # generate a list of standard elements
@@ -272,22 +261,26 @@ class WebRequest(Processor, http.Request):
             url = urllib.quote(addBase(self.path, id))
             data += RESOURCELIST_NODE % (tag, category, url, id, tag)
         data = str(RESOURCELIST_ROOT % (str(self.env.getRestUrl()), data))
-        # HEAD
-        if self.method == HEAD:
-            self.setHeader('content-length', str(len(data)))
-            self.write('')
-            self.finish()
-            return
         # set default content type to XML
         if 'content-type' not in self.headers:
             self.setHeader('content-type', 'application/xml; charset=UTF-8')
+        # parse request headers for output type
+        accept = parseAccept(self.getHeader('accept'))
+        format = ''
+        if 'format' in self.args.keys():
+            format = self.args.get('format')[0]
+        if 'output' in self.args.keys():
+            format = self.args.get('output')[0]
+        if format and validMediaType(format):
+            # add the valid format to the front of the list!
+            accept = [(1.0, format, {}, {})] + accept
         # handle output/format conversion
-        if self.format:
+        if format:
             reg = self.env.registry
             # fetch a xslt document object
             xslt = reg.stylesheets.get(package_id='seishub',
                                        resourcetype_id='stylesheet',
-                                       type='resourcelist.%s' % self.format)
+                                       type='resourcelist.%s' % format)
             if len(xslt):
                 xslt = xslt[0]
                 data = xslt.transform(data)
@@ -306,9 +299,13 @@ class WebRequest(Processor, http.Request):
             zfile.close()
             self.setHeader("Content-encoding", "gzip")
             data = zbuf.getvalue()
-        # set header + write output
+        # set header
         self.setHeader('content-length', str(len(data)))
-        self.write(data)
+        # write output
+        if self.method == HEAD:
+            self.write('')
+        else:
+            self.write(data)
         self.finish()
     
     def notifyFinish(self):

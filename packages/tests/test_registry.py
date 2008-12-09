@@ -4,7 +4,8 @@ from seishub.core import Component, implements
 from seishub.exceptions import SeisHubError
 from seishub.packages.installer import registerSchema, registerStylesheet, \
     registerAlias
-from seishub.packages.interfaces import IResourceType, IPackage, IMapper
+from seishub.packages.interfaces import IResourceType, IPackage
+from seishub.processor.interfaces import IMapperResource
 from seishub.test import SeisHubEnvironmentTestCase
 from seishub.xmldb.resource import Resource, newXMLDocument
 import os
@@ -402,90 +403,17 @@ class AResourceType(Component):
     registerStylesheet('aformat','data/resourcelist_json.xslt')
     registerAlias('analias','/resourceroot[./a/predicate/expression]',
                   limit = 10, order_by = {'/path/to/element':'ASC'})
-    
-
-class TestMapper(Component):
-    implements(IMapper)
-    
-    mapping_url = '/test/testmapping'
-    
-    def processGET(self, request):
-        pass
-    
-    def processPUT(self, request):
-        pass
-
-
-class TestMapper2(Component):
-    implements(IMapper)
-    
-    mapping_url = '/test/testmapping/two'
-    
-    def processGET(self, request):
-        pass
-    
-
-class TestMapper3(Component):
-    implements(IMapper)
-    
-    mapping_url = '/test/three/testmapping'
-    
-    def processGET(self, request):
-        pass
 
 
 class FromFilesystemTest(SeisHubEnvironmentTestCase):
     def __init__(self, *args, **kwargs):
         SeisHubEnvironmentTestCase.__init__(self, *args, **kwargs)
-        
+    
     def setUp(self):
-        self.env.enableComponent(TestMapper)
-        self.env.enableComponent(TestMapper2)
-        self.env.enableComponent(TestMapper3)
-        
+        pass
+    
     def tearDown(self):
-        self.env.disableComponent(TestMapper)
-        self.env.disableComponent(TestMapper2)
-        self.env.disableComponent(TestMapper3)
-        
-    def testMapperRegistry(self):
-        self.env.disableComponent(TestMapper)
-        assert '/test/testmapping' not in self.env.registry.mappers.keys()
-        self.env.enableComponent(TestMapper)
-        # XXX: obsolete with [382], but need new tests
-#        # get with exact url
-#        m = self.env.registry.mappers.get('/test/testmapping', 'GET')
-#        self.assertEquals(type(m[0]), TestMapper)
-#        m = self.env.registry.mappers.get('/test/testmapping/two', 'GET')
-#        self.assertEquals(type(m[0]), TestMapper2)
-#        m = self.env.registry.mappers.get('/test/three/testmapping', 'GET')
-#        self.assertEquals(type(m[0]), TestMapper3)
-#        # url longer than mapper url
-#        m = self.env.registry.mappers.get('/test/testmapping/nottwo', 'GET')
-#        self.assertEquals(type(m[0]), TestMapper)
-#        m = self.env.registry.mappers.get('/test/testmapping/two/nottwo', 
-#                                           'GET')
-#        self.assertEquals(type(m[0]), TestMapper2)
-#        # no mapper
-#        m = self.env.registry.mappers.get('/test/three')
-#        self.assertEquals(len(m), 0)
-#        # without method
-#        m = self.env.registry.mappers.get('/test/testmapping/two')
-#        m = map(type, m)
-#        assert TestMapper2 in m
-#        assert TestMapper in m
-#        
-#        all = self.env.registry.mappers
-#        assert '/test/testmapping' in all
-#        self.assertEqual(all['/test/testmapping'], ['PUT', 'GET'])
-#        mapper = self.env.registry.mappers.get('/test/testmapping', 'GET')
-#        assert TestMapper(self.env) is mapper[0]
-#        methods = self.env.registry.mappers.getMethods('/test/testmapping')
-#        self.assertEqual(methods, ['PUT', 'GET'])
-#        # get mappers of a certain method
-#        a = self.env.registry.mappers.get(method='GET')
-#        b = self.env.registry.mappers.getMappings(method='GET')
-#        self.assertEquals(a, b)
+        pass
     
     def testRegisterSchema(self):
         try:

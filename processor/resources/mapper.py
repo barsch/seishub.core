@@ -39,7 +39,9 @@ class MapperResource(Resource):
         result = func(request)
         # result must be either a string or a dictionary of categories and ids
         if isinstance(result, basestring):
-            # basestring 
+            # ensure we return a utf-8 encoded string not an unicode object
+            if isinstance(result, unicode):
+                result = result.encode('utf-8')
             return result
         elif isinstance(result, dict):
             # dictionary of categories and ids for this category

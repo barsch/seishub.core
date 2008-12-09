@@ -299,7 +299,9 @@ class RESTResourceTypeFolder(Folder):
                                               name=name)
         # resource created - set status code and location header
         request.code = http.CREATED
-        url = request.env.getRestUrl() + request.path + '/' + str(res.name)
+        url = "%s/%s/%s" % (request.env.getRestUrl(),
+                            '/'.join(request.prepath),
+                            str(res.name))
         # won't accept unicode
         request.headers['Location'] = str(url)
         return ''
