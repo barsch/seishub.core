@@ -1,10 +1,13 @@
-import sys, os
+# -*- coding: utf-8 -*-
 
 from seishub.exceptions import SeisHubError
-from seishub.xmldb.xmlcatalog import INDEX_TYPES
+import sys
+import os
+
 
 class PackageInstaller(object):
-    """The PackageInstaller allows file system based registration of:
+    """
+    The PackageInstaller allows file system based registration of:
      * packages
      * resource types
      * schemas
@@ -40,7 +43,7 @@ class PackageInstaller(object):
                                              rt.resourcetype_id,
                                              version,
                                              version_control)
-
+    
     @staticmethod
     def _install_pre_registered(env, o):
         package_id = o.package_id
@@ -50,85 +53,89 @@ class PackageInstaller(object):
         if hasattr(o, '_registry_schemas'):
             for entry in o._registry_schemas:
                 type = entry['type']
+                filename = entry['filename']
+                name = filename.split(os.sep)[-1]
                 # check, if already there
                 if env.registry.schemas.get(package_id, resourcetype_id, type):
-                    env.log.info("'%s': Skipping schema '%s'." % \
-                                 (package_id, entry))
+                    msg = "'%s': Skipping schema '%s'."
+                    env.log.info(msg % (package_id, entry))
                     continue
+                if env.registry.schemas.get(package_id, resourcetype_id, type, 
+                                            name=name):
+                    name=None
                 try:
-                    data = file(entry['filename'], 'r').read()
-                    env.registry.schemas.register(package_id, 
-                                                  resourcetype_id, 
-                                                  type, data)
-                    env.log.info("'%s': Registered schema '%s'." % \
-                                 (package_id, entry))
+                    data = file(filename, 'r').read()
+                    env.registry.schemas.register(package_id, resourcetype_id, 
+                                                  type, data, name)
+                    msg = "'%s': Registered schema '%s'."
+                    env.log.info( msg % (package_id, entry))
                 except Exception, e:
-                    env.log.warn(("Registration of schema failed: " +\
-                                 "%s (%s)") % (entry['filename'] ,e))
-        
+                    msg = "Registration of schema failed: %s (%s)"
+                    env.log.warn(msg % (filename ,e))
         if hasattr(o, '_registry_stylesheets'):
             for entry in o._registry_stylesheets:
                 type = entry['type']
+                filename = entry['filename']
+                name = filename.split(os.sep)[-1]
                 # check, if already there
                 if env.registry.stylesheets.get(package_id, resourcetype_id, 
                                                 type):
-                    env.log.info("'%s': Skipping stylesheet '%s'." %\
-                                 (package_id, entry))
+                    msg = "'%s': Skipping stylesheet '%s'."
+                    env.log.info(msg % (package_id, entry))
                     continue
+                if env.registry.stylesheets.get(package_id, resourcetype_id, 
+                                                type, name=name):
+                    name=None
                 try:
-                    data = file(entry['filename'], 'r').read()
+                    data = file(filename, 'r').read()
                     env.registry.stylesheets.register(package_id, 
-                                                      resourcetype_id, 
-                                                      type, data)
-                    env.log.info("'%s': Registered stylesheet '%s'." %\
-                                 (package_id, entry))
+                                                      resourcetype_id, type, 
+                                                      data, name)
+                    msg = "'%s': Registered stylesheet '%s'."
+                    env.log.info(msg % (package_id, entry))
                 except Exception, e:
-                    env.log.warn(("Registration of stylesheet failed: " +\
-                                 "%s (%s)") % (entry['filename'], e))
-                    
+                    msg = "Registration of stylesheet failed: %s (%s)"
+                    env.log.warn(msg % (filename, e))
         if hasattr(o, '_registry_aliases'):
             for entry in o._registry_aliases:
                 # check, if already there
                 if env.registry.aliases.get(package_id, resourcetype_id, 
                                             **entry):
-                    env.log.info("'%s': Skipping alias '%s'." %\
-                                 (package_id, entry))
+                    msg = "'%s': Skipping alias '%s'."
+                    env.log.info(msg % (package_id, entry))
                     continue
                 try:
-                    env.registry.aliases.register(package_id, 
-                                                  resourcetype_id,
+                    env.registry.aliases.register(package_id, resourcetype_id,
                                                   **entry)
-                    env.log.info("'%s': Registered alias '%s'." %\
-                                 (package_id, entry))
+                    msg = "'%s': Registered alias '%s'."
+                    env.log.info(msg % (package_id, entry))
                 except Exception, e:
-                    env.log.warn(("Registration of alias failed: " +\
-                                 "%s/%s/@%s (%s)") %\
-                                (package_id, resourcetype_id, entry['name'], 
-                                 e))
-
+                    msg = "Registration of alias failed: %s/%s/@%s (%s)"
+                    env.log.warn(msg % (package_id, resourcetype_id, 
+                                        entry['name'], e))
         if hasattr(o, '_registry_indexes'):
             for entry in o._registry_indexes:
                 # check, if already there
                 if env.catalog.getIndex(package_id, resourcetype_id, **entry):
                     # idx_type = [typestr for typestr, id in INDEX_TYPES.iteritems() if id == entry['type']][0]
-                    env.log.info("'%s': Skipping index '%s'." %\
-                                 (package_id, entry))
+                    msg = "'%s': Skipping index '%s'."
+                    env.log.info(msg % (package_id, entry))
                     continue
                 try:
-                    env.catalog.registerIndex(package_id, 
-                                              resourcetype_id,
+                    env.catalog.registerIndex(package_id, resourcetype_id,
                                               **entry)
-                    env.log.info("'%s': Registered index '%s'." %\
-                                 (package_id, entry))
+                    msg = "'%s': Registered index '%s'."
+                    env.log.info(msg % (package_id, entry))
                 except Exception, e:
-                    env.log.warn(("Registration of index failed: " +\
-                                 "/%s/%s%s (%s)") %\
-                                (package_id, resourcetype_id, entry['xpath'], 
-                                 e))
-                    
+                    msg = "Registration of index failed: /%s/%s%s (%s)"
+                    env.log.warn(msg % (package_id, resourcetype_id, 
+                                        entry['xpath'], e))
+    
     @staticmethod
     def _pre_register(*args, **kwargs):
-        """pre-register an object from filesystem"""
+        """
+        Pre-register an object from file system.
+        """
         reg = args[0]
         # get package id and resourcetype_id from calling class
         frame = sys._getframe(2)
@@ -147,11 +154,14 @@ class PackageInstaller(object):
             kwargs['filename'] = os.path.join(os.path.dirname(
                                            frame.f_code.co_filename), filename)
         locals_.setdefault('_registry' + reg, []).append(kwargs)
-            
+    
     @staticmethod
     def install(env, package_id = None):
-        """auto install all known packages
-        if package is given, only the specified package will be installed"""
+        """
+        Auto install all known packages.
+        
+        If package is given, only the specified package will be installed.
+        """
         # XXX: problem: if installation fails here, packages still show up in the
         # registry but adding of resources etc. is not possible => possible solution
         # mark those packages as 'defect' and handle that seperately in the admin interface
@@ -188,10 +198,12 @@ class PackageInstaller(object):
                         continue
                 # (re)install resourcetype specific objects
                 PackageInstaller._install_pre_registered(env, rt)
-
-    @staticmethod        
+    
+    @staticmethod
     def cleanup(env):
-        """automatically remove unused packages"""
+        """
+        Automatically remove unused packages.
+        """
         # XXX: see ticket #74
         return
         db_rtypes = env.registry.db_getResourceTypes()
@@ -212,11 +224,11 @@ class PackageInstaller(object):
                     env.registry.db_deletePackage(p.package_id)
                 except SeisHubError:
                     pass
-
+    
     @staticmethod
     def getUpdatedPackages():
         pass
-
+    
     @staticmethod
     def getUpdatedResourcetypes(package_id = None):
         pass

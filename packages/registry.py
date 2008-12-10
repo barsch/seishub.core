@@ -12,7 +12,9 @@ from seishub.util.text import from_uri
 
 
 class ComponentRegistry(DbStorage):
-    """General class to handle all kind of component registration."""
+    """
+    General class to handle all kind of component registration.
+    """
     aliases = RegistryListProxy('_alias_reg')
     schemas = RegistryListProxy('_schema_reg')
     stylesheets = RegistryListProxy('_stylesheet_reg')
@@ -27,7 +29,8 @@ class ComponentRegistry(DbStorage):
         self._mapper_reg = MapperRegistry(self.env)
     
     def getComponents(self, interface, package_id = None):
-        """Returns components implementing a certain interface with a given 
+        """
+        Returns components implementing a certain interface with a given 
         package_id.
         """
         components = PackageManager.getComponents(interface, package_id, 
@@ -35,7 +38,9 @@ class ComponentRegistry(DbStorage):
         return components
     
     def getPackage(self, package_id):
-        """Returns a single package object."""
+        """
+        Returns a single package object.
+        """
         pkg = self.getComponents(IPackage, package_id)
         if not pkg:
             raise SeisHubError(("Package with id '%s' not found. Make sure " +\
@@ -44,7 +49,9 @@ class ComponentRegistry(DbStorage):
         
 
     def getPackageIds(self):
-        """Returns sorted list of all enabled package ids."""
+        """
+        Returns sorted list of all enabled package ids.
+        """
         all = PackageManager.getPackageIds()
         enabled = [id for id in all if self.env.isComponentEnabled \
                    (PackageManager.getClasses(IPackage, id)[0])]
@@ -55,7 +62,8 @@ class ComponentRegistry(DbStorage):
         return package_id in self.getPackageIds()
     
     def getAllPackagesAndResourceTypes(self):
-        """Returns dictionary of enabled resource type ids and package ids, 
+        """
+        Returns dictionary of enabled resource type ids and package ids, 
         in form of: {'package_id': ['resourcetype_id_1', 'resourcetype_id_2']}.
         """
         ids = self.getPackageIds()
@@ -67,7 +75,9 @@ class ComponentRegistry(DbStorage):
         return resourcetypes
     
     def getResourceType(self, package_id, resourcetype_id):
-        """Returns a single resource type object."""
+        """
+        Returns a single resource type object.
+        """
         components = self.getComponents(IResourceType, package_id)
         for obj in components:
             if obj.resourcetype_id == resourcetype_id:
@@ -75,13 +85,15 @@ class ComponentRegistry(DbStorage):
         return None
     
     def getResourceTypes(self, package_id):
-        """Returns a list of all enabled resource types for a given package id.
+        """
+        Returns a list of all enabled resource types for a given package id.
         """
         all = PackageManager.getClasses(IResourceType, package_id)
         return [cls for cls in all if self.env.isComponentEnabled(cls)]
     
     def getResourceTypeIds(self, package_id):
-        """Returns a sorted list of all enabled resource type ids for a given 
+        """
+        Returns a sorted list of all enabled resource type ids for a given 
         package id.
         """
         if not self.isPackageId(package_id):
@@ -91,7 +103,9 @@ class ComponentRegistry(DbStorage):
         return sorted(enabled)
     
     def isResourceTypeId(self, package_id, resourcetype_id):
-        """Checks if a given resource type is an enabled resource type.""" 
+        """
+        Checks if a given resource type is an enabled resource type.
+        """ 
         return resourcetype_id in self.getResourceTypeIds(package_id)
     
     # XXX: refactor the rest into different module
@@ -213,10 +227,11 @@ class ComponentRegistry(DbStorage):
         # XXX: check if schemas/stylesheets or aliases are present:
         # XXX: check if any catalog entries are present
         return True
-    
+
 
 class RegistryBase(DbStorage, list):
-    """base class for StylesheetRegistry, SchemaRegistry and AliasRegistry
+    """
+    Base class for StylesheetRegistry, SchemaRegistry and AliasRegistry.
     
     NOTE: a registry object is unambiguously defined by either 
     (package, resourcetype, type) or by (package, type) respectively.
@@ -242,11 +257,11 @@ class RegistryBase(DbStorage, list):
             raise SeisHubError("Invalid URL: %s" % uri)
         return package_id, resourcetype_id, type
             
-    def register(self, package_id, resourcetype_id, type, xml_data):
+    def register(self, package_id, resourcetype_id, type, xml_data, name=None):
         package, resourcetype = self.registry.objects_from_id(package_id, 
                                                               resourcetype_id)
         res = self.catalog.addResource(self.package_id, self.resourcetype_id, 
-                                       xml_data)
+                                       xml_data, name=name)
         try:
             o = self.cls(package, resourcetype, type, res.document._id)
             self.store(o)
@@ -295,7 +310,7 @@ class RegistryBase(DbStorage, list):
         self.catalog.deleteResource(document_id = o[0].document_id)
         self.drop(self.cls, document_id = o[0].document_id)
         return True
-    
+
 
 class SchemaRegistry(RegistryBase):
     _registry = list()
@@ -317,8 +332,9 @@ class SchemaRegistry(RegistryBase):
             raise SeisHubError("Invalid URL: %s" % uri)
         return package_id, resourcetype_id, type
     
-    def register(self, package_id, resourcetype_id, type, xml_data):
-        """Register a schema.
+    def register(self, package_id, resourcetype_id, type, xml_data, name=None):
+        """
+        Register a schema.
         
         @param package_id: package id
         @type package_id: str
@@ -328,21 +344,24 @@ class SchemaRegistry(RegistryBase):
         @type type: str
         @param xml_data: Xml data of schema.
         @type xml_data: str
+        @param name: optional resource name
+        @type name: str
         """
         if not resourcetype_id:
             raise SeisHubError("Schemas must have a resourcetype.")
         return RegistryBase.register(self, package_id, resourcetype_id, type, 
-                                     xml_data)
-        
+                                     xml_data, name)
+    
     def get(self, package_id = None, resourcetype_id = None, type = None, 
             document_id = None, uri = None):
-        """Get schemas either by (package_id, resourcetype_id, type), 
+        """
+        Get schemas either by (package_id, resourcetype_id, type), 
         by document_id of related XmlDocument or by uri.
         
         The following parameter combinations return a single schema:
          - get(package_id, resourcetype_id, type)
          - get(document_id = ...)
-         
+        
         The following combinations return multiple schemas:
          - get(package_id, resourcetype_id)
          - get(package_id)
@@ -350,10 +369,11 @@ class SchemaRegistry(RegistryBase):
         """
         return RegistryBase.get(self, package_id, resourcetype_id, type, 
                                 document_id, uri)
-        
+    
     def delete(self, package_id = None, resourcetype_id = None, type = None,
                document_id = None, uri = None):
-        """Remove a schema from the registry.
+        """
+        Remove a schema from the registry.
         
         Deletion of multiple schemas is not allowed. Therefore the following 
         parameter combinations are allowed:
@@ -371,8 +391,9 @@ class StylesheetRegistry(RegistryBase):
     package_id = "seishub"
     resourcetype_id = "stylesheet"
     
-    def register(self, package_id, resourcetype_id, type, xml_data):
-        """Register a stylesheet.
+    def register(self, package_id, resourcetype_id, type, xml_data, name=None):
+        """
+        Register a stylesheet.
         
         @param package_id: package id
         @type package_id: str
@@ -382,13 +403,16 @@ class StylesheetRegistry(RegistryBase):
         @type type: str
         @param xml_data: Xml data of schema.
         @type xml_data: str
+        @param name: optional resource name
+        @type name: str
         """
         return RegistryBase.register(self, package_id, resourcetype_id, type, 
-                                     xml_data)
-        
+                                     xml_data, name)
+    
     def get(self, package_id = None, resourcetype_id = None, type = None, 
             document_id = None, uri = None):
-        """Get stylesheets either by (package_id, resourcetype_id, type), 
+        """
+        Get stylesheets either by (package_id, resourcetype_id, type), 
         by document_id of related XmlDocument or by uri.
         
         The following parameter combinations return a single stylesheet:
@@ -405,10 +429,11 @@ class StylesheetRegistry(RegistryBase):
             resourcetype_id = resourcetype_id or DB_NULL
         return RegistryBase.get(self, package_id, resourcetype_id, type, 
                                 document_id, uri)
-        
+    
     def delete(self, package_id = None, resourcetype_id = None, type = None,
                document_id = None, uri = None):
-        """Remove a stylesheet from the registry.
+        """
+        Remove a stylesheet from the registry.
         
         Deletion of multiple stylesheets is not allowed. Therefore the 
         following parameter combinations are allowed:
@@ -442,7 +467,8 @@ class AliasRegistry(RegistryBase):
     def get(self, package_id = None, resourcetype_id = None, 
             name = None, expr = None, limit = None, order_by = None,
             uri = None):
-        """Get a single alias by either (package_id, resourcetype_id, name), by 
+        """
+        Get a single alias by either (package_id, resourcetype_id, name), by 
         expression, or by unique uri.
         Get multiple aliases by (package_id, resourcetype_id) or by package_id.
         """
@@ -487,7 +513,9 @@ class MapperRegistry(dict):
         self.update()
     
     def update(self):
-        """Rebuild the mapper registry."""
+        """
+        Rebuild the mapper registry.
+        """
         self._urls = dict()
         all = PackageManager.getClasses(IMapperResource)
         for cls in all:
@@ -495,7 +523,9 @@ class MapperRegistry(dict):
                 self._urls[cls.mapping_url] = cls
     
     def get(self, url = None):
-        """Returns a dictionary of mapper objects {'/path/to': cls}."""
+        """
+        Returns a dictionary of mapper objects {'/path/to': cls}.
+        """
         if not url:
             return self._urls
         else:
