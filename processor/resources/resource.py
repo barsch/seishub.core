@@ -133,7 +133,7 @@ class Resource(object):
         """
         request.setHeader("content-length", 0)
         request.setHeader("DAV", "1")
-        request.setHeader("Allow", ',' .join(request.allowed_methods))
+        request.setHeader("allow", ',' .join(request.allowed_methods))
         return ""
     
     def update(self):

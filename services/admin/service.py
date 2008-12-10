@@ -50,8 +50,7 @@ class AdminRequest(http.Request):
                 # ok there is a category - redirect to first sub panel
                 pages = filter(lambda p: p[0] == self.postpath[0],
                                self.panel_ids)
-                menuitems = [p[2] for p in pages]
-                menuitems.sort()
+                menuitems = sorted([p[2] for p in pages])
                 self.redirect('/'+pages[0][0]+'/'+menuitems[0])
                 self.finish()
                 return
@@ -93,8 +92,7 @@ class AdminRequest(http.Request):
                 self.finish()
             
             # created paths for resource objects
-            ids = children.keys()
-            ids.sort()
+            ids = sorted(children)
             # generate a list of standard elements
             json_dict = {}
             for id in ids:
@@ -218,8 +216,8 @@ class AdminRequest(http.Request):
                                                        'navigation.tmpl'))
         temp = Template(file=res)
         menuitems = [(i[0], i[1]) for i in self.panel_ids]
-        menuitems = dict(menuitems).items()
-        menuitems.sort()
+        # remove duplicates and sort
+        menuitems = sorted(dict(menuitems).items())
         temp.navigation = menuitems
         temp.cat_id = self.cat_id
         temp.resturl = self.env.getRestUrl()
@@ -232,8 +230,8 @@ class AdminRequest(http.Request):
         temp = Template(file=res)
         menuitems = map((lambda p: (p[2], p[3])),
                          filter(lambda p: p[0]==self.cat_id, self.panel_ids))
-        menuitems = dict(menuitems).items()
-        menuitems.sort()
+        # remove duplicates and sort
+        menuitems = sorted(dict(menuitems).items())
         temp.submenu = menuitems
         temp.cat_id = self.cat_id
         temp.panel_id = self.panel_id
@@ -312,7 +310,7 @@ class AdminRequest(http.Request):
                     return cmp(p1[1:], p2[1:])
                 return 1
             return cmp(p1, p2)
-        self.panel_ids.sort(_orderPanelIds)
+        self.panel_ids = sorted(self.panel_ids, _orderPanelIds)
     
     def _getAdminStaticContent(self):
         """Returns a dictionary of static web resources."""

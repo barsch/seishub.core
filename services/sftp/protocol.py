@@ -217,8 +217,7 @@ class SFTPServiceProtocol:
         filelist.append(('.', {}))
         filelist.append(('..', {}))
         # cycle through all objects and add only known resources
-        ids = obj_dict.keys()
-        ids.sort()
+        ids = sorted(obj_dict)
         for id in ids:
             obj = obj_dict.get(id)
             attrs = obj.getMetadata()

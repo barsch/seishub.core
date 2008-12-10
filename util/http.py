@@ -103,7 +103,7 @@ def splitQuoted(s, sep):
 
 def validToken(s):
     """Checks whether s is a syntactically valid token."""
-    invalid_chars = list('()<>@,;:\\"/[]?={}\177') + map(chr, range(33))
+    invalid_chars = list('()<>@,;:\\"/[]?={}\177') + map(chr, xrange(33))
     for c in s:
         if c in invalid_chars:
             return False

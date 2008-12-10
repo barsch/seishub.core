@@ -218,7 +218,7 @@ class DbStorage(DbEnabled):
                     # check if current table is already in joins
                     if rel_tab in zip(*joins)[0]:
                         # yes: append clause
-                        for k in range(len(joins)):
+                        for k in xrange(len(joins)):
                             if joins[k][0] == rel_tab:
                                 joins[k][1].append(parent_col == rel_col)
                     else:

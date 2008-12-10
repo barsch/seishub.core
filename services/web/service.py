@@ -12,7 +12,6 @@ from seishub.exceptions import InternalServerError, ForbiddenError, \
 from seishub.processor import Processor, HEAD, getChildForRequest
 from seishub.processor.interfaces import IFileSystemResource, IResource, \
     IStaticResource
-from seishub.util.http import parseAccept, validMediaType
 from seishub.util.path import addBase
 from seishub.util.text import isInteger
 from twisted.application import service
@@ -35,7 +34,7 @@ RESOURCELIST_ROOT = """<?xml version="1.0" encoding="UTF-8"?>
 """
 
 RESOURCELIST_NODE = """
-  <%s category="%s" xlink:type="simple" xlink:href="%s"><![CDATA[%s]]></%s>"""
+  <%s category="%s"%s xlink:type="simple" xlink:href="%s"><![CDATA[%s]]></%s>"""
 
 
 class WebRequest(Processor, http.Request):
@@ -193,19 +192,12 @@ class WebRequest(Processor, http.Request):
         if 'content-type' not in self.headers:
             self.setHeader('content-type', 'application/xml; charset=UTF-8')
         # parse request headers for output type
-        accept = parseAccept(self.getHeader('accept'))
-        format = ''
-        if 'format' in self.args.keys():
-            format = self.args.get('format')[0]
-        elif 'output' in self.args.keys():
-            format = self.args.get('output')[0]
-        if format and validMediaType(format):
-            # add the valid format to the front of the list!
-            accept = [(1.0, format, {}, {})] + accept
+        format = self.args.get('format',[None])[0] or \
+                 self.args.get('output',[None])[0]
         # handle output/format conversion
         if format and len(self.prepath)>3 and self.prepath[0]=='xml':
-            reg = self.env.registry
             # fetch a xslt document object
+            reg = self.env.registry
             xslt = reg.stylesheets.get(package_id=self.prepath[1],
                                        resourcetype_id=self.prepath[2],
                                        type=format)
@@ -218,7 +210,7 @@ class WebRequest(Processor, http.Request):
                                    xslt.content_type + '; charset=UTF-8')
             else:
                 msg = "There is no stylesheet for requested format %s."
-                self.env.log.debug(msg % self.format)
+                self.env.log.debug(msg % format)
         # gzip encoding
         encoding = self.getHeader("accept-encoding")
         if encoding and encoding.find("gzip")>=0:
@@ -226,7 +218,7 @@ class WebRequest(Processor, http.Request):
             zfile = gzip.GzipFile(None, 'wb', 9, zbuf)
             zfile.write(data)
             zfile.close()
-            self.setHeader("Content-encoding", "gzip")
+            self.setHeader("content-encoding", "gzip")
             data = zbuf.getvalue()
         # set header
         self.setHeader('content-length', str(len(data)))
@@ -244,8 +236,7 @@ class WebRequest(Processor, http.Request):
         @param children: dict of child objects implementing L{IResource}
         @return:         None
         """
-        ids = children.keys()
-        ids.sort()
+        ids = sorted(children)
         # generate a list of standard elements
         data = ''
         for id in ids:
@@ -254,30 +245,26 @@ class WebRequest(Processor, http.Request):
             category = obj.category
             if obj.folderish:
                 tag = 'folder'
-#            # id may be unicode object -> create a utf-8 encoded string
+                size = ''
+            else:
+                size = ' size="%d"' % (obj.getMetadata().get('size', 0))
+#            # id may be unicode object -> create an UTF-8 encoded string
             if isinstance(id, unicode):
                 id = id.encode('utf-8')
             # we need to make the URL web safe
             url = urllib.quote(addBase(self.path, id))
-            data += RESOURCELIST_NODE % (tag, category, url, id, tag)
+            data += RESOURCELIST_NODE % (tag, category, size, url, id, tag)
         data = str(RESOURCELIST_ROOT % (str(self.env.getRestUrl()), data))
         # set default content type to XML
         if 'content-type' not in self.headers:
             self.setHeader('content-type', 'application/xml; charset=UTF-8')
         # parse request headers for output type
-        accept = parseAccept(self.getHeader('accept'))
-        format = ''
-        if 'format' in self.args.keys():
-            format = self.args.get('format')[0]
-        if 'output' in self.args.keys():
-            format = self.args.get('output')[0]
-        if format and validMediaType(format):
-            # add the valid format to the front of the list!
-            accept = [(1.0, format, {}, {})] + accept
+        format = self.args.get('format',[None])[0] or \
+                 self.args.get('output',[None])[0]
         # handle output/format conversion
         if format:
-            reg = self.env.registry
             # fetch a xslt document object
+            reg = self.env.registry
             xslt = reg.stylesheets.get(package_id='seishub',
                                        resourcetype_id='stylesheet',
                                        type='resourcelist.%s' % format)
@@ -289,7 +276,7 @@ class WebRequest(Processor, http.Request):
                                    xslt.content_type + '; charset=UTF-8')
             else:
                 msg = "There is no stylesheet for requested format %s."
-                self.env.log.debug(msg % self.format)
+                self.env.log.debug(msg % format)
         # gzip encoding
         encoding = self.getHeader("accept-encoding")
         if encoding and encoding.find("gzip")>=0:
@@ -297,7 +284,7 @@ class WebRequest(Processor, http.Request):
             zfile = gzip.GzipFile(None, 'wb', 9, zbuf)
             zfile.write(data)
             zfile.close()
-            self.setHeader("Content-encoding", "gzip")
+            self.setHeader("content-encoding", "gzip")
             data = zbuf.getvalue()
         # set header
         self.setHeader('content-length', str(len(data)))

@@ -3,7 +3,7 @@
 Mapper resources.
 """
 
-from seishub.exceptions import NotImplementedError, SeisHubError
+from seishub.exceptions import NotAllowedError, SeisHubError
 from seishub.processor.interfaces import IFolderish
 from seishub.processor.resources.resource import Resource
 from twisted.web import http
@@ -60,28 +60,34 @@ class MapperResource(Resource):
         raise SeisHubError(msg, code=http.INTERNAL_SERVER_ERROR)
     
     def render_POST(self, request):
-        func = getattr(self.mapper, 'process_POST')
+        func = getattr(self.mapper, 'process_POST', None)
         if not func:
-            msg = "Method process_POST is not implemented."
-            raise NotImplementedError(msg)
+            allowed_methods = getattr(self, 'allowedMethods', ())
+            msg = "This operation is not allowed on this resource."
+            raise NotAllowedError(allowed_methods = allowed_methods, 
+                                  message = msg)
         func(request)
         request.code = http.NO_CONTENT
         return ''
     
     def render_DELETE(self, request):
-        func = getattr(self.mapper, 'process_DELETE')
+        func = getattr(self.mapper, 'process_DELETE', None)
         if not func:
-            msg = "Method process_DELETE is not implemented."
-            raise NotImplementedError(msg)
+            allowed_methods = getattr(self, 'allowedMethods', ())
+            msg = "This operation is not allowed on this resource."
+            raise NotAllowedError(allowed_methods = allowed_methods, 
+                                  message = msg)
         func(request)
         request.code = http.NO_CONTENT
         return ''
     
     def render_PUT(self, request):
-        func = getattr(self.mapper, 'process_PUT')
+        func = getattr(self.mapper, 'process_PUT', None)
         if not func:
-            msg = "Method process_PUT is not implemented."
-            raise NotImplementedError(msg)
+            allowed_methods = getattr(self, 'allowedMethods', ())
+            msg = "This operation is not allowed on this resource."
+            raise NotAllowedError(allowed_methods = allowed_methods, 
+                                  message = msg)
         result = func(request)
         request.code = http.CREATED
         request.headers['Location'] = str(result)

@@ -98,8 +98,7 @@ class FileSystemResource(Resource, filepath.FilePath):
             raise NotFoundError("Item %s does not exists." % self.path)
         if self.isdir():
             # return a dictionary of L{FileSystemResource} objects
-            ids = self.listdir()
-            ids.sort()
+            ids = sorted(self.listdir())
             children = {}
             for id in ids:
                 # ids retrieved from listdir are unicode object 

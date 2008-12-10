@@ -4,10 +4,12 @@ A test suite for mapper resources.
 """
 
 from seishub.core import Component, implements
+from seishub.exceptions import SeisHubError
 from seishub.packages.builtins import IPackage
+from seishub.processor import GET, PUT, DELETE, POST, HEAD, Processor
 from seishub.processor.interfaces import IMapperResource
-from seishub.processor import GET, Processor
 from seishub.test import SeisHubEnvironmentTestCase
+from twisted.web import http
 import unittest
 
 
@@ -139,6 +141,9 @@ class MapperTests(SeisHubEnvironmentTestCase):
         proc = Processor(self.env)
         data = proc.run(GET, '/mapper-test/testmapping')
         self.assertEqual(data, 'muh')
+        # HEAD equals GET
+        data = proc.run(HEAD, '/testmapping4')
+        self.assertEquals(data, 'MÜH')
     
     def test_dontReturnUnicodeFromMapper(self):
         """
@@ -149,6 +154,43 @@ class MapperTests(SeisHubEnvironmentTestCase):
         self.assertFalse(isinstance(data, unicode))
         self.assertTrue(isinstance(data, basestring))
         self.assertEqual('MÜH', data)
+    
+    def test_notAllowedMethods(self):
+        """
+        Not allowed methods should raise an error.
+        """
+        proc = Processor(self.env)
+        try:
+            proc.run(PUT, '/testmapping4')
+            self.fail("Expected SeisHubError")
+        except SeisHubError, e:
+            self.assertEqual(e.code, http.NOT_ALLOWED)
+        try:
+            proc.run(POST, '/testmapping4')
+            self.fail("Expected SeisHubError")
+        except SeisHubError, e:
+            self.assertEqual(e.code, http.NOT_ALLOWED)
+        try:
+            proc.run(DELETE, '/testmapping4')
+            self.fail("Expected SeisHubError")
+        except SeisHubError, e:
+            self.assertEqual(e.code, http.NOT_ALLOWED)
+    
+    def test_notImplementedMethods(self):
+        """
+        Not implemented methods should raise an error.
+        """
+        proc = Processor(self.env)
+        try:
+            proc.run('MUH', '/testmapping4')
+            self.fail("Expected SeisHubError")
+        except SeisHubError, e:
+            self.assertEqual(e.code, http.NOT_IMPLEMENTED)
+        try:
+            proc.run('KUH', '/testmapping4')
+            self.fail("Expected SeisHubError")
+        except SeisHubError, e:
+            self.assertEqual(e.code, http.NOT_IMPLEMENTED)
 
 
 def suite():

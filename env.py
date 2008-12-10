@@ -201,7 +201,7 @@ class Environment(ComponentManager):
         # parse config file and return state of either class or module
         rules = [(name, value in _TRUE_VALUES)
                  for name, value in self.config.options('components')]
-        rules.sort(lambda a, b: -cmp(len(a[0]), len(b[0])))
+        rules = sorted(rules, lambda a, b: -cmp(len(a[0]), len(b[0])))
         
         for pattern, state in rules:
             if pattern == classname.lower():

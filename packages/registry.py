@@ -48,8 +48,7 @@ class ComponentRegistry(DbStorage):
         all = PackageManager.getPackageIds()
         enabled = [id for id in all if self.env.isComponentEnabled \
                    (PackageManager.getClasses(IPackage, id)[0])]
-        enabled.sort()
-        return enabled
+        return sorted(enabled)
     
     def isPackageId(self, package_id):
         """Checks if the given package id belongs to an enabled package."""
@@ -89,8 +88,7 @@ class ComponentRegistry(DbStorage):
             return []
         all = self.getResourceTypes(package_id)
         enabled = [cls.resourcetype_id for cls in all]
-        enabled.sort()
-        return enabled
+        return sorted(enabled)
     
     def isResourceTypeId(self, package_id, resourcetype_id):
         """Checks if a given resource type is an enabled resource type.""" 

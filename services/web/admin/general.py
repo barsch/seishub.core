@@ -219,10 +219,8 @@ class PluginsPanel(Component):
             plugins.setdefault(modulename,{})
             plugins[modulename].setdefault('plugins',[]).append(plugin)
             plugins[modulename]['description'] = description
-        sorted_plugins = plugins.keys()
-        sorted_plugins.sort()
         data = {
-          'sorted_plugins': sorted_plugins, 
+          'sorted_plugins': sorted(plugins), 
           'plugins': plugins,
         }
         return ('general_plugins.tmpl', data)

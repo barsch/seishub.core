@@ -115,7 +115,7 @@ class RestGETTests(SeisHubEnvironmentTestCase):
         proc = Processor(self.env)
         # cycle through some garbage URLs
         path = ''
-        for _ in range(0,5):
+        for _ in xrange(0,5):
             path = path + '/yyy'
             # without trailing slash
             try:
@@ -166,7 +166,7 @@ class RestGETTests(SeisHubEnvironmentTestCase):
         proc = Processor(self.env)
         # cycle through some garbage URLs
         path = '/get-test'
-        for _ in range(0,5):
+        for _ in xrange(0,5):
             path = path + '/yyy'
             # without trailing slash
             try:
