@@ -60,9 +60,6 @@ class PackageInstaller(object):
                     msg = "'%s': Skipping schema '%s'."
                     env.log.info(msg % (package_id, entry))
                     continue
-                if env.registry.schemas.get(package_id, resourcetype_id, type, 
-                                            name=name):
-                    name=None
                 try:
                     data = file(filename, 'r').read()
                     env.registry.schemas.register(package_id, resourcetype_id, 
@@ -83,9 +80,6 @@ class PackageInstaller(object):
                     msg = "'%s': Skipping stylesheet '%s'."
                     env.log.info(msg % (package_id, entry))
                     continue
-                if env.registry.stylesheets.get(package_id, resourcetype_id, 
-                                                type, name=name):
-                    name=None
                 try:
                     data = file(filename, 'r').read()
                     env.registry.stylesheets.register(package_id, 
