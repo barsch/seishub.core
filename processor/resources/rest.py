@@ -36,6 +36,8 @@ class RESTResource(Resource):
         self.document = document
     
     def getMetadata(self):
+        if not self.document:
+            return {}
         meta = self.document.meta 
         file_datetime = int(time.mktime(meta.datetime.timetuple()))
         file_size = meta.size
@@ -75,6 +77,7 @@ class RESTResource(Resource):
                                                  self.resourcetype_id,
                                                  self.name,
                                                  revision)
+        self.document = result.document
         data = result.document.data
         # ensure we return a utf-8 encoded string not an unicode object
         if isinstance(data, unicode):
@@ -236,18 +239,9 @@ class RESTResourceTypeFolder(Folder):
     
     def getChild(self, id, request):
         """
-        Returns a L{XMLResource} object if a valid id is given.
+        Returns a L{XMLResource} object.
         """
-        try:
-            res = request.env.catalog.getResource(self.package_id,
-                                                  self.resourcetype_id,
-                                                  id)
-            return RESTResource(self.package_id, 
-                                self.resourcetype_id, 
-                                res.name,
-                                res.document)
-        except NotFoundError:
-            pass
+        return RESTResource(self.package_id, self.resourcetype_id, id)
     
     def render(self, request):
         if request.method in [GET, HEAD] and len(request.postpath)==0:
