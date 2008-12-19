@@ -1,37 +1,12 @@
 # -*- coding: utf-8 -*-
 from zope.interface import implements
+import re
 
+from seishub.util import pyparsing as pp
 from seishub.exceptions import InvalidParameterError
 from seishub.xmldb.interfaces import IXPathQuery, IXPathExpression
 
-# XXX: requires PyXML (_xmlplus.xpath)
-# from xml import xpath
-#class RestrictedXpathExpression(object):
-#    axis=None
-#    node_test=None
-#    predicates=None
-#    
-#    def __init__(self,expr):
-#        if self._parseXpathExpr(expr):
-#            self._expr=expr
-#        else:
-#            self._expr=None
-#            raise RestrictedXpathError("%s is not a valid restricted-xpath" + \
-#                                       " expression." % expr)
-#            
-#    def _parseXpathExpr(self,expr):        
-#        p=xpath.Compile(expr)
-#        try:
-#            self.axis=p._child._axis
-#            self.node_test=p._child._nodeTest
-#            self.predicates=p._child._predicates
-#        except AttributeError:
-#            return False
-#        
-#        return True
 
-# or do the same via regexp:
-import re
 
 class RestrictedXpathExpression(object):
     """For xml index querying purposes there are some restrictions made to xpath
@@ -230,17 +205,131 @@ class PredicateExpression(object):
     
 #    def getLeftLocationPath(self):
 #        return self.location_path
+
+class RestrictedXPathQueryParser(object):
+    """RestrictedXPath queries have to cope with the following grammar:
     
+     - A query consists of a mandatory location step, followed by an optional 
+       predicate expression.
+    
+     - Location step:
+        - starts with '/'
+        - the leading '/' is followed by an alphanumeric package_id or 
+          the wildcard operator '*'
+        - package_id is followed by a '/', followed by an alphanumeric 
+          resourcetype_id or the wildcard operator '*'
+        - resourcetype_id is followed by a '/', followed by the alphanumeric 
+          XML root node name or the wildcard operator '*'
+     - Predicates:
+        - starts with a '['
+        - 
+        - ends with a ']'
+        
+    """
+    
+    SEP = '/'
+    PARENT = '..'
+    
+    rxpq_grammar = None
+    
+    def evalPackage_id(self, s, loc, tokens):
+        self.package_id = tokens[0]
+        
+    def evalResourcetype_id(self, s, loc, tokens):
+        self.resourcetype_id = tokens[0]
+        
+    def evalRootnode(self, s, loc, tokens):
+        self.rootnode = tokens[0]
+    
+    def evalPath(self, s, loc, tokens):
+        """add location path as a prefix to path tokens"""
+        if tokens[0] == self.SEP:
+            # path is relative to root (package level)
+            return [tokens[1], tokens[2], self.SEP.join(tokens[3:])]
+        # path starts with ... 
+        # steps = 3, '../../..' => package level
+        # steps = 2, '../..'    => resourcetype level
+        # steps = 1, '..'       => root node level
+        steps = len(filter(lambda t: t == self.PARENT, tokens[0:3]))
+        ptokens = [self.package_id, self.resourcetype_id, self.rootnode]
+        ptokens = ptokens[:3-steps]
+        ptokens.extend(tokens[steps:])
+        return [ptokens[0], ptokens[1], '/'.join(ptokens[2:])]
+    
+    def createParser(self):
+        """This function returns a parser for the RestrictedXpathQuery grammar.
+        """
+        if RestrictedXPathQueryParser.rxpq_grammar:
+            return RestrictedXPathQueryParser.rxpq_grammar.parseString
+        
+        # symbols
+        wildcard = pp.Literal('*')                  # node wildcard operator
+        sep = pp.Literal(self.SEP)                  # path separator
+        selfNd = (pp.Literal('.') + sep).suppress() # current node, 
+                                                    # suppressed together with 
+                                                    # following '/'
+        parentNd = pp.Literal(self.PARENT)          # parent of current node
+        lpar = pp.Literal('(').suppress()           # left parenthesis literal
+        rpar = pp.Literal(')').suppress()           # right parenthesis literal
+        pstart = pp.Literal('[').suppress()         # beginning of predicates 
+        pend = pp.Literal(']').suppress()           # end of predicates
+        nodename = pp.Word(pp.alphanums + '@',      # alphanumeric node name, 
+                           pp.alphanums)            # may start with '@'
+        node = nodename | parentNd | selfNd |\
+               wildcard                             # node
+        value = pp.Word(pp.alphanums)               # alphanumeric value
+        
+        # operators
+        eqOp = pp.Literal('==') | pp.Literal('=') 
+        ltOp = pp.Literal('<')
+        gtOp = pp.Literal('>')
+        leOp = pp.Literal('<=')
+        geOp = pp.Literal('>=')
+        ineqOp = pp.Literal('!=')
+        orOp = pp.CaselessKeyword('or')
+        andOp = pp.CaselessKeyword('and')
+        notOp = pp.CaselessKeyword('not')
+        relOp = eqOp | ineqOp | leOp | geOp | ltOp | gtOp
+        logOp = orOp | andOp
+        
+        # location step
+        package_id = (pp.Word(pp.alphanums) | wildcard).\
+                     setParseAction(self.evalPackage_id).suppress()
+        resourcetype_id = (pp.Word(pp.alphanums) | wildcard).\
+                          setParseAction(self.evalResourcetype_id).suppress()
+        rootnode = (pp.Word(pp.alphanums) | wildcard).\
+                   setParseAction(self.evalRootnode).suppress()
+        
+        location = sep.suppress() + package_id +\
+                   sep.suppress() + resourcetype_id +\
+                   sep.suppress() + rootnode
+        
+        # predicate expression
+        pexpr = pp.Forward()
+        path = (pp.Optional(sep) + node +\
+               pp.ZeroOrMore(pp.Optional(sep.suppress()) + node)).\
+               setParseAction(self.evalPath)
+        key = value | path
+        pathExpr = pp.Group(path + pp.Optional(relOp + key))
+        #with grouping of parenthesized expressions
+        parExpr = pp.Group(lpar + pexpr + rpar)
+        pexpr << pp.Optional(notOp) + (pathExpr | parExpr) +\
+                 pp.ZeroOrMore(logOp + (pexpr | parExpr))
+#        #without grouping:
+#        pexpr << pp.Optional(lpar) + pp.Optional(notOp) + (pathExpr) +\
+#                 pp.ZeroOrMore(logOp + pexpr) + pp.Optional(rpar)
 
-class RelationalExpression(PredicateExpression):
-    pass
+        # query
+        predicates = (pstart + pexpr + pend).setResultsName('predicates')
+        query = location + pp.Optional(predicates, None)
+        RestrictedXPathQueryParser.rxpq_grammar = query
+        return query.parseString
+    
+    def parse(self, expr):
+        return self.createParser()(expr)
 
 
-class LogicalExpression(PredicateExpression):
-    pass
-
-
-class XPathQuery(RestrictedXpathExpression):
+class XPathQuery(RestrictedXpathExpression, RestrictedXPathQueryParser):
     """Query types supported by now:
      - single key queries: /packageid/resourcetype/rootnode[.../key1 = value1]
      - multi key queries with logical operators ('and', 'or')
@@ -294,10 +383,11 @@ class XPathQuery(RestrictedXpathExpression):
         query = expr[m.end():] 
         return pid,rid,query
         
-    def _parsePredicates(self, predicates):
-        if len(predicates) > 0:
-            return PredicateExpression(predicates)
-        return None
+#    def _parsePredicates(self, predicates):
+#        self.parse(predicates)
+#        if len(predicates) > 0:
+#            return PredicateExpression(predicates)
+#        return None
     
     def _convertWildcards(self, expr):
         if expr == '*':
