@@ -1,18 +1,24 @@
 # -*- coding: utf-8 -*-
+"""
+Component related administrative panels.
+"""
 
 from seishub.core import Component, implements
 from seishub.processor.interfaces import IAdminPanel
 from seishub.xmldb.xmlcatalog import INDEX_TYPES
+import os
 
 
 class SchemasPanel(Component):
-    """Lists all installed schemas."""
+    """
+    Lists all installed schemas.
+    """
     implements(IAdminPanel)
     
-    def getPanelId(self):
-        return ('components', 'Components', 'edit-schemas', 'Schemas')
+    template = 'templates' + os.sep + 'components_schemas.tmpl'
+    panel_ids = ('components', 'Components', 'edit-schemas', 'Schemas')
     
-    def renderPanel(self, request):
+    def render(self, request):
         packages = self.env.registry.getPackageIds()
         resourcetypes = self.env.registry.getAllPackagesAndResourceTypes()
         data  = {
@@ -36,7 +42,7 @@ class SchemasPanel(Component):
                 data.update(self._deleteSchema(args['schema[]']))
         # fetch all uris
         data['schemas'] = self.registry.schemas.get()
-        return ('components_schemas.tmpl', data)
+        return data
     
     def _addSchema(self, package_id, resourcetype_id, type, file):
         try:
@@ -58,13 +64,15 @@ class SchemasPanel(Component):
 
 
 class StylesheetsPanel(Component):
-    """Lists all installed stylesheets."""
+    """
+    Lists all installed stylesheets.
+    """
     implements(IAdminPanel)
     
-    def getPanelId(self):
-        return ('components', 'Components', 'edit-stylesheets', 'Stylesheets')
+    template = 'templates' + os.sep + 'components_stylesheets.tmpl'
+    panel_ids = ('components', 'Components', 'edit-stylesheets', 'Stylesheets')
     
-    def renderPanel(self, request):
+    def render(self, request):
         packages = self.env.registry.getPackageIds()
         resourcetypes = self.env.registry.getAllPackagesAndResourceTypes()
         
@@ -88,7 +96,7 @@ class StylesheetsPanel(Component):
                 data.update(self._deleteStylesheet(args['stylesheet[]']))
         # fetch all uris
         data['stylesheets'] = self.registry.stylesheets.get()
-        return ('components_stylesheets.tmpl', data)
+        return data
     
     def _addStylesheet(self, package_id, resourcetype_id, type, file):
         try:
@@ -110,26 +118,30 @@ class StylesheetsPanel(Component):
 
 
 class BrowserPanel(Component):
-    """Browse through all installed components."""
+    """
+    Browse through all installed components.
+    """
     implements(IAdminPanel)
     
-    def getPanelId(self):
-        return ('components', 'Components', 'browse-components', 
+    template = 'templates' + os.sep + 'components_browser.tmpl'
+    panel_ids = ('components', 'Components', 'browse-components', 
                 'Component Browser')
     
-    def renderPanel(self, request):
+    def render(self, request):
         data = {'resturl': self.env.getRestUrl()}
-        return ('components_browser.tmpl', data)
+        return data
 
 
 class IndexesPanel(Component):
-    """List all indexes and add new ones."""
+    """
+    List all indexes and add new ones.
+    """
     implements(IAdminPanel)
     
-    def getPanelId(self):
-        return ('components', 'Components', 'edit-indexes', 'Indexes')
+    template = 'templates' + os.sep + 'components_indexes.tmpl'
+    panel_ids = ('components', 'Components', 'edit-indexes', 'Indexes')
     
-    def renderPanel(self, request):
+    def render(self, request):
         packages = self.env.registry.getPackageIds()
         resourcetypes = self.env.registry.getAllPackagesAndResourceTypes()
         index_types = sorted(INDEX_TYPES)
@@ -167,7 +179,7 @@ class IndexesPanel(Component):
                 data.update(self._reindex(args.get('index[]',[])))
         # fetch all indexes
         data['indexes'] = self.catalog.listIndexes()
-        return ('components_indexes.tmpl', data)
+        return data
     
     def _reindex(self, data=[]):
         for part in data:
@@ -207,13 +219,15 @@ class IndexesPanel(Component):
 
 
 class AliasesPanel(Component):
-    """List all aliases and add new ones."""
+    """
+    List all aliases and add new ones.
+    """
     implements(IAdminPanel)
     
-    def getPanelId(self):
-        return ('components', 'Components', 'edit-aliases', 'Aliases')
+    template = 'templates' + os.sep + 'components_aliases.tmpl'
+    panel_ids = ('components', 'Components', 'edit-aliases', 'Aliases')
     
-    def renderPanel(self, request):
+    def render(self, request):
         packages = self.env.registry.getPackageIds()
         resourcetypes = self.env.registry.getAllPackagesAndResourceTypes()
         
@@ -240,7 +254,7 @@ class AliasesPanel(Component):
                 data.update(self._deleteAliases(args.get('alias[]',[])))
         # fetch all aliases
         data['aliases'] = self.env.registry.aliases
-        return ('components_aliases.tmpl', data)
+        return data
     
     def _deleteAliases(self, aliases=[]):
         for alias in aliases:
@@ -264,14 +278,16 @@ class AliasesPanel(Component):
 
 
 class QuickinstallerPanel(Component):
-    """Manage components."""
+    """
+    Manage components.
+    """
     implements(IAdminPanel)
     
-    def getPanelId(self):
-        return ('components', 'Components', 'quickinstaller', 
-                'Quickinstaller')
+    template = 'templates' + os.sep + 'components_quickinstaller.tmpl'
+    panel_ids = ('components', 'Components', 'quickinstaller', 
+                 'Quickinstaller')
     
-    def renderPanel(self, request):
+    def render(self, request):
         packages = self.env.registry.getPackageIds()
         resourcetypes = self.env.registry.getAllPackagesAndResourceTypes()
         
@@ -283,4 +299,4 @@ class QuickinstallerPanel(Component):
         data = {'packages': packages,
                 'resourcetypes': resourcetypes,
                 'tree': self.env.tree._registry }
-        return ('components_quickinstaller.tmpl', data)
+        return data

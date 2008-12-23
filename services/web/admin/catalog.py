@@ -1,19 +1,25 @@
 # -*- coding: utf-8 -*-
+"""
+Catalog and database related administration panels.
+"""
 
 from seishub.core import Component, implements
 from seishub.exceptions import SeisHubError, InvalidParameterError
 from seishub.processor.interfaces import IAdminPanel
 from sqlalchemy import create_engine #@UnresolvedImport
+import os
 
 
 class BasicPanel(Component):
-    """DB configuration."""
+    """
+    Database configuration.
+    """
     implements(IAdminPanel)
     
-    def getPanelId(self):
-        return ('catalog', 'Catalog', 'dbbasic', 'Database Settings')
+    template = 'templates' + os.sep + 'catalog_db_basic.tmpl'
+    panel_ids = ('catalog', 'Catalog', 'db-basic', 'Database Settings')
     
-    def renderPanel(self, request):
+    def render(self, request):
         db = self.db
         data = {
           'db': db,
@@ -46,19 +52,20 @@ class BasicPanel(Component):
                                 "You have to restart SeisHub in order to " + \
                                 "see any changes at the database settings.")
             self.config.save()
-
         data['verbose'] = self.config.getbool('db', 'verbose')
-        return ('catalog_db_basic.tmpl', data)
+        return data
 
 
 class DatabaseQueryPanel(Component):
-    """Query the database via http form."""
+    """
+    Query the database via HTTP form.
+    """
     implements(IAdminPanel)
     
-    def getPanelId(self):
-        return ('catalog', 'Catalog', 'dbquery', 'Query DB')
+    template = 'templates' + os.sep + 'catalog_db_query.tmpl'
+    panel_ids = ('catalog', 'Catalog', 'db-query', 'Query DB')
     
-    def renderPanel(self, request):
+    def render(self, request):
         db = self.env.db.engine
         tables = sorted(db.table_names())
         data = {
@@ -85,20 +92,22 @@ class DatabaseQueryPanel(Component):
                 except Exception, e:
                     self.env.log.error('Database query error', e)
                     data['error'] = ('Database query error', e)
-        return ('catalog_db_query.tmpl', data)
+        return data
 
 
 class ResourcesPanel(Component):
-    """List all resources."""
+    """
+    List all resources.
+    """
     implements(IAdminPanel)
     
-    def getPanelId(self):
-        return ('catalog', 'Catalog', 'resources', 'Resources')
+    template = 'templates' + os.sep + 'catalog_resources.tmpl'
+    panel_ids = ('catalog', 'Catalog', 'resources', 'Resources')
     
-    def renderPanel(self, request):
+    def render(self, request):
         packages = self.env.registry.getPackageIds()
         resourcetypes = self.env.registry.getAllPackagesAndResourceTypes()
-        # remove seishub from packages and resourcetypes
+        # remove SeisHub packages and resource types
         packages.remove('seishub')
         resourcetypes.pop('seishub')
         
@@ -124,13 +133,13 @@ class ResourcesPanel(Component):
             elif 'delete' in args.keys() and 'resource[]' in args.keys():
                 data['resource[]'] = args['resource[]']
                 data = self._deleteResources(data)
-        # fetch all uris
-        # XXX: remove that later!
+        # fetch all URIs
+        # XXX: filter (limit) or remove that later!
         temp = self.catalog.getResourceList()
-        # remove all seishub resources
+        # remove all SeisHub resources
         temp = [t for t in temp if not str(t).startswith('/seishub/')]
         data['resources'] = temp 
-        return ('catalog_resources.tmpl', data)
+        return data
     
     def _addResource(self, data):
         try:
@@ -156,13 +165,15 @@ class ResourcesPanel(Component):
 
 
 class CatalogQueryPanel(Component):
-    """Query the catalog via http form."""
+    """
+    Query the catalog via HTTP form.
+    """
     implements(IAdminPanel)
     
-    def getPanelId(self):
-        return ('catalog', 'Catalog', 'query', 'Query Catalog')
+    template = 'templates' + os.sep + 'catalog_query.tmpl'
+    panel_ids = ('catalog', 'Catalog', 'query', 'Query Catalog')
     
-    def renderPanel(self, request):
+    def render(self, request):
         data = {
             'query': '', 
             'result': '',
@@ -179,4 +190,4 @@ class CatalogQueryPanel(Component):
                 except Exception, e:
                     self.env.log.info('Catalog query error', e)
                     data['error'] = ('Catalog query error', e)
-        return ('catalog_query.tmpl', data)
+        return data

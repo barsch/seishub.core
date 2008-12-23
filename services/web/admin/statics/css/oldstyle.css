@@ -139,7 +139,7 @@ table.list td,table.list th {
 #content li.package {
     list-style-type: none;
     list-style-position: outside;
-    background: url('/images/package.gif');
+    background: url('../images/package.gif');
     background-repeat: no-repeat;
     padding-left: 20px;
     margin-left: 0px;
@@ -148,7 +148,7 @@ table.list td,table.list th {
 #content li.resourcetype {
     list-style-type: none;
     list-style-position: outside;
-    background: url('/images/resourcetype.gif');
+    background: url('../images/resourcetype.gif');
     background-repeat: no-repeat;
     padding-left: 20px;
     margin-left: 0px;

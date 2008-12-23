@@ -16,13 +16,16 @@ import sys
 
 
 class BasicPanel(Component):
-    """Basic configuration."""
+    """
+    Basic configuration.
+    """
     implements(IAdminPanel)
     
-    def getPanelId(self):
-        return ('admin', 'General', 'basic', 'Basic Settings')
+    template = 'templates' + os.sep + 'general_basic.tmpl'
+    panel_ids = ('admin', 'General', 'basic', 'Basic Settings')
     
-    def renderPanel(self, request):
+    def render(self, request):
+        data = {}
         if request.method == 'POST':
             for option in ('host', 'description'):
                 self.config.set('seishub', option, 
@@ -31,24 +34,27 @@ class BasicPanel(Component):
                 self.config.set('webadmin', option, 
                                 request.args.get(option,[])[0])
             self.config.save()
-            request.redirect(request.path)
-        data = {
+            data['info'] = "Options have been saved."
+        temp = {
           'host': self.config.get('seishub', 'host'),
           'description': self.config.get('seishub', 'description'),
           'theme': self.config.get('webadmin', 'theme'),
-          'themes': request.getAllAdminThemes(),
+          'themes': self.root.themes,
         }
-        return ('general_basic.tmpl', data)
+        data.update(temp)
+        return data
 
 
 class ConfigPanel(Component):
-    """General configuration."""
+    """
+    General configuration.
+    """
     implements(IAdminPanel)
     
-    def getPanelId(self):
-        return ('admin', 'General', 'config', 'Config')
+    template = 'templates' + os.sep + 'general_config.tmpl'
+    panel_ids = ('admin', 'General', 'config', 'Config')
     
-    def renderPanel(self, request):
+    def render(self, request):
         data = {}
         sections = self.config.sections()
         data['sections'] = sections
@@ -56,17 +62,19 @@ class ConfigPanel(Component):
         for s in sections:
             options = self.config.options(s)
             data['options'][s] = options
-        return ('general_config.tmpl', data)
+        return data
 
 
 class LogsPanel(Component):
-    """Web based log viewer."""
+    """
+    Web based log file viewer.
+    """
     implements(IAdminPanel)
     
-    def getPanelId(self):
-        return ('admin', 'General', 'logs', 'Logs')
+    template = 'templates' + os.sep + 'general_logs.tmpl'
+    panel_ids = ('admin', 'General', 'logs', 'Logs')
     
-    def renderPanel(self, request):
+    def render(self, request):
         error_log_file = self.env.config.get('logging', 'error_log_file')
         log_dir = os.path.join(self.env.config.path, 'logs')
         log_file = os.path.join(log_dir, error_log_file)
@@ -80,17 +88,19 @@ class LogsPanel(Component):
         data = {
           'errorlog': error_logs, 
         }
-        return ('general_logs.tmpl', data)
+        return data
 
 
 class PermissionsPanel(Component):
-    """Administration of users and groups."""
+    """
+    Administration of users and groups.
+    """
     implements(IAdminPanel)
     
-    def getPanelId(self):
-        return ('admin', 'General', 'permissions', 'Permissions')
+    template = 'templates' + os.sep + 'general_permissions.tmpl'
+    panel_ids = ('admin', 'General', 'permissions', 'Permissions')
     
-    def renderPanel(self, request):
+    def render(self, request):
         data = {}
         # process POST request
         if request.method == 'POST':
@@ -108,10 +118,12 @@ class PermissionsPanel(Component):
             'users': self.auth.users 
         }
         result.update(data)
-        return ('general_permissions.tmpl', result)
+        return result
     
     def _addUser(self, args):
-        """Adds a new user."""
+        """
+        Add a new user.
+        """
         data = {}
         id = data['id'] = args.get('id', [''])[0]
         password = args.get('password', [''])[0]
@@ -140,7 +152,9 @@ class PermissionsPanel(Component):
         return data
     
     def _deleteUser(self, args):
-        """Deletes on or multiple users."""
+        """
+        Delete one or multiple users.
+        """
         data = {}
         id = args.get('id', [''])[0]
         if not id:
@@ -160,21 +174,20 @@ class PermissionsPanel(Component):
 
 
 class PluginsPanel(Component):
-    """Administration of plugins."""
+    """
+    Administration of plug-ins.
+    """
     implements(IAdminPanel)
     
-    def getPanelId(self):
-        return ('admin', 'General', 'plugins', 'Plugins')
+    template = 'templates' + os.sep + 'general_plugins.tmpl'
+    panel_ids = ('admin', 'General', 'plug-ins', 'Plug-ins')
     
-    def renderPanel(self, request):
+    def render(self, request):
         if request.method == 'POST':
             if 'update' in request.args:
                 self._updatePlugins(request)
             if 'reload' in request.args:
                 self._refreshPlugins()
-            request.redirect(request.path)
-            request.finish()
-            return
         return self._viewPlugins(request)
     
     def _refreshPlugins(self):
@@ -182,7 +195,9 @@ class PluginsPanel(Component):
         ComponentLoader(self.env)
     
     def _updatePlugins(self, request):
-        """Update components."""
+        """
+        Update components.
+        """
         enabled = request.args.get('enabled',[])
         
         from seishub.core import ComponentMeta
@@ -223,35 +238,36 @@ class PluginsPanel(Component):
           'sorted_plugins': sorted(plugins), 
           'plugins': plugins,
         }
-        return ('general_plugins.tmpl', data)
+        return data
 
 
 class ServicesPanel(Component):
-    """Administration of services."""
+    """
+    Administration of services.
+    """
     implements(IAdminPanel)
     
-    def getPanelId(self):
-        return ('admin', 'General', 'services', 'Services')
+    template = 'templates' + os.sep + 'general_services.tmpl'
+    panel_ids = ('admin', 'General', 'services', 'Services')
     
-    def renderPanel(self, request):
+    def render(self, request):
         if request.method == 'POST':
             if request.args.has_key('shutdown'):
                 self._shutdownSeisHub()
             elif request.args.has_key('reload'):
                 self._changeServices(request)
-                return
             elif request.args.has_key('restart'):
                 self._restartSeisHub()
         data = {
           'services': service.IServiceCollection(self.env.app),
         }
-        return ('general_services.tmpl', data)
+        return data
     
     def _shutdownSeisHub(self):
         reactor.stop() #@UndefinedVariable
     
     def _restartSeisHub(self):
-        pass
+        raise NotImplemented
     
     def _changeServices(self, request):
         serviceList = request.args.get('service', [])
@@ -260,5 +276,3 @@ class ServicesPanel(Component):
                 self.env.disableService(srv.name)
             elif not srv.running and srv.name in serviceList:
                 self.env.enableService(srv.name)
-        request.redirect(request.path)
-        request.finish()    

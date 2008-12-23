@@ -59,7 +59,7 @@ class ResourceTree(StaticFolder):
         self._registry = {}
         # XXX: args favicon - statics from admin panels!
         favicon = os.path.join(self.env.config.path, 'seishub', 'services', 
-                               'admin', 'statics', 'favicon.ico' )
+                               'web', 'admin', 'statics', 'favicon.ico' )
         self.putChild('favicon.ico', 
                       FileSystemResource(favicon, "image/x-icon"))
         # set mappings
@@ -70,7 +70,6 @@ class ResourceTree(StaticFolder):
         for url, path in self.env.config.options('fs'):
             self.putChild(url, FileSystemResource(path))
         # set administrative resource
-        # XXX: not done yet
-        # self.tree.putChild('admin', AdminRootFolder())
+        self.putChild('admin', AdminRootFolder(self.env))
         # set XML directory
         self.putChild('xml', RESTFolder())

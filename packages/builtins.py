@@ -26,6 +26,8 @@ class StylesheetResource(Component):
                        'xslt' + os.sep + 'resourcelist_xhtml.xslt')
     registerStylesheet('resourcelist.json', 
                        'xslt' + os.sep + 'resourcelist_json.xslt')
+    registerStylesheet('resourcelist.admin', 
+                       'xslt' + os.sep + 'resourcelist_admin.xslt')
     registerIndex('/xsl:stylesheet/xsl:output/@media-type', 'text')
 
 

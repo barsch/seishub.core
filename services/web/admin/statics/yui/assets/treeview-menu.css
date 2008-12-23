@@ -17,7 +17,7 @@ version: 2.5.1
     width: 14px;
     height: 20px;
     cursor: pointer;
-    background: url(/yui/assets/treeview-menu.gif) -8px 2px no-repeat;
+    background: url(/admin/yui/assets/treeview-menu.gif) -8px 2px no-repeat;
 }
 
 /* first or middle sibling, collapsable, hover */
@@ -25,7 +25,7 @@ version: 2.5.1
     width: 14px;
     height: 20px;
     cursor: pointer;
-    background: url(/yui/assets/treeview-menu.gif) -8px -77px no-repeat;
+    background: url(/admin/yui/assets/treeview-menu.gif) -8px -77px no-repeat;
 }
 
 /* first or middle sibling, expandable */
@@ -33,7 +33,7 @@ version: 2.5.1
     width: 14px;
     height: 20px;
     cursor: pointer;
-    background: url(/yui/assets/treeview-menu.gif) -8px -315px no-repeat;
+    background: url(/admin/yui/assets/treeview-menu.gif) -8px -315px no-repeat;
 }
 
 /* first or middle sibling, expandable, hover */
@@ -41,7 +41,7 @@ version: 2.5.1
     width: 14px;
     height: 20px;
     cursor: pointer;
-    background: url(/yui/assets/treeview-menu.gif) -8px -395px no-repeat;
+    background: url(/admin/yui/assets/treeview-menu.gif) -8px -395px no-repeat;
 }
 
 /* last sibling, no children */
@@ -56,7 +56,7 @@ version: 2.5.1
     width: 14px;
     height: 20px;
     cursor: pointer;
-    background: url(/yui/assets/treeview-menu.gif) -8px 2px no-repeat;
+    background: url(/admin/yui/assets/treeview-menu.gif) -8px 2px no-repeat;
 }
 
 /* Last sibling, collapsable, hover */
@@ -64,7 +64,7 @@ version: 2.5.1
     width: 14px;
     height: 20px;
     cursor: pointer;
-    background: url(/yui/assets/treeview-menu.gif) -8px -77px no-repeat;
+    background: url(/admin/yui/assets/treeview-menu.gif) -8px -77px no-repeat;
 }
 
 /* Last sibling, expandable */
@@ -72,7 +72,7 @@ version: 2.5.1
     width: 14px;
     height: 20px;
     cursor: pointer;
-    background: url(/yui/assets/treeview-menu.gif) -8px -315px no-repeat;
+    background: url(/admin/yui/assets/treeview-menu.gif) -8px -315px no-repeat;
 }
 
 /* Last sibling, expandable, hover */
@@ -80,14 +80,14 @@ version: 2.5.1
     width: 14px;
     height: 20px;
     cursor: pointer;
-    background: url(/yui/assets/treeview-menu.gif) -8px -395px no-repeat;
+    background: url(/admin/yui/assets/treeview-menu.gif) -8px -395px no-repeat;
 }
 
 /* Loading icon */
 .ygtvloading {
     width: 14px;
     height: 20px;
-    background: url(/yui/assets/treeview-loading.gif) 0 0 no-repeat;
+    background: url(/admin/yui/assets/treeview-loading.gif) 0 0 no-repeat;
 }
 
 /* the style for the empty cells that are used for rendering the depth 

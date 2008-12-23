@@ -3,7 +3,6 @@
 from twisted.application import service
 
 from seishub.env import Environment
-from seishub.services.admin import AdminService
 from seishub.services.web import WebService
 from seishub.services.ssh import SSHService
 from seishub.services.sftp import SFTPService
@@ -19,10 +18,7 @@ env=Environment()
 application = service.Application("SeisHub")
 env.app = application
 
-# Admin
-admin_service = AdminService(env)
-
-# Web
+# HTTP/HTTPS
 web_service = WebService(env)
 
 # SSH

@@ -13,15 +13,16 @@ class MapperResource(Resource):
     """
     Processor handler of a mapping resource.
     """
-    def __init__(self, mapper, folderish=True, category='mapping'):
+    def __init__(self, mapper, folderish=True):
         Resource.__init__(self)
         self.is_leaf = True
         self.mapper = mapper
         if IFolderish.providedBy(mapper):
             self.folderish = folderish
+            self.category = 'mapping-folder'
         else:
             self.folderish = False
-        self.category = category
+            self.category = 'mapping'
     
     def getMetadata(self):
         if self.folderish:
@@ -52,8 +53,7 @@ class MapperResource(Resource):
                 else:
                     folderish = False
                 for id in ids:
-                    temp[id] = self._clone(folderish=folderish, 
-                                           category=category)
+                    temp[id] = self._clone(folderish=folderish)
             return temp
         msg = "A mapper must return a dictionary of categories and ids or " + \
               "a basestring for a resulting document."
