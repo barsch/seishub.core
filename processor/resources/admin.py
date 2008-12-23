@@ -7,9 +7,10 @@ from Cheetah.Template import Template
 from pkg_resources import resource_filename #@UnresolvedImport
 from seishub import __version__ as SEISHUB_VERSION
 from seishub.core import ExtensionPoint
-from seishub.processor.interfaces import IAdminPanel, IAdminTheme
-from seishub.processor.resources.resource import Resource, StaticFolder
+from seishub.processor.interfaces import IAdminPanel, IAdminTheme, \
+    IAdminStaticContent
 from seishub.processor.resources.filesystem import FileSystemResource
+from seishub.processor.resources.resource import Resource, StaticFolder
 import os
 
 
@@ -117,13 +118,13 @@ class AdminFolder(StaticFolder):
             # create child
             id = panel.panel_ids[2]
             self.putChild(id, AdminPanel(root, panel))
-        # set default page
-        cid = panels[0].panel_ids[0]
-        pid = sorted(root.submenu[cid])[0]
-        self.default_page = '/admin/' + cid + '/' + pid
     
     def render_GET(self, request):
-        request.redirect(self.default_page)
+        # set default page
+        cid = self.panels[0].panel_ids[0]
+        pid = sorted(self.root.submenu[cid])[0]
+        default_page = '/' + '/'.join(request.prepath) + '/' + pid
+        request.redirect(default_page)
         return ""
 
 
@@ -146,14 +147,14 @@ class AdminRootFolder(StaticFolder):
         # register themes, panels and static content
         self._registerAdminThemes()
         self._registerAdminPanels()
-        self._registerDefaultStaticContent()
+        self._registerStaticContent()
+    
+    def render_GET(self, request):
         # set default page
         cid = sorted(self.mainmenu)[0]
         pid = sorted(self.submenu[cid])[0]
-        self.default_page = '/admin/' + cid + '/' + pid
-    
-    def render_GET(self, request):
-        request.redirect(self.default_page)
+        default_page = '/' + '/'.join(request.prepath) + '/' + cid + '/' + pid
+        request.redirect(default_page)
         return ""
     
     def _registerAdminThemes(self):
@@ -210,13 +211,28 @@ class AdminRootFolder(StaticFolder):
         for id, panels in temp.iteritems():
             self.putChild(id, AdminFolder(self, panels))
     
-    def _registerDefaultStaticContent(self):
+    def _registerStaticContent(self):
         """
-        Register default static content.
+        Register all static content.
         """
+        # register default static content
         for id in ['images', 'css', 'js', 'yui']:
             path = os.path.join(self.statics_dir, id)
             self.putChild(id, FileSystemResource(path))
+        # favicon
+        favicon = os.path.join(self.statics_dir, 'favicon.ico')
+        self.putChild('favicon.ico', 
+                      FileSystemResource(favicon, "image/x-icon"))
+        # register additional static content defined by plug-ins
+        for res in ExtensionPoint(IAdminStaticContent).extensions(self.env):
+            # sanity checks
+            if not hasattr(res, 'getStaticContent'):
+                msg = 'Method getStaticContent() missing in %s' % res
+                self.env.log.warn(msg)
+                continue
+            items = res.getStaticContent()
+            for path, file in items.iteritems():
+                self.putChild(path, FileSystemResource(file))
     
     def getActiveAdminThemeCSS(self):
         """
@@ -224,6 +240,6 @@ class AdminRootFolder(StaticFolder):
         """
         theme_id = self.env.config.get('webadmin', 'theme')
         if self.themes.has_key(theme_id):
-            return '/admin' + self.themes.get(theme_id).theme_css_resource
+            return self.themes.get(theme_id).theme_css_resource
         else:
-            return '/admin/css/magic.css'
+            return '/css/magic.css'

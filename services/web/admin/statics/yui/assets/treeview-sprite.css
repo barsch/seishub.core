@@ -5,56 +5,56 @@
 }
 
 .icon-package {
-    background: transparent url(/admin/yui/assets/treeview-sprite.png) 0 0px no-repeat;
+    background: transparent url(../../yui/assets/treeview-sprite.png) 0 0px no-repeat;
 }
 
 .icon-resourcetype {
-    background: transparent url(/admin/yui/assets/treeview-sprite.png) 0 -14px
+    background: transparent url(../../yui/assets/treeview-sprite.png) 0 -14px
         no-repeat;
 }
 
 .icon-resource {
-    background: transparent url(/admin/yui/assets/treeview-sprite.png) 0 -28px
+    background: transparent url(../../yui/assets/treeview-sprite.png) 0 -28px
         no-repeat;
 }
 
 .icon-index {
-    background: transparent url(/admin/yui/assets/treeview-sprite.png) 0 -56px
+    background: transparent url(../../yui/assets/treeview-sprite.png) 0 -56px
         no-repeat;
 }
 
 .icon-alias {
-    background: transparent url(/admin/yui/assets/treeview-sprite.png) 0 -70px
+    background: transparent url(../../yui/assets/treeview-sprite.png) 0 -70px
         no-repeat;
 }
 
 .icon-property {
-    background: transparent url(/admin/yui/assets/treeview-sprite.png) 0 -84px
+    background: transparent url(../../yui/assets/treeview-sprite.png) 0 -84px
         no-repeat;
 }
 
 .icon-file {
-    background: transparent url(/admin/yui/assets/treeview-sprite.png) 0 -98px
+    background: transparent url(../../yui/assets/treeview-sprite.png) 0 -98px
         no-repeat;
 }
 
 .icon-folder {
-    background: transparent url(/admin/yui/assets/treeview-sprite.png) 0 -112px
+    background: transparent url(../../yui/assets/treeview-sprite.png) 0 -112px
         no-repeat;
 }
 
 .icon-mapping {
-    background: transparent url(/admin/yui/assets/treeview-sprite.png) 0 -42px
+    background: transparent url(../../yui/assets/treeview-sprite.png) 0 -42px
         no-repeat;
 }
 
 .icon-mapping-folder {
-    background: transparent url(/admin/yui/assets/treeview-sprite.png) 0 -126px
+    background: transparent url(../../yui/assets/treeview-sprite.png) 0 -126px
         no-repeat;
 }
 
 .icon-xmlroot {
-    background: transparent url(/admin/yui/assets/treeview-sprite.png) 0 -140px
+    background: transparent url(../../yui/assets/treeview-sprite.png) 0 -140px
         no-repeat;
 }
 

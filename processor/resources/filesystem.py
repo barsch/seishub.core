@@ -70,7 +70,7 @@ class FileSystemResource(Resource, filepath.FilePath):
         # are we a directory
         if not self.isdir():
             raise ForbiddenError("Item %s is not a valid path" % self.path)
-        # filepath needs to be a unicode object
+        # filepath needs to be a Unicode object
         id = id.decode('utf-8')
         # create new FilePath object
         fpath = self.child(id)
@@ -101,9 +101,11 @@ class FileSystemResource(Resource, filepath.FilePath):
             ids = sorted(self.listdir())
             children = {}
             for id in ids:
-                # ids retrieved from listdir are unicode object 
-                safe_id = id.encode('utf-8')
+                # IDs retrieved from listdir() are Unicode object 
+                safe_id = id.encode('UTF-8')
                 children[safe_id] = self._clone(self.child(id).path)
+            # add dynamic children
+            children.update(self.children)
             return children
         elif self.isfile():
             # return this L{FileSystemResource} object

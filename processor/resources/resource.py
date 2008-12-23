@@ -5,6 +5,7 @@ General resource objects.
 
 from seishub.exceptions import NotAllowedError
 from seishub.processor.interfaces import IResource, IStaticResource
+from seishub.util.path import splitPath
 from zope.interface import implements
 
 
@@ -40,11 +41,26 @@ class Resource(object):
         """
         return {'permissions': 0100644}
     
-    def putChild(self, id, child):
+    def putChild(self, path, obj):
         """
         Register a static child for this resource.
+        
+        The resource node also accepts absolute paths. Missing sub folders are
+        automatically generated.
         """
-        self.children[id] = child
+        if '/' not in path:
+            # we got a single id
+            self.children[path] = obj
+        else:
+            # we got some absolute path
+            parts = splitPath(path)
+            temp = self
+            for part in parts[:-1]:
+                if part not in temp.children:
+                    temp.children[part] = StaticFolder()
+                temp = temp.children.get(part)
+            temp.children[parts[-1]] = obj
+    
     
     def getChild(self, id, request):
         """

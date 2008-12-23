@@ -6,7 +6,6 @@ The root resource of the whole resource tree.
 from seishub.processor.resources import RESTFolder, MapperResource, \
     FileSystemResource, AdminRootFolder, StaticFolder
 from seishub.util.path import splitPath
-import os
 
 
 class ResourceTree(StaticFolder):
@@ -57,11 +56,6 @@ class ResourceTree(StaticFolder):
         self.env.log.debug('Updating resource tree.')
         self.children = {}
         self._registry = {}
-        # XXX: args favicon - statics from admin panels!
-        favicon = os.path.join(self.env.config.path, 'seishub', 'services', 
-                               'web', 'admin', 'statics', 'favicon.ico' )
-        self.putChild('favicon.ico', 
-                      FileSystemResource(favicon, "image/x-icon"))
         # set mappings
         for url, cls in self.env.registry.mappers.get().items():
             mapper_obj = cls(self.env)
@@ -69,7 +63,7 @@ class ResourceTree(StaticFolder):
         # set all file system folder
         for url, path in self.env.config.options('fs'):
             self.putChild(url, FileSystemResource(path))
-        # set administrative resource
-        self.putChild('admin', AdminRootFolder(self.env))
-        # set XML directory
+        # set Administration root folder
+        self.putChild('browser', AdminRootFolder(self.env))
+        # set XML resource root folder
         self.putChild('xml', RESTFolder())
