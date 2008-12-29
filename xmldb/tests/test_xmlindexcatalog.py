@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from seishub.exceptions import DuplicateObjectError
+from seishub.exceptions import DuplicateObjectError, NotFoundError
 from seishub.test import SeisHubEnvironmentTestCase
 from seishub.xmldb.index import XmlIndex, DATETIME_INDEX
 from seishub.xmldb.resource import Resource, newXMLDocument
@@ -475,6 +475,13 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         self.assertEqual(res3,[res_ids[0],res_ids[3],res_ids[4],
                                res_ids[1],res_ids[2]])
         self.assertEqual(res4,[res_ids[1],res_ids[2],res_ids[0]])
+        
+        #======================================================================
+        # invalid queries
+        #======================================================================
+        # unknown index
+        q = "/testpackage/station/station[XY]"
+        self.assertRaises(NotFoundError, self.catalog.query, XPathQuery(q))
         
         # remove test catalog
         self._cleanup_testdata()

@@ -27,9 +27,7 @@ class _QueryProcessor(object):
     
     def _raiseIndexNotFound(self, query_base, expr):
         msg = "Error processing query. No index found for: %s"
-        idx_str = '/' + '/'.join(map(str, query_base))
-        if expr:
-            idx_str += '/' + expr
+        idx_str = '/' + '/'.join(map(str, query_base)) + expr or ''
         raise NotFoundError(msg % idx_str)
     
     def findIndex(self, query_base, expr = None, tolerant = True):
@@ -105,9 +103,6 @@ class _QueryProcessor(object):
             # binary expression
             op = p[1]
             l = p[0]
-#            # TODO: workaround, see comment in XPathQuery.getPredicates
-#            if len(l) == 1:
-#                l = l[0]
             r = p[2]
             if op in XPathQuery._relational_ops:
                 # relational operator, l is a path expression => find an index
@@ -118,12 +113,9 @@ class _QueryProcessor(object):
                     q, joins, rtab, ridxw = self._join_on_index(ridx, q, joins)
                     w = sql.and_(w, ridxw, 
                                  ltab.c['keyval'] == rtab.c['keyval'])
-                    # q = q.where(ltab.c['keyval'] == rtab.c['keyval'])
                 else: # key / value query
                     w = sql.and_(w, self._applyOp(op, ltab.c['keyval'], 
                                                   lidx.prepareKey(r)))
-                    # q = q.where(self._applyOp(op, ltab.c['keyval'], 
-                    #                          lidx.prepareKey(r)))
             else:
                 # logical operator
                 q, joins, lw = self._process_predicates(l, q, joins)
@@ -131,7 +123,7 @@ class _QueryProcessor(object):
                 q = q.where(self._applyOp(op, lw, rw))
         else:
             # unary expression
-            idx = self.findIndex([p[0][0], p[0][1]], p[0][2])
+            idx = self.findIndex([p[0][0], p[0][1]], p[0][2], False)
             q, joins, _, w = self._join_on_index(idx, q, joins)
         return q, joins, w
         
