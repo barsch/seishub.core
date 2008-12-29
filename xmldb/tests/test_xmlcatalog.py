@@ -3,8 +3,6 @@
 import unittest
 
 from seishub.test import SeisHubEnvironmentTestCase
-from seishub.exceptions import SeisHubError
-
 
 RAW_XML = """<station rel_uri="bern">
     <station_code>BERN</station_code>
@@ -219,23 +217,13 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         self.env.catalog.registerIndex(pid1, rid2, IDX5)
         self.env.catalog.reindex(pid1, rid2, IDX5)
         
-        res1 = self.env.catalog.query('/testpackage/station/station',
-                                      {'/station/XY/paramXY':'asc'},
-                                      limit = 2)
+        res1 = self.env.catalog.query('/testpackage/station/station ' +\
+                                      'order by XY/paramXY asc limit 2')
         self.assertEqual(len(res1), 2)
         self.assertEqual(res1[0]._id, self.res2._id)
         self.assertEqual(res1[0].document._id, self.res2.document._id)
         self.assertEqual(res1[1]._id, self.res1._id)
         self.assertEqual(res1[1].document._id, self.res1.document._id)
-        
-        res2 = self.env.catalog.query({'query':'/testpackage/station/station',
-                                       'order_by':{'/station/XY/paramXY':'asc'},
-                                       'limit':2})
-        self.assertEqual(len(res2), 2)
-        self.assertEqual(res2[0]._id, self.res2._id)
-        self.assertEqual(res2[0].document._id, self.res2.document._id)
-        self.assertEqual(res2[1]._id, self.res1._id)
-        self.assertEqual(res2[1].document._id, self.res1.document._id)
 
         res3 = self.env.catalog.query('/testpackage/*/*')
         self.assertEqual(len(res3), 3)

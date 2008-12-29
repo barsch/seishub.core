@@ -380,13 +380,26 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         self.assertEqual(len(res), 2)
         self.assertTrue(self.res1.document._id in res)
         self.assertTrue(self.res2.document._id in res)
-#        # all resources of package testpackage, resourcetype 'station'
-         # XXX: query type not implemented on this level
-#        q = "/testpackage/station/*"
-#        res = self.catalog.query(XPathQuery(q))
-#        self.assertEqual(len(res), 2)
-#        self.assertTrue(self.res1.document._id in res)
-#        self.assertTrue(self.res2.document._id in res)
+        # all resources of package testpackage, resourcetype 'station'
+        q = "/testpackage/station/*"
+        res = self.catalog.query(XPathQuery(q))
+        self.assertEqual(len(res), 2)
+        self.assertTrue(self.res1.document._id in res)
+        self.assertTrue(self.res2.document._id in res)
+        # all resources of package testpackage
+        q = "/testpackage/*/*"
+        res = self.catalog.query(XPathQuery(q))
+        self.assertEqual(len(res), 3)
+        self.assertTrue(self.res1.document._id in res)
+        self.assertTrue(self.res2.document._id in res)
+        self.assertTrue(self.res3.document._id in res)
+        # all resources
+        q = "/*/*/*"
+        res = self.catalog.query(XPathQuery(q))
+        assert len(res) >= 3
+        self.assertTrue(self.res1.document._id in res)
+        self.assertTrue(self.res2.document._id in res)
+        self.assertTrue(self.res3.document._id in res)
         
         #======================================================================
         # node existance queries
@@ -417,7 +430,7 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         #======================================================================
         # combined queries
         #======================================================================
-        # nodex existance AND key query
+        # node existance AND key query
         q = "/testpackage/station/station[XY/paramXY and lon = 12.51200]"
         res = self.catalog.query(XPathQuery(q))
         self.assertEqual(len(res), 0)
@@ -432,38 +445,31 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         self.assertEqual(res, [self.res2.document._id])
         
         # node existance OR key query
-        # XXX: or not implemented
-#        q = "/testpackage/station/station[XY/paramXY or lon = 12.51200]"
-#        res = self.catalog.query(XPathQuery(q))
-#        # import pdb;pdb.set_trace()
-#        self.assertEqual(len(res), 2)
-#        self.assertTrue(self.res1.document._id in res)
-#        self.assertTrue(self.res2.document._id in res)
+        q = "/testpackage/station/station[XY/paramXY or lon = 12.51200]"
+        res = self.catalog.query(XPathQuery(q))
+        self.assertEqual(len(res), 2)
+        self.assertTrue(self.res1.document._id in res)
+        self.assertTrue(self.res2.document._id in res)
 
         #======================================================================
         # queries w/ order_by and limit clause
         #======================================================================
         # predicate query w/ order_by
-        q = "/sortordertests/sotest/sortorder[int1]"
-        res = self.catalog.query(
-                XPathQuery(q, {"/sortorder/int1":"asc"})
-                )
+        q = "/sortordertests/sotest/sortorder[int1] order by int1 desc"
+        res = self.catalog.query(XPathQuery(q))
         res_ids = [id[3] for id in self.so_ids]
+        res_ids.reverse()
         self.assertEqual(res, res_ids)
         
+        so1 = "/sortordertests/sotest/sortorder[int1] order by int1 desc " +\
+              "limit 3"
+        so2 = "/sortordertests/sotest/sortorder[int1] order by int2 asc, "+\
+              "str2 desc limit 5"
+        so3 = "/sortordertests/sotest/sortorder order by int2 desc limit 3"
+        res2 = self.catalog.query(XPathQuery(so1))
+        res3 = self.catalog.query(XPathQuery(so2))
+        res4 = self.catalog.query(XPathQuery(so3))
         
-        
-        so1 = "/sortordertests/sotest/sortorder[int1]"
-        so2 = "/sortordertests/sotest/sortorder"
-        res2 = self.catalog.query(XPathQuery(so1, {"/sortorder/int1":"desc"}, 
-                                             limit = 3))
-        res3 = self.catalog.query(XPathQuery(so1, {"/sortorder/int2":"asc",
-                                                   "/sortorder/str2":"desc"}, 
-                                             limit = 5))
-        res4 = self.catalog.query(XPathQuery(so2,{"/sortorder/int2":"desc"},
-                                             limit = 3))
-        
-        res_ids.reverse()
         self.assertEqual(res2, res_ids[:3])
         res_ids.reverse()
         self.assertEqual(res3,[res_ids[0],res_ids[3],res_ids[4],

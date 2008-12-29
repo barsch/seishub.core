@@ -9,7 +9,7 @@ from seishub.xmldb.xmlindexcatalog import XmlIndexCatalog
 from seishub.xmldb.resource import Resource, newXMLDocument
 from seishub.xmldb.index import XmlIndex, TEXT_INDEX
 from seishub.xmldb import index
-from seishub.xmldb.xpath import IndexDefiningXpathExpression, XPathQuery
+from seishub.xmldb.xpath import XPathQuery
 from seishub.util.xml import applyMacros
 
 
@@ -285,21 +285,21 @@ class XmlCatalog(object):
             self.index_catalog.indexResource(res, xpath)
         return True
         
-    def query(self, query, order_by = None, limit = None):
+    def query(self, query):
         """@see: L{seishub.xmldb.interfaces.IXmlCatalog}"""
         # XXX: query by metadata
-        if isinstance(query, dict):
-            order_by = query.get('order_by', None)
-            limit = query.get('limit', None)
-            query = query.get('query', '')
+#        if isinstance(query, dict):
+#            order_by = query.get('order_by', None)
+#            limit = query.get('limit', None)
+#            query = query.get('query', '')
         # remove line breaks and apply macros
         query = applyMacros(query)
-        qu = map(self._convert_wildcards, query.split('/'))
-        if len(qu) == 4 and not qu[3]:
-            # XXX: this is not an index query ,but this should be handled by 
-            # the index catalog as well in case an order by clause is present
-            return self.getResourceList(qu[1], qu[2])
-        q = XPathQuery(query, order_by, limit)
+#        qu = map(self._convert_wildcards, query.split('/'))
+#        if len(qu) == 4 and not qu[3]:
+#            # XXX: this is not an index query ,but this should be handled by 
+#            # the index catalog as well in case an order by clause is present
+#            return self.getResourceList(qu[1], qu[2])
+        q = XPathQuery(query)
         doc_ids = self.index_catalog.query(q)
         # XXX: this is really bad, what information is really needed in the first place?
         return [self.xmldb.getResource(document_id = id) for id in doc_ids]
