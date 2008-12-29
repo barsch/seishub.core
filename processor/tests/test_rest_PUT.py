@@ -133,7 +133,7 @@ class RestPUTTests(SeisHubEnvironmentTestCase):
         proc.run(DELETE, '/put-test/notvc/test.xml')
     
     def test_putOnExistingVersionControlledResource(self):
-        """XXX: Does not raise a SeisHubError instance yet!
+        """
         Put request on an already existing version controlled resource.
         """
         proc = Processor(self.env)

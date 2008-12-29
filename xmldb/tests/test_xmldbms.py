@@ -228,9 +228,8 @@ class XmlDbManagerTest(SeisHubEnvironmentTestCase):
         
         # add a third revision
         testres_v3 = Resource(self.vc_resourcetype, 
-                              document = newXMLDocument(self.test_data % 'r3'), 
-                              id = testres.id)
-        self.xmldbm.addResource(testres_v3)
+                              document = newXMLDocument(self.test_data % 'r3'))
+        self.xmldbm.modifyResource(testres_v3, testres.id)
         res = self.xmldbm.getResourceHistory(id = testres.id)
         self.assertEqual(len(res.document), 3)
         

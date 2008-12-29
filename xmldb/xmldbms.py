@@ -27,32 +27,6 @@ class XmlDbManager(DbStorage):
         """Add a new resource to the database."""
         if not xml_resource.document.data or xml_resource.document.data == "":
             raise InvalidParameterError('Empty document!')
-#        if xml_resource.resourcetype.version_control:
-#            xml_resource.revision = None
-            
-#        # XXX: very ugly (and unsafe) workaround for sqlite
-#        #if self._db.name == 'sqlite':
-#        rev = 1
-#        if xml_resource.resourcetype.version_control and \
-#           (xml_resource.id or xml_resource.name):
-#            try:
-#                res = self._getResource(xml_resource.package,
-#                                       xml_resource.resourcetype, 
-#                                       xml_resource.name,
-#                                       id = xml_resource.id)
-#                rev = res.revision + 1
-#            except NotFoundError: # new resource -> revision = 1
-#                pass
-#        xml_resource.revision = rev
-#        # end workaround
-#        try:
-#            if not xml_resource.document._id:
-#                self.store(xml_resource,
-#                           xml_resource.document.meta,
-#                           xml_resource.document,
-#                           )
-#            else:
-#                self.store(xml_resource)
         try:
             self.store(xml_resource,
                        xml_resource.document.meta,
@@ -60,17 +34,18 @@ class XmlDbManager(DbStorage):
         except DbError, e:
             msg = "Error adding a resource: A resource with the given " +\
                   "parameters already exists."
-            if xml_resource.resourcetype.version_control:
-                # try to add new revision
-                try:
-                    self.store(xml_resource.document.meta,
-                               xml_resource.document)
-                except DbError, e:
-                    # same revision is already there
-                    raise DuplicateObjectError(msg, e)
-            else:
-                # resource is already there and not version controlled
-                raise DuplicateObjectError(msg, e)
+            raise DuplicateObjectError(msg, e)
+#            if xml_resource.resourcetype.version_control:
+#                # try to add new revision
+#                try:
+#                    self.store(xml_resource.document.meta,
+#                               xml_resource.document)
+#                except DbError, e:
+#                    # same revision is already there
+#                    raise DuplicateObjectError(msg, e)
+#            else:
+#                # resource is already there and not version controlled
+#                raise DuplicateObjectError(msg, e)
     
     def modifyResource(self, resource = Resource(), id = None):
         """Modify an existing resource.
