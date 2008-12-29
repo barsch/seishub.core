@@ -260,6 +260,8 @@ class RegistryBase(DbStorage, list):
     def register(self, package_id, resourcetype_id, type, xml_data, name=None):
         package, resourcetype = self.registry.objects_from_id(package_id, 
                                                               resourcetype_id)
+        if name:
+            name = '_'.join([package_id, resourcetype_id or '', name])
         res = self.catalog.addResource(self.package_id, self.resourcetype_id, 
                                        xml_data, name=name)
         try:
