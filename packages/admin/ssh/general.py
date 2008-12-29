@@ -3,11 +3,13 @@
 from twisted.application import service
 
 from seishub.core import Component, implements
-from seishub.services.ssh.interfaces import ISSHCommand
+from seishub.packages.interfaces import ISSHCommand
 
 
 class ServicesCommand(Component):
-    """SSH command to handle services."""
+    """
+    SSH command to handle services.
+    """
     implements(ISSHCommand)
     
     def getCommandId(self):

@@ -7,7 +7,7 @@ from Cheetah.Template import Template
 from pkg_resources import resource_filename #@UnresolvedImport
 from seishub import __version__ as SEISHUB_VERSION
 from seishub.core import ExtensionPoint
-from seishub.processor.interfaces import IAdminPanel, IAdminTheme, \
+from seishub.packages.interfaces import IAdminPanel, IAdminTheme, \
     IAdminStaticContent
 from seishub.processor.resources.filesystem import FileSystemResource
 from seishub.processor.resources.resource import Resource, StaticFolder
@@ -18,6 +18,7 @@ class AdminPanel(Resource):
     """
     A administrative panel.
     """
+    
     def __init__(self, root, panel):
         Resource.__init__(self)
         self.is_leaf = True
@@ -108,6 +109,7 @@ class AdminFolder(StaticFolder):
     """
     A administrative sub folder.
     """
+    
     def __init__(self, root, panels):
         Resource.__init__(self)
         self.category = 'admin'
@@ -132,24 +134,28 @@ class AdminRootFolder(StaticFolder):
     """
     The root folder resource containing all active administrative resources.
     """
+    
     def __init__(self, env):
         Resource.__init__(self)
         self.env = env
         self.category = 'admin'
         # default template dir
         self.template_dir = os.path.join(self.env.config.path, 
-                                         'seishub', 'services', 'web', 
-                                         'admin', 'templates')
+                                         'seishub', 'packages', 'admin', 
+                                         'web', 'templates')
         # default template dir
         self.statics_dir = os.path.join(self.env.config.path, 
-                                         'seishub', 'services', 'web', 
-                                         'admin', 'statics')
+                                        'seishub', 'packages', 'admin', 
+                                        'web', 'statics')
         # register themes, panels and static content
         self._registerAdminThemes()
         self._registerAdminPanels()
         self._registerStaticContent()
     
     def render_GET(self, request):
+        # sanity checks
+        if not self.mainmenu or not self.submenu:
+            return {}
         # set default page
         cid = sorted(self.mainmenu)[0]
         pid = sorted(self.submenu[cid])[0]

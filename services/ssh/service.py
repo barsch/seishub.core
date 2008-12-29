@@ -6,7 +6,7 @@ from seishub.core import ExtensionPoint
 from seishub.defaults import SSH_PORT, SSH_PRIVATE_KEY, SSH_PUBLIC_KEY, \
     SSH_AUTOSTART
 from seishub.exceptions import SeisHubError
-from seishub.services.ssh.interfaces import ISSHCommand
+from seishub.packages.interfaces import ISSHCommand
 from twisted.application.internet import TCPServer #@UnresolvedImport
 from twisted.conch import avatar, recvline
 from twisted.conch.insults import insults

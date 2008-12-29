@@ -5,7 +5,6 @@ from seishub.exceptions import SeisHubError
 from seishub.packages.installer import registerSchema, registerStylesheet, \
     registerAlias
 from seishub.packages.interfaces import IResourceType, IPackage
-from seishub.processor.interfaces import IMapperResource
 from seishub.test import SeisHubEnvironmentTestCase
 from seishub.xmldb.resource import Resource, newXMLDocument
 import os

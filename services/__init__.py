@@ -1,1 +1,1 @@
-# module seishub.services
+# -*- coding: utf-8 -*-

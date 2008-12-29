@@ -11,7 +11,7 @@ from seishub.exceptions import InternalServerError, ForbiddenError, \
     SeisHubError
 from seishub.processor import Processor, HEAD, getChildForRequest
 from seishub.processor.interfaces import IFileSystemResource, IResource, \
-    IStaticResource
+    IStatical
 from seishub.util.path import addBase
 from seishub.util.text import isInteger
 from twisted.application import service
@@ -79,7 +79,7 @@ class WebRequest(Processor, http.Request):
                 return self._renderFolder(data)
             else:
                 return self._renderFileResource(data)
-        elif IStaticResource.providedBy(result):
+        elif IStatical.providedBy(result):
             # render direct
             data = result.render(self)
             if isinstance(data, basestring):

@@ -50,7 +50,6 @@ def suite():
     """This methods calls all test suites."""
     from seishub.packages.tests import suite as packages_suite
     from seishub.processor.tests import suite as processor_suite
-    from seishub.services.tests import suite as services_suite
     from seishub.tests import suite as tests_suite
     from seishub.util.tests import suite as util_suite
     from seishub.xmldb.tests import suite as xmldb_suite
@@ -59,7 +58,6 @@ def suite():
     suite = unittest.TestSuite()
     suite.addTest(packages_suite())
     suite.addTest(processor_suite())
-    suite.addTest(services_suite())
     suite.addTest(tests_suite())
     suite.addTest(util_suite())
     suite.addTest(xmldb_suite())

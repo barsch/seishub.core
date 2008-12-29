@@ -1,4 +1,10 @@
 # -*- coding: utf-8 -*-
+"""
+The one class to rule them all.
+
+Environment is the base class to handle configuration, XML catalog, database 
+and logging access.
+"""
 
 from seishub.auth import AuthenticationManager
 from seishub.config import Configuration, Option, _TRUE_VALUES
@@ -15,6 +21,7 @@ from twisted.internet import defer
 import os
 import sys
 import time
+# must be last!
 from seishub.packages.registry import ComponentRegistry
 
 
@@ -37,10 +44,12 @@ class Environment(ComponentManager):
         * a user management handler env.auth
     """
     
-    Option('seishub', 'host', 'localhost', 'Default host of this server.')
+    Option('seishub', 'host', 'localhost', "Default host of this server.")
     
     def __init__(self, config_file=None):
-        """Initialize the SeisHub environment."""
+        """
+        Initialize the SeisHub environment.
+        """
         # set up component manager
         ComponentManager.__init__(self)
         self.compmgr = self
@@ -50,48 +59,54 @@ class Environment(ComponentManager):
         path = self.getSeisHubPath()
         if not config_file:
             config_file = os.path.join(path, 'conf', 'seishub.ini') 
-        # set config handler
+        # set configuration handler
         self.config = Configuration(config_file)
         self.config.path = path
         self.config.hubs = {}
         # set log handler
         self.log = Logger(self)
-        # init all default options
+        # initialize all default options
         self.initOptions()
         # set up DB handler
         self.db = DatabaseManager(self) 
         # set XML catalog
         self.catalog = XmlCatalog(self)
-        # User & group management
+        # user and group management
         self.auth = AuthenticationManager(self)
-        # load plugins
+        # load plug-ins
         ComponentLoader(self)
         # Package manager
-        # init ComponentRegistry after ComponentLoader(), as plugins may 
+        # initialize ComponentRegistry after ComponentLoader(), as plug-ins may 
         # provide registry objects
         self.registry = ComponentRegistry(self)
-        # trigger auto installer, install seishub package first
+        # trigger auto installer
         PackageInstaller.cleanup(self)
-        # make sure seishub packages are installed first
+        # make sure SeisHub packages are installed first
         PackageInstaller.install(self, 'seishub')
         PackageInstaller.install(self)
         # initialize the resource tree
         self.tree = ResourceTree(self)
     
     def getSeisHubPath(self):
-        """Returns the absolute path to the SeisHub directory."""
+        """
+        Returns the absolute path to the SeisHub directory.
+        """
         import seishub
         return os.path.split(os.path.dirname(seishub.__file__))[0]
     
     def getRestUrl(self):
-        """Returns the root URL of the REST pages."""
+        """
+        Returns the root URL of the REST pages.
+        """
         rest_host = self.config.get('seishub', 'host') or 'localhost'
         rest_port = self.config.getint('http_port', 'port') or HTTP_PORT
         return 'http://'+ rest_host + ':' + str(rest_port)
     
     @defer.inlineCallbacks
     def enableService(self, srv_name):
-        """Enable a service."""
+        """
+        Enable a service.
+        """
         for srv in service.IServiceCollection(self.app):
             if srv.name.lower()==srv_name.lower():
                 # ensure not to start a service twice; may be fatal with timers
@@ -105,7 +120,9 @@ class Environment(ComponentManager):
     
     @defer.inlineCallbacks
     def disableService(self, srv_name):
-        """Disable a service."""
+        """
+        Disable a service.
+        """
         for srv in service.IServiceCollection(self.app):
             if srv.name.lower()==srv_name.lower():
                 self.config.set(srv.name.lower(), 'autostart', False)
@@ -114,7 +131,9 @@ class Environment(ComponentManager):
                 self.log.info('Stopping service %s.' % srv.name)
     
     def enableComponent(self, component):
-        """Enables a component."""
+        """
+        Enables a component.
+        """
         module = sys.modules[component.__module__]
         fullname = module.__name__+'.'+component.__name__
         if not component in self:
@@ -129,7 +148,9 @@ class Environment(ComponentManager):
         self.tree.update()
     
     def disableComponent(self, component):
-        """Disables a component."""
+        """
+        Disables a component.
+        """
         module = sys.modules[component.__module__]
         fullname = module.__name__+'.'+component.__name__
         
@@ -147,7 +168,9 @@ class Environment(ComponentManager):
         self.tree.update()
     
     def initOptions(self):
-        """Initialize any not yet set default options in configuration file."""
+        """
+        Initialize any not yet set default options in configuration file.
+        """
         defaults = self.config.defaults()
         for section in defaults.keys():
             for name in defaults.get(section).keys():
@@ -161,7 +184,8 @@ class Environment(ComponentManager):
                     self.config.save()
     
     def initComponent(self, component):
-        """Initialize additional member variables for components.
+        """
+        Initialize additional member variables for components.
         
         Every component activated through the `Environment` object gets a few
         member variables: `env` (the environment object), `config` (the
@@ -178,7 +202,8 @@ class Environment(ComponentManager):
         component.auth = self.auth
     
     def isComponentEnabled(self, cls):
-        """Implemented to only allow activation of components that are not
+        """
+        Implemented to only allow activation of components that are not
         disabled in the configuration.
         
         This is called by the `ComponentManager` base class when a component is

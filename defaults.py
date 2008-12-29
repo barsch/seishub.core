@@ -6,12 +6,12 @@ import os
 DEFAULT_DB_URI = 'sqlite:///db/seishub.db'
 
 # default components
-DEFAULT_COMPONENTS = ('seishub.services.web.admin.general.PluginsPanel',
-                      'seishub.services.web.admin.general.ServicesPanel',
-                      'seishub.services.web.admin.general',
-                      'seishub.services.ssh.general.ServicesCommand',
+DEFAULT_COMPONENTS = ('seishub.packages.admin.web.general.PluginsPanel',
+                      'seishub.packages.admin.web.general.ServicesPanel',
+                      'seishub.packages.admin.web.general',
+                      'seishub.packages.admin.ssh.general.ServicesCommand',
                       'seishub.packages.builtins',
-                      'seishub.services.web.admin.themes.MagicTheme')
+                      'seishub.packages.admin.web.themes.MagicTheme')
 
 MIN_PASSWORD_LENGTH = 5
 ADMIN_THEME = 'magic'

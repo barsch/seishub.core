@@ -5,7 +5,7 @@ Catalog and database related administration panels.
 
 from seishub.core import Component, implements
 from seishub.exceptions import SeisHubError, InvalidParameterError
-from seishub.processor.interfaces import IAdminPanel
+from seishub.packages.interfaces import IAdminPanel
 from sqlalchemy import create_engine #@UnresolvedImport
 import os
 

@@ -6,7 +6,7 @@ General configuration panels for the web-based administration service.
 from seishub.core import Component, implements
 from seishub.defaults import DEFAULT_COMPONENTS
 from seishub.exceptions import SeisHubError
-from seishub.processor.interfaces import IAdminPanel
+from seishub.packages.interfaces import IAdminPanel
 from seishub.util.text import getFirstSentence
 from twisted.application import service
 from twisted.internet import reactor

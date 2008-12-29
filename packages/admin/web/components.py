@@ -4,7 +4,7 @@ Component related administrative panels.
 """
 
 from seishub.core import Component, implements
-from seishub.processor.interfaces import IAdminPanel
+from seishub.packages.interfaces import IAdminPanel
 from seishub.xmldb.xmlcatalog import INDEX_TYPES
 import os
 

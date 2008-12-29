@@ -4,7 +4,7 @@ from seishub.exceptions import NotAllowedError, InternalServerError, \
     ForbiddenError
 from seishub.processor import Processor, PUT, DELETE, GET, MOVE, HEAD, \
     getChildForRequest
-from seishub.processor.interfaces import IFileSystemResource, IStaticResource, \
+from seishub.processor.interfaces import IFileSystemResource, IStatical, \
     IResource, IScriptResource
 from seishub.util.path import absPath
 from twisted.conch.interfaces import ISFTPFile, ISFTPServer
@@ -35,7 +35,7 @@ class SFTPProcessor(Processor):
         if IFileSystemResource.providedBy(result):
             # render direct 
             return result.render(self)
-        elif IStaticResource.providedBy(result):
+        elif IStatical.providedBy(result):
             # render direct
             return result.render(self)
         elif IScriptResource.providedBy(result):

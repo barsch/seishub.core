@@ -4,7 +4,7 @@ Various CSS themes for the administration pages.
 """
 
 from seishub.core import Component, implements
-from seishub.processor.interfaces import IAdminTheme
+from seishub.packages.interfaces import IAdminTheme
 
 
 class OldTheme(Component):

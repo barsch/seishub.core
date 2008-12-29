@@ -1,14 +1,15 @@
 # -*- coding: utf-8 -*-
 
-import os
-
 from seishub.core import Component, implements
-from seishub.packages.interfaces import IPackage, IResourceType
 from seishub.packages.installer import registerStylesheet, registerIndex
+from seishub.packages.interfaces import IPackage, IResourceType
+import os
 
 
 class SeisHubPackage(Component):
-    """The SeisHub package.""" 
+    """
+    The SeisHub package.
+    """ 
     implements(IPackage)
     package_id = 'seishub'
     
@@ -16,7 +17,9 @@ class SeisHubPackage(Component):
 
 
 class StylesheetResource(Component):
-    """A stylesheet resource type for SeisHub."""
+    """
+    A stylesheet resource type for SeisHub.
+    """
     implements(IResourceType)
     
     package_id = 'seishub'
@@ -32,7 +35,9 @@ class StylesheetResource(Component):
 
 
 class SchemaResource(Component):
-    """A schema resource type for SeisHub."""
+    """
+    A schema resource type for SeisHub.
+    """
     implements(IResourceType)
     
     package_id = 'seishub'

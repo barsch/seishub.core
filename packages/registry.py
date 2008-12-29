@@ -3,11 +3,11 @@
 from seishub.core import PackageManager
 from seishub.db.util import DbStorage, DB_NULL
 from seishub.exceptions import SeisHubError
-from seishub.packages.interfaces import IPackage, IResourceType
+from seishub.packages.interfaces import IPackage, IResourceType, \
+    IMapperResource
 from seishub.packages.package import Alias, Schema, Stylesheet, PackageWrapper, \
     ResourceTypeWrapper
 from seishub.packages.util import RegistryDictProxy, RegistryListProxy
-from seishub.processor.interfaces import IMapperResource
 from seishub.util.text import from_uri
 
 

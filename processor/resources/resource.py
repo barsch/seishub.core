@@ -4,14 +4,14 @@ General resource objects.
 """
 
 from seishub.exceptions import NotAllowedError
-from seishub.processor.interfaces import IResource, IStaticResource
+from seishub.processor.interfaces import IResource, IStatical, IFolderish
 from seishub.util.path import splitPath
 from zope.interface import implements
 
 
 class Resource(object):
     """
-    A resource object.
+    A basic resource object.
     """
     implements(IResource)
     
@@ -163,6 +163,8 @@ class Folder(Resource):
     """
     A folder resource containing resource objects.
     """
+    implements(IFolderish)
+    
     def __init__(self):
         Resource.__init__(self)
         self.category = 'folder'
@@ -184,4 +186,4 @@ class StaticFolder(Folder):
     Don't use this folder if you dynamically generate child objects from
     something which could block the whole server, e.g. a database.
     """
-    implements(IStaticResource)
+    implements(IStatical)
