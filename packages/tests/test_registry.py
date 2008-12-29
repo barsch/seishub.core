@@ -392,14 +392,15 @@ class APackage(Component):
     implements(IPackage)
     
     package_id = 'atestpackage'
-    registerStylesheet('resourcelist','data/resourcelist_json.xslt')
+    registerStylesheet('resourcelist', 'data' + os.sep + \
+                       'resourcelist_json.xslt')
 
 class AResourceType(Component):
     implements(IResourceType)
     
     package_id = 'atestpackage'
     resourcetype_id = 'aresourcetype'
-    registerStylesheet('aformat','data/resourcelist_json.xslt')
+    registerStylesheet('aformat', 'data' + os.sep + 'resourcelist_json.xslt')
     registerAlias('analias','/resourceroot[./a/predicate/expression]',
                   limit = 10, order_by = {'/path/to/element':'ASC'})
 
