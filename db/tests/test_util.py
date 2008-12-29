@@ -44,7 +44,7 @@ test_lego_bricks = sa.Table('test_lego_bricks', test_meta,
     sa.Column('owner2_rel', sa.Integer),
     sa.Column('color', sa.Text),
     sa.Column('size', sa.Integer),
-    
+    useexisting = True,
 )
 
 
