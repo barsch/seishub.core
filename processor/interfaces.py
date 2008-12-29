@@ -2,7 +2,7 @@
 """
 General processor related interfaces.
 
-XXX: move some of the more general interfaces into the seishub module.
+XXX: move some of the more general interfaces into the SeisHub module.
 """
 
 from seishub.core import Interface
@@ -53,7 +53,7 @@ class IStaticResource(IResource):
 
 class IScriptResource(IResource):
     """
-    A marker interface for a filesystem based script resource.
+    A marker interface for a file system based script resource.
     """
 
 
@@ -164,16 +164,16 @@ class IAdminTheme(Interface):
     theme_css_file = Attribute("""
         Path to a CSS file.
         
-        Single string representing the relative path from the admin root to 
-        the theme specific CSS file. Implement IAdminStaticContent to introduce
-        new resources to the admin root.
+        Single string representing the relative path from the 
+        L{AdminRootFolder<seishub.processor.resources.admin.AdminRootFolder>}
+        to the theme specific CSS file. Implement L{IAdminStaticContent} to 
+        introduce new resources to the L{AdminRootFolder}.
         """)
 
 
 class IAdminStaticContent(Interface):
     """
-    Extension point for adding static content to the web-based 
-    administration interface.
+    Extension point for adding static content to the administration interface.
     """
     
     def getStaticContent():

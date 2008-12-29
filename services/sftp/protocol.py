@@ -6,8 +6,9 @@ from seishub.processor import Processor, PUT, DELETE, GET, MOVE, HEAD, \
     getChildForRequest
 from seishub.processor.interfaces import IFileSystemResource, IStaticResource, \
     IResource, IScriptResource
-from seishub.util.path import absPath, lsLine
+from seishub.util.path import absPath
 from twisted.conch.interfaces import ISFTPFile, ISFTPServer
+from twisted.conch.ls import lsLine
 from twisted.conch.ssh.filetransfer import SFTPError, FX_FAILURE, \
     FX_OP_UNSUPPORTED, FXF_READ, FXF_CREAT
 from twisted.internet import defer, threads
