@@ -18,6 +18,11 @@
         no-repeat;
 }
 
+.icon-mapping {
+    background: transparent url(../../yui/assets/treeview-sprite.png) 0 -42px
+        no-repeat;
+}
+
 .icon-index {
     background: transparent url(../../yui/assets/treeview-sprite.png) 0 -56px
         no-repeat;
@@ -40,11 +45,6 @@
 
 .icon-folder {
     background: transparent url(../../yui/assets/treeview-sprite.png) 0 -112px
-        no-repeat;
-}
-
-.icon-mapping {
-    background: transparent url(../../yui/assets/treeview-sprite.png) 0 -42px
         no-repeat;
 }
 

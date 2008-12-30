@@ -7,7 +7,7 @@ from seishub.core import Component, implements
 from seishub.exceptions import SeisHubError
 from seishub.packages.builtins import IPackage
 from seishub.processor import GET, PUT, DELETE, POST, HEAD, Processor
-from seishub.packages.interfaces import IMapperResource
+from seishub.packages.interfaces import IMapper
 from seishub.test import SeisHubEnvironmentTestCase
 from twisted.web import http
 import unittest
@@ -35,7 +35,7 @@ class TestMapper(Component):
     """
     A test mapper.
     """
-    implements(IMapperResource)
+    implements(IMapper)
     
     mapping_url = '/mapper-test/testmapping'
     
@@ -56,7 +56,7 @@ class TestMapper2(Component):
     """
     Another test mapper.
     """
-    implements(IMapperResource)
+    implements(IMapper)
     
     mapping_url = '/mapper-test/testmapping2'
     
@@ -68,7 +68,7 @@ class TestMapper3(Component):
     """
     And one more test mapper.
     """
-    implements(IMapperResource)
+    implements(IMapper)
     
     mapping_url = '/mapper-test/testmapping3'
     
@@ -80,7 +80,7 @@ class TestMapper4(Component):
     """
     And one more test mapper.
     """
-    implements(IMapperResource)
+    implements(IMapper)
     
     mapping_url = '/testmapping4'
     
@@ -92,7 +92,7 @@ class TestMapper5(Component):
     """
     An unregistered mapper.
     """
-    implements(IMapperResource)
+    implements(IMapper)
     
     mapping_url = '/mapper-test/testmapping5'
     

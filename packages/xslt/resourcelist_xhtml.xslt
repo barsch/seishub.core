@@ -57,6 +57,8 @@
                     <a href="?">[XML]</a>
                     <xsl:text> </xsl:text>
                     <a href="?format=json">[JSON]</a>
+                    <xsl:text> </xsl:text>
+                    <a href="?format=admin">[ADMIN]</a>
                 </p>
                 <table>
                     <tr>

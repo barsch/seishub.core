@@ -46,7 +46,7 @@ class IResourceTypeWrapper(IResourceType):
     """
 
 
-class IMapperResource(IPackage):
+class IMapper(IPackage):
     """
     General interface definition for a mapper resource.
     """

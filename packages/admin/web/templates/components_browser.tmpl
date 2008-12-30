@@ -36,11 +36,11 @@
     var tree;
     
     function loadNodeData(node, fnLoadComplete) {
-      var nodeTitle = encodeURI(node.title);
+      var nodeTitle = decodeURI(node.title);
       var sUrl = nodeTitle + '?format=admin';
-      var elements = ['package', 'resourcetype', 'property', 'alias', 
-                      'mapping', 'resource', 'index', 'folder', 'file', 
-                      'xmlroot', 'mapping-folder'];
+      var elements = ['folder', 'package', 'resourcetype', 'mapping-folder', 
+                      'property', 'alias', 'mapping', 'resource', 'index', 
+                      'file', 'xmlroot'];
       
       //prepare our callback object
       var callback = {
@@ -56,7 +56,7 @@
               }
               for (var i=0; i<items.length; i++) {
                 var item = items[i];
-                var text = item.substr(item.lastIndexOf('/')+1);
+                var text = decodeURIComponent(item.substr(item.lastIndexOf('/')+1));
                 if (element=='resource' || element=='alias' || element=='file') {
                   var tmp = new YAHOO.widget.TextNode({label:text, target:"_blank"}, node, false);
                   tmp.href = "$resturl" + item;

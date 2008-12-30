@@ -19,6 +19,17 @@
         </xsl:for-each>
         <xsl:text>],</xsl:text>
 
+        <xsl:text>"file":[</xsl:text>
+        <xsl:for-each select="*[@category='file']">
+            <xsl:text>"</xsl:text>
+            <xsl:value-of select="@xlink:href"/>
+            <xsl:text>"</xsl:text>
+            <xsl:if test="not (position()=last())">
+                <xsl:text>,</xsl:text>
+            </xsl:if>
+        </xsl:for-each>
+        <xsl:text>],</xsl:text>
+
         <xsl:text>"mapping":[</xsl:text>
         <xsl:for-each select="*[@category='mapping']">
             <xsl:text>"</xsl:text>
@@ -40,7 +51,7 @@
             </xsl:if>
         </xsl:for-each>
         <xsl:text>],</xsl:text>
-        
+
         <xsl:text>"resource":[</xsl:text>
         <xsl:for-each select="*[@category='resource']">
             <xsl:text>"</xsl:text>

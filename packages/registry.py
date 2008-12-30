@@ -3,8 +3,7 @@
 from seishub.core import PackageManager
 from seishub.db.util import DbStorage, DB_NULL
 from seishub.exceptions import SeisHubError
-from seishub.packages.interfaces import IPackage, IResourceType, \
-    IMapperResource
+from seishub.packages.interfaces import IPackage, IResourceType, IMapper
 from seishub.packages.package import Alias, Schema, Stylesheet, PackageWrapper, \
     ResourceTypeWrapper
 from seishub.packages.util import RegistryDictProxy, RegistryListProxy
@@ -519,7 +518,7 @@ class MapperRegistry(dict):
         Rebuild the mapper registry.
         """
         self._urls = dict()
-        all = PackageManager.getClasses(IMapperResource)
+        all = PackageManager.getClasses(IMapper)
         for cls in all:
             if self.env.isComponentEnabled(cls):
                 self._urls[cls.mapping_url] = cls
