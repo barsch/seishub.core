@@ -1,10 +1,18 @@
 <dl class="messagebox $type">
   <dt>$type.capitalize()</dt>
   <dd>
-    <strong>$message</strong>
+    <strong>
+    #filter WebSafe
+    $message
+    #end filter
+    </strong>
     
     #if $exception
-    <p>$exception</p>
+    <p>
+    #filter WebSafe
+    $exception
+    #end filter
+    </p>
     #end if
   </dd>
 </dl>

@@ -183,12 +183,13 @@ class PluginsPanel(Component):
     panel_ids = ('admin', 'General', 'plug-ins', 'Plug-ins')
     
     def render(self, request):
+        error = None
         if request.method == 'POST':
             if 'update' in request.args:
-                self._updatePlugins(request)
+                error = self._updatePlugins(request)
             if 'reload' in request.args:
                 self._refreshPlugins()
-        return self._viewPlugins(request)
+        return self._viewPlugins(request, error)
     
     def _refreshPlugins(self):
         from seishub.loader import ComponentLoader
@@ -198,7 +199,8 @@ class PluginsPanel(Component):
         """
         Update components.
         """
-        enabled = request.args.get('enabled',[])
+        enabled = request.args.get('enabled', [])
+        error = []
         
         from seishub.core import ComponentMeta
         for component in ComponentMeta._components:
@@ -206,14 +208,18 @@ class PluginsPanel(Component):
             modulename = module.__name__
             classname = modulename + '.' + component.__name__
             if classname in enabled or classname in DEFAULT_COMPONENTS or \
-               modulename in DEFAULT_COMPONENTS:
+                modulename in DEFAULT_COMPONENTS:
                 if not self.env.isComponentEnabled(classname):
-                    self.env.enableComponent(component)
-            else:
-                if self.env.isComponentEnabled(classname):
-                    self.env.disableComponent(component)
+                    msg = self.env.enableComponent(component)
+                    if msg and msg not in error:
+                        error.append(msg)
+            elif self.env.isComponentEnabled(classname):
+                msg = self.env.disableComponent(component)
+                if msg and msg not in error:
+                    error.append(msg)
+        return error
     
-    def _viewPlugins(self, request):
+    def _viewPlugins(self, request, error=None):
         plugins = {}
         from seishub.core import ComponentMeta
         for component in ComponentMeta._components:
@@ -237,6 +243,7 @@ class PluginsPanel(Component):
         data = {
           'sorted_plugins': sorted(plugins), 
           'plugins': plugins,
+          'error': error,
         }
         return data
 

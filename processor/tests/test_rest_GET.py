@@ -267,7 +267,9 @@ class RestGETTests(SeisHubEnvironmentTestCase):
         proc.run(DELETE, '/get-test/notvc/test.xml')
     
     def test_dontHijackResources(self):
-        """Don't hijack resources from different packages - see #65."""
+        """
+        Don't hijack resources from different packages - see #65.
+        """
         # temporary disable resource type 2 and install resource type 1
         self.env.disableComponent(AResourceType2)
         self.env.disableComponent(AVersionControlledResourceType)

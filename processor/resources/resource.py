@@ -4,7 +4,7 @@ General resource objects.
 """
 
 from seishub.exceptions import NotAllowedError
-from seishub.processor.interfaces import IResource, IStatical, IFolderish
+from seishub.processor.interfaces import IResource, IStatical
 from seishub.util.path import splitPath
 from zope.interface import implements
 
@@ -163,7 +163,6 @@ class Folder(Resource):
     """
     A folder resource containing resource objects.
     """
-    implements(IFolderish)
     
     def __init__(self):
         Resource.__init__(self)

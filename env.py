@@ -102,6 +102,13 @@ class Environment(ComponentManager):
         rest_port = self.config.getint('http_port', 'port') or HTTP_PORT
         return 'http://'+ rest_host + ':' + str(rest_port)
     
+    def update(self):
+        """
+        General update method after enabling/disabling components.
+        """
+        self.registry.mappers.update()
+        self.tree.update()
+    
     @defer.inlineCallbacks
     def enableService(self, srv_name):
         """
@@ -139,13 +146,16 @@ class Environment(ComponentManager):
         if not component in self:
             self[component]
         self.enabled[component]=True
+        # package installer must run first before saving
+        if hasattr(component, 'package_id'):
+            try:
+                PackageInstaller.install(self, component.package_id)
+            except Exception, e:
+                return e.message
         self.config.set('components', fullname, 'enabled')
         self.log.info('Enabling component %s' % fullname)
         self.config.save()
-        self.registry.mappers.update()
-        if hasattr(component, 'package_id'):
-            PackageInstaller.install(self, component.package_id)
-        self.tree.update()
+        self.update()
     
     def disableComponent(self, component):
         """
@@ -163,9 +173,8 @@ class Environment(ComponentManager):
         self.config.set('components', fullname, 'disabled')
         self.log.info('Disabling component %s' % fullname)
         self.config.save()
-        self.registry.mappers.update()
         PackageInstaller.cleanup(self)
-        self.tree.update()
+        self.update()
     
     def initOptions(self):
         """

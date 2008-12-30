@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 """
 General processor related interfaces.
-
-XXX: move some of the more general interfaces into the SeisHub module.
 """
 
 from seishub.core import Interface
@@ -11,15 +9,16 @@ from zope.interface import Attribute
 
 class IResource(Interface):
     """
-    A resource node.
+    A basic resource node.
     
-    All SeisHub resources should implement this and only this interface!
+    All SeisHub resources should implement this and only this interface! Don't
+    use twisted resource objects!
     """
     
     is_leaf = Attribute("""
         Marker for a leaf node. 
         
-        Leaf nodes don't have static children.
+        Leaf nodes don't have usually static children.
         """)
     
     category = Attribute("""
@@ -37,12 +36,6 @@ class IResource(Interface):
         Set this to True if you want to inform the requesting service, that 
         this resource behaves like an folder.
         """)
-
-
-class IFolderish(Interface):
-    """
-    A marker interface for a folder containing further resources.
-    """
 
 
 class IRestricted(Interface):

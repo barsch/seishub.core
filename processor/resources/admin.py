@@ -71,15 +71,16 @@ class AdminPanel(Resource):
         file = os.path.join(self.root.template_dir, 'error.tmpl')
         temp = Template(file=file)
         temp.type = type
-        if isinstance(msg, basestring):
+        temp.exception = None
+        if isinstance(msg, list):
+            temp.message = '<br />'.join([str(l) for l in msg])
+        elif isinstance(msg, basestring):
             temp.message = msg
-            temp.exception = None
         elif isinstance(msg, tuple) and len(msg)==2:
             temp.message = str(msg[0])
             temp.exception = str(msg[1])
         else:
             temp.message = str(msg)
-            temp.exception = None
         return temp
     
     def _renderNavigation(self):

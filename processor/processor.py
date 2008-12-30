@@ -9,7 +9,7 @@ The processor resolves a resource request containing:
   (3) header information, e.g. {'content-type': 'text/html'}) 
 
 into one of the resource objects of the resource tree object. Errors should be
-handled by raising any SeisHubError instance.
+handled by raising a SeisHubError instance.
 """
 
 from StringIO import StringIO
@@ -23,6 +23,7 @@ import urllib
 # see U{http://www.boutell.com/newfaq/misc/urllength.html}
 MAXIMAL_URL_LENGTH = 1000
 
+# shortcuts
 PUT = 'PUT'
 GET = 'GET'
 POST = 'POST'

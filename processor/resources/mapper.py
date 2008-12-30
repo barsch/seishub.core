@@ -4,7 +4,6 @@ Mapper resources.
 """
 
 from seishub.exceptions import NotAllowedError, SeisHubError
-from seishub.processor.interfaces import IFolderish
 from seishub.processor.resources.resource import Resource
 from twisted.web import http
 
@@ -17,8 +16,8 @@ class MapperResource(Resource):
         Resource.__init__(self)
         self.is_leaf = True
         self.mapper = mapper
-        if IFolderish.providedBy(mapper):
-            self.folderish = folderish
+        if folderish:
+            self.folderish = True
             self.category = 'mapping-folder'
         else:
             self.folderish = False
