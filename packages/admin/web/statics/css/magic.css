@@ -91,6 +91,14 @@ table.list td,table.list th {
     width: 800px;
 }
 
+#login {
+    font-family: "Lucida Grande", "Lucida Sans Unicode", Verdana;
+    top: 80px;
+    right: 0px;
+    height: 36px;
+    position: absolute;
+}
+
 #menu {
     list-style-type: none;
     list-style-position: outside;
@@ -102,7 +110,7 @@ table.list td,table.list th {
     float: left;
 }
 
-#menu a {
+#menu a, #login a {
     color: #A9A9A9;
     height: 36px;
     margin: auto 10px;
@@ -116,11 +124,11 @@ table.list td,table.list th {
     text-decoration: none;
 }
 
-#menu a:hover {
+#menu a:hover, #login a:hover {
     color: orange;
 }
 
-#menu a.selected {
+#menu a.selected, #login a.selected {
     color: white;
     cursor: default;
     text-decoration: none;

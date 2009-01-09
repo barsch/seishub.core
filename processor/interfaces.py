@@ -38,12 +38,6 @@ class IResource(Interface):
         """)
 
 
-class IRestricted(Interface):
-    """
-    A marker interface for a restricted resource.
-    """
-
-
 class IStatical(Interface):
     """
     A marker interface for a static, non blocking resource.

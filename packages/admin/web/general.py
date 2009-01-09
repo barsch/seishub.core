@@ -23,6 +23,7 @@ class BasicPanel(Component):
     
     template = 'templates' + os.sep + 'general_basic.tmpl'
     panel_ids = ('admin', 'General', 'basic', 'Basic Settings')
+    has_roles = ['SEISHUB_ADMIN']
     
     def render(self, request):
         data = {}
@@ -53,6 +54,7 @@ class ConfigPanel(Component):
     
     template = 'templates' + os.sep + 'general_config.tmpl'
     panel_ids = ('admin', 'General', 'config', 'Config')
+    has_roles = ['SEISHUB_ADMIN']
     
     def render(self, request):
         data = {}
@@ -73,6 +75,7 @@ class LogsPanel(Component):
     
     template = 'templates' + os.sep + 'general_logs.tmpl'
     panel_ids = ('admin', 'General', 'logs', 'Logs')
+    has_roles = ['SEISHUB_ADMIN']
     
     def render(self, request):
         error_log_file = self.env.config.get('logging', 'error_log_file')
@@ -91,14 +94,15 @@ class LogsPanel(Component):
         return data
 
 
-class PermissionsPanel(Component):
+class UsersPanel(Component):
     """
-    Administration of users and groups.
+    Administration of users.
     """
     implements(IAdminPanel)
     
-    template = 'templates' + os.sep + 'general_permissions.tmpl'
-    panel_ids = ('admin', 'General', 'permissions', 'Permissions')
+    template = 'templates' + os.sep + 'general_users.tmpl'
+    panel_ids = ('admin', 'General', 'permission-users', 'Users')
+    has_roles = ['SEISHUB_ADMIN']
     
     def render(self, request):
         data = {}
@@ -173,6 +177,36 @@ class PermissionsPanel(Component):
         return data
 
 
+class RolesPanel(Component):
+    """
+    Administration of roles.
+    """
+    implements(IAdminPanel)
+    
+    template = 'templates' + os.sep + 'general_roles.tmpl'
+    panel_ids = ('admin', 'General', 'permission-roles', 'Roles')
+    has_roles = ['SEISHUB_ADMIN']
+    
+    def render(self, request):
+        data = {}
+        return data
+
+
+class GroupsPanel(Component):
+    """
+    Administration of groups.
+    """
+    implements(IAdminPanel)
+    
+    template = 'templates' + os.sep + 'general_roles.tmpl'
+    panel_ids = ('admin', 'General', 'permission-groups', 'Groups')
+    has_roles = ['SEISHUB_ADMIN']
+    
+    def render(self, request):
+        data = {}
+        return data
+
+
 class PluginsPanel(Component):
     """
     Administration of plug-ins.
@@ -181,6 +215,7 @@ class PluginsPanel(Component):
     
     template = 'templates' + os.sep + 'general_plugins.tmpl'
     panel_ids = ('admin', 'General', 'plug-ins', 'Plug-ins')
+    has_roles = ['SEISHUB_ADMIN']
     
     def render(self, request):
         error = None
@@ -256,6 +291,7 @@ class ServicesPanel(Component):
     
     template = 'templates' + os.sep + 'general_services.tmpl'
     panel_ids = ('admin', 'General', 'services', 'Services')
+    has_roles = ['SEISHUB_ADMIN']
     
     def render(self, request):
         if request.method == 'POST':

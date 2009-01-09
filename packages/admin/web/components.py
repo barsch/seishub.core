@@ -17,6 +17,7 @@ class SchemasPanel(Component):
     
     template = 'templates' + os.sep + 'components_schemas.tmpl'
     panel_ids = ('components', 'Components', 'edit-schemas', 'Schemas')
+    has_roles = ['COMPONENT_SCHEMAS']
     
     def render(self, request):
         packages = self.env.registry.getPackageIds()
@@ -71,6 +72,7 @@ class StylesheetsPanel(Component):
     
     template = 'templates' + os.sep + 'components_stylesheets.tmpl'
     panel_ids = ('components', 'Components', 'edit-stylesheets', 'Stylesheets')
+    has_roles = ['COMPONENT_STYLESHEETS']
     
     def render(self, request):
         packages = self.env.registry.getPackageIds()
@@ -140,6 +142,7 @@ class IndexesPanel(Component):
     
     template = 'templates' + os.sep + 'components_indexes.tmpl'
     panel_ids = ('components', 'Components', 'edit-indexes', 'Indexes')
+    has_roles = ['COMPONENT_INDEXES']
     
     def render(self, request):
         packages = self.env.registry.getPackageIds()
@@ -226,6 +229,7 @@ class AliasesPanel(Component):
     
     template = 'templates' + os.sep + 'components_aliases.tmpl'
     panel_ids = ('components', 'Components', 'edit-aliases', 'Aliases')
+    has_roles = ['COMPONENT_ALIASES']
     
     def render(self, request):
         packages = self.env.registry.getPackageIds()
@@ -286,6 +290,7 @@ class QuickinstallerPanel(Component):
     template = 'templates' + os.sep + 'components_quickinstaller.tmpl'
     panel_ids = ('components', 'Components', 'quickinstaller', 
                  'Quickinstaller')
+    has_roles = ['SEISHUB_ADMIN']
     
     def render(self, request):
         packages = self.env.registry.getPackageIds()

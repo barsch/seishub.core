@@ -21,7 +21,7 @@ from twisted.internet import defer
 import os
 import sys
 import time
-# must be last!
+# this line must be the last import - don't move!
 from seishub.packages.registry import ComponentRegistry
 
 
@@ -66,7 +66,7 @@ class Environment(ComponentManager):
         # set log handler
         self.log = Logger(self)
         # initialize all default options
-        self.initOptions()
+        self.initDefaultOptions()
         # set up DB handler
         self.db = DatabaseManager(self) 
         # set XML catalog
@@ -86,6 +86,7 @@ class Environment(ComponentManager):
         PackageInstaller.install(self)
         # initialize the resource tree
         self.tree = ResourceTree(self)
+        self.update()
     
     def getSeisHubPath(self):
         """
@@ -107,6 +108,7 @@ class Environment(ComponentManager):
         General update method after enabling/disabling components.
         """
         self.registry.mappers.update()
+        self.registry.sqlviews.update()
         self.tree.update()
     
     @defer.inlineCallbacks
@@ -176,7 +178,7 @@ class Environment(ComponentManager):
         PackageInstaller.cleanup(self)
         self.update()
     
-    def initOptions(self):
+    def initDefaultOptions(self):
         """
         Initialize any not yet set default options in configuration file.
         """

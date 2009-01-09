@@ -21,8 +21,6 @@ class ResourceTree(StaticFolder):
         StaticFolder.__init__(self)
         self.env = env
         self._registry = {}
-        # auto generate tree
-        self.update()
     
     def putChild(self, path, obj):
         """

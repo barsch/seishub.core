@@ -3,11 +3,13 @@
 from seishub.core import PackageManager
 from seishub.db.util import DbStorage, DB_NULL
 from seishub.exceptions import SeisHubError
-from seishub.packages.interfaces import IPackage, IResourceType, IMapper
+from seishub.packages.interfaces import IPackage, IResourceType, IMapper, \
+    IPostgreSQLView
 from seishub.packages.package import Alias, Schema, Stylesheet, PackageWrapper, \
     ResourceTypeWrapper
-from seishub.packages.util import RegistryDictProxy, RegistryListProxy
+from seishub.packages.util import RegistryListProxy
 from seishub.util.text import from_uri
+from zope.interface.verify import verifyClass
 
 
 class ComponentRegistry(DbStorage):
@@ -17,7 +19,6 @@ class ComponentRegistry(DbStorage):
     aliases = RegistryListProxy('_alias_reg')
     schemas = RegistryListProxy('_schema_reg')
     stylesheets = RegistryListProxy('_stylesheet_reg')
-    mappers = RegistryDictProxy('_mapper_reg')
     
     def __init__(self, env):
         DbStorage.__init__(self, env.db)
@@ -25,7 +26,8 @@ class ComponentRegistry(DbStorage):
         self._stylesheet_reg = StylesheetRegistry(self)
         self._schema_reg = SchemaRegistry(self)
         self._alias_reg = AliasRegistry(self)
-        self._mapper_reg = MapperRegistry(self.env)
+        self.mappers = MapperRegistry(self.env)
+        self.sqlviews = SQLViewRegistry(self.env)
     
     def getComponents(self, interface, package_id = None):
         """
@@ -57,7 +59,9 @@ class ComponentRegistry(DbStorage):
         return sorted(enabled)
     
     def isPackageId(self, package_id):
-        """Checks if the given package id belongs to an enabled package."""
+        """
+        Checks if the given package id belongs to an enabled package.
+        """
         return package_id in self.getPackageIds()
     
     def getAllPackagesAndResourceTypes(self):
@@ -503,31 +507,90 @@ class AliasRegistry(RegistryBase):
 
 class MapperRegistry(dict):
     """
-    mappers                     list of urls:objects
-    mappers.get(url, method)    get mapper object
+    The Mapper registry.
+    
+    This dictionary contains all activated mappings.
     """
-    _registry = dict()
     _urls = dict()
     
     def __init__(self, env):
         self.env = env
-        self.update()
     
     def update(self):
         """
-        Rebuild the mapper registry.
+        Refresh the mapper registry.
         """
         self._urls = dict()
         all = PackageManager.getClasses(IMapper)
         for cls in all:
-            if self.env.isComponentEnabled(cls):
-                self._urls[cls.mapping_url] = cls
+            if not self.env.isComponentEnabled(cls):
+                continue
+            # sanity checks
+            if not hasattr(cls, 'mapping_url'):
+                msg = "Class %s has a wrong implementation of %s. " + \
+                      "Attribute mapping_url is missing."
+                self.env.log.warn(msg % (cls, IMapper))
+                continue
+            self._urls[cls.mapping_url] = cls
     
     def get(self, url = None):
         """
-        Returns a dictionary of mapper objects {'/path/to': cls}.
+        Returns a dictionary of a mapper objects {'/path/to': mapper_object}.
         """
         if not url:
             return self._urls
         else:
             return self._urls.get(url, None)
+
+
+class SQLViewRegistry:
+    """
+    The SQL View registry.
+    """
+    _view_objs = dict()
+    
+    def __init__(self, env):
+        self.env = env
+    
+    def update(self):
+        """
+        Refresh all SQL views.
+        """
+        self._view_objs = dict()
+        all = PackageManager.getClasses(IPostgreSQLView)
+        for cls in all:
+            if self.env.isComponentEnabled(cls):
+                self._enableView(cls)
+            else:
+                self._disableView(cls)
+    
+    def _enableView(self, cls):
+        """
+        Creates a SQL view by executing the returned SQL string directly.
+        """
+        # sanity checks
+        try:
+            verifyClass(IPostgreSQLView, cls)
+        except Exception, e:
+            msg = "Class %s has a wrong implementation of %s.\n%s"
+            self.env.log.warn(msg % (cls, IMapper, e))
+            return
+        # create view
+        sql = cls(self.env).createView()
+        try:
+            self.env.db.engine.execute(sql)
+        except Exception, e:
+            msg = "Could not create a SQL view defined by class %s.\n%s"
+            self.env.log.error(msg % (cls, e.message))
+            return
+        # register
+        self._view_objs[cls.view_id] = cls
+    
+    def _disableView(self, cls):
+        pass
+    
+    def get(self, url = None):
+        """
+        Returns a dictionary of activated SQL view classes.
+        """
+        return self._view_objs

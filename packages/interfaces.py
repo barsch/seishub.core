@@ -84,6 +84,7 @@ class IMapper(IPackage):
         the resource could be updated, otherwise it should raise a 
         ProcessorError.
         """
+    process_POST.optional = 1
     
     def process_DELETE(request):
         """
@@ -92,6 +93,9 @@ class IMapper(IPackage):
         This function should return True if the resource could be deleted 
         otherwise it should raise a ProcessorError.
         """
+    
+    process_PUT.optional = 1
+    process_DELETE.optional = 1
 
 
 class IAdminPanel(Interface):
@@ -109,6 +113,13 @@ class IAdminPanel(Interface):
         Defines IDs and labels of an admin panel.
         
         Tuple in form of (category, category_label, page, page_label).
+        """)
+    
+    has_roles = Attribute("""
+        Defines a list of roles for using this panel.
+        
+        A list of upper case role names, e.g. SEISHUB_ADMIN or CATALOG_WRITE. 
+        Anonymous access will be allowed if this attribute is not defined.
         """)
     
     def render(request):
@@ -163,13 +174,36 @@ class ISSHCommand(Interface):
     Interface for adding commands to the SSH service.
     """
     
-    def getCommandId(self):
+    def getCommandId():
         """
         Return a command string.
         """
     
-    def executeCommand(self, args):
+    def executeCommand(args):
         """
         Process a command line given as an arrays of arguments and 
         returns a list of strings.
+        """
+
+
+class IPostgreSQLView(Interface):
+    """
+    Interface definition for a PostgreSQL View.
+    
+    You really have to know what your doing if you are using this interface!
+    """
+    view_id = Attribute("""
+        View ID.
+        
+        Single string representing the name of this view - this id must match
+        the SQL view name, e.g. v_baeume for the following example.
+        """)
+    
+    def createView():
+        """
+        Return a SQL string creating a view.
+        
+        e.g. CREATE OR ALTER VIEW v_baeume (name, geom) AS 
+             SELECT name, GeomFromText('POINT(' || x || ' ' || y || ')', 4326)
+             FROM baeume;
         """

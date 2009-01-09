@@ -6,6 +6,7 @@ Catalog and database related administration panels.
 from seishub.core import Component, implements
 from seishub.exceptions import SeisHubError, InvalidParameterError
 from seishub.packages.interfaces import IAdminPanel
+from seishub.xmldb.defaults import DEFAULT_PREFIX
 from sqlalchemy import create_engine #@UnresolvedImport
 import os
 
@@ -18,6 +19,7 @@ class BasicPanel(Component):
     
     template = 'templates' + os.sep + 'catalog_db_basic.tmpl'
     panel_ids = ('catalog', 'Catalog', 'db-basic', 'Database Settings')
+    has_roles = ['CATALOG_ADMIN']
     
     def render(self, request):
         db = self.db
@@ -64,6 +66,7 @@ class DatabaseQueryPanel(Component):
     
     template = 'templates' + os.sep + 'catalog_db_query.tmpl'
     panel_ids = ('catalog', 'Catalog', 'db-query', 'Query DB')
+    has_roles = ['CATALOG_ADMIN']
     
     def render(self, request):
         db = self.env.db.engine
@@ -73,6 +76,7 @@ class DatabaseQueryPanel(Component):
             'result': '',
             'cols': '',
             'tables': tables,
+            'prefix': DEFAULT_PREFIX,
         }
         args = request.args
         if request.method=='POST':
@@ -103,6 +107,7 @@ class ResourcesPanel(Component):
     
     template = 'templates' + os.sep + 'catalog_resources.tmpl'
     panel_ids = ('catalog', 'Catalog', 'resources', 'Resources')
+    has_roles = ['CATALOG_ADMIN']
     
     def render(self, request):
         packages = self.env.registry.getPackageIds()
@@ -172,6 +177,7 @@ class CatalogQueryPanel(Component):
     
     template = 'templates' + os.sep + 'catalog_query.tmpl'
     panel_ids = ('catalog', 'Catalog', 'query', 'Query Catalog')
+    has_roles = ['CATALOG_ADMIN']
     
     def render(self, request):
         data = {

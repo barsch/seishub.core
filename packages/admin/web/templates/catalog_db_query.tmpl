@@ -8,7 +8,7 @@
   
   <div class="button">
     #for $table in $tables
-    <input type="submit" name="$table" value="$table.replace('default_', '')" />
+    <input type="submit" name="$table" value="$table.replace($prefix, '')" />
     #end for
     <br /><br />
     <input type="submit" name="send" value="Query" />
