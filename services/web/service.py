@@ -11,7 +11,7 @@ from seishub.exceptions import InternalServerError, ForbiddenError, \
     SeisHubError
 from seishub.processor import Processor, HEAD, getChildForRequest
 from seishub.processor.interfaces import IFileSystemResource, IResource, \
-    IStatical
+    IStatical, IRESTResource
 from seishub.util.path import addBase
 from seishub.util.text import isInteger
 from twisted.application import service
@@ -86,6 +86,12 @@ class WebRequest(Processor, http.Request):
                 return self._renderResource(data)
             elif isinstance(data, dict):
                 return self._renderFolder(data)
+        elif IRESTResource.providedBy(result):
+            # render in thread
+            d = threads.deferToThread(result.render, self)
+            d.addCallback(self._cbSuccess)
+            d.addErrback(self._cbFailed)
+            return server.NOT_DONE_YET
         elif IResource.providedBy(result):
             # render in thread
             d = threads.deferToThread(result.render, self)
@@ -96,12 +102,17 @@ class WebRequest(Processor, http.Request):
         raise InternalServerError(msg % type(result))
     
     def _cbSuccess(self, result):
-        if isinstance(result, basestring):
-            return self._renderResource(result)
-        elif isinstance(result, dict):
+        if isinstance(result, dict):
+            # a folderish resource
             return self._renderFolder(result)
-        msg = "I don't know how to handle this resource type %s"
-        raise InternalServerError(msg % type(result))
+        elif isinstance(result, basestring):
+            return self._renderResource(result)
+        else:
+            # a non-folderish resource
+            d = threads.deferToThread(result.render, self)
+            d.addCallback(self._renderResource)
+            d.addErrback(self._cbFailed)
+            return server.NOT_DONE_YET
     
     def _cbFailed(self, failure):
         if not isinstance(failure, Failure):

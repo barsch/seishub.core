@@ -12,7 +12,8 @@ import unittest
 
 
 class SeisHubEnvironmentTestCase(unittest.TestCase):
-    """Generates a temporary SeisHub environment without any running service.
+    """
+    Generates a temporary SeisHub environment without any running service.
     
     We generate a temporary configuration file, a SQLite data base and disable 
     logging at all. Any class inheriting from this test case may overwrite the 
@@ -37,17 +38,23 @@ class SeisHubEnvironmentTestCase(unittest.TestCase):
         os.remove(self.filename)
     
     def _config(self):
-        """Method to write into temporary config file."""
+        """
+        Method to write into temporary config file.
+        """
     
     def _start(self):
-        """Method to set the Environment."""
+        """
+        Method to set the Environment.
+        """
         self.config.save()
         self.env=Environment(self.filename)
         self.env.initComponent(self)
 
 
 def suite():
-    """This methods calls all test suites."""
+    """
+    This methods calls all test suites.
+    """
     from seishub.packages.tests import suite as packages_suite
     from seishub.processor.tests import suite as processor_suite
     from seishub.tests import suite as tests_suite

@@ -198,22 +198,22 @@ class RestMOVETests(SeisHubEnvironmentTestCase):
         self.assertEquals(location, uri)
         # get original resource
         try:
-            proc.run(GET, '/move-test/notvc/test.xml')
+            proc.run(GET, '/move-test/notvc/test.xml').render_GET(proc)
             self.fail("Expected SeisHubError")
         except SeisHubError, e:
             self.assertEqual(e.code, http.NOT_FOUND)
         # get new resource
-        data = proc.run(GET, '/move-test/notvc/new.xml')
+        data = proc.run(GET, '/move-test/notvc/new.xml').render_GET(proc)
         self.assertEqual(data, XML_DOC)
         # revert move
         uri = self.env.getRestUrl() + '/move-test/notvc/test.xml'
         proc.run(MOVE, '/move-test/notvc/new.xml', 
                  received_headers = {'Destination': uri})
         # get original resource
-        proc.run(GET, '/move-test/notvc/test.xml')
+        proc.run(GET, '/move-test/notvc/test.xml').render_GET(proc)
         # get new resource 
         try:
-            proc.run(GET, '/move-test/notvc/new.xml')
+            proc.run(GET, '/move-test/notvc/new.xml').render_GET(proc)
             self.fail("Expected SeisHubError")
         except SeisHubError, e:
             self.assertEqual(e.code, http.NOT_FOUND)

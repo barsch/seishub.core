@@ -77,7 +77,7 @@ class RestPUTTests(SeisHubEnvironmentTestCase):
         # upload again
         proc.run(PUT, '/put-test/vc/test.xml', StringIO(XML_VCDOC % 10))
         # should be only latest upload
-        data=proc.run(GET, '/put-test/vc/test.xml/1')
+        data=proc.run(GET, '/put-test/vc/test.xml/1').render_GET(proc)
         self.assertEqual(data, XML_VCDOC % 10)
         # delete resource
         proc.run(DELETE, '/put-test/vc/test.xml')

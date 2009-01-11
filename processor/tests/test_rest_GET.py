@@ -7,9 +7,8 @@ from StringIO import StringIO
 from seishub.core import Component, implements
 from seishub.exceptions import SeisHubError
 from seishub.packages.builtins import IResourceType, IPackage
-from seishub.packages.installer import PackageInstaller
 from seishub.processor import PUT, POST, DELETE, GET, Processor
-from seishub.processor.resources import RESTFolder
+from seishub.processor.resources.rest import RESTResource, RESTFolder
 from seishub.test import SeisHubEnvironmentTestCase
 from sets import Set
 from twisted.web import http
@@ -201,15 +200,20 @@ class RestGETTests(SeisHubEnvironmentTestCase):
         # create resource
         proc.run(PUT, '/get-test/notvc/test.xml', StringIO(XML_DOC))
         # without trailing slash
-        data = proc.run(GET, '/get-test/notvc/test.xml')
+        res1 = proc.run(GET, '/get-test/notvc/test.xml')
+        data1 = res1.render(proc)
         # with trailing slash
-        data2 = proc.run(GET, '/get-test/notvc/test.xml/')
+        res2 = proc.run(GET, '/get-test/notvc/test.xml/')
+        data2 = res2.render(proc)
+        # res must be RESTResource objects
+        self.assertTrue(isinstance(res1, RESTResource))
+        self.assertTrue(isinstance(res2, RESTResource))
         # both results should equal
-        self.assertTrue(Set(data)==Set(data2))
+        self.assertTrue(Set(data1)==Set(data2))
         # data must be a basestring
-        self.assertTrue(isinstance(data, basestring))
+        self.assertTrue(isinstance(data1, basestring))
         # check content
-        self.assertTrue(data, XML_DOC)
+        self.assertTrue(data1, XML_DOC)
         # delete resource
         proc.run(DELETE, '/get-test/notvc/test.xml')
     
@@ -220,20 +224,25 @@ class RestGETTests(SeisHubEnvironmentTestCase):
         proc.run(POST, '/get-test/vc/test.xml', StringIO(XML_DOC))
         proc.run(POST, '/get-test/vc/test.xml', StringIO(XML_DOC))
         # without trailing slash
-        data = proc.run(GET, '/get-test/vc/test.xml/1')
+        res1 = proc.run(GET, '/get-test/vc/test.xml/1')
+        data1 = res1.render_GET(proc)
         # with trailing slash
-        data2 = proc.run(GET, '/get-test/vc/test.xml/1/')
+        res2 = proc.run(GET, '/get-test/vc/test.xml/1/')
+        data2 = res2.render_GET(proc)
+        # res must be RESTResource objects
+        self.assertTrue(isinstance(res1, RESTResource))
+        self.assertTrue(isinstance(res2, RESTResource))
         # both results should equal
-        self.assertTrue(Set(data)==Set(data2))
-        # data must be a basestring
-        self.assertTrue(isinstance(data, basestring))
+        self.assertTrue(data1==data2)
         # check content
-        self.assertTrue(data, XML_DOC)
+        self.assertTrue(data1, XML_DOC)
         # GET revision 2
-        data = proc.run(GET, '/get-test/vc/test.xml/2')
-        self.assertEquals(data, XML_DOC)
-        data = proc.run(GET, '/get-test/vc/test.xml/2/')
-        self.assertEquals(data, XML_DOC)
+        res3 = proc.run(GET, '/get-test/vc/test.xml/2')
+        data3 = res3.render_GET(proc)
+        self.assertEquals(data3, XML_DOC)
+        res4 = proc.run(GET, '/get-test/vc/test.xml/2/')
+        data4 = res4.render_GET(proc)
+        self.assertEquals(data4, XML_DOC)
         # delete resource
         proc.run(DELETE, '/get-test/vc/test.xml')
     
@@ -245,22 +254,27 @@ class RestGETTests(SeisHubEnvironmentTestCase):
         proc.run(POST, '/get-test/notvc/test.xml', StringIO(XML_DOC))
         # revision #1 always exist
         # without trailing slash
-        data = proc.run(GET, '/get-test/notvc/test.xml/1')
+        res1 = proc.run(GET, '/get-test/notvc/test.xml/1')
+        data1 = res1.render(proc)
         # with trailing slash
-        data2 = proc.run(GET, '/get-test/notvc/test.xml/1/')
+        res2 = proc.run(GET, '/get-test/notvc/test.xml/1/')
+        data2 = res2.render(proc)
+        # res must be RESTResource objects
+        self.assertTrue(isinstance(res1, RESTResource))
+        self.assertTrue(isinstance(res2, RESTResource))
         # both results should equal
-        self.assertTrue(Set(data)==Set(data2))
+        self.assertTrue(Set(data1)==Set(data2))
         # data must be a basestring
-        self.assertTrue(isinstance(data, basestring))
+        self.assertTrue(isinstance(data1, basestring))
         # check content
-        self.assertTrue(data, XML_DOC)
+        self.assertTrue(data1, XML_DOC)
         # try to GET revision 2
         try:
-            data = proc.run(GET, '/get-test/notvc/test.xml/2')
+            proc.run(GET, '/get-test/notvc/test.xml/2')
         except SeisHubError, e:
             self.assertEqual(e.code, http.NOT_FOUND)
         try:
-            data = proc.run(GET, '/get-test/notvc/test.xml/2/')
+            proc.run(GET, '/get-test/notvc/test.xml/2/')
         except SeisHubError, e:
             self.assertEqual(e.code, http.NOT_FOUND)
         # delete resource
@@ -280,7 +294,6 @@ class RestGETTests(SeisHubEnvironmentTestCase):
         self.env.disableComponent(AResourceType)
         # install resource type 2
         self.env.enableComponent(AResourceType2)
-        PackageInstaller.install(self.env)
         # try to fetch existing resource from disabled resource type 1
         try:
             proc.run(GET, '/get-test/notvc/1')
@@ -300,6 +313,10 @@ class RestGETTests(SeisHubEnvironmentTestCase):
         except SeisHubError, e:
             self.assertEqual(e.code, http.NOT_FOUND)
         self.env.enableComponent(AResourceType)
+        proc.run(PUT, '/get-test/notvc/2', StringIO(XML_DOC))
+        res = proc.run(GET, '/get-test/notvc/1')
+        data = res.render_GET(proc)
+        self.assertTrue(data, XML_DOC)
         proc.run(DELETE, '/get-test/notvc/1')
 
 

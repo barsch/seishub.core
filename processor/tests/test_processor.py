@@ -126,19 +126,19 @@ class ProcessorTests(SeisHubEnvironmentTestCase):
         self.assertTrue(location.startswith(self.env.getRestUrl() + proc.path))
         # GET resource
         location = location[len(self.env.getRestUrl()):]
-        data = proc.run(GET, location)
+        data = proc.run(GET, location).render_GET(proc)
         self.assertEquals(data, XML_DOC)
         # overwrite this resource via POST request
         proc.run(POST, location, StringIO(XML_DOC2))
         # GET resource
-        data = proc.run(GET, location)
+        data = proc.run(GET, location).render_GET(proc)
         self.assertNotEquals(data, XML_DOC)
         self.assertEquals(data, XML_DOC2)
         # DELETE resource
         proc.run(DELETE, location)
         # GET deleted revision
         try:
-            proc.run(GET, location)
+            proc.run(GET, location).render_GET(proc)
             self.fail("Expected SeisHubError")
         except SeisHubError, e:
             self.assertEqual(e.code, http.NOT_FOUND)
@@ -169,17 +169,17 @@ class ProcessorTests(SeisHubEnvironmentTestCase):
         self.assertTrue(location.startswith(self.env.getRestUrl() + proc.path))
         # GET latest revision
         location = location[len(self.env.getRestUrl()):]
-        data = proc.run(GET, location)
+        data = proc.run(GET, location).render_GET(proc)
         self.assertEquals(data, XML_DOC2)
         # GET revision #1
-        data = proc.run(GET, location + '/1')
+        data = proc.run(GET, location + '/1').render_GET(proc)
         self.assertEquals(data, XML_DOC)
         # GET revision #2
-        data = proc.run(GET, location + '/2')
+        data = proc.run(GET, location + '/2').render_GET(proc)
         self.assertEquals(data, XML_DOC2)
         # GET not existing revision #3
         try:
-            data = proc.run(GET, location + '/3')
+            data = proc.run(GET, location + '/3').render_GET(proc)
             self.fail("Expected SeisHubError")
         except SeisHubError, e:
             self.assertEqual(e.code, http.NOT_FOUND)
@@ -187,7 +187,7 @@ class ProcessorTests(SeisHubEnvironmentTestCase):
         proc.run(DELETE, location)
         # try to GET deleted revision
         try:
-            proc.run(GET, location)
+            proc.run(GET, location).render_GET(proc)
             self.fail("Expected SeisHubError")
         except SeisHubError, e:
             self.assertEqual(e.code, http.NOT_FOUND)

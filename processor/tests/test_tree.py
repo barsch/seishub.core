@@ -6,6 +6,8 @@ A test suite for a ResourceTree resource.
 from seishub.exceptions import SeisHubError
 from seishub.processor import GET, Processor, DELETE, MOVE, PUT, POST
 from seishub.processor.resources import Resource
+from seishub.processor.resources.rest import RESTFolder, RESTPackageFolder, \
+    RESTResourceTypeFolder
 from seishub.test import SeisHubEnvironmentTestCase
 from twisted.web import http
 import unittest
@@ -109,6 +111,16 @@ class ResourceTreeTests(SeisHubEnvironmentTestCase):
                 self.fail("Expected SeisHubError")
             except SeisHubError, e:
                 self.assertEqual(e.code, http.NOT_ALLOWED)
+    
+    def test_someRESTResourceTypes(self):
+        proc = Processor(self.env)
+        result = proc.run(GET, '/')
+        self.assertTrue(isinstance(result.get('xml'), RESTFolder))
+        result = proc.run(GET, '/xml')
+        self.assertTrue(isinstance(result.get('seishub'), RESTPackageFolder))
+        result = proc.run(GET, '/xml/seishub')
+        self.assertTrue(isinstance(result.get('stylesheet'), 
+                                   RESTResourceTypeFolder))
 
 
 def suite():

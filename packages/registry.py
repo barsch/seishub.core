@@ -126,7 +126,7 @@ class ComponentRegistry(DbStorage):
             return package, resourcetype
         resourcetype = self.db_getResourceType(package_id, resourcetype_id)
         if not resourcetype:
-            raise SeisHubError('Resourcetype not present in database: %s', 
+            raise SeisHubError('Resourcetype not present in database: %s' % 
                                str(resourcetype_id))
         return package, resourcetype
 

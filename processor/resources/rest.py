@@ -9,7 +9,6 @@ from seishub.processor.interfaces import IRESTResource
 from seishub.processor.processor import MAXIMAL_URL_LENGTH, PUT, GET, HEAD
 from seishub.processor.resources.resource import Resource, Folder, StaticFolder
 from seishub.util.path import splitPath
-from seishub.util.text import isInteger
 from seishub.util.xml import addXMLDeclaration
 from twisted.web import http
 from zope.interface import implements
@@ -25,20 +24,19 @@ class RESTResource(Resource):
     # XXX: revision should be eventually a extra resource type ...
     # this would solve the issue about http.FORBIDDEN and http.NOT_ALLOWED
     
-    def __init__(self, package_id, resourcetype_id, name, document=None):
+    def __init__(self, res):
         Resource.__init__(self)
         self.category = 'resource'
         self.is_leaf = True
         self.folderish = False
-        self.package_id = package_id
-        self.resourcetype_id = resourcetype_id
-        self.name = name
-        self.document = document
+        self.package_id = res.package.package_id
+        self.resourcetype_id = res.resourcetype.resourcetype_id
+        self.name = res.name
+        self.revision = res.document.revision
+        self.res = res
     
     def getMetadata(self):
-        if not self.document:
-            return {}
-        meta = self.document.meta 
+        meta = self.res.document.meta 
         file_datetime = int(time.mktime(meta.datetime.timetuple()))
         file_size = meta.size
         file_uid = meta.uid or 0
@@ -62,23 +60,7 @@ class RESTResource(Resource):
         U{http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.4.1}
         for all possible error codes.
         """
-        # test if version controlled resource
-        if len(request.postpath)==1:
-            if isInteger(request.postpath[0]):
-                revision = request.postpath[0]
-            else:
-                raise NotFoundError()
-        elif len(request.postpath)>1:
-            raise ForbiddenError()
-        else:
-            revision = None
-        # fetch resource
-        result = request.env.catalog.getResource(self.package_id,
-                                                 self.resourcetype_id,
-                                                 self.name,
-                                                 revision)
-        self.document = result.document
-        data = result.document.data
+        data = self.res.document.data
         # ensure we return a utf-8 encoded string not an unicode object
         if isinstance(data, unicode):
             data = data.encode('utf-8')
@@ -237,25 +219,38 @@ class RESTResourceTypeFolder(Folder):
         self.package_id = package_id
         self.resourcetype_id = resourcetype_id
     
-    def getChild(self, id, request):
-        """
-        Returns a L{XMLResource} object.
-        """
-        return RESTResource(self.package_id, self.resourcetype_id, id)
-    
     def render(self, request):
         if request.method in [GET, HEAD] and len(request.postpath)==0:
             return self.render_GET(request)
         elif request.method==PUT:
             return self.render_PUT(request)
-        elif len(request.postpath)>=1:
-            id = request.postpath.pop(0)
-            request.prepath.append(id)
-            child = self.getChild(id, request)
-            if child:
-                return child.render(request)
-            raise NotFoundError
-        raise NotAllowedError("Operation is not allowed here.")
+        elif len(request.postpath)==1:
+            name = request.postpath.pop(0)
+            request.prepath.append(name)
+            res = request.env.catalog.getResource(self.package_id,
+                                                  self.resourcetype_id,
+                                                  name,
+                                                  revision=None)
+            result = RESTResource(res)
+            if request.method == GET:
+                return result
+            else:
+                return result.render(request)
+        elif len(request.postpath)==2:
+            if request.method!=GET:
+                raise ForbiddenError("Revisions may not be modified directly.")
+            name = request.postpath.pop(0)
+            request.prepath.append(name)
+            revision = request.postpath.pop(0)
+            request.prepath.append(revision)
+            res = request.env.catalog.getResource(self.package_id,
+                                                  self.resourcetype_id,
+                                                  name,
+                                                  revision=revision)
+            return RESTResource(res)
+        allowed_methods = getattr(self, 'allowedMethods', ())
+        msg = "This operation is not allowed on this resource."
+        raise NotAllowedError(allowed_methods = allowed_methods, message = msg)
     
     def render_PUT(self, request):
         """
@@ -307,10 +302,7 @@ class RESTResourceTypeFolder(Folder):
         temp = {}
         for res in request.env.catalog.getResourceList(self.package_id,
                                                        self.resourcetype_id):
-            temp[res.name] = RESTResource(self.package_id, 
-                                          self.resourcetype_id, 
-                                          res.name,
-                                          res.document)
+            temp[res.name] = RESTResource(res)
         for id in request.env.catalog.listIndexes(self.package_id,
                                                   self.resourcetype_id):
             temp[str(id)] = XMLIndex()

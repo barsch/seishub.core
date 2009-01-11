@@ -82,7 +82,7 @@ class Processor:
         a leaf node, like a file or document resource.
         """
         if isinstance(self.path, unicode):
-            raise TypeError("url must be str, not unicode") 
+            raise TypeError("URL must be a str instance, not unicode!") 
         # unquote url
         self.path = urllib.unquote(self.path)
         # check for URI length

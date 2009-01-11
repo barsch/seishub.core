@@ -148,15 +148,16 @@ class Environment(ComponentManager):
         if not component in self:
             self[component]
         self.enabled[component]=True
+        self.config.set('components', fullname, 'enabled')
+        self.config.save()
         # package installer must run first before saving
         if hasattr(component, 'package_id'):
             try:
                 PackageInstaller.install(self, component.package_id)
             except Exception, e:
+                self.disableComponent(component)
                 return e.message
-        self.config.set('components', fullname, 'enabled')
         self.log.info('Enabling component %s' % fullname)
-        self.config.save()
         self.update()
     
     def disableComponent(self, component):
@@ -168,7 +169,6 @@ class Environment(ComponentManager):
         
         if fullname in DEFAULT_COMPONENTS:
             return
-        
         if component in self:
             del self[component]
         self.enabled[component]=False

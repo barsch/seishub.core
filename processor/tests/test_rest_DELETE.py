@@ -145,7 +145,7 @@ class RestDELETETests(SeisHubEnvironmentTestCase):
         # create resource
         proc.run(PUT, '/delete-test/notvc/test.xml', StringIO(XML_DOC))
         # check resource
-        data = proc.run(GET, '/delete-test/notvc/test.xml')
+        data = proc.run(GET, '/delete-test/notvc/test.xml').render_GET(proc)
         self.assertEqual(data, XML_DOC)
         # delete resource
         data = proc.run(DELETE, '/delete-test/notvc/test.xml')
@@ -264,10 +264,10 @@ class RestDELETETests(SeisHubEnvironmentTestCase):
         proc.run(POST, '/delete-test/vc/test.xml', StringIO(XML_VCDOC % 1))
         proc.run(POST, '/delete-test/vc/test.xml', StringIO(XML_VCDOC % 2))
         # check latest resource - should be #20
-        data = proc.run(GET, '/delete-test/vc/test.xml')
+        data = proc.run(GET, '/delete-test/vc/test.xml').render_GET(proc)
         self.assertEqual(data, XML_VCDOC % 2)
         # check oldest resource -> revision start with 1
-        data = proc.run(GET, '/delete-test/vc/test.xml/1')
+        data = proc.run(GET, '/delete-test/vc/test.xml/1').render_GET(proc)
         self.assertEqual(data, XML_DOC)
         # delete resource
         data = proc.run(DELETE, '/delete-test/vc/test.xml')
@@ -275,7 +275,7 @@ class RestDELETETests(SeisHubEnvironmentTestCase):
         self.assertEqual(proc.code, http.NO_CONTENT)
         # fetch resource again
         try:
-            proc.run(GET, '/delete-test/vc/test.xml')
+            proc.run(GET, '/delete-test/vc/test.xml').render_GET(proc)
             self.fail("Expected SeisHubError")
         except SeisHubError, e:
             self.assertEqual(e.code, http.NOT_FOUND)
