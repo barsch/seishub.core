@@ -145,12 +145,8 @@ class InMemoryFile:
         proc = SFTPProcessor(self.env)
         #import pdb;pdb.set_trace()
         try:
-            if self.flags & FXF_CREAT:
-                # new resource
-                proc.run(PUT, self.filename, self.data)
-            else:
-                # resource exists
-                proc.run(POST, self.filename, self.data)
+            # new resource
+            proc.run(PUT, self.filename, self.data)
         except SeisHubError, e:
             raise SFTPError(FX_FAILURE, e.message)
         except Exception,e:
@@ -268,8 +264,6 @@ class SFTPServiceProtocol:
         try:
             proc.run(HEAD, filename)
         except NotFoundError:
-            return InMemoryFile(self.env, filename, flags, attrs)
-        except DuplicateObjectError:
             return InMemoryFile(self.env, filename, flags, attrs)
         except SeisHubError, e:
             raise SFTPError(FX_FAILURE, e.message)
@@ -400,6 +394,8 @@ class SFTPServiceProtocol:
         proc = SFTPProcessor(self.env)
         try:
             proc.run(DELETE, filename)
+        except ForbiddenError, e:
+            raise SFTPError(FX_OP_UNSUPPORTED, e.message)
         except SeisHubError, e:
             raise SFTPError(FX_FAILURE, e.message)
         except:
@@ -426,6 +422,8 @@ class SFTPServiceProtocol:
         try:
             proc.run(MOVE, oldpath, 
                      received_headers={'Destination': destination})
+        except ForbiddenError, e:
+            raise SFTPError(FX_OP_UNSUPPORTED, e.message)
         except SeisHubError, e:
             raise SFTPError(FX_FAILURE, e.message)
         except:
