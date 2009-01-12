@@ -1,17 +1,16 @@
 # -*- coding: utf-8 -*-
 
 from seishub.exceptions import InternalServerError, ForbiddenError, \
-    NotFoundError, DuplicateObjectError, SeisHubError
+    NotFoundError, SeisHubError
 from seishub.processor import Processor, PUT, DELETE, GET, MOVE, HEAD, \
-    getChildForRequest, POST
+    getChildForRequest
 from seishub.processor.interfaces import IFileSystemResource, IStatical, \
     IResource, IScriptResource, IRESTResource
 from seishub.util.path import absPath
 from twisted.conch.interfaces import ISFTPFile, ISFTPServer
 from twisted.conch.ls import lsLine
-from twisted.conch.ssh.filetransfer import SFTPError, FX_FAILURE, \
-    FX_OP_UNSUPPORTED, FXF_READ, FXF_WRITE, FXF_CREAT, FX_NO_SUCH_FILE, \
-    FX_FILE_ALREADY_EXISTS
+from twisted.conch.ssh.filetransfer import SFTPError, FX_FILE_ALREADY_EXISTS, \
+    FX_FAILURE, FX_OP_UNSUPPORTED, FXF_READ, FXF_WRITE, FX_NO_SUCH_FILE
 from zope.interface import implements
 import StringIO
 import sys
@@ -141,11 +140,9 @@ class InMemoryFile:
         if not self.filename:
             return
         # check for resource
-        print self.flags
         proc = SFTPProcessor(self.env)
-        #import pdb;pdb.set_trace()
         try:
-            # new resource
+            # create new resource
             proc.run(PUT, self.filename, self.data)
         except SeisHubError, e:
             raise SFTPError(FX_FAILURE, e.message)

@@ -3,6 +3,7 @@
 REST based resources.
 """
 
+from lxml import etree
 from seishub.exceptions import ForbiddenError, NotFoundError, SeisHubError, \
     NotAllowedError
 from seishub.processor.interfaces import IRESTResource, IRESTProperty
@@ -14,7 +15,6 @@ from seishub.util.xml import addXMLDeclaration
 from twisted.web import http
 from zope.interface import implements
 import time
-import xmlrpclib
 
 
 class RESTResource(Resource):
@@ -237,8 +237,35 @@ class RESTProperty(Resource):
                                                   self.resourcetype_id,
                                                   self.name,
                                                   self.revision)
+            # dictionary of indexes 
             index_dict = request.env.catalog.getIndexData(res)
-            data = str(xmlrpclib.dumps((index_dict,)))
+            # create a XML document
+            root = etree.Element("seishub")
+            for xpath, value in index_dict.iteritems():
+                sub = etree.SubElement(root, "item")
+                etree.SubElement(sub, "xpath").text = xpath
+                etree.SubElement(sub, "value").text = unicode(value)
+            data = etree.tostring(root, pretty_print=True)
+            format_prefix = 'index'
+        elif property=='.meta':
+            res = request.env.catalog.getResource(self.package_id,
+                                                  self.resourcetype_id,
+                                                  self.name,
+                                                  self.revision)
+            meta = res.document.meta
+            # create a XML document
+            root = etree.Element("seishub")
+            etree.SubElement(root, "package").text = self.package_id
+            etree.SubElement(root, "resourcetype").text = self.resourcetype_id
+            etree.SubElement(root, "name").text = self.name
+            etree.SubElement(root, "revision").text = self.revision
+            etree.SubElement(root, "uid").text = unicode(meta.uid)
+            etree.SubElement(root, "datetime").text = \
+                unicode(meta.datetime.isoformat())
+            etree.SubElement(root, "size").text = unicode(meta.size)
+            etree.SubElement(root, "hash").text = unicode(meta.hash)
+            data = etree.tostring(root, pretty_print=True)
+            format_prefix = 'meta'
         else:
             raise NotFoundError("Property %s is not defined." % property)
         # ensure we return a utf-8 encoded string not an unicode object
@@ -252,11 +279,11 @@ class RESTProperty(Resource):
                  request.args.get('output',[None])[0]
         # handle output/format conversion
         if format:
-            format = 'index.%s' % format
+            format = '%s.%s' % (format_prefix, format)
             # fetch a XSLT document object
             reg = request.env.registry
             xslt = reg.stylesheets.get(package_id = 'seishub', 
-                                       resourcetype_id = 'schema', 
+                                       resourcetype_id = 'stylesheet', 
                                        type = format)
             if len(xslt):
                 xslt = xslt[0]

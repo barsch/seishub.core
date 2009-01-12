@@ -363,23 +363,23 @@ class RestGETTests(SeisHubEnvironmentTestCase):
         # get index XML w/o trailing slash
         res = proc.run(GET, '/get-test/notvc/test.xml/.index')
         data = res.render_GET(proc)
-        self.assertTrue("<name>/testml/blah1/blah2</name>" in data)
-        self.assertTrue("<value><string>5</string></value>" in data)
+        self.assertTrue("<xpath>/testml/blah1/blah2</xpath>" in data)
+        self.assertTrue("<value>5</value>" in data)
         # get index XML w/ trailing slash
         res = proc.run(GET, '/get-test/notvc/test.xml/.index/')
         data = res.render_GET(proc)
-        self.assertTrue("<name>/testml/blah1/blah2</name>" in data)
-        self.assertTrue("<value><string>5</string></value>" in data)
+        self.assertTrue("<xpath>/testml/blah1/blah2</xpath>" in data)
+        self.assertTrue("<value>5</value>" in data)
         # get index XML on revision 1 w/o trailing slash
         res = proc.run(GET, '/get-test/notvc/test.xml/1/.index/')
         data = res.render_GET(proc)
-        self.assertTrue("<name>/testml/blah1/blah2</name>" in data)
-        self.assertTrue("<value><string>5</string></value>" in data)
+        self.assertTrue("<xpath>/testml/blah1/blah2</xpath>" in data)
+        self.assertTrue("<value>5</value>" in data)
         # get index XML on revision 1 w/ trailing slash
         res = proc.run(GET, '/get-test/notvc/test.xml/1/.index/')
         data = res.render_GET(proc)
-        self.assertTrue("<name>/testml/blah1/blah2</name>" in data)
-        self.assertTrue("<value><string>5</string></value>" in data)
+        self.assertTrue("<xpath>/testml/blah1/blah2</xpath>" in data)
+        self.assertTrue("<value>5</value>" in data)
     
     def test_getRevisionIndex(self):
         """XXX: Fails yet!
@@ -393,33 +393,34 @@ class RestGETTests(SeisHubEnvironmentTestCase):
         # get index XML of latest revision w/o trailing slash
         res = proc.run(GET, '/get-test/vc/test.xml/.index')
         data = res.render_GET(proc)
-        self.assertTrue("<name>/testml/blah1/blahblah1</name>" in data)
-        self.assertTrue("<value><string>üöäß</string></value>" in data)
+        self.assertTrue("<xpath>/testml/blah1/blahblah1</xpath>" in data)
+        self.assertTrue("<value>üöäß</value>" in data)
         # get index XML of revision 1 w/o trailing slash
         res = proc.run(GET, '/get-test/vc/test.xml/1/.index')
         data = res.render_GET(proc)
-        self.assertTrue("<name>/testml/blah1/blahblah1</name>" in data)
-        self.assertTrue("<value><string>üöäß</string></value>" in data)
+        self.assertTrue("<xpath>/testml/blah1/blahblah1</xpath>" in data)
+        self.assertTrue("<value>üöäß</value>" in data)
         # get index XML of revision 3 w/o trailing slash
         res = proc.run(GET, '/get-test/vc/test.xml/3/.index')
         data = res.render_GET(proc)
-        self.assertTrue("<name>/testml/blah1/blahblah1</name>" in data)
-        self.assertTrue("<value><string>üöäß</string></value>" in data)
+        self.assertTrue("<xpath>/testml/blah1/blahblah1</xpath>" in data)
+        self.assertTrue("<value>üöäß</value>" in data)
         # get index XML of latest revision w/ trailing slash
         res = proc.run(GET, '/get-test/vc/test.xml/.index/')
         data = res.render_GET(proc)
-        self.assertTrue("<name>/testml/blah1/blahblah1</name>" in data)
-        self.assertTrue("<value><string>üöäß</string></value>" in data)
+        self.assertTrue("<xpath>/testml/blah1/blahblah1</xpath>" in data)
+        self.assertTrue("<value>üöäß</value>" in data)
         # get index XML of revision 1 w/ trailing slash
         res = proc.run(GET, '/get-test/vc/test.xml/1/.index/')
         data = res.render_GET(proc)
-        self.assertTrue("<name>/testml/blah1/blahblah1</name>" in data)
-        self.assertTrue("<value><string>üöäß</string></value>" in data)
+        self.assertTrue("<xpath>/testml/blah1/blahblah1</xpath>" in data)
+        self.assertTrue("<value>üöäß</value>" in data)
         # get index XML of revision 3 w/ trailing slash
         res = proc.run(GET, '/get-test/vc/test.xml/3/.index/')
         data = res.render_GET(proc)
-        self.assertTrue("<name>/testml/blah1/blahblah1</name>" in data)
-        self.assertTrue("<value><string>üöäß</string></value>" in data)
+        self.assertTrue("<xpath>/testml/blah1/blahblah1</xpath>" in data)
+        self.assertTrue("<value>üöäß</value>" in data)
+
 
 def suite():
     suite = unittest.TestSuite()
