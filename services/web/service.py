@@ -362,7 +362,7 @@ class HTTPSService(SSLServer):
         self.env = env
         https_port = env.config.getint('web', 'https_port') or HTTPS_PORT
         priv, cert = self._getCertificates()
-        context = ssl.DefaultOpenSSLContextFactory(priv, cert)
+        context = ssl.DefaultOpenSSLContextFactory(str(priv), str(cert))
         log_file = env.config.get('web', 'https_log_file') or None
         if not os.path.isabs(log_file):
             log_file = os.path.join(self.env.config.path, log_file)

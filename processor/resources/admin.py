@@ -30,14 +30,17 @@ class AdminPanel(Resource):
         self.cid, _, self.pid, _ = self.panel.panel_ids
     
     def render(self, request):
+        # content
+        data = self.panel.render(request)
+        if request.finished:
+            return ""
         # main page
         file = os.path.join(self.root.template_dir, 'index.tmpl')
         page = Template(file=file)
         # menus
         page.navigation = self._renderNavigation()
         page.submenu = self._renderSubMenu()
-        # content
-        data = self.panel.render(request)
+        # content panel
         filename = resource_filename(self.panel.__module__, 
                                      self.panel.template)
         content = Template(file=filename, searchList=[data])

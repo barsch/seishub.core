@@ -141,10 +141,9 @@ class InMemoryFile:
         if not self.filename:
             return
         # check for resource
-        print self.flags & FXF_WRITE
-        print self.flags & FXF_CREAT
+        print self.flags
         proc = SFTPProcessor(self.env)
-        import pdb;pdb.set_trace()
+        #import pdb;pdb.set_trace()
         try:
             if self.flags & FXF_CREAT:
                 # new resource

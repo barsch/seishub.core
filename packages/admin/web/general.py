@@ -222,6 +222,10 @@ class PluginsPanel(Component):
         if request.method == 'POST':
             if 'update' in request.args:
                 error = self._updatePlugins(request)
+                if not error:
+                    request.redirect(request.uri)
+                    request.finish()
+                    return ""
             if 'reload' in request.args:
                 self._refreshPlugins()
         return self._viewPlugins(request, error)
