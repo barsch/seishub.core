@@ -573,7 +573,7 @@ class SQLViewRegistry:
             verifyClass(IPostgreSQLView, cls)
         except Exception, e:
             msg = "Class %s has a wrong implementation of %s.\n%s"
-            self.env.log.warn(msg % (cls, IMapper, e))
+            self.env.log.warn(msg % (cls, IPostgreSQLView, e))
             return
         # create view
         sql = cls(self.env).createView()
@@ -587,7 +587,15 @@ class SQLViewRegistry:
         self._view_objs[cls.view_id] = cls
     
     def _disableView(self, cls):
-        pass
+        sql = "DROP VIEW %s;" % cls.view_id
+        try:
+            self.env.db.engine.execute(sql)
+        except Exception, e:
+            msg = "Could not delete a SQL view defined by class %s.\n%s"
+            self.env.log.error(msg % (cls, e.message))
+            return
+        # unregister
+        self._view_objs.pop(cls.view_id)
     
     def get(self, url = None):
         """
