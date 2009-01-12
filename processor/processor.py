@@ -51,7 +51,8 @@ class Processor:
         # set default content
         self.content = StringIO()
         self.data = StringIO()
-        # set resource tree and default paths
+        # set resource tree, default paths, arguments
+        self.args = {}
         self.prepath = []
         self.postpath = []
         self.tree = self.env.tree

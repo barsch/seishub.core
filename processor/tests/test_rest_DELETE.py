@@ -195,7 +195,7 @@ class RestDELETETests(SeisHubEnvironmentTestCase):
             proc.run(DELETE, '/seishub/stylesheet/' + id + '/1')
             self.fail("Expected SeisHubError")
         except SeisHubError, e:
-            self.assertEqual(e.code, http.FORBIDDEN)
+            self.assertEqual(e.code, http.NOT_ALLOWED)
     
     def test_deleteRevision(self):
         """
@@ -210,7 +210,7 @@ class RestDELETETests(SeisHubEnvironmentTestCase):
             proc.run(DELETE, '/delete-test/vc/test.xml/1')
             self.fail("Expected SeisHubError")
         except SeisHubError, e:
-            self.assertEqual(e.code, http.FORBIDDEN)
+            self.assertEqual(e.code, http.NOT_ALLOWED)
         # delete resource
         proc.run(DELETE, '/delete-test/vc/test.xml')
     
@@ -227,7 +227,7 @@ class RestDELETETests(SeisHubEnvironmentTestCase):
             proc.run(DELETE, '/delete-test/vc/test.xml/10')
             self.fail("Expected SeisHubError")
         except SeisHubError, e:
-            self.assertEqual(e.code, http.FORBIDDEN)
+            self.assertEqual(e.code, http.NOT_ALLOWED)
         # delete resource
         proc.run(DELETE, '/delete-test/vc/test.xml')
     

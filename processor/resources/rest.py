@@ -5,14 +5,16 @@ REST based resources.
 
 from seishub.exceptions import ForbiddenError, NotFoundError, SeisHubError, \
     NotAllowedError
-from seishub.processor.interfaces import IRESTResource
+from seishub.processor.interfaces import IRESTResource, IRESTProperty
 from seishub.processor.processor import MAXIMAL_URL_LENGTH, PUT, GET, HEAD
 from seishub.processor.resources.resource import Resource, Folder, StaticFolder
 from seishub.util.path import splitPath
+from seishub.util.text import isInteger
 from seishub.util.xml import addXMLDeclaration
 from twisted.web import http
 from zope.interface import implements
 import time
+import xmlrpclib
 
 
 class RESTResource(Resource):
@@ -20,9 +22,6 @@ class RESTResource(Resource):
     A REST resource node.
     """
     implements(IRESTResource)
-    
-    # XXX: revision should be eventually a extra resource type ...
-    # this would solve the issue about http.FORBIDDEN and http.NOT_ALLOWED
     
     def __init__(self, res):
         Resource.__init__(self)
@@ -67,6 +66,26 @@ class RESTResource(Resource):
         # set XML declaration inclusive UTF-8 encoding string
         if not data.startswith('<xml'):
             data = addXMLDeclaration(data, 'utf-8')
+        # parse request headers for output type
+        format = request.args.get('format',[None])[0] or \
+                 request.args.get('output',[None])[0]
+        # handle output/format conversion
+        if format:
+            # fetch a XSLT document object
+            reg = request.env.registry
+            xslt = reg.stylesheets.get(package_id = self.package_id,
+                                       resourcetype_id = self.resourcetype_id,
+                                       type = format)
+            if len(xslt):
+                xslt = xslt[0]
+                data = xslt.transform(data)
+                # set additional content-type if given in XSLT
+                if xslt.content_type:
+                    request.setHeader('content-type', 
+                                      xslt.content_type + '; charset=UTF-8')
+            else:
+                msg = "There is no stylesheet for requested format %s."
+                request.env.log.debug(msg % format)
         return data
     
     def render_POST(self, request):
@@ -90,8 +109,6 @@ class RESTResource(Resource):
         Modifying a document always needs a valid path to a resource or uses a
         user defined mapping.
         """
-        if len(request.postpath)!=0:
-            raise ForbiddenError() 
         # seishub directory is not directly changeable
         if self.package_id=='seishub':
             msg = "SeisHub resources may not be modified directly."
@@ -112,11 +129,6 @@ class RESTResource(Resource):
         @see: 
         U{http://msdn.microsoft.com/en-us/library/aa142926(EXCHG.65).aspx}
         """
-        # only resources may be moved
-        if len(request.postpath)==1:
-            raise ForbiddenError("Revisions may not be moved.") 
-        if len(request.postpath)!=0:
-            raise ForbiddenError() 
         # seishub directory is not directly changeable
         if self.package_id=='seishub':
             msg = "SeisHub resources may not be moved directly."
@@ -139,10 +151,10 @@ class RESTResource(Resource):
         
         # strip host
         destination = destination[len(request.env.getRestUrl()):]
-        # source uri and destination uri must not be the same value
+        # source URI and destination URI must not be the same value
         parts = splitPath(destination)
         if parts == request.prepath:
-            msg = "Source uri and destination uri must not be the same value."
+            msg = "Source URI and destination URI must not be the same value."
             raise ForbiddenError(msg)
         # test if valid destination path
         if len(parts)<1 or parts[:-1]!=request.prepath[:-1]:
@@ -177,11 +189,6 @@ class RESTResource(Resource):
         Deleting a document always needs a valid path to a resource or may use 
         a user defined mapping.
         """
-        # only resource may be deleted
-        if len(request.postpath)==1:
-            raise ForbiddenError("Revisions may not be deleted directly.") 
-        if len(request.postpath)!=0:
-            raise ForbiddenError() 
         # resource in SeisHub directory are not directly deletable
         if self.package_id=='seishub':
             msg = "SeisHub resources may not be deleted directly."
@@ -203,8 +210,65 @@ class XMLIndex(Resource):
     def __init__(self):
         Resource.__init__(self)
         self.category = 'index'
-        self.is_leaf = False
+        self.is_leaf = True
         self.folderish = False
+
+
+class RESTProperty(Resource):
+    """
+    A REST property node.
+    """
+    implements(IRESTProperty)
+    
+    def __init__(self, package_id, resourcetype_id, name, revision=None):
+        Resource.__init__(self)
+        self.is_leaf = True
+        self.folderish = False
+        self.package_id = package_id
+        self.resourcetype_id = resourcetype_id
+        self.name = name
+        self.revision = revision
+    
+    def render_GET(self, request):
+        property = request.postpath[-1] 
+        # check for valid properties
+        if property=='.index':
+            res = request.env.catalog.getResource(self.package_id,
+                                                  self.resourcetype_id,
+                                                  self.name,
+                                                  self.revision)
+            index_dict = request.env.catalog.getIndexData(res)
+            data = str(xmlrpclib.dumps((index_dict,)))
+        else:
+            raise NotFoundError("Property %s is not defined." % property)
+        # ensure we return a utf-8 encoded string not an unicode object
+        if isinstance(data, unicode):
+            data = data.encode('utf-8')
+        # set XML declaration inclusive UTF-8 encoding string
+        if not data.startswith('<xml'):
+            data = addXMLDeclaration(data, 'utf-8')
+        # parse request headers for output type
+        format = request.args.get('format',[None])[0] or \
+                 request.args.get('output',[None])[0]
+        # handle output/format conversion
+        if format:
+            format = 'index.%s' % format
+            # fetch a XSLT document object
+            reg = request.env.registry
+            xslt = reg.stylesheets.get(package_id = 'seishub', 
+                                       resourcetype_id = 'schema', 
+                                       type = format)
+            if len(xslt):
+                xslt = xslt[0]
+                data = xslt.transform(data)
+                # set additional content-type if given in XSLT
+                if xslt.content_type:
+                    request.setHeader('content-type', 
+                                      xslt.content_type + '; charset=UTF-8')
+            else:
+                msg = "There is no stylesheet for requested format %s."
+                request.env.log.debug(msg % format)
+        return data
 
 
 class RESTResourceTypeFolder(Folder):
@@ -220,37 +284,59 @@ class RESTResourceTypeFolder(Folder):
         self.resourcetype_id = resourcetype_id
     
     def render(self, request):
-        if request.method in [GET, HEAD] and len(request.postpath)==0:
+        rlen = len(request.postpath)
+        if request.method in [GET, HEAD] and rlen==0:
             return self.render_GET(request)
-        elif request.method==PUT:
+        elif request.method==PUT and rlen in [0, 1]:
             return self.render_PUT(request)
         elif len(request.postpath)==1:
-            name = request.postpath.pop(0)
-            request.prepath.append(name)
-            res = request.env.catalog.getResource(self.package_id,
-                                                  self.resourcetype_id,
-                                                  name,
-                                                  revision=None)
-            result = RESTResource(res)
-            if request.method == GET:
-                return result
-            else:
-                return result.render(request)
-        elif len(request.postpath)==2:
-            if request.method!=GET:
-                raise ForbiddenError("Revisions may not be modified directly.")
-            name = request.postpath.pop(0)
-            request.prepath.append(name)
-            revision = request.postpath.pop(0)
-            request.prepath.append(revision)
-            res = request.env.catalog.getResource(self.package_id,
-                                                  self.resourcetype_id,
-                                                  name,
-                                                  revision=revision)
-            return RESTResource(res)
+            return self._processResource(request)
+        elif request.method==GET and rlen>=2:
+            if isInteger(request.postpath[1]):
+                if rlen==2:
+                    return self._processRevision(request)
+                elif rlen==3 and request.postpath[2].startswith('.'):
+                    name = request.postpath.pop(0)
+                    request.prepath.append(name)
+                    revision = request.postpath.pop(0)
+                    request.prepath.append(revision)
+                    return RESTProperty(self.package_id, self.resourcetype_id,
+                                        name, revision)
+            elif request.postpath[1].startswith('.'):
+                name = request.postpath.pop(0)
+                request.prepath.append(name)
+                return RESTProperty(self.package_id, self.resourcetype_id,
+                                    name)
         allowed_methods = getattr(self, 'allowedMethods', ())
         msg = "This operation is not allowed on this resource."
         raise NotAllowedError(allowed_methods = allowed_methods, message = msg)
+    
+    def _processResource(self, request):
+        # resource request
+        name = request.postpath.pop(0)
+        request.prepath.append(name)
+        res = request.env.catalog.getResource(self.package_id,
+                                              self.resourcetype_id,
+                                              name,
+                                              revision=None)
+        result = RESTResource(res)
+        # don't render GET request directly
+        if request.method == GET:
+            return result
+        else:
+            return result.render(request)
+    
+    def _processRevision(self, request):
+        # revision request
+        name = request.postpath.pop(0)
+        request.prepath.append(name)
+        revision = request.postpath.pop(0)
+        request.prepath.append(revision)
+        res = request.env.catalog.getResource(self.package_id,
+                                              self.resourcetype_id,
+                                              name,
+                                              revision=revision)
+        return RESTResource(res)
     
     def render_PUT(self, request):
         """
@@ -270,8 +356,6 @@ class RESTResourceTypeFolder(Folder):
         @see: U{http://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html#sec9.6}
         @see: U{http://thoughtpad.net/alan-dean/http-headers-status.gif}
         """
-        if len(request.postpath) not in [0, 1]:
-            raise ForbiddenError("Operation is not allowed here.")
         # seishub directory is not directly changeable
         if self.package_id=='seishub':
             msg = "SeisHub resources may not be added directly."
@@ -300,9 +384,11 @@ class RESTResourceTypeFolder(Folder):
         Returns all resources and indexes of this resource type.
         """
         temp = {}
+        # resources
         for res in request.env.catalog.getResourceList(self.package_id,
                                                        self.resourcetype_id):
             temp[res.name] = RESTResource(res)
+        # indexes
         for id in request.env.catalog.listIndexes(self.package_id,
                                                   self.resourcetype_id):
             temp[str(id)] = XMLIndex()

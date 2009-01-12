@@ -73,27 +73,27 @@ class WebRequest(Processor, http.Request):
             # resource takes care about rendering
             return
         elif IFileSystemResource.providedBy(result):
-            # render direct 
+            # file system resources render direct 
             data = result.render(self)
             if result.folderish:
                 return self._renderFolder(data)
             else:
                 return self._renderFileResource(data)
         elif IStatical.providedBy(result):
-            # render direct
+            # static resources render direct
             data = result.render(self)
             if isinstance(data, basestring):
                 return self._renderResource(data)
             elif isinstance(data, dict):
                 return self._renderFolder(data)
         elif IRESTResource.providedBy(result):
-            # render in thread
+            # REST resource render in thread
             d = threads.deferToThread(result.render, self)
             d.addCallback(self._cbSuccess)
             d.addErrback(self._cbFailed)
             return server.NOT_DONE_YET
         elif IResource.providedBy(result):
-            # render in thread
+            # all other resources render in thread
             d = threads.deferToThread(result.render, self)
             d.addCallback(self._cbSuccess)
             d.addErrback(self._cbFailed)
@@ -106,9 +106,10 @@ class WebRequest(Processor, http.Request):
             # a folderish resource
             return self._renderFolder(result)
         elif isinstance(result, basestring):
+            # already some textual result
             return self._renderResource(result)
         else:
-            # a non-folderish resource
+            # some object - a non-folderish resource
             d = threads.deferToThread(result.render, self)
             d.addCallback(self._renderResource)
             d.addErrback(self._cbFailed)
@@ -202,26 +203,6 @@ class WebRequest(Processor, http.Request):
         # set default content type to XML
         if 'content-type' not in self.headers:
             self.setHeader('content-type', 'application/xml; charset=UTF-8')
-        # parse request headers for output type
-        format = self.args.get('format',[None])[0] or \
-                 self.args.get('output',[None])[0]
-        # handle output/format conversion
-        if format and len(self.prepath)>3 and self.prepath[0]=='xml':
-            # fetch a xslt document object
-            reg = self.env.registry
-            xslt = reg.stylesheets.get(package_id=self.prepath[1],
-                                       resourcetype_id=self.prepath[2],
-                                       type=format)
-            if len(xslt):
-                xslt = xslt[0]
-                data = xslt.transform(data)
-                # set additional content-type if given in XSLT
-                if xslt.content_type:
-                    self.setHeader('content-type', 
-                                   xslt.content_type + '; charset=UTF-8')
-            else:
-                msg = "There is no stylesheet for requested format %s."
-                self.env.log.debug(msg % format)
         # gzip encoding
         encoding = self.getHeader("accept-encoding")
         if encoding and encoding.find("gzip")>=0:

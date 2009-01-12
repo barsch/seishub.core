@@ -59,6 +59,12 @@ class IRESTResource(IResource):
     """
 
 
+class IRESTProperty(IResource):
+    """
+    A marker interface for a REST resource property.
+    """
+
+
 class IFileSystemResource(IResource):
     """
     A marker interface for a file system resource.

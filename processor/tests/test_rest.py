@@ -213,13 +213,13 @@ class RestTests(SeisHubEnvironmentTestCase):
                 proc.run(method, '/rest-test/vc/test.xml/2')
                 self.fail("Expected SeisHubError")
             except SeisHubError, e:
-                self.assertEqual(e.code, http.FORBIDDEN)
+                self.assertEqual(e.code, http.NOT_ALLOWED)
             # with trailing slash
             try:
                 proc.run(method, '/rest-test/vc/test.xml/2/')
                 self.fail("Expected SeisHubError")
             except SeisHubError, e:
-                self.assertEqual(e.code, http.FORBIDDEN)
+                self.assertEqual(e.code, http.NOT_ALLOWED)
         # delete resource
         proc.run(DELETE, '/rest-test/vc/test.xml')
     
