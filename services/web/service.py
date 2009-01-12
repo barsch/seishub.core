@@ -305,7 +305,8 @@ class WebRequest(Processor, http.Request):
         self.notifications = []
     
     def finish(self):
-        http.Request.finish(self)
+        if not self.finished:
+            http.Request.finish(self)
         for d in self.notifications:
             d.callback(None)
         self.notifications = []
