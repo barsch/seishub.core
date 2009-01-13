@@ -25,6 +25,15 @@ XML_DOC = """<?xml version="1.0" encoding="utf-8"?>
   </blah1>
 </testml>"""
 
+XML_DOC2 = """<?xml version="1.0" encoding="utf-8"?>
+
+<testml>
+  <blah1 id="3">
+    <blahblah1>üöäß</blahblah1>
+    <blah2>%d</blah2>
+  </blah1>
+</testml>"""
+
 
 class AResourceType(Component):
     """
@@ -35,7 +44,7 @@ class AResourceType(Component):
     package_id = 'get-test'
     resourcetype_id = 'notvc'
     version_control = False
-    registerIndex('/testml/blah1/blah2', 'text')
+    registerIndex('/testml/blah1/blahblah1', 'text')
 
 
 class AResourceType2(Component):
@@ -69,7 +78,7 @@ class AVersionControlledResourceType(Component):
     package_id = 'get-test'
     resourcetype_id = 'vc'
     version_control = True
-    registerIndex('/testml/blah1/blahblah1', 'text')
+    registerIndex('/testml/blah1/blah2', 'text')
 
 
 class RestGETTests(SeisHubEnvironmentTestCase):
@@ -169,31 +178,38 @@ class RestGETTests(SeisHubEnvironmentTestCase):
         data = proc.run(DELETE, '/get-test/notvc/test.xml')
     
     def test_getVersionControlledResourceTypeFolder(self):
-        """XXX: Fails yet!
+        """
         Get content of a version controlled resource type folder.
         """
         proc = Processor(self.env)
         # create resource
-        proc.run(PUT, '/get-test/vc/test.xml', StringIO(XML_DOC))
-        proc.run(POST, '/get-test/vc/test.xml', StringIO(XML_DOC))
-        proc.run(POST, '/get-test/vc/test.xml', StringIO(XML_DOC))
-        proc.run(PUT, '/get-test/vc/test2.xml', StringIO(XML_DOC))
-        proc.run(POST, '/get-test/vc/test2.xml', StringIO(XML_DOC))
+        proc.run(PUT, '/get-test/vc/test.xml', StringIO(XML_DOC2 % 11))
+        proc.run(POST, '/get-test/vc/test.xml', StringIO(XML_DOC2 % 22))
+        proc.run(POST, '/get-test/vc/test.xml', StringIO(XML_DOC2 % 33))
+        proc.run(PUT, '/get-test/vc/test2.xml', StringIO(XML_DOC2 % 111))
+        proc.run(POST, '/get-test/vc/test2.xml', StringIO(XML_DOC2 % 222))
         # without trailing slash
         data = proc.run(GET, '/get-test/vc')
-#        # with trailing slash
-#        data2 = proc.run(GET, '/get-test/vc/')
-#        # both results should equal
-#        self.assertTrue(Set(data)==Set(data2))
-#        # data must be a dict
-#        self.assertTrue(isinstance(data, dict))
-#        # check content
-#        self.assertTrue(data.has_key('test.xml'))
-#        self.assertTrue(data.has_key('test2.xml'))
-#        # delete resource
-#        data = proc.run(DELETE, '/get-test/notvc/test.xml')
-#        data = proc.run(DELETE, '/get-test/notvc/test2.xml')
-
+        # with trailing slash
+        data2 = proc.run(GET, '/get-test/vc/')
+        # both results should equal
+        self.assertTrue(Set(data)==Set(data2))
+        # data must be a dict
+        self.assertTrue(isinstance(data, dict))
+        # check content
+        self.assertTrue(data.has_key('test.xml'))
+        self.assertTrue(data.has_key('test2.xml'))
+        # check documents -> must not be a list
+        self.assertFalse(isinstance(data['test.xml'].res.document, list))
+        self.assertFalse(isinstance(data['test2.xml'].res.document, list))
+        # check revisions
+        self.assertTrue(data['test.xml'].res.document.revision, 3)
+        self.assertTrue(data['test2.xml'].res.document.revision, 2)
+        self.assertEquals(data['test.xml'].render_GET(proc), XML_DOC2 % 33)
+        self.assertEquals(data['test2.xml'].render_GET(proc), XML_DOC2 % 222)
+        # delete resource
+        data = proc.run(DELETE, '/get-test/vc/test.xml')
+        data = proc.run(DELETE, '/get-test/vc/test2.xml')
     
     def test_getNotExistingResourceType(self):
         proc = Processor(self.env)
@@ -354,7 +370,7 @@ class RestGETTests(SeisHubEnvironmentTestCase):
         proc.run(DELETE, '/get-test/notvc/1')
     
     def test_getResourceIndex(self):
-        """
+        """XXX: Fails yet - related to utf-8 encoding of index XML document
         Tests resource index property.
         """
         proc = Processor(self.env)
@@ -363,23 +379,24 @@ class RestGETTests(SeisHubEnvironmentTestCase):
         # get index XML w/o trailing slash
         res = proc.run(GET, '/get-test/notvc/test.xml/.index')
         data = res.render_GET(proc)
-        self.assertTrue("<xpath>/testml/blah1/blah2</xpath>" in data)
-        self.assertTrue("<value>5</value>" in data)
+        print data
+        self.assertTrue("<xpath>/testml/blah1/blahblah1</xpath>" in data)
+        self.assertTrue("<value>üöäß</value>" in data)
         # get index XML w/ trailing slash
         res = proc.run(GET, '/get-test/notvc/test.xml/.index/')
         data = res.render_GET(proc)
-        self.assertTrue("<xpath>/testml/blah1/blah2</xpath>" in data)
-        self.assertTrue("<value>5</value>" in data)
+        self.assertTrue("<xpath>/testml/blah1/blahblah1</xpath>" in data)
+        self.assertTrue("<value>üöäß</value>" in data)
         # get index XML on revision 1 w/o trailing slash
         res = proc.run(GET, '/get-test/notvc/test.xml/1/.index/')
         data = res.render_GET(proc)
-        self.assertTrue("<xpath>/testml/blah1/blah2</xpath>" in data)
-        self.assertTrue("<value>5</value>" in data)
+        self.assertTrue("<xpath>/testml/blah1/blahblah1</xpath>" in data)
+        self.assertTrue("<value>üöäß</value>" in data)
         # get index XML on revision 1 w/ trailing slash
         res = proc.run(GET, '/get-test/notvc/test.xml/1/.index/')
         data = res.render_GET(proc)
-        self.assertTrue("<xpath>/testml/blah1/blah2</xpath>" in data)
-        self.assertTrue("<value>5</value>" in data)
+        self.assertTrue("<xpath>/testml/blah1/blahblah1</xpath>" in data)
+        self.assertTrue("<value>üöäß</value>" in data)
     
     def test_getRevisionIndex(self):
         """XXX: Fails yet!
@@ -387,39 +404,56 @@ class RestGETTests(SeisHubEnvironmentTestCase):
         """
         proc = Processor(self.env)
         # create resource
-        proc.run(PUT, '/get-test/vc/test.xml/', StringIO(XML_DOC))
-        proc.run(POST, '/get-test/vc/test.xml/', StringIO(XML_DOC))
-        proc.run(POST, '/get-test/vc/test.xml/', StringIO(XML_DOC))
+        proc.run(PUT, '/get-test/vc/test.xml/', StringIO(XML_DOC2 % 12))
+        proc.run(POST, '/get-test/vc/test.xml/', StringIO(XML_DOC2 % 234))
+        proc.run(POST, '/get-test/vc/test.xml/', StringIO(XML_DOC2 % 3456))
+        # get index directly from catalog for latest revision
+        res=self.env.catalog.getResource('get-test','vc','test.xml')
+        index_dict=self.env.catalog.getIndexData(res)
+        self.assertNotEqual(index_dict, {})
+        # get index directly from catalog for revision 3 (==latest)
+        res=self.env.catalog.getResource('get-test','vc','test.xml', 3)
+        index_dict=self.env.catalog.getIndexData(res)
+        self.assertNotEqual(index_dict, {})
+        # get index directly from catalog for revision 2
+        res=self.env.catalog.getResource('get-test','vc','test.xml', 2)
+        index_dict=self.env.catalog.getIndexData(res)
+        # XXX: fails
+        self.assertNotEqual(index_dict, {})
+        # get index directly from catalog for first revision
+        res=self.env.catalog.getResource('get-test','vc','test.xml', 1)
+        index_dict=self.env.catalog.getIndexData(res)
+        self.assertNotEqual(index_dict, {})
         # get index XML of latest revision w/o trailing slash
         res = proc.run(GET, '/get-test/vc/test.xml/.index')
         data = res.render_GET(proc)
-        self.assertTrue("<xpath>/testml/blah1/blahblah1</xpath>" in data)
-        self.assertTrue("<value>üöäß</value>" in data)
+        self.assertTrue("<xpath>/testml/blah1/blah2</xpath>" in data)
+        self.assertTrue("<value>3456</value>" in data)
         # get index XML of revision 1 w/o trailing slash
         res = proc.run(GET, '/get-test/vc/test.xml/1/.index')
         data = res.render_GET(proc)
-        self.assertTrue("<xpath>/testml/blah1/blahblah1</xpath>" in data)
-        self.assertTrue("<value>üöäß</value>" in data)
+        self.assertTrue("<xpath>/testml/blah1/blah2</xpath>" in data)
+        self.assertTrue("<value>12</value>" in data)
         # get index XML of revision 3 w/o trailing slash
         res = proc.run(GET, '/get-test/vc/test.xml/3/.index')
         data = res.render_GET(proc)
-        self.assertTrue("<xpath>/testml/blah1/blahblah1</xpath>" in data)
-        self.assertTrue("<value>üöäß</value>" in data)
+        self.assertTrue("<xpath>/testml/blah1/blah2</xpath>" in data)
+        self.assertTrue("<value>3456</value>" in data)
         # get index XML of latest revision w/ trailing slash
         res = proc.run(GET, '/get-test/vc/test.xml/.index/')
         data = res.render_GET(proc)
-        self.assertTrue("<xpath>/testml/blah1/blahblah1</xpath>" in data)
-        self.assertTrue("<value>üöäß</value>" in data)
+        self.assertTrue("<xpath>/testml/blah1/blah2</xpath>" in data)
+        self.assertTrue("<value>3456</value>" in data)
         # get index XML of revision 1 w/ trailing slash
         res = proc.run(GET, '/get-test/vc/test.xml/1/.index/')
         data = res.render_GET(proc)
-        self.assertTrue("<xpath>/testml/blah1/blahblah1</xpath>" in data)
-        self.assertTrue("<value>üöäß</value>" in data)
+        self.assertTrue("<xpath>/testml/blah1/blah2</xpath>" in data)
+        self.assertTrue("<value>12</value>" in data)
         # get index XML of revision 3 w/ trailing slash
         res = proc.run(GET, '/get-test/vc/test.xml/3/.index/')
         data = res.render_GET(proc)
-        self.assertTrue("<xpath>/testml/blah1/blahblah1</xpath>" in data)
-        self.assertTrue("<value>üöäß</value>" in data)
+        self.assertTrue("<xpath>/testml/blah1/blah2</xpath>" in data)
+        self.assertTrue("<value>3456</value>" in data)
 
 
 def suite():
