@@ -244,8 +244,9 @@ class RESTProperty(Resource):
             for xpath, value in index_dict.iteritems():
                 sub = etree.SubElement(root, "item")
                 etree.SubElement(sub, "xpath").text = xpath
-                etree.SubElement(sub, "value").text = unicode(value)
-            data = etree.tostring(root, pretty_print=True)
+                etree.SubElement(sub, "value").text = value
+            data = etree.tostring(root, pretty_print=True, encoding='utf-8')
+            #import pdb;pdb.set_trace()
             format_prefix = 'index'
         elif property=='.meta':
             res = request.env.catalog.getResource(self.package_id,
@@ -264,7 +265,7 @@ class RESTProperty(Resource):
                 unicode(meta.datetime.isoformat())
             etree.SubElement(root, "size").text = unicode(meta.size)
             etree.SubElement(root, "hash").text = unicode(meta.hash)
-            data = etree.tostring(root, pretty_print=True)
+            data = etree.tostring(root, pretty_print=True, encoding='utf-8')
             format_prefix = 'meta'
         else:
             raise NotFoundError("Property %s is not defined." % property)

@@ -370,7 +370,7 @@ class RestGETTests(SeisHubEnvironmentTestCase):
         proc.run(DELETE, '/get-test/notvc/1')
     
     def test_getResourceIndex(self):
-        """XXX: Fails yet - related to utf-8 encoding of index XML document
+        """
         Tests resource index property.
         """
         proc = Processor(self.env)
