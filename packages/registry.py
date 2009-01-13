@@ -563,7 +563,7 @@ class SQLViewRegistry(object):
         for cls in all:
             if self.env.isComponentEnabled(cls):
                 self._enableView(cls)
-            else:
+            elif hasattr(cls, 'view_id') and cls.view_id in self._view_objs:
                 self._disableView(cls)
     
     def _enableView(self, cls):
