@@ -108,7 +108,7 @@ class XmlCatalog(object):
             return self.xmldb.deleteRevision(package_id, resourcetype_id, name, 
                                              revision = revision)
         res = self.xmldb.deleteResource(package_id, resourcetype_id, name, 
-                                        revision, document_id)
+                                        document_id)
         if not res:
             msg = "Error deleting a resource: No resource was found with " + \
                   "the given parameters."
@@ -119,11 +119,11 @@ class XmlCatalog(object):
         """Remove all resources of specified package and resourcetype."""
         return self.xmldb.deleteResources(package_id, resourcetype_id)
     
-    def deleteRevisions(self, package_id, resourcetype_id, name):
-        self.env.log.warn("Deprecation warning: xmlcatalog.deleteRevisions()"+\
-                          "is deprecated, use xmlcatalog.deleteResource() "+\
-                          "instead")
-        return self.deleteResource(package_id, resourcetype_id, name)
+#    def deleteRevisions(self, package_id, resourcetype_id, name):
+#        self.env.log.warn("Deprecation warning: xmlcatalog.deleteRevisions()"+\
+#                          "is deprecated, use xmlcatalog.deleteResource() "+\
+#                          "instead")
+#        return self.deleteResource(package_id, resourcetype_id, name)
     
     def getResource(self, package_id, resourcetype_id, name, revision = None):
         """Get a specific resource from the database.
