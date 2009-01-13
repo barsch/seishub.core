@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 
+import sys
 from datetime import datetime
 from twisted.python import log
 
-from seishub.core import implements
+from seishub.core import implements, ExtensionPoint
+from seishub.exceptions import InvalidObjectError
 from seishub.db.util import Serializable, Relation, db_property
-from seishub.packages.package import ResourceTypeWrapper
+from seishub.packages.interfaces import IProcessorIndex
 from seishub.xmldb import defaults
 from seishub.xmldb.interfaces import IXmlDocument, IXmlIndex
 from seishub.xmldb.resource import XmlDocument
@@ -16,9 +18,11 @@ FLOAT_INDEX = 2
 DATETIME_INDEX = 3
 BOOLEAN_INDEX = 4
 NONETYPE_INDEX = 5
+PROCESSOR_INDEX = 6
 
 ISO_FORMAT = "%Y%m%d %H:%M:%S"
 _FALSE_VALUES = ('no', 'false', 'off', '0', 'disabled')
+
 
 class XmlIndex(Serializable):
     """A XML index definition.
@@ -37,6 +41,9 @@ class XmlIndex(Serializable):
      
      without a format string, ISO 8601 strings and timestamps are autodetected.
     """
+    # XXX: we REALLY have a problem with circular imports
+    from seishub.packages.package import ResourceTypeWrapper
+    
     implements(IXmlIndex)
     
     db_table = defaults.index_def_tab
@@ -79,45 +86,72 @@ class XmlIndex(Serializable):
     
     def setType(self, type):
         self._type = type
-        if type == NUMERIC_INDEX:
-            self._element_cls = NumericIndexElement
-        elif type == DATETIME_INDEX:
-            self._element_cls = DateTimeIndexElement
-        elif type == BOOLEAN_INDEX:
-            self._element_cls = BooleanIndexElement
-        elif type == NONETYPE_INDEX:
-            self._element_cls = NoneTypeIndexElement
-        elif type == FLOAT_INDEX:
-            self._element_cls = FloatIndexElement
-        else:
-            self._element_cls = TextIndexElement
     
     type = property(getType, setType, "Data type")
     
-    def _getElementCls(self):
-        return self._element_cls
+    def getOptions(self):
+        return self._options
+        
+    def setOptions(self, options):
+        self._options = options
     
-    def eval(self, xml_doc):
+    options = property(getOptions, setOptions, "Options")
+    
+    def _selectElementCls(self, type):
+        return type_classes[type]
+        
+    def _getElementCls(self):
+        return self._selectElementCls(self.type)
+    
+    def _getProcessorIndex(self, env):
+        if hasattr(self, '_processor_idx'):
+            return self._processor_idx
+        # import the IProcessorIndex implementer class for this index
+        pos = self.options.rfind(u".")
+        class_name = self.options[pos + 1:]
+        mod_name = self.options[:pos]
+        mod = sys.modules[mod_name]
+        cls = getattr(mod, class_name)
+        self._processor_idx = cls(env)
+        return self._processor_idx
+    
+    def _eval(self, xml_doc, env):
         if not IXmlDocument.providedBy(xml_doc):
             raise TypeError("%s is not an IXmlDocument." % str(xml_doc))
         parsed_doc = xml_doc.getXml_doc()
-        res = list()
         try:
             nodes = parsed_doc.evalXPath(self.xpath)
         except Exception, e:
             log.err(e)
-            return res
-        for node in nodes:
+            return list()
+        return [node.getStrContent() for node in nodes]
+    
+    def eval(self, xml_doc, env = None):
+        if self.type == PROCESSOR_INDEX:
+            pidx = self._getProcessorIndex(env)
+            type = pidx.type
+            elements = pidx.eval(xml_doc)
+            if not isinstance(elements, list):
+                elements = [elements]
+        else:
+            type = self.type
+            elements = self._eval(xml_doc, env)
+        res = list()
+        for el in elements:
             try:
-                res.append(self._element_cls(self, node, xml_doc))
+                res.append(self._selectElementCls(type)(self, el, xml_doc))
             except Exception, e:
-                log.err(e)
-                continue
+                if env:
+                    env.log.info(e)
+                else:
+                    log.err(e)
+                    continue
         return res
     
     def prepareKey(self, data):
-        return self._element_cls()._prepare_key(data)
-    
+        return self._getElementCls()()._prepare_key(data)
+        
+
 class KeyIndexElement(Serializable):
     db_mapping = {'index':Relation(XmlIndex, 'index_id'),
                   'key':'keyval',
@@ -196,7 +230,7 @@ class TextIndexElement(KeyIndexElement):
     db_table = defaults.index_text_tab
     
     def _filter_key(self, data):
-        return unicode(data.getStrContent())
+        return unicode(data)
     
     def _prepare_key(self, data):
         return unicode(data)
@@ -206,17 +240,16 @@ class NumericIndexElement(KeyIndexElement):
     db_table = defaults.index_numeric_tab
     
     def _filter_key(self, data):
-        data = data.getStrContent()
         # don't pass floats directly to db
         # check if data has correct type
         float(data)
         return data
-    
+
+
 class FloatIndexElement(KeyIndexElement):
     db_table = defaults.index_float_tab
     
     def _filter_key(self, data):
-        data = data.getStrContent()
         # check if data has correct type
         # but don't pass floats to db as string
         float(data)
@@ -227,7 +260,7 @@ class DateTimeIndexElement(KeyIndexElement):
     db_table = defaults.index_datetime_tab
     
     def _filter_key(self, data):
-        data = data.getStrContent().strip()
+        data = data.strip()
         if self.index.options:
             return datetime.strptime(data, self.index.options)
         try:
@@ -257,11 +290,12 @@ class DateTimeIndexElement(KeyIndexElement):
         dt = dt.replace(microsecond = ms)
         return dt
 
+
 class BooleanIndexElement(KeyIndexElement):
     db_table = defaults.index_boolean_tab
     
     def _filter_key(self, data):
-        data = data.getStrContent().strip()
+        data = data.strip()
         if data.lower() in _FALSE_VALUES:
             return False
         return bool(data)
@@ -270,105 +304,10 @@ class BooleanIndexElement(KeyIndexElement):
 class NoneTypeIndexElement(QualifierIndexElement):
     db_table = defaults.index_keyless_tab
 
-type_classes = [TextIndexElement, NumericIndexElement, FloatIndexElement, 
-                DateTimeIndexElement, BooleanIndexElement, 
-                NoneTypeIndexElement]
-
-#class IndexBase(Serializable):
-#    db_table = index_def_tab
-#    db_mapping = {'key_path':'key_path',
-#                  'value_path':'value_path',
-#                  'type':'data_type'}
-#    
-#    def __init__(self,value_path=None, key_path=None, type=TEXT_INDEX):
-#        super(IndexBase, self).__init__()
-#        if not (value_path and key_path):
-#            raise TypeError("No index definition given.")
-#        self.value_path = value_path
-#        self.key_path = key_path
-#        if isinstance(type,basestring):
-#            self.type = type
-#        else:
-#            self.type = TEXT_INDEX
-#        self._values=list()
-#        
-#    def __str__(self):
-#        return '/' + self.value_path + '/' + self.key_path
-#              
-#    def getValue_path(self):
-#        if hasattr(self,'_value_path'):
-#            return self._value_path
-#        else:
-#            return None
-#        
-#    def setValue_path(self, value_path):
-#        if value_path.startswith('/'):
-#            value_path = value_path[1:]
-#        self._value_path = value_path
-#    
-#    value_path = property(getValue_path, setValue_path, "Value path")
-#    
-#    def getKey_path(self):
-#        if hasattr(self,'_key_path'):
-#            return self._key_path
-#    
-#    def setKey_path(self, key_path):
-#        self._key_path = key_path
-#        
-#    key_path = property(getKey_path, setKey_path, "Key path")
-#        
-#    def getType(self):
-#        return self._type
-#    
-#    def setType(self, type):
-#        self._type = type
-#    
-#    type = property(getType, setType, "Data type")
-#    
-#    def getValues(self):
-#        return self._values
-#
-#class XmlIndex(IndexBase):
-#    implements(IXmlIndex)
-#          
-#    def __str__(self):
-#        return '/' + self.value_path + '/' + self.key_path
-#    
-#    def _getRootElementName(self):
-#        elements = self.value_path.split('/')
-#        # last element is root element
-#        return elements[len(elements)-1]
-#
-#    # methods from IXmlIndex:
-#    
-#    def eval(self, xml_resource):
-#        if not IXmlDocument.providedBy(xml_resource):
-#            raise TypeError("%s is not an IXmlDocument." % str(xml_resource))
-#        
-#        xml_doc = xml_resource.getXml_doc()
-#        if not xml_doc:
-#            raise SeisHubError('Invalid XML document')
-#        
-#        # build xpath expression to evaluate on xml document
-#        xpr = '/' + self._getRootElementName() + '/' + self.getKey_path()
-#        nodes = xml_doc.evalXPath(xpr)
-#        
-#        node_size = len(nodes)
-#        if node_size == 0:
-#            return None
-#        
-#        idx_value = xml_resource._id
-#        res = [{'key':node.getStrContent(),
-#                'value':idx_value} for node in nodes]
-#        self._values.append(idx_value)
-#        
-#        return res
-#
-#class VirtualIndex(IndexBase):
-#    implements(IVirtualIndex)
-#    
-#    # methods from IVirtualIndex
-#    def setValue(self, data):
-#        """@see: L{seishub.xmldb.interfaces.IVirtualIndex}"""
-#        # TODO: validate type of data
-#        self._values.append(data)
+type_classes = {TEXT_INDEX:TextIndexElement, 
+                NUMERIC_INDEX:NumericIndexElement, 
+                FLOAT_INDEX:FloatIndexElement, 
+                DATETIME_INDEX:DateTimeIndexElement, 
+                BOOLEAN_INDEX:BooleanIndexElement, 
+                NONETYPE_INDEX:NoneTypeIndexElement
+                }

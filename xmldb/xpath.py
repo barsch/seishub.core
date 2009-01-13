@@ -241,8 +241,8 @@ class RestrictedXPathQueryParser(object):
         try:
             return self.setAttributes(self.parser(expr))
         except pp.ParseException, e:
-            msg = "Error parsing query '%s': Invalid query."
-            raise InvalidParameterError(msg % str(expr), e)
+            msg = "Error parsing query: Unexpected or invalid token at position %s: %s"
+            raise InvalidParameterError(msg % (str(e.loc), str(e.markInputline())))
 
 class XPathQuery(RestrictedXPathQueryParser):
     """XPath query complying with the restricted XPath query grammar."""

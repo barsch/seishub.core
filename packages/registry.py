@@ -2,13 +2,14 @@
 
 from seishub.core import PackageManager
 from seishub.db.util import DbStorage, DB_NULL
-from seishub.exceptions import SeisHubError
+from seishub.exceptions import SeisHubError, DuplicateObjectError
 from seishub.packages.interfaces import IPackage, IResourceType, IMapper, \
-    IPostgreSQLView
+    IPostgreSQLView, IProcessorIndex
 from seishub.packages.package import Alias, Schema, Stylesheet, PackageWrapper, \
     ResourceTypeWrapper
 from seishub.packages.util import RegistryListProxy
 from seishub.util.text import from_uri
+from seishub.xmldb import index
 from zope.interface.verify import verifyClass
 
 
@@ -28,6 +29,7 @@ class ComponentRegistry(DbStorage):
         self._alias_reg = AliasRegistry(self)
         self.mappers = MapperRegistry(self.env)
         self.sqlviews = SQLViewRegistry(self.env)
+        self.processor_indexes = ProcessorIndexRegistry(self.env)
     
     def getComponents(self, interface, package_id = None):
         """
@@ -543,7 +545,7 @@ class MapperRegistry(dict):
             return self._urls.get(url, None)
 
 
-class SQLViewRegistry:
+class SQLViewRegistry(object):
     """
     The SQL View registry.
     """
@@ -602,3 +604,54 @@ class SQLViewRegistry:
         Returns a dictionary of activated SQL view classes.
         """
         return self._view_objs
+    
+    
+class ProcessorIndexRegistry(object):
+    """
+    ProcessorIndex registry.
+    """
+    def __init__(self, env):
+        self.env = env
+    
+    def update(self):
+        """
+        Refresh all ProcessorIndexes.
+        """
+        all = PackageManager.getClasses(IProcessorIndex)
+        for cls in all:
+            if self.env.isComponentEnabled(cls):
+                self._enableProcessorIndex(cls)
+            else:
+                self._disableProcessorIndex(cls)
+                
+    def register(self, cls):
+        """
+        Register an IProcessorIndex.
+        """
+        # sanity checks
+        try:
+            verifyClass(IProcessorIndex, cls)
+        except Exception, e:
+            msg = "Class %s has a wrong implementation of %s.\n%s"
+            self.env.log.warn(msg % (cls, IProcessorIndex, e))
+            return
+        rt = self.env.registry.db_getResourceType(cls.package_id,
+                                                  cls.resourcetype_id)
+        clsname = cls.__module__ + '.' + cls.__name__
+        idx = index.XmlIndex(resourcetype = rt, xpath = "", 
+                             type = index.PROCESSOR_INDEX,
+                             options = clsname)
+        self.env.catalog.index_catalog.registerIndex(idx)
+        
+    def _enableProcessorIndex(self, cls):
+        try:
+            self.register(cls)
+        except DuplicateObjectError, e:
+            msg = "Skipping processor index %s: Index already exists.\n%s"
+            self.env.log.info(msg % (cls, e))
+            return
+        
+    def _disableProcessorIndex(self, cls):
+        pass
+    
+    

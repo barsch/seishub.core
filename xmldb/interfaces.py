@@ -1,9 +1,13 @@
 # -*- coding: utf-8 -*-
 from zope.interface import Interface, Attribute
 
+# interfaces that are subject to remove (only there for documentation issues):
+#  - IXmlCatalog, IResourceStorage, IXmlIndexCatalog
 
 class IXmlCatalog(Interface):
-    """This is the main interface to access the XML catalog""" 
+    """
+    This is the main interface to access the XML catalog
+    """ 
     def registerIndex(xml_index):
         """register a new index
         """
@@ -83,13 +87,10 @@ class IResourceStorage(Interface):
         """Return a list of resource informations"""
 
 
-#class IResource(Interface):
-#    uid = Attribute("unique resource id")
-#    data = Attribute("any data")
-#    info = Attribute("ResourceInformation for that resource")
-
-
 class IResource(Interface):
+    """
+    Marker interface for the xmldb resources.
+    """
     id = Attribute("Id of resource (Integer)")
     revision = Attribute("Revision of that resource")
     resource_id = Attribute("Unique id of related XML resource")
@@ -97,15 +98,18 @@ class IResource(Interface):
     resourcetype_id = Attribute("Resourcetype id, that resource is type of")
     version_control = Attribute("Boolean, specifies if version control is"+\
                                 "enabled or disabled for related resource")
-    
+
+
 class IDocumentMeta(Interface):
+    """
+    Marker interface for xmldb document-specific metadata objects.
+    """
     pass
-    
-        
+
 
 class IXmlDocument(Interface):
-    """XmlResource is a subclass of Resource providing some special xml 
-    functionality such as xml validation and parsing
+    """
+    Marker interface for xmldb XML documents.
     """
     def getXml_doc():
         """@return: xml document object"""
@@ -127,7 +131,10 @@ class IXmlDocument(Interface):
         """@return: xml data (string)"""
 
 
-class IIndex(Interface):
+class IIndexBase(Interface):
+    """
+    Base class for index interfaces
+    """
     def init(value_path=None, key_path=None, type="text"):
         pass
     
@@ -142,9 +149,13 @@ class IIndex(Interface):
         
     def getValues():
         """@return: values of this index"""
-             
-class IXmlIndex(IIndex):
-    """An XmlIndex is used in order to index data stored inside a XmlResource's
+
+
+class IXmlIndex(IIndexBase):
+    """
+    Marker interface for xmldb xml indexes.
+    
+    An XmlIndex is used in order to index data stored inside a XmlResource's
     XML structure
     """
     
@@ -153,61 +164,10 @@ class IXmlIndex(IIndex):
         @param xml_resource: xmldb.xmlresource.XmlResource object
         @return: list with key, value pairs on success, None else"""
 
-class IVirtualIndex(IIndex):
-    """A VirtualIndex is used in order to make additional information about a XmlResource 
-    available to the index"""
-        
-    def setValue(data):
-        """set value of virtual index
-        @param data: any data of correct type"""
-        
-class IIndexRegistry(Interface):
-    """Manages index creation, retrieval, update and removal"""
-    
-    def registerIndex(xml_index):
-        """"""
-    
-    def removeIndex(xpath_expr=None,key_path=None,value_path=None):
-        """"""
-        
-    def updateIndex(xpath_expr,new_index):
-        """@param new_index: new XmlIndex instance
-        @param xpath_expr: index defining xpath expression"""
-        
-    def getIndex(xpath_expr=None,key_path=None,value_path=None):
-        """"""
-        
-    def getIndexes(res_type=None,key_path=None,data_type=None):
-        """@param res_type: resource type (string)
-        @param key_path: key path (string)
-        @param data_type: data type (string, e.g. "text", "int")
-        @return: list of indexes consistent with the given constraints"""
-        
-class IResourceIndexing(Interface):
-    """Index resources"""
-    def indexResource(uri, value_path, key_path):
-        """
-        """
-        
-    def reindexResources(resource_storage,
-                         xml_index=None,
-                         key_path=None,value_path=None):
-        """Reindex the given index. 
-        Which means all resources the index applies to (determined by 
-        value_path) are read from the given storage and reevaluated.
-        Formerly indexed data is beeing deleted thereby.
-        
-        @param xml_index: IXmlIndex
-        @param key_path: key path
-        @param value_path: value path
-        @param resource_storage: IResourceStorage providing access to resources
-        """
-        
-    def flushIndex(value_path, key_path):
-        """"""
-        
+
 class IXmlIndexCatalog(Interface):
-    """Catalog providing methods for xml resource indexing and searching
+    """
+    Catalog providing methods for xml resource indexing and searching
     """
     
     def init(adbapi_connection):
@@ -221,6 +181,9 @@ class IXmlIndexCatalog(Interface):
         @rtype: list of strings"""
 
 class IXPathQuery(Interface):
+    """
+    Marker interface for xmldb xpath query objects.
+    """
     def init(query, order_by = None, limit = None):
         """@param param: XPath query
         @type query: string
@@ -252,10 +215,4 @@ class IXPathQuery(Interface):
     def getLimit():
         """@return: Result set limit (maximum number of results)
         @rtype: integer"""
-        
-class IXPathExpression(Interface):
-    """Parsed XPath expression for use with the index catalog"""
-    def __init__(expr):
-        """@param expr: XPath expression
-        @type expr: string"""
     

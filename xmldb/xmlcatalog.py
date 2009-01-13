@@ -3,7 +3,7 @@
 from zope.interface import implements
 
 from seishub.exceptions import NotFoundError, InvalidObjectError
-from seishub.xmldb.interfaces import IXmlCatalog
+from seishub.xmldb.interfaces import IXmlCatalog, IResource, IXmlDocument
 from seishub.xmldb.xmldbms import XmlDbManager
 from seishub.xmldb.xmlindexcatalog import XmlIndexCatalog
 from seishub.xmldb.resource import Resource, newXMLDocument
@@ -77,6 +77,10 @@ class XmlCatalog(object):
         self.schemaValidate(res)
         old_res = self.getResource(package_id, resourcetype_id, name)
         self.xmldb.modifyResource(res, old_res.id)
+        # XXX: this way we only keep indexes for the newest revision, 
+        # is that intended?
+        self.index_catalog.flushIndex(resource = old_res)
+        self.indexResource(resource = res)
         
     def deleteResource(self, package_id = None, resourcetype_id = None, 
                        name = None, revision = None, document_id = None):
@@ -198,8 +202,23 @@ class XmlCatalog(object):
                                              xpath, type, options)
         
     def getIndexData(self, resource):
-        """Return all indexed data for the given resource as a dictionary."""
-        elmts = self.index_catalog.dumpIndexByDocument(resource.document._id)
+        """
+        Return all indexed data for the given resource as a dictionary.
+        
+        @param resource: resource or document
+        @type resource: L{seishub.xmldb.interfaces.IResource} or
+                        L{seishub.xmldb.interfaces.IXmlDocument}
+        """
+        if IResource.providedBy(resource):
+            doc = resource.document
+        elif IXmlDocument.providedBy(resource):
+            doc = resource
+        else:
+            msg = "getIndexData: Resource or XmlDocument expected. Got a %s."
+            raise TypeError(msg % type(resource))
+        # sanity check: document should have an id, else no data can be found
+        assert doc._id
+        elmts = self.index_catalog.dumpIndexByDocument(doc._id)
         values = {}
         for el in elmts:
             values[el.index.xpath] = el.key
@@ -247,13 +266,6 @@ class XmlCatalog(object):
         elif not resource:
             raise TypeError("Invalid number of arguments.")
         return self.index_catalog.indexResource(resource)
-        
-        
-#        indexes = self.listIndexes(package_id, resourcetype_id)
-#        for idx in indexes:
-#            self.index_catalog.indexResource(resource.document._id, 
-#                                             idx.value_path, 
-#                                             idx.key_path)
         
     def reindex(self, package_id = None, resourcetype_id = None, xpath = None):
         """@see: L{seishub.xmldb.interfaces.IXmlCatalog}"""

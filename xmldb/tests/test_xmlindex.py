@@ -1,15 +1,17 @@
 # -*- coding: utf-8 -*-
 
-import unittest
-import time
 from datetime import datetime
-
-from seishub.test import SeisHubEnvironmentTestCase
+from seishub.core import Component, implements
 from seishub.exceptions import SeisHubError
-from seishub.xmldb.resource import XmlDocument, newXMLDocument
-from seishub.xmldb.index import XmlIndex
-from seishub.xmldb.index import NumericIndexElement
+from seishub.packages.interfaces import IProcessorIndex, IPackage, \
+    IResourceType
+from seishub.test import SeisHubEnvironmentTestCase
 from seishub.xmldb import index
+from seishub.xmldb.index import NumericIndexElement, XmlIndex
+from seishub.xmldb.resource import XmlDocument, newXMLDocument
+import time
+import unittest
+
 
 
 RAW_XML1 = u"""
@@ -60,13 +62,13 @@ class XmlIndexTest(SeisHubEnvironmentTestCase):
         # pass an empty XmlDoc:
         self.assertRaises(SeisHubError, si.eval, XmlDocument())
         
-        res = si.eval(test_doc)
+        res = si.eval(test_doc, self.env)
         self.assertEquals(len(res), 1)
         self.assertEquals(res[0].index, si)
         self.assertEquals(res[0].document, test_doc)
         self.assertEquals(res[0].key, 'BERN')
         
-        res = mi.eval(test_doc)
+        res = mi.eval(test_doc, self.env)
         self.assertEquals(len(res), 3)
         self.assertEquals(res[0].index, mi)
         self.assertEquals(res[0].document, test_doc)
@@ -78,13 +80,13 @@ class XmlIndexTest(SeisHubEnvironmentTestCase):
         self.assertEquals(res[2].document, test_doc)
         self.assertEquals(res[2].key, 'blah')
         
-        res = ni.eval(test_doc)
+        res = ni.eval(test_doc, self.env)
         self.assertEquals(res, [])
         
     def testTextIndex(self):
         test_doc = newXMLDocument(RAW_XML1)
         idx = XmlIndex(self.rt1, "/station/lon", index.TEXT_INDEX)
-        res = idx.eval(test_doc)[0]
+        res = idx.eval(test_doc, self.env)[0]
         self.assertEquals(type(res), index.TextIndexElement)
         self.assertEquals(type(res.key), unicode)
         self.assertEquals(res.key, '12.51200')
@@ -92,14 +94,13 @@ class XmlIndexTest(SeisHubEnvironmentTestCase):
     def testNumericIndex(self):
         test_doc = newXMLDocument(RAW_XML1)
         idx = XmlIndex(self.rt1, "/station/lon", index.NUMERIC_INDEX)
-        res = idx.eval(test_doc)[0]
+        res = idx.eval(test_doc, self.env)[0]
         self.assertEquals(type(res), NumericIndexElement)
         # self.assertEquals(type(res.key), float)
         self.assertEquals(res.key, '12.51200')
         # elements with wrong data type are ignored
         idx = XmlIndex(self.rt1, "/station/XY/paramXY", index.NUMERIC_INDEX)
-        print "\n" + 'X'*40 + "\nXXX: ignored error in xmdb/tests/test_xmlindex.py"
-        res = idx.eval(test_doc)
+        res = idx.eval(test_doc, self.env)
         self.assertEquals(len(res), 2)
         
     def testDateTimeIndex(self):
@@ -110,7 +111,7 @@ class XmlIndexTest(SeisHubEnvironmentTestCase):
                        index.DATETIME_INDEX)
         timestr = dt.strftime("%Y%m%dT%H:%M:%S") + ".0" + str(dt.microsecond)
         doc = newXMLDocument(RAW_XML1 % (timestr, ""))
-        res = idx.eval(doc)[0]
+        res = idx.eval(doc, self.env)[0]
         self.assertEqual(res.key, dt)
         
         # with timestamp
@@ -118,7 +119,7 @@ class XmlIndexTest(SeisHubEnvironmentTestCase):
                        index.DATETIME_INDEX)
         timestr = "%10.3f" % (time.mktime(dt.timetuple()) + dt.microsecond/1e6)
         doc = newXMLDocument(RAW_XML1 % (timestr, ""))
-        res = idx.eval(doc)[0]
+        res = idx.eval(doc, self.env)[0]
         self.assertEqual(res.key, dt)
         # with custom format
         # microseconds are ignored since not supported by strftime()
@@ -126,52 +127,105 @@ class XmlIndexTest(SeisHubEnvironmentTestCase):
                        index.DATETIME_INDEX, "%H:%M:%S - %Y%m%d")
         timestr = dt.strftime("%H:%M:%S - %Y%m%d")
         doc = newXMLDocument(RAW_XML1 % (timestr, ""))
-        res = idx.eval(doc)[0]
+        res = idx.eval(doc, self.env)[0]
         self.assertEqual(res.key, dt.replace(microsecond = 0))
         
     def testBooleanIndex(self):
         idx = XmlIndex(self.rt1, "/station/bool", index.BOOLEAN_INDEX)
         doc = newXMLDocument(RAW_XML1 % ("", "True"))
-        res = idx.eval(doc)[0]
+        res = idx.eval(doc, self.env)[0]
         self.assertEqual(res.key, True)
 
         doc = newXMLDocument(RAW_XML1 % ("", "False"))
-        res = idx.eval(doc)[0]
+        res = idx.eval(doc, self.env)[0]
         self.assertEqual(res.key, False)
         
         doc = newXMLDocument(RAW_XML1 % ("", "1"))
-        res = idx.eval(doc)[0]
+        res = idx.eval(doc, self.env)[0]
         self.assertEqual(res.key, True)
         
         doc = newXMLDocument(RAW_XML1 % ("", "0"))
-        res = idx.eval(doc)[0]
+        res = idx.eval(doc, self.env)[0]
         self.assertEqual(res.key, False)
         
         doc = newXMLDocument(RAW_XML1 % ("", "something"))
-        res = idx.eval(doc)[0]
+        res = idx.eval(doc, self.env)[0]
         self.assertEqual(res.key, True)
 
     def testNoneTypeIndex(self):
         doc = newXMLDocument(RAW_XML1)
         idx = XmlIndex(self.rt1, "/station/stat_type", index.NONETYPE_INDEX)
-        res = idx.eval(doc)
+        res = idx.eval(doc, self.env)
         self.assertEquals(type(res[0]), index.NoneTypeIndexElement)
         self.assertEquals(res[0].key, None)
         
         idx = XmlIndex(self.rt1, "/station/not_there", index.NONETYPE_INDEX)
-        res = idx.eval(doc)
+        res = idx.eval(doc, self.env)
         self.assertEquals(len(res), 0)
         
         idx = XmlIndex(self.rt1, "/station/XY/paramXY[. = 20.5]", 
                        index.NONETYPE_INDEX)
-        res = idx.eval(doc)
+        res = idx.eval(doc, self.env)
         self.assertEquals(len(res), 1)
         self.assertEquals(type(res[0]), index.NoneTypeIndexElement)
         self.assertEquals(res[0].key, None)
+        
+class ProcessorIndexTestPackage(Component):
+    implements(IPackage)
+    package_id = 'processorindextest'
+
+class ProcessorIndexTestReosurcetype(Component):
+    implements(IResourceType)
+    package_id = 'processorindextest'
+    resourcetype_id = 'testtype'
+        
+class TestIndex(Component):
+    implements(IProcessorIndex)
     
+    package_id = 'processorindextest'
+    resourcetype_id = 'testtype'
+    type = index.FLOAT_INDEX
+    
+    def eval(self, document):
+        return [1,2,3]
+            
+class ProcessorIndexTest(SeisHubEnvironmentTestCase):
+    def setUp(self):
+        self.env.enableComponent(ProcessorIndexTestPackage)
+        self.env.enableComponent(ProcessorIndexTestReosurcetype)
+        
+    def tearDown(self):
+        self.env.disableComponent(ProcessorIndexTestPackage)
+        self.env.disableComponent(ProcessorIndexTestReosurcetype)
+        
+    def testProcessorIndexRegistration(self):
+        self.env.enableComponent(TestIndex)
+        res = self.env.catalog.index_catalog.getIndexes('processorindextest', 
+                                                        'testtype')
+        self.assertEqual(len(res), 1)
+        idx = res[0]
+        self.assertEqual(idx.resourcetype.package.package_id, 
+                         'processorindextest')
+        self.assertEqual(idx.resourcetype.resourcetype_id, 'testtype')
+        self.assertEqual(idx.type, index.PROCESSOR_INDEX)
+        self.assertEqual(idx.options, TestIndex.__module__ + '.' +\
+                         TestIndex.__name__)
+        
+        test_doc = newXMLDocument(RAW_XML1)
+        res = idx.eval(test_doc, self.env)
+        self.assertEqual(len(res), 3)
+        self.assertEqual(type(res[0]), index.FloatIndexElement)
+        self.assertEqual(type(res[1]), index.FloatIndexElement)
+        self.assertEqual(type(res[2]), index.FloatIndexElement)
+        self.assertEqual(res[0].key, 1)
+        self.assertEqual(res[1].key, 2)
+        self.assertEqual(res[2].key, 3)
 
 def suite():
-    return unittest.makeSuite(XmlIndexTest, 'test')
+    suite = unittest.TestSuite()
+    suite.addTest(unittest.makeSuite(XmlIndexTest, 'test'))
+    suite.addTest(unittest.makeSuite(ProcessorIndexTest, 'test'))
+    return suite
 
 if __name__ == '__main__':
     unittest.main(defaultTest='suite')

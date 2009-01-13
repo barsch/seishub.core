@@ -216,7 +216,8 @@ class XmlDbManager(DbStorage):
         """get a list of resources for specified package and resourcetype"""
         res = self.pickup(Resource, 
                           resourcetype = {'package':{'package_id':package_id}, 
-                                          'resourcetype_id':resourcetype_id})
+                                          'resourcetype_id':resourcetype_id},
+                          document = DB_LIMIT('revision', 'max'))
         return res
     
     def getResourceHistory(self, package_id = None, resourcetype_id = None, 

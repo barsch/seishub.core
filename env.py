@@ -110,6 +110,7 @@ class Environment(ComponentManager):
         self.registry.mappers.update()
         self.registry.sqlviews.update()
         self.tree.update()
+        self.registry.processor_indexes.update()
     
     @defer.inlineCallbacks
     def enableService(self, srv_name):

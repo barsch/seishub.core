@@ -92,24 +92,6 @@ resource_meta_tab = Table(DEFAULT_PREFIX + METADATA_TABLE, metadata,
     )
 
 # xmlindexcatalog tables:
-#index_def_tab = Table(DEFAULT_PREFIX + INDEX_DEF_TABLE, metadata,
-#    Column('id', Integer, primary_key = True, autoincrement = True),
-#    Column('value_path', Text),
-#    Column('key_path', Text),
-#    Column('data_type', String(20)),
-#    UniqueConstraint('value_path','key_path'),
-#    useexisting=True,
-#)
-#
-#index_tab = Table(DEFAULT_PREFIX + INDEX_TABLE, metadata,
-#    Column('id', Integer, primary_key = True, autoincrement = True),
-#    Column('index_id', Integer),
-#    Column('key', Text),
-#    Column('value', Integer),
-#    UniqueConstraint('index_id','key','value'),
-#    useexisting=True
-#)
-
 index_def_tab = Table(DEFAULT_PREFIX + INDEX_DEF_TABLE, metadata,
     Column('id', Integer, primary_key = True, autoincrement = True),
     Column('resourcetype_id', Integer),

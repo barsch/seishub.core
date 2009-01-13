@@ -207,3 +207,37 @@ class IPostgreSQLView(Interface):
              SELECT name, GeomFromText('POINT(' || x || ' ' || y || ')', 4326)
              FROM baeume;
         """
+        
+
+class IProcessorIndex(Interface):
+    """
+    Interface definition for a custom ProcessorIndex.
+    """
+    package_id = Attribute("""
+        Defines the package ID of this index.
+        
+        Single string representing the package id.
+        """)
+    
+    resourcetype_id = Attribute("""
+        Defines the resourcetype ID of this index.
+        
+        Single string representing the resourcetype id.
+        """)
+    
+    type = Attribute("""
+        Data type of the index.
+        
+        May be any of the types defined in {seishub.xmldb.index}.
+        """)
+    
+    def eval(document):
+        """
+        Evaluate the index on the given resource.
+        
+        This method has to return a single value or a list of values of the same type as specified 
+        in the 'type' attribute.
+        
+        @param document: document to evaluate the index on
+        @type document: {seishub.xmldb.interfaces.IXmlDocument}
+        """
