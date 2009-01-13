@@ -66,7 +66,7 @@ class XmlCatalog(object):
         self.xmldb.moveResource(package_id, resourcetype_id, old_name, 
                                 new_name)
     
-    def modifyResource(self, package_id, resourcetype_id, name, xml_data):
+    def modifyResource(self, package_id, resourcetype_id, xml_data, name):
         """Modify the XML document of an already existing resource.
         In case of a version controlled resource a new revision is created.
         """

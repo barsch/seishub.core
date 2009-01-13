@@ -44,7 +44,7 @@ resourcetypes_tab = Table(DEFAULT_PREFIX + RESOURCETYPES_TABLE, metadata,
 
 schema_tab = Table(DEFAULT_PREFIX + SCHEMA_TABLE, metadata,
     Column('id', Integer, primary_key = True, autoincrement = True),
-    Column('resource_id', Integer, nullable = False),
+    Column('document_id', Integer, nullable = False),
     Column('package_id', Integer, ForeignKey(DEFAULT_PREFIX + PACKAGES_TABLE +\
                                              '.id'), nullable = False),
     Column('resourcetype_id', Integer, 
@@ -56,7 +56,7 @@ schema_tab = Table(DEFAULT_PREFIX + SCHEMA_TABLE, metadata,
 
 stylesheet_tab = Table(DEFAULT_PREFIX + STYLESHEET_TABLE, metadata,
     Column('id', Integer, primary_key = True, autoincrement = True),
-    Column('resource_id', Integer, nullable = False),
+    Column('document_id', Integer, nullable = False),
     Column('package_id', Integer, ForeignKey(DEFAULT_PREFIX + PACKAGES_TABLE +\
                                              '.id'), nullable = False),
     Column('resourcetype_id', Integer, 

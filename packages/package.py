@@ -204,7 +204,7 @@ class DocBase(Serializable):
                   'package':Relation(PackageWrapper,
                                      'package_id'),
                   'type':'type',
-                  'document_id':'resource_id'
+                  'document_id':'document_id'
                   }
     
     def __init__(self, package = PackageWrapper(), 

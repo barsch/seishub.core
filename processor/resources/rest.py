@@ -116,8 +116,8 @@ class RESTResource(Resource):
         # modify resource
         request.env.catalog.modifyResource(self.package_id,
                                            self.resourcetype_id,
-                                           self.name,
-                                           request.data)
+                                           request.data,
+                                           self.name)
         # resource successfully modified - set status code
         request.code = http.NO_CONTENT
         return ''

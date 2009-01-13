@@ -8,6 +8,7 @@ from seishub.core import implements, ExtensionPoint
 from seishub.exceptions import InvalidObjectError
 from seishub.db.util import Serializable, Relation, db_property
 from seishub.packages.interfaces import IProcessorIndex
+from seishub.packages.package import ResourceTypeWrapper
 from seishub.xmldb import defaults
 from seishub.xmldb.interfaces import IXmlDocument, IXmlIndex
 from seishub.xmldb.resource import XmlDocument
@@ -41,8 +42,6 @@ class XmlIndex(Serializable):
      
      without a format string, ISO 8601 strings and timestamps are autodetected.
     """
-    # XXX: we REALLY have a problem with circular imports
-    from seishub.packages.package import ResourceTypeWrapper
     
     implements(IXmlIndex)
     
