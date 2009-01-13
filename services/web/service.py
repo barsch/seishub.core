@@ -385,8 +385,8 @@ class HTTPSService(SSLServer):
         msg = "Generating new certificate files for the HTTPS service ..."
         self.env.log.warn(msg)
         timespan = (0, 60*60*24*365*5) # five years
-        pkey_file = os.path.join(self.env.config.path, HTTPS_CERT_FILE)
-        cert_file = os.path.join(self.env.config.path, HTTPS_PKEY_FILE)
+        pkey_file = os.path.join(self.env.config.path, HTTPS_PKEY_FILE)
+        cert_file = os.path.join(self.env.config.path, HTTPS_CERT_FILE)
         # CA
         cakey = certgen.createKeyPair(certgen.TYPE_RSA, 1024)
         careq = certgen.createCertRequest(cakey, CN='SeisHub CA')

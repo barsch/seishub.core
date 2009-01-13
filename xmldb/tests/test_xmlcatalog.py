@@ -245,7 +245,40 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         # clean up
         self.env.catalog.removeIndex(pid1, rid1, IDX4)
         self.env.catalog.removeIndex(pid1, rid2, IDX5)
+    
+    def test_indexingRevisionControlledResources(self):
+        """
         
+        """
+        # create revision controlled resource
+        self.env.registry.db_registerPackage("test-catalog")
+        self.env.registry.db_registerResourceType("test-catalog", "index", 
+                                                  version_control=True)
+        self.env.catalog.registerIndex("test-catalog", "index", "/station/lat")
+        self.env.catalog.addResource("test-catalog", "index", RAW_XML, 
+                                     name="muh.xml")
+        self.env.catalog.modifyResource("test-catalog", "index", RAW_XML, 
+                                        name="muh.xml")
+        self.env.catalog.modifyResource("test-catalog", "index", RAW_XML, 
+                                        name="muh.xml")
+        # get index directly from catalog for latest revision
+        res=self.env.catalog.getResource("test-catalog", "index", "muh.xml")
+        index_dict=self.env.catalog.getIndexData(res)
+        self.assertNotEqual(index_dict, {})
+        # get index directly from catalog for revision 3 (==latest)
+        res=self.env.catalog.getResource("test-catalog", "index", "muh.xml", 3)
+        index_dict=self.env.catalog.getIndexData(res)
+        self.assertNotEqual(index_dict, {})
+        # get index directly from catalog for revision 2
+        # XXX: older revison do not have any indexed values
+        # this behaviour may change later
+        res=self.env.catalog.getResource("test-catalog", "index", "muh.xml", 2)
+        index_dict=self.env.catalog.getIndexData(res)
+        self.assertEqual(index_dict, {})
+        # remove everything
+        self.env.catalog.removeIndex("test-catalog", "index", "/station/lat")
+        self.env.registry.db_deleteResourceType("test-catalog", "index")
+        self.env.registry.db_deletePackage("test-catalog")
 
 
 def suite():

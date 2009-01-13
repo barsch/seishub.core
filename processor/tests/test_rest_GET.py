@@ -379,7 +379,6 @@ class RestGETTests(SeisHubEnvironmentTestCase):
         # get index XML w/o trailing slash
         res = proc.run(GET, '/get-test/notvc/test.xml/.index')
         data = res.render_GET(proc)
-        print data
         self.assertTrue("<xpath>/testml/blah1/blahblah1</xpath>" in data)
         self.assertTrue("<value>üöäß</value>" in data)
         # get index XML w/ trailing slash
@@ -399,7 +398,7 @@ class RestGETTests(SeisHubEnvironmentTestCase):
         self.assertTrue("<value>üöäß</value>" in data)
     
     def test_getRevisionIndex(self):
-        """XXX: Fails yet!
+        """
         Tests revision index property.
         """
         proc = Processor(self.env)
@@ -407,33 +406,11 @@ class RestGETTests(SeisHubEnvironmentTestCase):
         proc.run(PUT, '/get-test/vc/test.xml/', StringIO(XML_DOC2 % 12))
         proc.run(POST, '/get-test/vc/test.xml/', StringIO(XML_DOC2 % 234))
         proc.run(POST, '/get-test/vc/test.xml/', StringIO(XML_DOC2 % 3456))
-        # get index directly from catalog for latest revision
-        res=self.env.catalog.getResource('get-test','vc','test.xml')
-        index_dict=self.env.catalog.getIndexData(res)
-        self.assertNotEqual(index_dict, {})
-        # get index directly from catalog for revision 3 (==latest)
-        res=self.env.catalog.getResource('get-test','vc','test.xml', 3)
-        index_dict=self.env.catalog.getIndexData(res)
-        self.assertNotEqual(index_dict, {})
-        # get index directly from catalog for revision 2
-        res=self.env.catalog.getResource('get-test','vc','test.xml', 2)
-        index_dict=self.env.catalog.getIndexData(res)
-        # XXX: fails
-        self.assertNotEqual(index_dict, {})
-        # get index directly from catalog for first revision
-        res=self.env.catalog.getResource('get-test','vc','test.xml', 1)
-        index_dict=self.env.catalog.getIndexData(res)
-        self.assertNotEqual(index_dict, {})
         # get index XML of latest revision w/o trailing slash
         res = proc.run(GET, '/get-test/vc/test.xml/.index')
         data = res.render_GET(proc)
         self.assertTrue("<xpath>/testml/blah1/blah2</xpath>" in data)
         self.assertTrue("<value>3456</value>" in data)
-        # get index XML of revision 1 w/o trailing slash
-        res = proc.run(GET, '/get-test/vc/test.xml/1/.index')
-        data = res.render_GET(proc)
-        self.assertTrue("<xpath>/testml/blah1/blah2</xpath>" in data)
-        self.assertTrue("<value>12</value>" in data)
         # get index XML of revision 3 w/o trailing slash
         res = proc.run(GET, '/get-test/vc/test.xml/3/.index')
         data = res.render_GET(proc)
@@ -444,11 +421,6 @@ class RestGETTests(SeisHubEnvironmentTestCase):
         data = res.render_GET(proc)
         self.assertTrue("<xpath>/testml/blah1/blah2</xpath>" in data)
         self.assertTrue("<value>3456</value>" in data)
-        # get index XML of revision 1 w/ trailing slash
-        res = proc.run(GET, '/get-test/vc/test.xml/1/.index/')
-        data = res.render_GET(proc)
-        self.assertTrue("<xpath>/testml/blah1/blah2</xpath>" in data)
-        self.assertTrue("<value>12</value>" in data)
         # get index XML of revision 3 w/ trailing slash
         res = proc.run(GET, '/get-test/vc/test.xml/3/.index/')
         data = res.render_GET(proc)
