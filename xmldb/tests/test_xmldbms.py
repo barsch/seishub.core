@@ -36,17 +36,11 @@ class XmlDocumentTest(SeisHubEnvironmentTestCase):
 
 
 class XmlDbManagerTest(SeisHubEnvironmentTestCase):
-    def __init__(self, *args, **kwargs):
-        super(XmlDbManagerTest,self).__init__(*args, **kwargs)
-        # set up test env:
+    
+    def setUp(self):
         self.xmldbm = XmlDbManager(self.db)
         self.test_data = TEST_XML
         self.test_data_mod = TEST_XML_MOD
-        
-#    def _config(self):
-#        self.config.set('db', 'verbose', True)
-        
-    def setUp(self):
         self.test_package = self.env.registry.db_getPackage('test')
         if not self.test_package:
             self.test_package = self.env.registry.db_registerPackage('test')

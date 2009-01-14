@@ -39,7 +39,7 @@ class Configuration(object):
     the last modification time of the configuration file, and reparses it
     when the file has changed.
     """
-    def __init__(self, filename):
+    def __init__(self, filename=None):
         self._sections = {}
         self.filename = filename
         self.parser = ConfigParser()
@@ -122,10 +122,9 @@ class Configuration(object):
         return sorted(set(self.parser.sections() + self.parser.sections()))
     
     def save(self):
-        """Write the configuration options to the primary file."""
-        if not self.filename:
-            return
-        
+        """
+        Write the configuration options to the primary file.
+        """
         # Only save options that differ from the defaults
         sections = []
         for section in self.sections():
@@ -137,7 +136,9 @@ class Configuration(object):
                     options.append((option, current))
             if options:
                 sections.append((section, sorted(options)))
-        
+        # skip saving if no filename is given
+        if not self.filename:
+            return
         fileobj = file(self.filename, 'w')
         try:
             print>>fileobj, '# -*- coding: utf-8 -*-'

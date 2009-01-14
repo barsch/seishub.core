@@ -1,54 +1,133 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+"""
+SeisHub's test runner.
+
+This script will run every test included into SeisHub.
+"""
 
 from seishub.config import Configuration
 from seishub.env import Environment
-import sys
+from seishub.xmldb.defaults import DEFAULT_PREFIX
+import copy
 import doctest
-import os
-import tempfile
-import random
+import sys
 import unittest
+
+
+USE_TEST_DB = 'sqlite://'
+#USE_TEST_DB = 'postgres://seishub:seishub@localhost:5432/postgis'
+DROP_TABLES_AFTER_EACH_TEST = True
 
 
 class SeisHubEnvironmentTestCase(unittest.TestCase):
     """
-    Generates a temporary SeisHub environment without any running service.
+    Generates a temporary SeisHub environment without any service.
     
-    We generate a temporary configuration file, a SQLite data base and disable 
-    logging at all. Any class inheriting from this test case may overwrite the 
-    _config method to preset additional options to the test environment.
+    We generate a temporary configuration file, an environment object and 
+    disable logging at all. Any class inheriting from this test case may 
+    overwrite the _config method to preset additional options to the test 
+    environment.
+    
+    Don't ever overwrite the __init__ or run methods!
     """
-    def __init__(self, methodName):
+    
+    def __init__(self, methodName='runTest', filename=None):
+        """
+        Initialize the test procedure.
+        """
         unittest.TestCase.__init__(self, methodName)
-        self.filename = os.path.join(tempfile.gettempdir(), 
-                                     'seishub-test.ini' + \
-                                     str(random.randint(1, 100000)))
-        self.config = Configuration(self.filename)
+        self.default_config = Configuration()
         #set a few standard settings
-        self.config.set('logging', 'log_level', 'OFF')
-#        self.config.set('db', 'uri', 
-#                        'postgres://seishub:seishub@localhost:5432/seishub')
-        self.config.set('db', 'uri', 'sqlite://')
-        self.config.set('seishub', 'auth_uri', 'sqlite://')
-        self._config()
-        self._start()
-        
-    def __del__(self):
-        os.remove(self.filename)
+        self.default_config.set('logging', 'log_level', 'OFF')
+        self.default_config.set('seishub', 'auth_uri', 'sqlite://')
+        self.default_config.set('db', 'uri', USE_TEST_DB)
     
     def _config(self):
         """
-        Method to write into temporary config file.
+        Method to write into the temporary configuration file.
+        
+        This method may be overwritten from any test case to set up 
+        configuration parameters needed for the test case.
         """
+        pass
     
-    def _start(self):
+    def __setUp(self):
         """
-        Method to set the Environment.
+        Sets the environment up before each test case.
         """
+        # generate a copy of default configuration
+        self.config = copy.copy(self.default_config)
+        # apply user defined options
+        self._config()
         self.config.save()
-        self.env=Environment(self.filename)
+        # create environment
+        self.env=Environment(self.config)
         self.env.initComponent(self)
+    
+    def __tearDown(self):
+        """
+        Clean up database and remove environment objects after each test case.
+        """
+        # check for left over data and warn
+        #import pdb;pdb.set_trace()
+        
+        # clean up DB
+        if DROP_TABLES_AFTER_EACH_TEST:
+            if USE_TEST_DB.startswith('postgres'):
+                sql = "DROP TABLE %s CASCADE;"
+            else:
+                sql = "DROP TABLE %s;"
+            tables = self.env.db.engine.table_names()
+            tables = [t for t in tables if t.startswith(DEFAULT_PREFIX)]
+            for table in tables:
+                self.env.db.engine.execute(sql % str(table))
+        # manually dispose DB connection
+        if not USE_TEST_DB.startswith('sqlite'):
+            self.env.db.engine.pool.dispose()
+        # remove objects
+        del(self.config)
+        del(self.env)
+    
+    def run(self, result=None):
+        """
+        Shameless copy of unittest.TestCase.run() adopted for our uses.
+        """
+        if result is None: result = self.defaultTestResult()
+        result.startTest(self)
+        testMethod = getattr(self, self._testMethodName)
+        self.__setUp()
+        try:
+            try:
+                self.setUp()
+            except KeyboardInterrupt:
+                raise
+            except:
+                result.addError(self, self._exc_info())
+                return
+            
+            ok = False
+            try:
+                testMethod()
+                ok = True
+            except self.failureException:
+                result.addFailure(self, self._exc_info())
+            except KeyboardInterrupt:
+                raise
+            except:
+                result.addError(self, self._exc_info())
+            
+            try:
+                self.tearDown()
+            except KeyboardInterrupt:
+                raise
+            except:
+                result.addError(self, self._exc_info())
+                ok = False
+            if ok: result.addSuccess(self)
+        finally:
+            result.stopTest(self)
+        self.__tearDown()
 
 
 def suite():

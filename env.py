@@ -46,7 +46,7 @@ class Environment(ComponentManager):
     
     Option('seishub', 'host', 'localhost', "Default host of this server.")
     
-    def __init__(self, config_file=None):
+    def __init__(self, conf=None):
         """
         Initialize the SeisHub environment.
         """
@@ -57,10 +57,12 @@ class Environment(ComponentManager):
         self.startup_time = int(time.time())
         # get SeisHub path
         path = self.getSeisHubPath()
-        if not config_file:
-            config_file = os.path.join(path, 'conf', 'seishub.ini') 
         # set configuration handler
-        self.config = Configuration(config_file)
+        if not conf or not isinstance(conf, Configuration):
+            conf_file = os.path.join(path, 'conf', 'seishub.ini')
+            self.config = Configuration(conf_file)
+        else:
+            self.config = conf
         self.config.path = path
         self.config.hubs = {}
         # set log handler

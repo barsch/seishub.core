@@ -63,17 +63,11 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
     # last_id = 0
     # test_xpath = "/station/XY/paramXY"
     # test_uri="/stations/bern"
-
-    def __init__(self, *args, **kwargs):
-        SeisHubEnvironmentTestCase.__init__(self, *args,**kwargs)
+    
+    def setUp(self):
         self.catalog = self.env.catalog.index_catalog
         self.xmldb = self.env.catalog.xmldb
         self.so_ids = list()
-        
-#    def _config(self):
-#        self.config.set('db', 'verbose', True)
-
-    def setUp(self):
         self.pkg1 = self.env.registry.db_registerPackage("testpackage")
         self.rt1 = self.env.registry.db_registerResourceType("testpackage",
                                                              "station")
