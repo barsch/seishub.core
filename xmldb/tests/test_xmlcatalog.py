@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
+"""
+This test suite consists of various tests related to the catalog interface.
+"""
 
+from seishub.exceptions import SeisHubError
+from seishub.test import SeisHubEnvironmentTestCase
 import unittest
 
-from seishub.test import SeisHubEnvironmentTestCase
 
 RAW_XML = """<station rel_uri="bern">
     <station_code>BERN</station_code>
@@ -209,7 +213,8 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         self.assertEqual(len(l), 0)
         
     def testQuery(self):
-        """XXX: these tests fail, will be fixed with #75"""
+        """
+        """
         # set up
         self.env.catalog.reindex("testpackage", "station", IDX1)
         self.env.catalog.registerIndex(pid1, rid1, IDX4)
@@ -234,7 +239,7 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         self.assertEqual(res3[2]._id, self.res3._id)
         self.assertEqual(res3[2].document._id, self.res3.document._id)
         
-        res4 = self.env.catalog.query('/testpackage/*/station')
+        _res4 = self.env.catalog.query('/testpackage/*/station')
 #        self.assertEqual(res4, [self.res1.document._id,
 #                                self.res2.document._id])
         res5 = self.env.catalog.query('/testpackage/testml/testml')
@@ -245,16 +250,24 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         # clean up
         self.env.catalog.removeIndex(pid1, rid1, IDX4)
         self.env.catalog.removeIndex(pid1, rid2, IDX5)
+
     
-    def test_indexingRevisionControlledResources(self):
+    
+    def test_indexRevision(self):
         """
+        Tests indexing of a version controlled resource.
         
+        Indexing of revisions is only rudimentary supported. Right now only
+        the latest revision is indexed - old revisions are not represented in
+        the database.
         """
-        # create revision controlled resource
+        # create revision controlled resourcetype
         self.env.registry.db_registerPackage("test-catalog")
         self.env.registry.db_registerResourceType("test-catalog", "index", 
                                                   version_control=True)
+        # add an index
         self.env.catalog.registerIndex("test-catalog", "index", "/station/lat")
+        # add a resource + some revisions
         self.env.catalog.addResource("test-catalog", "index", RAW_XML, 
                                      name="muh.xml")
         self.env.catalog.modifyResource("test-catalog", "index", RAW_XML, 
@@ -264,11 +277,11 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         # get index directly from catalog for latest revision
         res=self.env.catalog.getResource("test-catalog", "index", "muh.xml")
         index_dict=self.env.catalog.getIndexData(res)
-        self.assertNotEqual(index_dict, {})
+        self.assertEqual(index_dict, {u'/station/lat': u'50.23200'})
         # get index directly from catalog for revision 3 (==latest)
         res=self.env.catalog.getResource("test-catalog", "index", "muh.xml", 3)
         index_dict=self.env.catalog.getIndexData(res)
-        self.assertNotEqual(index_dict, {})
+        self.assertEqual(index_dict, {u'/station/lat': u'50.23200'})
         # get index directly from catalog for revision 2
         # XXX: older revison do not have any indexed values
         # this behaviour may change later
@@ -277,6 +290,43 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         self.assertEqual(index_dict, {})
         # remove everything
         self.env.catalog.removeIndex("test-catalog", "index", "/station/lat")
+        self.env.registry.db_deleteResourceType("test-catalog", "index")
+        self.env.registry.db_deletePackage("test-catalog")
+    
+    def test_addInvalidIndex(self):
+        """XXX: Testcase for #95.
+        SeisHub should not allow adding of an index with no XPath expression.
+        """
+        # create a resourcetype
+        self.env.registry.db_registerPackage("test-catalog")
+        self.env.registry.db_registerResourceType("test-catalog", "index")
+        # invalid package
+        self.assertRaises(SeisHubError, self.env.catalog.registerIndex, 
+                          "XXX", "index", "/station/lat")
+        self.assertRaises(SeisHubError, self.env.catalog.registerIndex, 
+                          package_id="XXX", resourcetype_id="index", 
+                          xpath="/station/lat")
+        # invalid resourcetype
+        self.assertRaises(SeisHubError, self.env.catalog.registerIndex, 
+                          "test-catalog", "XXX", "/station/lat")
+        self.assertRaises(SeisHubError, self.env.catalog.registerIndex, 
+                          package_id="test-catalog", resourcetype_id="XXX", 
+                          xpath="/station/lat")
+        # invalid index type
+        # XXX: does not raise any error!
+        self.assertRaises(SeisHubError, self.env.catalog.registerIndex, 
+                          "test-catalog", "index", "/station/lat", "XXX")
+        self.assertRaises(SeisHubError, self.env.catalog.registerIndex, 
+                          package_id="test-catalog", resourcetype_id="index", 
+                          xpath="/station/lat", type="XXX")
+        # empty XPath expression
+        # XXX: raises TypeError: flushIndex: invalid number of arguments.
+        self.assertRaises(SeisHubError, self.env.catalog.registerIndex, 
+                          "test-catalog", "index", "")
+        self.assertRaises(SeisHubError, self.env.catalog.registerIndex, 
+                          package_id="test-catalog", resourcetype_id="index", 
+                          xpath="")
+        # remove everything
         self.env.registry.db_deleteResourceType("test-catalog", "index")
         self.env.registry.db_deletePackage("test-catalog")
 
