@@ -1,10 +1,11 @@
-from StringIO import StringIO
+# -*- coding: utf-8 -*-
 
+from StringIO import StringIO
 from lxml import etree
+from seishub.exceptions import SeisHubError
 from zope.interface import implements, Interface, Attribute
 from zope.interface.exceptions import DoesNotImplement
 
-from seishub.exceptions import SeisHubError
 
 class IXmlNode(Interface):
     """Basic xml node object"""
@@ -127,18 +128,29 @@ class XmlStylesheet(object):
 
 
 class XmlSchema(object):
-    """XSD document representation"""
+    """
+    Schema representation.
+    
+    Internally we use one class of the supported schemas classes of L{lxml}, so
+    far either XMLSchema, RelaxNG or Schematron.
+    """
     implements(IXmlSchema)
     
-    def __init__(self, schema_data):
+    def __init__(self, schema_data, schema_type='XMLSchema'):
         f = StringIO(schema_data)
         schema_doc = etree.parse(f)
-        self.schema = etree.XMLSchema(schema_doc)
+        if schema_type not in ['XMLSchema', 'RelaxNG', 'Schematron']:
+            raise SeisHubError("Invalid schema type: %s" % schema_type)
+        try:
+            func = getattr(etree, schema_type)
+            self.schema = func(schema_doc)
+        except Exception, e:
+            msg = "Could not parse a schema %s"
+            raise SeisHubError(msg % (e.message))
     
     def validate(self,xml_doc):
         if not IXmlDoc.providedBy(xml_doc):
             raise DoesNotImplement(IXmlDoc)
-        
         valid = self.schema.validate(xml_doc.getXml_doc())
         if not valid:
             return False

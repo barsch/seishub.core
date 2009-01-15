@@ -25,16 +25,14 @@ class StylesheetResource(Component):
     package_id = 'seishub'
     resourcetype_id = 'stylesheet'
     
-    registerStylesheet('index.xhtml', 
-                       'xslt' + os.sep + 'index_xhtml.xslt')
-    registerStylesheet('meta.xhtml', 
-                       'xslt' + os.sep + 'meta_xhtml.xslt')
-    registerStylesheet('resourcelist.xhtml', 
-                       'xslt' + os.sep + 'resourcelist_xhtml.xslt')
-    registerStylesheet('resourcelist.json', 
-                       'xslt' + os.sep + 'resourcelist_json.xslt')
-    registerStylesheet('resourcelist.admin', 
-                       'xslt' + os.sep + 'resourcelist_admin.xslt')
+    registerStylesheet('xslt' + os.sep + 'index_xhtml.xslt', 'index.xhtml')
+    registerStylesheet('xslt' + os.sep + 'meta_xhtml.xslt', 'meta.xhtml')
+    registerStylesheet('xslt' + os.sep + 'resourcelist_xhtml.xslt',
+                       'resourcelist.xhtml',)
+    registerStylesheet('xslt' + os.sep + 'resourcelist_json.xslt',
+                       'resourcelist.json')
+    registerStylesheet('xslt' + os.sep + 'resourcelist_admin.xslt',
+                       'resourcelist.admin')
     registerIndex('/xsl:stylesheet/xsl:output/@media-type', 'text')
 
 

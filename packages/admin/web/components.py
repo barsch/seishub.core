@@ -26,6 +26,7 @@ class SchemasPanel(Component):
             'packages': packages,
             'resourcetypes': resourcetypes,
             'resturl': self.env.getRestUrl(),
+            'types': ['XMLSchema', 'RelaxNG', 'Schematron'],
         }
         if request.method=='POST':
             args = request.args

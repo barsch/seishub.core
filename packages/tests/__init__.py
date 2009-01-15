@@ -4,11 +4,13 @@ import doctest
 import unittest
 
 from seishub.packages.tests import test_registry
+from seishub.packages.tests import test_registry_fromfilesystem
 
 
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(test_registry.suite())
+    suite.addTest(test_registry_fromfilesystem.suite())
     return suite
 
 

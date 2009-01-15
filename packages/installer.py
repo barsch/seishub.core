@@ -227,11 +227,11 @@ class PackageInstaller(object):
     def getUpdatedResourcetypes(package_id = None):
         pass
 
-registerSchema = lambda type, filename: \
+registerSchema = lambda filename, type: \
                     PackageInstaller._pre_register('_schemas', 
                                                    type = type,
                                                    filename = filename)
-registerStylesheet = lambda type, filename: \
+registerStylesheet = lambda filename, type: \
                     PackageInstaller._pre_register('_stylesheets', 
                                                    type = type,
                                                    filename = filename)

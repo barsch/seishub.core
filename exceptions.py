@@ -46,7 +46,7 @@ class DuplicateObjectError(SeisHubError):
 
 
 class InvalidObjectError(SeisHubError):
-    code = http.BAD_REQUEST # 400
+    code = http.CONFLICT # 409
 
 
 class InvalidParameterError(SeisHubError):

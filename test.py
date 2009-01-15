@@ -17,7 +17,7 @@ import unittest
 
 USE_TEST_DB = 'sqlite://'
 #USE_TEST_DB = 'postgres://seishub:seishub@localhost:5432/postgis'
-DROP_TABLES_AFTER_EACH_TEST = True
+DROP_TABLES_AFTER_EACH_TEST = False
 
 
 class SeisHubEnvironmentTestCase(unittest.TestCase):

@@ -226,9 +226,8 @@ class ComponentRegistry(DbStorage):
         try:
             self.db_getResourceTypes(package_id, resourcetype_id)[0] 
         except IndexError:
-            raise SeisHubError("Resourcetype with id '%s' in package '%s' "+\
-                               "not present in database!", 
-                               (str(resourcetype_id), str(package_id)))
+            msg = "Resourcetype '%s' in package '%s' not present in database!"
+            raise SeisHubError(msg % (str(resourcetype_id), str(package_id)))
         # XXX: check if schemas/stylesheets or aliases are present:
         # XXX: check if any catalog entries are present
         return True

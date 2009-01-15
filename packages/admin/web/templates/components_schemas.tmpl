@@ -19,11 +19,15 @@
     </select>
   </div>
   <div class="field">
-    <label>Label</label><br />
-    <input type="text" size="20" name="type" />
+    <label>Type</label><br />
+    <select name="type">
+      #for $t in $types
+      <option value="$t">$t</option>
+      #end for
+    </select>
   </div>
   <div class="field">
-    <label>XSD File</label><br />
+    <label>Schema File</label><br />
     <input name="file" type="file" size="50" maxlength="100000" 
            accept="application/xsd+xml" />
   </div>
@@ -43,7 +47,8 @@
       <th></th>
       <th>Package</th>
       <th>Resourcetype</th>
-      <th>Label</th>
+      <th>Name</th>
+      <th>Type</th>
       <th>Document</th>
     </tr>
     #for $schema in $schemas
@@ -54,6 +59,7 @@
       </td> 
       <td>$schema.package.package_id</td>
       <td>$schema.resourcetype.resourcetype_id</td>
+      <td>$schema.getResource().name</td>
       <td>$schema.type</td>
       <td>
         <a href="$resturl/xml/seishub/schema/$schema.getResource().name">[XML]</a>

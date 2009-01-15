@@ -282,7 +282,8 @@ class Schema(DocBase):
     
     def validate(self, resource):
         if not self._parsed_doc:
-            self._parsed_doc = XmlSchema(self.resource.document.data)
+            self._parsed_doc = XmlSchema(self.resource.document.data, 
+                                         self._type)
         return self._parsed_doc.validate(resource.document.xml_doc)
 
 

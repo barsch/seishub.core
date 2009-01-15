@@ -20,6 +20,7 @@ INDEX_TYPES = {"text":index.TEXT_INDEX,
                "boolean":index.BOOLEAN_INDEX,
                "nonetype":index.NONETYPE_INDEX}
 
+
 class XmlCatalog(object):
     implements(IXmlCatalog)
     
@@ -27,7 +28,7 @@ class XmlCatalog(object):
         self.env = env
         self.xmldb = XmlDbManager(env.db)
         self.index_catalog = XmlIndexCatalog(env.db, self.xmldb)
-        
+    
     def _to_xpath(self, pid, rid, expr):
         if not expr.startswith('/'):
             expr = '/' + expr
@@ -37,12 +38,13 @@ class XmlCatalog(object):
         if item == '*':
             return None
         return item
-        
+    
     # methods from IXmlCatalog
     # xmldbms methods
     def addResource(self, package_id, resourcetype_id, xml_data, uid = None, 
                     name = None):
-        """Add a new resource to the database.
+        """
+        Add a new resource to the database.
         
         @param package_id: package id
         @param resourcetype_id: resourcetype id
@@ -62,12 +64,16 @@ class XmlCatalog(object):
         return res
     
     def moveResource(self, package_id, resourcetype_id, old_name, new_name):
-        """Rename a resource."""
+        """
+        Move or rename a resource.
+        """
         self.xmldb.moveResource(package_id, resourcetype_id, old_name, 
                                 new_name)
     
     def modifyResource(self, package_id, resourcetype_id, xml_data, name):
-        """Modify the XML document of an already existing resource.
+        """
+        Modify the XML document of an already existing resource.
+        
         In case of a version controlled resource a new revision is created.
         """
         _, resourcetype = self.env.registry.objects_from_id(package_id, 
@@ -81,10 +87,12 @@ class XmlCatalog(object):
         # is that intended?
         self.index_catalog.flushIndex(resource = old_res)
         self.indexResource(resource = res)
-        
+    
     def deleteResource(self, package_id = None, resourcetype_id = None, 
                        name = None, revision = None, document_id = None):
-        """Remove a resource from the database.
+        """
+        Remove a resource from the database.
+        
         By either (package_id, resourcetype_id, name, revision = None) or
         by document_id.
         
@@ -116,17 +124,14 @@ class XmlCatalog(object):
         return res
     
     def deleteAllResources(self, package_id, resourcetype_id):
-        """Remove all resources of specified package and resourcetype."""
+        """
+        Remove all resources of specified package and resourcetype.
+        """
         return self.xmldb.deleteResources(package_id, resourcetype_id)
     
-#    def deleteRevisions(self, package_id, resourcetype_id, name):
-#        self.env.log.warn("Deprecation warning: xmlcatalog.deleteRevisions()"+\
-#                          "is deprecated, use xmlcatalog.deleteResource() "+\
-#                          "instead")
-#        return self.deleteResource(package_id, resourcetype_id, name)
-    
     def getResource(self, package_id, resourcetype_id, name, revision = None):
-        """Get a specific resource from the database.
+        """
+        Get a specific resource from the database.
         
         @param package_id: resourcetype id
         @param: resourcetype_id: package id
@@ -139,7 +144,8 @@ class XmlCatalog(object):
                                       revision)
     
     def getResourceHistory(self, package_id, resourcetype_id, name):
-        """Get all revisions of the specified resource.
+        """
+        Get all revisions of the specified resource.
         
         The Resource instance returned will contain a list of documents sorted 
         by revision (accessible as usual via Resource.document).
@@ -154,31 +160,40 @@ class XmlCatalog(object):
         return self.xmldb.getResourceHistory(package_id, resourcetype_id, name)
         
     def getResourceList(self, package_id = None, resourcetype_id = None):
-        """Get a list of resources for specified package and resourcetype"""
+        """
+        Get a list of resources for specified package and resourcetype.
+        """
         return self.xmldb.getResourceList(package_id, resourcetype_id)
     
     def revertResource(self, package_id, resourcetype_id, name, revision):
-        """Reverts the specified revision for the given resource.
+        """
+        Reverts the specified revision for the given resource.
+        
         All revisions newer than the specified one will be removed.
         """
         return self.xmldb.revertResource(package_id, resourcetype_id, name, 
                                          revision)
-        
+    
     def schemaValidate(self, resource):
-        """Do a schema validation of given resource with all known schemas of
-        corresponding resourcetype."""
+        """
+        Do a schema validation of a given resource.
+        
+        This validates against all schemas of the corresponding resourcetype.
+        """
         pid = resource.package.package_id
         rid = resource.resourcetype.resourcetype_id
         schemas = self.env.registry.schemas.get(pid, rid)
         for schema in schemas:
             if not schema.validate(resource):
                 msg = "Validation of a resource against schema '%s' failed."
-                raise InvalidObjectError(msg % str(schema))
-
+                raise InvalidObjectError(msg % str(schema.getResource().name))
+    
     # xmlindexcatalog methods
     def registerIndex(self, package_id = None, resourcetype_id = None, 
                       xpath = None, type = "text", options = None):
-        """@see: L{seishub.xmldb.interfaces.IXmlCatalog}"""
+        """
+        @see: L{seishub.xmldb.interfaces.IXmlCatalog}
+        """
         type = INDEX_TYPES.get(type.lower(), TEXT_INDEX)
         _, resourcetype = self.env.registry.objects_from_id(package_id, 
                                                             resourcetype_id)
@@ -186,21 +201,24 @@ class XmlCatalog(object):
         index = self.index_catalog.registerIndex(index)
         self.reindex(package_id, resourcetype_id, xpath)
         return index
-        
     
     def removeIndex(self, package_id = None, resourcetype_id = None, 
                     xpath = None):
-        """@see: L{seishub.xmldb.interfaces.IXmlCatalog}"""
+        """
+        @see: L{seishub.xmldb.interfaces.IXmlCatalog}
+        """
         return self.index_catalog.removeIndex(package_id, resourcetype_id, 
                                               xpath)
-        
+    
     def getIndex(self, package_id = None, resourcetype_id = None, 
                  xpath = None, type = "text", options = None):
-        """@see: L{seishub.xmldb.interfaces.IXmlCatalog}"""
+        """
+        @see: L{seishub.xmldb.interfaces.IXmlCatalog}
+        """
         type = INDEX_TYPES.get(type.lower(), TEXT_INDEX)
         return self.index_catalog.getIndexes(package_id, resourcetype_id, 
                                              xpath, type, options)
-        
+    
     def getIndexData(self, resource):
         """
         Return all indexed data for the given resource as a dictionary.
@@ -223,10 +241,12 @@ class XmlCatalog(object):
         for el in elmts:
             values[el.index.xpath] = el.key
         return values
-        
+    
     def flushIndex(self, package_id = None, resourcetype_id = None, 
                    xpath = None):
-        """@see: L{seishub.xmldb.interfaces.IXmlCatalog}"""
+        """
+        @see: L{seishub.xmldb.interfaces.IXmlCatalog}
+        """
 #        if package_id and resourcetype_id:
 #            expr = self._to_xpath(package_id, resourcetype_id, xpath)
 #        else:
@@ -235,10 +255,12 @@ class XmlCatalog(object):
         # exp_obj = IndexDefiningXpathExpression(expr)
         return self.index_catalog.flushIndex(package_id, resourcetype_id, 
                                              xpath)
-        
+    
     def listIndexes(self, package_id = None, resourcetype_id = None, 
                     type = "text"):
-        """@see: L{seishub.xmldb.interfaces.IXmlCatalog}"""
+        """
+        @see: L{seishub.xmldb.interfaces.IXmlCatalog}
+        """
 #        if not (package_id or resourcetype_id):
 #            return self.index_catalog.getIndexes(data_type = data_type)
         
@@ -257,7 +279,7 @@ class XmlCatalog(object):
         type = INDEX_TYPES.get(type.lower(), TEXT_INDEX)
         return self.index_catalog.getIndexes(package_id, resourcetype_id, 
                                              type = type)
-        
+    
     def indexResource(self, package_id = None, resourcetype_id = None, 
                       name = None, revision = None, resource = None):
         if package_id and resourcetype_id and name:
@@ -266,9 +288,11 @@ class XmlCatalog(object):
         elif not resource:
             raise TypeError("Invalid number of arguments.")
         return self.index_catalog.indexResource(resource)
-        
+    
     def reindex(self, package_id = None, resourcetype_id = None, xpath = None):
-        """@see: L{seishub.xmldb.interfaces.IXmlCatalog}"""
+        """
+        @see: L{seishub.xmldb.interfaces.IXmlCatalog}
+        """
 #        if package_id and resourcetype_id:
 #            expr = self._to_xpath(package_id, resourcetype_id, xpath)
 #        else:
@@ -296,9 +320,11 @@ class XmlCatalog(object):
         for res in reslist:
             self.index_catalog.indexResource(res, xpath)
         return True
-        
+    
     def query(self, query):
-        """@see: L{seishub.xmldb.interfaces.IXmlCatalog}"""
+        """
+        @see: L{seishub.xmldb.interfaces.IXmlCatalog}
+        """
         # XXX: query by metadata
 #        if isinstance(query, dict):
 #            order_by = query.get('order_by', None)
@@ -315,5 +341,3 @@ class XmlCatalog(object):
         doc_ids = self.index_catalog.query(q)
         # XXX: this is really bad, what information is really needed in the first place?
         return [self.xmldb.getResource(document_id = id) for id in doc_ids]
-            
-        
