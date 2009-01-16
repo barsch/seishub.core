@@ -396,6 +396,8 @@ class RestGETTests(SeisHubEnvironmentTestCase):
         data = res.render_GET(proc)
         self.assertTrue("<xpath>/testml/blah1/blahblah1</xpath>" in data)
         self.assertTrue("<value>üöäß</value>" in data)
+        # remove resource
+        proc.run(DELETE, '/get-test/notvc/test.xml')
     
     def test_getRevisionIndex(self):
         """
@@ -426,6 +428,72 @@ class RestGETTests(SeisHubEnvironmentTestCase):
         data = res.render_GET(proc)
         self.assertTrue("<xpath>/testml/blah1/blah2</xpath>" in data)
         self.assertTrue("<value>3456</value>" in data)
+        # remove resource
+        proc.run(DELETE, '/get-test/vc/test.xml')
+    
+    def test_getResourceMetaData(self):
+        """
+        Tests resource meta data property.
+        """
+        proc = Processor(self.env)
+        # create resource
+        proc.run(PUT, '/get-test/notvc/test.xml', StringIO(XML_DOC))
+        # get meta data XML w/o trailing slash
+        res = proc.run(GET, '/get-test/notvc/test.xml/.meta')
+        data = res.render_GET(proc)
+        self.assertTrue('<package>get-test</package>' in data)
+        self.assertTrue('<resourcetype>notvc</resourcetype>' in data)
+        self.assertTrue('<name>test.xml</name>' in data)
+        self.assertTrue('<revision/>' in data)
+        # get meta data XML w/ trailing slash
+        res = proc.run(GET, '/get-test/notvc/test.xml/.meta/')
+        data = res.render_GET(proc)
+        self.assertTrue('<package>get-test</package>' in data)
+        self.assertTrue('<resourcetype>notvc</resourcetype>' in data)
+        self.assertTrue('<name>test.xml</name>' in data)
+        self.assertTrue('<revision/>' in data)
+        # remove resource
+        proc.run(DELETE, '/get-test/notvc/test.xml')
+    
+    def test_getRevisionMetaData(self):
+        """
+        Tests revision meta data property.
+        """
+        proc = Processor(self.env)
+        # create resource
+        proc.run(PUT, '/get-test/vc/test.xml', StringIO(XML_DOC2 % 12))
+        proc.run(POST, '/get-test/vc/test.xml', StringIO(XML_DOC2 % 234))
+        proc.run(POST, '/get-test/vc/test.xml', StringIO(XML_DOC2 % 3456))
+        # get meta data XML w/o trailing slash from latest revision
+        res = proc.run(GET, '/get-test/vc/test.xml/3/.meta')
+        data = res.render_GET(proc)
+        self.assertTrue('<package>get-test</package>' in data)
+        self.assertTrue('<resourcetype>vc</resourcetype>' in data)
+        self.assertTrue('<name>test.xml</name>' in data)
+        self.assertTrue('<revision>3</revision>' in data)
+        # get meta data XML w/ trailing slash from latest revision
+        res = proc.run(GET, '/get-test/vc/test.xml/3/.meta/')
+        data = res.render_GET(proc)
+        self.assertTrue('<package>get-test</package>' in data)
+        self.assertTrue('<resourcetype>vc</resourcetype>' in data)
+        self.assertTrue('<name>test.xml</name>' in data)
+        self.assertTrue('<revision>3</revision>' in data)
+        # get meta data XML w/o trailing slash from 1. revision
+        res = proc.run(GET, '/get-test/vc/test.xml/1/.meta')
+        data = res.render_GET(proc)
+        self.assertTrue('<package>get-test</package>' in data)
+        self.assertTrue('<resourcetype>vc</resourcetype>' in data)
+        self.assertTrue('<name>test.xml</name>' in data)
+        self.assertTrue('<revision>1</revision>' in data)
+        # get meta data XML w/ trailing slash from 1. revision
+        res = proc.run(GET, '/get-test/vc/test.xml/1/.meta/')
+        data = res.render_GET(proc)
+        self.assertTrue('<package>get-test</package>' in data)
+        self.assertTrue('<resourcetype>vc</resourcetype>' in data)
+        self.assertTrue('<name>test.xml</name>' in data)
+        self.assertTrue('<revision>1</revision>' in data)
+        # remove resource
+        proc.run(DELETE, '/get-test/vc/test.xml')
 
 
 def suite():
