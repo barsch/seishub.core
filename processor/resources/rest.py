@@ -254,12 +254,13 @@ class RESTProperty(Resource):
                                                   self.name,
                                                   self.revision)
             meta = res.document.meta
+            revision = str(res.document.revision)
             # create a XML document
             root = etree.Element("seishub")
             etree.SubElement(root, "package").text = self.package_id
             etree.SubElement(root, "resourcetype").text = self.resourcetype_id
             etree.SubElement(root, "name").text = self.name
-            etree.SubElement(root, "revision").text = self.revision
+            etree.SubElement(root, "revision").text = revision
             etree.SubElement(root, "uid").text = unicode(meta.uid)
             etree.SubElement(root, "datetime").text = \
                 unicode(meta.datetime.isoformat())
