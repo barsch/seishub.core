@@ -16,7 +16,6 @@ import inspect
 SPECIAL = [
     "Test !file", 
     "Test '-'#$", 
-    'Test "-"#$', 
     "Test *&_", 
     "Test LongFilenamesWithMoreThan32Chars",
     "Test è or å,ä,ö",
