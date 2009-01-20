@@ -3,7 +3,7 @@
 from zope.interface import implements
 
 from seishub.exceptions import NotFoundError, InvalidObjectError 
-from seishub.exceptions import InvalidParameterError
+from seishub.exceptions import InvalidParameterError, SeisHubError
 from seishub.xmldb.interfaces import IXmlCatalog, IResource, IXmlDocument
 from seishub.xmldb.xmldbms import XmlDbManager
 from seishub.xmldb.xmlindexcatalog import XmlIndexCatalog
@@ -185,9 +185,12 @@ class XmlCatalog(object):
         rid = resource.resourcetype.resourcetype_id
         schemas = self.env.registry.schemas.get(pid, rid)
         for schema in schemas:
-            if not schema.validate(resource):
-                msg = "Validation of a resource against schema '%s' failed."
-                raise InvalidObjectError(msg % str(schema.getResource().name))
+            try:
+                schema.validate(resource)
+            except Exception, e: 
+                msg = "Resource-validation against schema '%s' failed. (%s)"
+                raise InvalidObjectError(msg % (str(schema.getResource().name), 
+                                                e.message))
     
     # xmlindexcatalog methods
     def registerIndex(self, package_id = None, resourcetype_id = None, 

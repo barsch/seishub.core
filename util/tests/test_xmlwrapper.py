@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
+from seishub.util.xmlwrapper import XmlSchema, XmlTreeDoc, \
+    InvalidXPathExpression, InvalidXmlDataError
 import unittest
-
-from seishub.util.xmlwrapper import XmlSchema, XmlTreeDoc, InvalidXPathExpression
 
 
 TEST_SCHEMA="""<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
@@ -30,8 +30,9 @@ class XmlSchemaTest(unittest.TestCase):
         validDoc=XmlTreeDoc(self.good_xml)
         invalidDoc=XmlTreeDoc(self.bad_xml)
         schema=XmlSchema(self.test_schema)
-        self.assertEquals(schema.validate(validDoc),True)
-        self.assertEquals(schema.validate(invalidDoc),False)
+        # if valid, no exception is raised
+        schema.validate(validDoc)
+        self.assertRaises(InvalidXmlDataError, schema.validate, invalidDoc)
         #print invalidDoc.getErrors()
 
 

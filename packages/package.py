@@ -284,7 +284,7 @@ class Schema(DocBase):
         if not self._parsed_doc:
             self._parsed_doc = XmlSchema(self.resource.document.data, 
                                          self._type)
-        return self._parsed_doc.validate(resource.document.xml_doc)
+        self._parsed_doc.validate(resource.document.xml_doc)
 
 
 class Stylesheet(DocBase):

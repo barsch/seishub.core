@@ -4,8 +4,7 @@ import doctest
 import unittest
 
 from seishub.xmldb.tests import test_xmlcatalog, test_xmldbms, test_xmlindex, \
-                                test_xmlindexcatalog, test_xmlvalidator, \
-                                test_xpath
+                                test_xmlindexcatalog, test_xpath
 
 
 def suite():
@@ -15,7 +14,6 @@ def suite():
     suite.addTest(test_xmlindex.suite())
     suite.addTest(test_xmlindexcatalog.suite())
     #suite.addTest(doctest.DocFileSuite('test_xmlindexcatalog.txt'))
-    suite.addTest(test_xmlvalidator.suite())
     suite.addTest(test_xpath.suite())
     return suite
 

@@ -293,7 +293,7 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         self.env.registry.db_deletePackage("test-catalog")
     
     def test_addInvalidIndex(self):
-        """XXX: Testcase for #95.
+        """
         SeisHub should not allow adding of an index with no XPath expression.
         """
         # create a resourcetype
@@ -312,14 +312,12 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
                           package_id="test-catalog", resourcetype_id="XXX", 
                           xpath="/station/lat")
         # invalid index type
-        # XXX: does not raise any error!
         self.assertRaises(SeisHubError, self.env.catalog.registerIndex, 
                           "test-catalog", "index", "/station/lat", "XXX")
         self.assertRaises(SeisHubError, self.env.catalog.registerIndex, 
                           package_id="test-catalog", resourcetype_id="index", 
                           xpath="/station/lat", type="XXX")
         # empty XPath expression
-        # XXX: raises TypeError: flushIndex: invalid number of arguments.
         self.assertRaises(SeisHubError, self.env.catalog.registerIndex, 
                           "test-catalog", "index", "")
         self.assertRaises(SeisHubError, self.env.catalog.registerIndex, 
