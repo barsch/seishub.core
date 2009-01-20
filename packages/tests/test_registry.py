@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from seishub.exceptions import SeisHubError
+from seishub.exceptions import SeisHubError, InvalidObjectError
 from seishub.test import SeisHubEnvironmentTestCase
 from seishub.xmldb.resource import Resource, newXMLDocument
 import unittest
@@ -378,20 +378,17 @@ class PackageRegistryTest(SeisHubEnvironmentTestCase):
         self.assertEquals(alias, list())
         
     def test_addInvalidSchema(self):
-        """XXX: Testcase for #104.
+        """
         Adding an invalid schema should be catched if registering the schema.
         """
         # create a resourcetype
         self.env.registry.db_registerPackage("test-catalog")
         self.env.registry.db_registerResourceType("test-catalog", "schema")
         # register a schema
-        # XXX: actually this should raise an error!
-        self.env.registry.schemas.register('test-catalog', 'schema', 
-                                           'XMLSchema', "<invalid>")
+        self.assertRaises(InvalidObjectError, 
+                          self.env.registry.schemas.register, 
+                          'test-catalog', 'schema', 'XMLSchema', "<invalid>")
         # add a resource and try to validate
-        # XXX: the schema gets parsed only if needed - so far ok - but
-        # we don't know if its parseable at all until someone uploads a
-        # resource using this schema  
         self.env.catalog.addResource("test-catalog", "schema", RAW_XML, 
                                      name="muh.xml")
         # remove everything

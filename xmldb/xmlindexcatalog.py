@@ -182,8 +182,10 @@ class _QueryProcessor(object):
 #        from sqlalchemy.sql import text
 #        sql = text(str(q))
         # import pdb;pdb.set_trace() 
-        res = self._db.execute(q).fetchall()
-        return [result[0] for result in res]
+        res = self._db.execute(q)
+        results = [result[0] for result in res.fetchall()]
+        res.close()
+        return results
 
 
 class XmlIndexCatalog(DbStorage, _QueryProcessor):

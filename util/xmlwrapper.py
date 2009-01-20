@@ -198,7 +198,7 @@ class XmlTreeDoc(XmlDoc):
         parser = etree.XMLParser()
         data = StringIO(self._xml_data)
         try:
-            self._xml_doc = etree.parse(data,parser)
+            self._xml_doc = etree.parse(data, parser)
         except Exception, e:
             raise InvalidXmlDataError("Invalid XML data.", e)
         self.errors = parser.error_log

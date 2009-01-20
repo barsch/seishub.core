@@ -59,6 +59,8 @@ class XmlCatalog(object):
         res = Resource(resourcetype, 
                        document = newXMLDocument(xml_data, uid = uid), 
                        name = name)
+        # get xml_doc to ensure the document is parsed
+        res.document.xml_doc
         self.schemaValidate(res)
         self.xmldb.addResource(res)
         self.indexResource(resource = res)
