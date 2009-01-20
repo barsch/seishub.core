@@ -65,6 +65,12 @@ class IRESTProperty(IResource):
     """
 
 
+class IXMLIndex(IResource):
+    """
+    A marker interface for a XML index resource.
+    """
+
+
 class IFileSystemResource(IResource):
     """
     A marker interface for a file system resource.

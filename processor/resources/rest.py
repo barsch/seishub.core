@@ -6,7 +6,8 @@ REST based resources.
 from lxml import etree
 from seishub.exceptions import ForbiddenError, NotFoundError, SeisHubError, \
     NotAllowedError
-from seishub.processor.interfaces import IRESTResource, IRESTProperty
+from seishub.processor.interfaces import IRESTResource, IRESTProperty, \
+    IXMLIndex
 from seishub.processor.processor import MAXIMAL_URL_LENGTH, PUT, GET, HEAD
 from seishub.processor.resources.resource import Resource, Folder, StaticFolder
 from seishub.util.path import splitPath
@@ -206,6 +207,7 @@ class XMLIndex(Resource):
     """
     A XML index node.
     """
+    implements(IXMLIndex)
     
     def __init__(self):
         Resource.__init__(self)

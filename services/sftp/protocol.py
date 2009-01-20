@@ -5,7 +5,7 @@ from seishub.exceptions import InternalServerError, ForbiddenError, \
 from seishub.processor import Processor, PUT, DELETE, GET, MOVE, HEAD, \
     getChildForRequest
 from seishub.processor.interfaces import IFileSystemResource, IStatical, \
-    IResource, IScriptResource, IRESTResource
+    IResource, IScriptResource, IRESTResource, IXMLIndex
 from seishub.util.path import absPath
 from twisted.conch.interfaces import ISFTPFile, ISFTPServer
 from twisted.conch.ls import lsLine
@@ -322,6 +322,8 @@ class SFTPServiceProtocol:
         ids = sorted(result)
         for id in ids:
             obj = result.get(id)
+            if IXMLIndex.providedBy(obj):
+                continue
             attrs = obj.getMetadata()
             if attrs:
                 # return ids in system encoding
