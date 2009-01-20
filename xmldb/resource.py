@@ -167,7 +167,8 @@ class Resource(Serializable):
     db_table = resource_tab
     db_mapping = {'_id':'id',  # external id
                   'resourcetype':Relation(ResourceTypeWrapper, 
-                                          'resourcetype_id'),
+                                          'resourcetype_id',
+                                          lazy = False),
                   'name':'name',
                   'document':Relation(XmlDocument, 'resource_id', 
                                       lazy = False, relation_type = 'to-many',

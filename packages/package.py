@@ -58,7 +58,8 @@ class ResourceTypeWrapper(Serializable):
     
     db_table = resourcetypes_tab
     db_mapping = {'resourcetype_id':'name',
-                  'package':Relation(PackageWrapper,'package_id'),
+                  'package':Relation(PackageWrapper, 'package_id', 
+                                     lazy = False),
                   'version':'version',
                   'version_control':'version_control',
                   '_id':'id'
