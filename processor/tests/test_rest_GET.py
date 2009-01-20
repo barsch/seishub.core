@@ -16,23 +16,21 @@ from twisted.web import http
 import unittest
 
 
-XML_DOC = """<?xml version="1.0" encoding="utf-8"?>
+XML_BASE_DOC = """<?xml version="1.0" encoding="utf-8"?>
 
 <testml>
   <blah1 id="3">
-    <blahblah1>üöäß</blahblah1>
-    <blah2>5</blah2>
+    <blahblah1>%s</blahblah1>
+    <blah2>%s</blah2>
   </blah1>
 </testml>"""
 
-XML_DOC2 = """<?xml version="1.0" encoding="utf-8"?>
+CDATA = """<![CDATA[ &<
+>&]]>"""
 
-<testml>
-  <blah1 id="3">
-    <blahblah1>üöäß</blahblah1>
-    <blah2>%d</blah2>
-  </blah1>
-</testml>"""
+XML_DOC = XML_BASE_DOC % ("üöäß", "5")
+XML_DOC2 = XML_BASE_DOC % ("üöäß", "%d")
+XML_DOC3 = XML_BASE_DOC % (CDATA, "5")
 
 
 class AResourceType(Component):
@@ -368,6 +366,7 @@ class RestGETTests(SeisHubEnvironmentTestCase):
         data = res.render_GET(proc)
         self.assertTrue(data, XML_DOC)
         proc.run(DELETE, '/get-test/notvc/1')
+        proc.run(DELETE, '/get-test/notvc/2')
     
     def test_getResourceIndex(self):
         """
@@ -494,6 +493,20 @@ class RestGETTests(SeisHubEnvironmentTestCase):
         self.assertTrue('<revision>1</revision>' in data)
         # remove resource
         proc.run(DELETE, '/get-test/vc/test.xml')
+    
+    def test_withCDATASection(self):
+        """
+        Upload a XML document with CDATA section.
+        """
+        proc = Processor(self.env)
+        # create resource
+        proc.run(PUT, '/get-test/notvc/test.xml', StringIO(XML_DOC3))
+        
+        res = proc.run(GET, '/get-test/notvc/test.xml/1/.index/')
+        data = res.render_GET(proc)
+        print data
+        # delete resource
+        proc.run(DELETE, '/get-test/notvc/test.xml')
 
 
 def suite():
