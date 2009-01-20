@@ -63,6 +63,7 @@ document_meta_tab = Table(DEFAULT_PREFIX + DOCUMENT_META_TABLE, metadata,
     )
 
 # XXX: sqlite does not support autoincrement on combined primary keys
+# default does not work on Text columns, that's why String is used for name col 
 resource_tab = Table(DEFAULT_PREFIX + RESOURCE_TABLE, metadata,
     Column('id', Integer, autoincrement = True, primary_key = True,
            default = text('(SELECT coalesce(max(id), 0) + 1 FROM '+\

@@ -4,7 +4,7 @@ import time
 from zope.interface import implements, Interface, directlyProvides, \
                            implementedBy, Attribute
 from zope.interface.exceptions import DoesNotImplement
-from sqlalchemy import select, Text, or_, and_
+from sqlalchemy import select, Text, or_, and_, String
 from sqlalchemy.exceptions import IntegrityError, NoSuchColumnError
 from sqlalchemy.sql.expression import ClauseList
 
@@ -162,8 +162,6 @@ class DbStorage(DbEnabled):
                     raise DbError("Invalid value for key '%s': %s" %\
                                   (str(col.name), str(val)))
                 col = col.name
-#            if val == None and isinstance(table.c[col].type, Text):
-#                val = ''
             cl.append(table.c[col] == val)
         return cl
     

@@ -498,6 +498,8 @@ class AliasRegistry(RegistryBase):
         null = list()
         if package:
             null = ['resourcetype_id']
+        if name:
+            name = str(name)
         self.drop(self.cls,
                   package = package,
                   resourcetype = resourcetype,

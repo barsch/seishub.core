@@ -104,11 +104,14 @@ class XmlDbManager(DbStorage):
         else:
             # select given revision
             document = DB_LIMIT('revision', 'fixed', revision)
+        if name:
+            name = str(name)
         try:
             res = self.pickup(Resource, resourcetype = 
                               {'package': {'package_id':package_id},
                                'resourcetype_id':resourcetype_id}, 
-                              name = name, _id = id, document = document)[0]
+                              name = name, 
+                              _id = id, document = document)[0]
         except IndexError:
             self._raise_not_found(package_id, resourcetype_id, name, id)
         return res
@@ -178,7 +181,7 @@ class XmlDbManager(DbStorage):
         return self.drop(Resource, resourcetype = 
                          {'package':{'package_id':package_id}, 
                           'resourcetype_id':resourcetype_id}, 
-                          name = name)
+                          name = str(name))
     
     def deleteRevision(self, package_id = None, resourcetype_id = None, 
                        name = None, id = None, revision = None):
@@ -232,6 +235,8 @@ class XmlDbManager(DbStorage):
         """
         if not ((package_id and resourcetype_id and name) or id):
             raise TypeError("getResourceHistory: Invalid number of arguments.")
+        if name:
+            name = str(name)
         try:
             res = self.pickup(Resource, 
                               _order_by = {'document':{'revision':'asc'}}, 
