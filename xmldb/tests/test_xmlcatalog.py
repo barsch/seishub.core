@@ -328,27 +328,6 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         # remove everything
         self.env.registry.db_deleteResourceType("test-catalog", "index")
         self.env.registry.db_deletePackage("test-catalog")
-    
-    def test_addInvalidSchema(self):
-        """XXX: Testcase for #104.
-        Adding an invalid schema should be catched if registering the schema.
-        """
-        # create a resourcetype
-        self.env.registry.db_registerPackage("test-catalog")
-        self.env.registry.db_registerResourceType("test-catalog", "schema")
-        # register a schema
-        # XXX: actually this should raise an error!
-        self.env.registry.schemas.register('test-catalog', 'schema', 
-                                           'XMLSchema', "<invalid>")
-        # add a resource and try to validate
-        # XXX: the schema gets parsed only if needed - so far ok - but
-        # we don't know if its parseable at all until someone uploads a
-        # resource using this schema  
-        self.env.catalog.addResource("test-catalog", "schema", RAW_XML, 
-                                     name="muh.xml")
-        # remove everything
-        self.env.registry.db_deleteResourceType("test-catalog", "schema")
-        self.env.registry.db_deletePackage("test-catalog")
 
 
 def suite():

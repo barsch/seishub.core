@@ -2,7 +2,8 @@
 
 from zope.interface import implements
 
-from seishub.exceptions import NotFoundError, InvalidObjectError
+from seishub.exceptions import NotFoundError, InvalidObjectError 
+from seishub.exceptions import InvalidParameterError
 from seishub.xmldb.interfaces import IXmlCatalog, IResource, IXmlDocument
 from seishub.xmldb.xmldbms import XmlDbManager
 from seishub.xmldb.xmlindexcatalog import XmlIndexCatalog
@@ -194,7 +195,14 @@ class XmlCatalog(object):
         """
         @see: L{seishub.xmldb.interfaces.IXmlCatalog}
         """
-        type = INDEX_TYPES.get(type.lower(), TEXT_INDEX)
+        if not xpath:
+            msg = "registerIndex: Empty XPath expression!"
+            raise InvalidParameterError(msg)
+        xpath = xpath.strip()
+        type = INDEX_TYPES.get(type.lower(), None)
+        if type is None:
+            msg = "registerIndex: Invalid index type '%s'."
+            raise InvalidParameterError(msg % type)
         _, resourcetype = self.env.registry.objects_from_id(package_id, 
                                                             resourcetype_id)
         index = XmlIndex(resourcetype, xpath, type, options)

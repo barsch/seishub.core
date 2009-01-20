@@ -134,6 +134,20 @@ TEST_RESLIST = """<seishub xml:base="http://localhost:8080" xmlns:xlink="http://
     <resource xlink:type="simple" xlink:href="/seishub/schema/4">/seishub/schema/4</resource>
 </seishub>"""
 
+RAW_XML = """<station rel_uri="bern">
+    <station_code>BERN</station_code>
+    <chan_code>1</chan_code>
+    <stat_type>0</stat_type>
+    <lon>12.51200</lon>
+    <lat>50.23200</lat>
+    <stat_elav>0.63500</stat_elav>
+    <XY>
+        <paramXY>20.5</paramXY>
+        <paramXY>11.5</paramXY>
+        <paramXY>blah</paramXY>
+    </XY>
+</station>"""
+
 
 class PackageRegistryTest(SeisHubEnvironmentTestCase):
     def setUp(self):
@@ -362,6 +376,27 @@ class PackageRegistryTest(SeisHubEnvironmentTestCase):
         self.env.registry.aliases.delete('testpackage0', '', 'arch2')
         alias = self.env.registry.aliases.get(package_id = 'testpackage0')
         self.assertEquals(alias, list())
+        
+    def test_addInvalidSchema(self):
+        """XXX: Testcase for #104.
+        Adding an invalid schema should be catched if registering the schema.
+        """
+        # create a resourcetype
+        self.env.registry.db_registerPackage("test-catalog")
+        self.env.registry.db_registerResourceType("test-catalog", "schema")
+        # register a schema
+        # XXX: actually this should raise an error!
+        self.env.registry.schemas.register('test-catalog', 'schema', 
+                                           'XMLSchema', "<invalid>")
+        # add a resource and try to validate
+        # XXX: the schema gets parsed only if needed - so far ok - but
+        # we don't know if its parseable at all until someone uploads a
+        # resource using this schema  
+        self.env.catalog.addResource("test-catalog", "schema", RAW_XML, 
+                                     name="muh.xml")
+        # remove everything
+        self.env.registry.db_deleteResourceType("test-catalog", "schema")
+        self.env.registry.db_deletePackage("test-catalog")
 
 
 def suite():

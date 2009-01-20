@@ -135,6 +135,8 @@ class _QueryProcessor(object):
             if ob[1] == "desc": 
                 o = idx_tab.c['keyval'].desc()
             q = q.order_by(o)
+            # order by columns must show up in the group by clause, too
+            q = q.group_by(idx_tab.c['keyval'])
         return q, joins
 
     def query(self, query):

@@ -273,12 +273,11 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
                                     self.rt1.resourcetype_id, 
                                     "/station/XY/paramXY")
         self.assertEqual(len(el), 3)
-        self.assertEquals(el[0].key, "0")
-        self.assertEquals(el[0].document.data, res.document.data)
-        self.assertEquals(el[1].key, "2.5")
-        self.assertEquals(el[1].document.data, res.document.data)
-        self.assertEquals(el[2].key, "99")
-        self.assertEquals(el[2].document.data, res.document.data)
+        keys = ["0", "2.5", "99"]
+        for e in el:
+            assert e.key in keys
+            keys.remove(e.key)
+            self.assertEquals(e.document.data, res.document.data)
         
         # dumpIndexByDocument
         el = self.catalog.dumpIndexByDocument(res.document._id)
