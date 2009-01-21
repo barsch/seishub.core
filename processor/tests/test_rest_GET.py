@@ -496,7 +496,13 @@ class RestGETTests(SeisHubEnvironmentTestCase):
     
     def test_withCDATASection(self):
         """
-        Upload a XML document with CDATA section.
+        Test a XML document with CDATA section.
+        
+        CDATA will be striped for indexed values. Requesting such a indexed
+        value results into a XML conform UTF-8 encoded string. Also entities 
+        such as the "&" (amperson) will be mapped with "&amp;".
+        
+        @see: L{http://codespeak.net/lxml/api.html#cdata}.
         """
         proc = Processor(self.env)
         # create resource
@@ -504,7 +510,7 @@ class RestGETTests(SeisHubEnvironmentTestCase):
         
         res = proc.run(GET, '/get-test/notvc/test.xml/1/.index/')
         data = res.render_GET(proc)
-        print data
+        self.assertTrue("<value> &amp;&lt;\n&gt;&amp;</value>" in data)
         # delete resource
         proc.run(DELETE, '/get-test/notvc/test.xml')
 
