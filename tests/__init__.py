@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
 
+from seishub.tests import test_config, test_core, test_core_zope_compatibility, \
+    test_core_twisted_compatibility
 import doctest
 import unittest
-
-from seishub.tests import test_config, test_core, test_xmlconformance, \
-                          test_core_zope_compatibility, \
-                          test_core_twisted_compatibility
 
 
 def suite():
@@ -16,7 +14,6 @@ def suite():
     suite.addTest(doctest.DocFileSuite('test_core_twisted_compatibility.txt'))
     suite.addTest(test_config.suite())
     suite.addTest(doctest.DocFileSuite('test_config.txt'))
-    suite.addTest(test_xmlconformance.suite())
     return suite
 
 

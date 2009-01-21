@@ -11,6 +11,9 @@ from seishub.processor import PUT, POST, DELETE, GET, Processor
 from seishub.processor.resources import RESTFolder
 from seishub.test import SeisHubEnvironmentTestCase
 from twisted.web import http
+import glob
+import inspect
+import os
 import unittest
 
 
@@ -160,6 +163,46 @@ class RestPUTTests(SeisHubEnvironmentTestCase):
             self.fail("Expected SeisHubError")
         except SeisHubError, e:
             self.assertEqual(e.code, http.BAD_REQUEST)
+    
+    def test_putUTF8EncodedDocuments(self):
+        """
+        Tests from a UTF-8 conformance test suite by M. Kuhn and M. Duerst.
+        
+        @see: L{http://www.w3.org/2001/06/utf-8-test/}.
+        """
+        proc = Processor(self.env)
+        path = os.path.dirname(inspect.getsourcefile(self.__class__))
+        files = glob.glob(os.path.join(path, 'data', 'utf-8-tests', '*.xml'))
+        for file in files:
+            # create resource
+            data = open(file).read().strip()
+            proc.run(PUT, '/put-test/notvc/test.xml', StringIO(data))
+            # check resource
+            result = proc.run(GET, '/put-test/notvc/test.xml').render_GET(proc)
+            self.assertEqual(result, data)
+            # delete resource
+            proc.run(DELETE, '/put-test/notvc/test.xml')
+    
+    def test_putJapaneseDocuments(self):
+        """
+        Part of the W3C XML conformance test suite.
+        
+        This covers tests with different encoding and byte orders, e.g. UTF-16 
+        with big and little endian. 
+        
+        @see: L{http://www.w3.org/XML/Test/}.
+        """
+        proc = Processor(self.env)
+        path = os.path.dirname(inspect.getsourcefile(self.__class__))
+        # read all weekly files
+        files = glob.glob(os.path.join(path, 'data', 'japanese', '*.xml'))
+        for file in files:
+            # create resource
+            data = open(file).read().strip()
+            print file
+            proc.run(PUT, '/put-test/notvc/test.xml', StringIO(data))
+            # delete resource
+            proc.run(DELETE, '/put-test/notvc/test.xml')
 
 
 def suite():
