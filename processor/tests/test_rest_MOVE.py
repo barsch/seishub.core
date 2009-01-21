@@ -56,8 +56,9 @@ class RestMOVETests(SeisHubEnvironmentTestCase):
         self.env.tree = RESTFolder()
     
     def tearDown(self):
-        self.env.disableComponent(AVersionControlledResourceType)
-        self.env.disableComponent(AResourceType)
+        self.env.registry.db_deleteResourceType('move-test', 'notvc')
+        self.env.registry.db_deleteResourceType('move-test', 'vc')
+        self.env.registry.db_deletePackage('move-test')
     
     def test_moveWithoutDestinationHeader(self):
         """
@@ -452,6 +453,7 @@ class RestMOVETests(SeisHubEnvironmentTestCase):
             self.fail("Expected SeisHubError")
         except SeisHubError, e:
             self.assertEqual(e.code, http.BAD_REQUEST)
+        proc.run(DELETE, '/move-test/notvc/test.xml')
 
 
 def suite():

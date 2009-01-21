@@ -106,7 +106,7 @@ class MultipleXMLSchemaResourceType(Component):
     registerSchema('data' + os.sep + 'relaxng.rng', 'RelaxNG')
 
 
-class RestPUTValidationTests(SeisHubEnvironmentTestCase):
+class RestValidationTests(SeisHubEnvironmentTestCase):
     """
     A test suite for validating PUT requests on REST resources.
     """
@@ -120,12 +120,17 @@ class RestPUTValidationTests(SeisHubEnvironmentTestCase):
         self.env.tree = RESTFolder()
     
     def tearDown(self):
-        self.env.disableComponent(XMLSchemaResourceType)
-        self.env.disableComponent(ComplexXMLSchemaResourceType)
-        self.env.disableComponent(MultipleXMLSchemaResourceType)
-        self.env.disableComponent(RelaxNGResourceType)
-        self.env.disableComponent(SchematronResourceType)
-        self.env.disableComponent(APackage)
+        self.env.registry.db_deleteResourceType('put-validation-test', 
+                                                'relaxng')
+        self.env.registry.db_deleteResourceType('put-validation-test', 
+                                                'schematron')
+        self.env.registry.db_deleteResourceType('put-validation-test', 
+                                                'complex')
+        self.env.registry.db_deleteResourceType('put-validation-test', 
+                                                'multi')
+        self.env.registry.db_deleteResourceType('put-validation-test', 
+                                                'xmlschema')
+        self.env.registry.db_deletePackage('put-validation-test')
     
     def test_validateRelaxNG(self):
         """
@@ -217,7 +222,7 @@ class RestPUTValidationTests(SeisHubEnvironmentTestCase):
 
 def suite():
     suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(RestPUTValidationTests, 'test'))
+    suite.addTest(unittest.makeSuite(RestValidationTests, 'test'))
     return suite
 
 

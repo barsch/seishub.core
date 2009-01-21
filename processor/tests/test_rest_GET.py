@@ -7,7 +7,6 @@ from StringIO import StringIO
 from seishub.core import Component, implements
 from seishub.exceptions import SeisHubError
 from seishub.packages.builtins import IResourceType, IPackage
-from seishub.packages.installer import registerIndex
 from seishub.processor import PUT, POST, DELETE, GET, Processor
 from seishub.processor.resources.rest import RESTResource, RESTFolder
 from seishub.test import SeisHubEnvironmentTestCase
@@ -25,12 +24,8 @@ XML_BASE_DOC = """<?xml version="1.0" encoding="utf-8"?>
   </blah1>
 </testml>"""
 
-CDATA = """<![CDATA[ &<
->&]]>"""
-
 XML_DOC = XML_BASE_DOC % ("üöäß", "5")
 XML_DOC2 = XML_BASE_DOC % ("üöäß", "%d")
-XML_DOC3 = XML_BASE_DOC % (CDATA, "5")
 
 
 class AResourceType(Component):
@@ -42,7 +37,6 @@ class AResourceType(Component):
     package_id = 'get-test'
     resourcetype_id = 'notvc'
     version_control = False
-    registerIndex('/testml/blah1/blahblah1', 'text')
 
 
 class AResourceType2(Component):
@@ -76,7 +70,6 @@ class AVersionControlledResourceType(Component):
     package_id = 'get-test'
     resourcetype_id = 'vc'
     version_control = True
-    registerIndex('/testml/blah1/blah2', 'text')
 
 
 class RestGETTests(SeisHubEnvironmentTestCase):
@@ -89,8 +82,9 @@ class RestGETTests(SeisHubEnvironmentTestCase):
         self.env.tree = RESTFolder()
     
     def tearDown(self):
-        self.env.disableComponent(AVersionControlledResourceType)
-        self.env.disableComponent(AResourceType)
+        self.env.registry.db_deleteResourceType('get-test', 'vc')
+        self.env.registry.db_deleteResourceType('get-test', 'notvc')
+        self.env.registry.db_deletePackage('get-test')
     
     def test_getRoot(self):
         proc = Processor(self.env)
@@ -365,154 +359,12 @@ class RestGETTests(SeisHubEnvironmentTestCase):
         res = proc.run(GET, '/get-test/notvc/1')
         data = res.render_GET(proc)
         self.assertTrue(data, XML_DOC)
+        # clean up
         proc.run(DELETE, '/get-test/notvc/1')
         proc.run(DELETE, '/get-test/notvc/2')
-    
-    def test_getResourceIndex(self):
-        """
-        Tests resource index property.
-        """
-        proc = Processor(self.env)
-        # create resource
-        proc.run(PUT, '/get-test/notvc/test.xml', StringIO(XML_DOC))
-        # get index XML w/o trailing slash
-        res = proc.run(GET, '/get-test/notvc/test.xml/.index')
-        data = res.render_GET(proc)
-        self.assertTrue("<xpath>/testml/blah1/blahblah1</xpath>" in data)
-        self.assertTrue("<value>üöäß</value>" in data)
-        # get index XML w/ trailing slash
-        res = proc.run(GET, '/get-test/notvc/test.xml/.index/')
-        data = res.render_GET(proc)
-        self.assertTrue("<xpath>/testml/blah1/blahblah1</xpath>" in data)
-        self.assertTrue("<value>üöäß</value>" in data)
-        # get index XML on revision 1 w/o trailing slash
-        res = proc.run(GET, '/get-test/notvc/test.xml/1/.index/')
-        data = res.render_GET(proc)
-        self.assertTrue("<xpath>/testml/blah1/blahblah1</xpath>" in data)
-        self.assertTrue("<value>üöäß</value>" in data)
-        # get index XML on revision 1 w/ trailing slash
-        res = proc.run(GET, '/get-test/notvc/test.xml/1/.index/')
-        data = res.render_GET(proc)
-        self.assertTrue("<xpath>/testml/blah1/blahblah1</xpath>" in data)
-        self.assertTrue("<value>üöäß</value>" in data)
-        # remove resource
-        proc.run(DELETE, '/get-test/notvc/test.xml')
-    
-    def test_getRevisionIndex(self):
-        """
-        Tests revision index property.
-        """
-        proc = Processor(self.env)
-        # create resource
-        proc.run(PUT, '/get-test/vc/test.xml/', StringIO(XML_DOC2 % 12))
-        proc.run(POST, '/get-test/vc/test.xml/', StringIO(XML_DOC2 % 234))
-        proc.run(POST, '/get-test/vc/test.xml/', StringIO(XML_DOC2 % 3456))
-        # get index XML of latest revision w/o trailing slash
-        res = proc.run(GET, '/get-test/vc/test.xml/.index')
-        data = res.render_GET(proc)
-        self.assertTrue("<xpath>/testml/blah1/blah2</xpath>" in data)
-        self.assertTrue("<value>3456</value>" in data)
-        # get index XML of revision 3 w/o trailing slash
-        res = proc.run(GET, '/get-test/vc/test.xml/3/.index')
-        data = res.render_GET(proc)
-        self.assertTrue("<xpath>/testml/blah1/blah2</xpath>" in data)
-        self.assertTrue("<value>3456</value>" in data)
-        # get index XML of latest revision w/ trailing slash
-        res = proc.run(GET, '/get-test/vc/test.xml/.index/')
-        data = res.render_GET(proc)
-        self.assertTrue("<xpath>/testml/blah1/blah2</xpath>" in data)
-        self.assertTrue("<value>3456</value>" in data)
-        # get index XML of revision 3 w/ trailing slash
-        res = proc.run(GET, '/get-test/vc/test.xml/3/.index/')
-        data = res.render_GET(proc)
-        self.assertTrue("<xpath>/testml/blah1/blah2</xpath>" in data)
-        self.assertTrue("<value>3456</value>" in data)
-        # remove resource
-        proc.run(DELETE, '/get-test/vc/test.xml')
-    
-    def test_getResourceMetaData(self):
-        """
-        Tests resource meta data property.
-        """
-        proc = Processor(self.env)
-        # create resource
-        proc.run(PUT, '/get-test/notvc/test.xml', StringIO(XML_DOC))
-        # get meta data XML w/o trailing slash
-        res = proc.run(GET, '/get-test/notvc/test.xml/.meta')
-        data = res.render_GET(proc)
-        self.assertTrue('<package>get-test</package>' in data)
-        self.assertTrue('<resourcetype>notvc</resourcetype>' in data)
-        self.assertTrue('<name>test.xml</name>' in data)
-        self.assertTrue('<revision>1</revision>' in data)
-        # get meta data XML w/ trailing slash
-        res = proc.run(GET, '/get-test/notvc/test.xml/.meta/')
-        data = res.render_GET(proc)
-        self.assertTrue('<package>get-test</package>' in data)
-        self.assertTrue('<resourcetype>notvc</resourcetype>' in data)
-        self.assertTrue('<name>test.xml</name>' in data)
-        self.assertTrue('<revision>1</revision>' in data)
-        # remove resource
-        proc.run(DELETE, '/get-test/notvc/test.xml')
-    
-    def test_getRevisionMetaData(self):
-        """
-        Tests revision meta data property.
-        """
-        proc = Processor(self.env)
-        # create resource
-        proc.run(PUT, '/get-test/vc/test.xml', StringIO(XML_DOC2 % 12))
-        proc.run(POST, '/get-test/vc/test.xml', StringIO(XML_DOC2 % 234))
-        proc.run(POST, '/get-test/vc/test.xml', StringIO(XML_DOC2 % 3456))
-        # get meta data XML w/o trailing slash from latest revision
-        res = proc.run(GET, '/get-test/vc/test.xml/.meta')
-        data = res.render_GET(proc)
-        self.assertTrue('<package>get-test</package>' in data)
-        self.assertTrue('<resourcetype>vc</resourcetype>' in data)
-        self.assertTrue('<name>test.xml</name>' in data)
-        self.assertTrue('<revision>3</revision>' in data)
-        # get meta data XML w/ trailing slash from latest revision
-        res = proc.run(GET, '/get-test/vc/test.xml/.meta/')
-        data = res.render_GET(proc)
-        self.assertTrue('<package>get-test</package>' in data)
-        self.assertTrue('<resourcetype>vc</resourcetype>' in data)
-        self.assertTrue('<name>test.xml</name>' in data)
-        self.assertTrue('<revision>3</revision>' in data)
-        # get meta data XML w/o trailing slash from 1. revision
-        res = proc.run(GET, '/get-test/vc/test.xml/1/.meta')
-        data = res.render_GET(proc)
-        self.assertTrue('<package>get-test</package>' in data)
-        self.assertTrue('<resourcetype>vc</resourcetype>' in data)
-        self.assertTrue('<name>test.xml</name>' in data)
-        self.assertTrue('<revision>1</revision>' in data)
-        # get meta data XML w/ trailing slash from 1. revision
-        res = proc.run(GET, '/get-test/vc/test.xml/1/.meta/')
-        data = res.render_GET(proc)
-        self.assertTrue('<package>get-test</package>' in data)
-        self.assertTrue('<resourcetype>vc</resourcetype>' in data)
-        self.assertTrue('<name>test.xml</name>' in data)
-        self.assertTrue('<revision>1</revision>' in data)
-        # remove resource
-        proc.run(DELETE, '/get-test/vc/test.xml')
-    
-    def test_withCDATASection(self):
-        """
-        Test a XML document with CDATA section.
-        
-        CDATA will be striped for indexed values. Requesting such a indexed
-        value results into a XML conform UTF-8 encoded string. Also entities 
-        such as the "&" (amperson) will be mapped with "&amp;".
-        
-        @see: L{http://codespeak.net/lxml/api.html#cdata}.
-        """
-        proc = Processor(self.env)
-        # create resource
-        proc.run(PUT, '/get-test/notvc/test.xml', StringIO(XML_DOC3))
-        
-        res = proc.run(GET, '/get-test/notvc/test.xml/1/.index/')
-        data = res.render_GET(proc)
-        self.assertTrue("<value> &amp;&lt;\n&gt;&amp;</value>" in data)
-        # delete resource
-        proc.run(DELETE, '/get-test/notvc/test.xml')
+        self.env.registry.db_deleteResourceType('get-test2', 'notvc')
+        self.env.registry.db_deletePackage('get-test2')
+
 
 
 def suite():

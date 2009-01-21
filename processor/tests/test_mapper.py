@@ -113,11 +113,7 @@ class MapperTests(SeisHubEnvironmentTestCase):
         self.env.tree.update()
         
     def tearDown(self):
-        self.env.disableComponent(APackage)
-        self.env.disableComponent(TestMapper)
-        self.env.disableComponent(TestMapper2)
-        self.env.disableComponent(TestMapper3)
-        self.env.disableComponent(TestMapper4)
+        self.env.registry.db_deletePackage('mapper-test')
     
     def test_checkRegisteredMappers(self):
         """

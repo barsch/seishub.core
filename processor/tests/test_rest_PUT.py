@@ -63,8 +63,9 @@ class RestPUTTests(SeisHubEnvironmentTestCase):
         self.env.tree = RESTFolder()
         
     def tearDown(self):
-        self.env.disableComponent(AVersionControlledResourceType)
-        self.env.disableComponent(AResourceType)
+        self.env.registry.db_deleteResourceType('put-test', 'notvc')
+        self.env.registry.db_deleteResourceType('put-test', 'vc')
+        self.env.registry.db_deletePackage('put-test')
     
     def test_putOnDeletedVersionControlledResource(self):
         """
@@ -184,7 +185,7 @@ class RestPUTTests(SeisHubEnvironmentTestCase):
             proc.run(DELETE, '/put-test/notvc/test.xml')
     
     def test_putJapaneseDocuments(self):
-        """
+        """XXX: Fails yet!
         Part of the W3C XML conformance test suite.
         
         This covers tests with different encoding and byte orders, e.g. UTF-16 
@@ -199,7 +200,6 @@ class RestPUTTests(SeisHubEnvironmentTestCase):
         for file in files:
             # create resource
             data = open(file).read().strip()
-            print file
             proc.run(PUT, '/put-test/notvc/test.xml', StringIO(data))
             # delete resource
             proc.run(DELETE, '/put-test/notvc/test.xml')

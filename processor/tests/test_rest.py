@@ -62,8 +62,9 @@ class RestTests(SeisHubEnvironmentTestCase):
         self.env.tree = RESTFolder()
     
     def tearDown(self):
-        self.env.disableComponent(AVersionControlledResourceType)
-        self.env.disableComponent(AResourceType)
+        self.env.registry.db_deleteResourceType('rest-test', 'notvc')
+        self.env.registry.db_deleteResourceType('rest-test', 'vc')
+        self.env.registry.db_deletePackage('rest-test')
     
     def test_notImplementedMethodsOnRoot(self):
         proc = Processor(self.env)

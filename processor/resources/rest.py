@@ -246,6 +246,8 @@ class RESTProperty(Resource):
             for xpath, value in index_dict.iteritems():
                 sub = etree.SubElement(root, "item")
                 etree.SubElement(sub, "xpath").text = xpath
+                if not isinstance(value, basestring):
+                    value=unicode(value)
                 etree.SubElement(sub, "value").text = value
             data = etree.tostring(root, pretty_print=True, encoding='utf-8')
             #import pdb;pdb.set_trace()

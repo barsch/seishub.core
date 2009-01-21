@@ -71,8 +71,9 @@ class ProcessorTests(SeisHubEnvironmentTestCase):
         self.env.enableComponent(AResourceType)
     
     def tearDown(self):
-        self.env.disableComponent(AVersionControlledResourceType)
-        self.env.disableComponent(AResourceType)
+        self.env.registry.db_deleteResourceType('processor-test', 'vc')
+        self.env.registry.db_deleteResourceType('processor-test', 'notvc')
+        self.env.registry.db_deletePackage('processor-test')
     
     def test_oversizedURL(self):
         """

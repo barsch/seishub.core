@@ -51,8 +51,9 @@ class RestPOSTTests(SeisHubEnvironmentTestCase):
         self.env.tree = RESTFolder()
     
     def tearDown(self):
-        self.env.disableComponent(AVersionControlledResourceType)
-        self.env.disableComponent(AResourceType)
+        self.env.registry.db_deleteResourceType('post-test', 'notvc')
+        self.env.registry.db_deleteResourceType('post-test', 'vc')
+        self.env.registry.db_deletePackage('post-test')
     
     def test_processRoot(self):
         pass

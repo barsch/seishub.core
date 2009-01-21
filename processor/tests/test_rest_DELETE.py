@@ -60,8 +60,9 @@ class RestDELETETests(SeisHubEnvironmentTestCase):
         self.env.tree = RESTFolder()
     
     def tearDown(self):
-        self.env.disableComponent(AVersionControlledResourceType)
-        self.env.disableComponent(AResourceType)
+        self.env.registry.db_deleteResourceType('delete-test', 'vc')
+        self.env.registry.db_deleteResourceType('delete-test', 'notvc')
+        self.env.registry.db_deletePackage('delete-test')
     
     def test_deletePackage(self):
         """
