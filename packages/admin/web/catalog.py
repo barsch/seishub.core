@@ -4,9 +4,9 @@ Catalog and database related administration panels.
 """
 
 from seishub.core import Component, implements
+from seishub.db import DEFAULT_PREFIX
 from seishub.exceptions import SeisHubError, InvalidParameterError
 from seishub.packages.interfaces import IAdminPanel
-from seishub.xmldb.defaults import DEFAULT_PREFIX
 from sqlalchemy import create_engine #@UnresolvedImport
 import os
 

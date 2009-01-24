@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 
+from seishub.db.tests import test_orm, test_util
 import doctest
 import unittest
-
-from seishub.db.tests import test_orm
 
 
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(test_orm.suite())
+    suite.addTest(test_util.suite())
     return suite
 
 

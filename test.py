@@ -7,20 +7,21 @@ This script will run every test included into SeisHub.
 """
 
 from seishub.config import Configuration
+from seishub.db import DEFAULT_PREFIX
 from seishub.env import Environment
-from seishub.xmldb.defaults import DEFAULT_PREFIX
 import copy
 import doctest
 import sys
 import unittest
 
 
-USE_TEST_DB = 'sqlite://'
-#USE_TEST_DB = 'postgres://seishub:seishub@localhost:5432/postgis'
+#USE_TEST_DB = 'sqlite://'
+USE_TEST_DB = 'postgres://seishub:seishub@localhost:5432/postgis'
 
 # use this options below only for debugging test cases
-CLEAN_DATABASE_AFTER_EACH_TEST = False
+CLEAN_DATABASE_AFTER_EACH_TEST = True
 CHECK_DATABASE_AFTER_EACH_TEST = False
+DISPOSE_CONNECTION_AFTER_EACH_TEST = True
 
 
 class SeisHubEnvironmentTestCase(unittest.TestCase):
@@ -103,7 +104,7 @@ class SeisHubEnvironmentTestCase(unittest.TestCase):
             for table in tables:
                 self.env.db.engine.execute(sql % str(table))
         # manually dispose DB connection
-        if not USE_TEST_DB.startswith('sqlite'):
+        if DISPOSE_CONNECTION_AFTER_EACH_TEST:
             self.env.db.engine.pool.dispose()
         # remove objects
         del(self.config)

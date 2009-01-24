@@ -1,15 +1,13 @@
 # -*- coding: utf-8 -*-
+
 from datetime import datetime
-from sqlalchemy import Table, Column
-from sqlalchemy import Integer, String, Text, Unicode, DateTime, Boolean , Float
-from sqlalchemy import Numeric
-from sqlalchemy import UniqueConstraint, PrimaryKeyConstraint
-from sqlalchemy.sql import text
-from sqlalchemy.types import TypeDecorator
-
+from seishub.db import DEFAULT_PREFIX
 from seishub.db.manager import meta as metadata
+from sqlalchemy import Integer, String, Text, Unicode, DateTime, Boolean, Float, \
+    Numeric, Table, Column, UniqueConstraint
+from sqlalchemy.sql import text
 
-DEFAULT_PREFIX = 'default_'
+
 DOCUMENT_TABLE = 'document'
 DOCUMENT_META_TABLE = 'document_meta'
 INDEX_TABLE = 'index'

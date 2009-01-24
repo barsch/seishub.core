@@ -2,8 +2,8 @@ from sqlalchemy import Table, Column, ForeignKey, UniqueConstraint  #@Unresolved
 from sqlalchemy import Integer, Text, Boolean #@UnresolvedImport 
                        
 from seishub.db.manager import meta as metadata
+from seishub.db import DEFAULT_PREFIX
 
-DEFAULT_PREFIX = 'default_'
 PACKAGES_TABLE = 'packages'
 RESOURCETYPES_TABLE = 'resourcetypes'
 SCHEMA_TABLE = 'schemas'

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from seishub.db import DEFAULT_PREFIX
 from seishub.db.manager import meta
 from seishub.db.orm import DbAttributeProxy, DB_NULL, DB_LIMIT, Serializable, \
     Relation, LazyAttribute, DbStorage, db_property, DbError, DbObjectProxy
@@ -10,7 +11,7 @@ import unittest
 
 test_meta = meta
 
-test_parent_tab = sa.Table('test_parent', test_meta,
+test_parent_tab = sa.Table(DEFAULT_PREFIX+'test_parent', test_meta,
     sa.Column('id', sa.Integer, primary_key = True, autoincrement = True),
     sa.Column('data', sa.Text),
     sa.Column('child1_rel', sa.Integer),
@@ -18,26 +19,26 @@ test_parent_tab = sa.Table('test_parent', test_meta,
     useexisting = True,
     )
 
-test_child1_tab = sa.Table('test_child1', test_meta,
+test_child1_tab = sa.Table(DEFAULT_PREFIX+'test_child1', test_meta,
     sa.Column('id', sa.Integer, primary_key = True, autoincrement = True),
     sa.Column('data', sa.Text),
     useexisting = True,
     )
 
-test_child2_tab = sa.Table('test_child2', test_meta,
+test_child2_tab = sa.Table(DEFAULT_PREFIX+'test_child2', test_meta,
     sa.Column('id', sa.Integer, primary_key = True, autoincrement = True),
     sa.Column('data', sa.Text),
     sa.Column('grandchild_rel', sa.Integer),
     useexisting = True,
     )
 
-test_grandchild_tab = sa.Table('test_grandchild', test_meta,
+test_grandchild_tab = sa.Table(DEFAULT_PREFIX+'test_grandchild', test_meta,
     sa.Column('id', sa.Integer, primary_key = True, autoincrement = True),
     sa.Column('data', sa.Text),
     useexisting = True,
     )
 
-test_lego_bricks = sa.Table('test_lego_bricks', test_meta,
+test_lego_bricks = sa.Table(DEFAULT_PREFIX+'test_lego_bricks', test_meta,
     sa.Column('id', sa.Integer, primary_key = True, autoincrement = True),
     sa.Column('owner_rel', sa.Integer),
     sa.Column('owner2_rel', sa.Integer),
@@ -169,13 +170,12 @@ class ORMTest(SeisHubEnvironmentTestCase):
     
     def tearDown(self):
         # clean up
-        self.db.drop(GrandChild)
-        self.db.drop(Child1)
-        self.db.drop(Child2)
-        self.db.drop(Parent)
-        self.db.drop(LegoBrick)
-        del self.parent1
-
+        test_parent_tab.drop()
+        test_child1_tab.drop()
+        test_child2_tab.drop()
+        test_grandchild_tab.drop()
+        test_lego_bricks.drop()
+    
     def testStore(self):
         # _id is used to store the internal integer id, should be None in the 
         # beginning
