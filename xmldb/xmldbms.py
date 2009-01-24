@@ -6,9 +6,10 @@ from sqlalchemy.sql import and_
 from seishub.exceptions import SeisHubError, InvalidParameterError
 from seishub.exceptions import NotFoundError, DeletedObjectError
 from seishub.exceptions import DuplicateObjectError
-from seishub.db.util import DbStorage, DbError, DB_LIMIT
+from seishub.db.orm import DbStorage, DbError, DB_LIMIT
 from seishub.xmldb.interfaces import IResourceStorage
 from seishub.xmldb.resource import XmlDocument, Resource
+
 
 class XmlDbManager(DbStorage):
     implements(IResourceStorage)
@@ -172,7 +173,7 @@ class XmlDbManager(DbStorage):
                  document_id):
             raise TypeError("deleteResource(): Invalid number of arguments.")
         if document_id:
-            # this is needed because db.util.drop doesn't support drop via
+            # this is needed because db.orm.drop doesn't support drop via
             # a parameter of an 'one-to-many' related object
             res = self.getResource(document_id = document_id)
             id = res.id

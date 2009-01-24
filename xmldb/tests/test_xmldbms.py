@@ -7,7 +7,7 @@ from seishub.exceptions import NotFoundError
 from seishub.exceptions import InvalidObjectError
 from seishub.util.text import hash
 from seishub.test import SeisHubEnvironmentTestCase
-from seishub.db.util import DbAttributeProxy
+from seishub.db.orm import DbAttributeProxy
 from seishub.xmldb.xmldbms import XmlDbManager
 from seishub.xmldb.resource import XmlDocument, Resource, newXMLDocument 
 from seishub.xmldb.resource import XML_DECLARATION_LENGTH

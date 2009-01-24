@@ -4,7 +4,7 @@ from sqlalchemy import select, sql
 
 from seishub.exceptions import SeisHubError, NotFoundError
 from seishub.exceptions import DuplicateObjectError, InvalidParameterError
-from seishub.db.util import DbStorage, DbError
+from seishub.db.orm import DbStorage, DbError
 from seishub.xmldb.interfaces import IXPathQuery, IResource, IXmlIndex
 from seishub.xmldb.defaults import document_tab
 from seishub.xmldb.index import XmlIndex, type_classes
@@ -171,7 +171,7 @@ class _QueryProcessor(object):
         q = q.group_by(document_tab.c['id'])
         q = q.limit(limit).offset(offset)
 #        from sqlalchemy.ext.serializer import dumps, loads
-#        from seishub.db.dbmanager import meta
+#        from seishub.db.manager import meta
 #        blah = dumps(q)
 #        print "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 #        print len(blah)

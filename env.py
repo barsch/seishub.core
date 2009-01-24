@@ -9,7 +9,7 @@ and logging access.
 from seishub.auth import AuthenticationManager
 from seishub.config import Configuration, Option, _TRUE_VALUES
 from seishub.core import ComponentManager
-from seishub.db.dbmanager import DatabaseManager
+from seishub.db.manager import DatabaseManager
 from seishub.defaults import DEFAULT_COMPONENTS, HTTP_PORT
 from seishub.loader import ComponentLoader
 from seishub.log import Logger

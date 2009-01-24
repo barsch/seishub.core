@@ -3,12 +3,12 @@
 import doctest
 import unittest
 
-from seishub.db.tests import test_util  
+from seishub.db.tests import test_orm
 
 
 def suite():
     suite = unittest.TestSuite()
-    suite.addTest(test_util.suite())
+    suite.addTest(test_orm.suite())
     return suite
 
 

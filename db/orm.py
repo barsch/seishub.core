@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-import time
 
+import time
 from zope.interface import implements, Interface, directlyProvides, \
                            implementedBy, Attribute
 from zope.interface.exceptions import DoesNotImplement
-from sqlalchemy import select, Text, or_, and_, String
+from sqlalchemy import select, Text, or_, and_
 from sqlalchemy.exceptions import IntegrityError, NoSuchColumnError
 from sqlalchemy.sql.expression import ClauseList
 
@@ -12,50 +12,71 @@ from sqlalchemy.sql.expression import ClauseList
 class DbError(Exception):
     pass
 
+
 class IDbEnabled(Interface):
-    """Object provides access to db manager"""
+    """
+    Object provides access to DB manager.
+    """
     def setDb(db):
-        """@param db: database engine"""
+        """
+        @param db: database engine
+        """
         
     def getDb():
-        """@return: database engine"""
+        """
+        @return: database engine
+        """
 
 
 class ISerializable(Interface):
-    """Object providing functionality for serialization"""
+    """
+    Object providing functionality for serialization.
+    """
     _id = Attribute("Unique id of Serializable object.")
         
 
+
 class IRelation(Interface):
-    """marker interface for Relation class"""
+    """
+    Marker interface for Relation class.
+    """
 
 
 class ILazyAttribute(Interface):
-    """marker interface for LazyAttribute class"""
+    """
+    Marker interface for LazyAttribute class.
+    """
 
 
 class IDbObjectProxy(Interface):
-    """marker interface for DbObjectProxy class"""
+    """
+    Marker interface for DbObjectProxy class.
+    """
 
 
 class IDbAttributeProxy(Interface):
-    """marker interface for DbAttributeProxy class"""
-    
+    """
+    Marker interface for DbAttributeProxy class.
+    """
+
 
 class DB_NULL(object):
-    """Pass this class to pickup(...) or drop(...) as a parameter value to 
+    """
+    Pass this class to pickup(...) or drop(...) as a parameter value to 
     explicitly claim that parameter to be None.
     """
     pass
 
 
 class DB_LIMIT(object):
-    """Pass this object to pickup(...) to select only the object beeing 
+    """
+    Pass this object to pickup(...) to select only the object being 
     maximal, minimal or having a fixed value for the given attribute in a 
     x-to-many relation.
     """
     def __init__(self, attr, type = 'max', value = None):
-        """@param attr: name of the attribute to be minimized/maximized/fixed
+        """
+        @param attr: name of the attribute to be minimized/maximized/fixed
         @param type: 'max'|'min'|'fixed'
         @param value: if type == 'fixed', value to be taken by attribute
         """
@@ -65,24 +86,27 @@ class DB_LIMIT(object):
 
 
 class DbEnabled(object):
-    """Mixin providing access to a sqlalchemy database manager"""
-    
+    """
+    Mixin providing access to a sqlalchemy database manager.
+    """
     implements(IDbEnabled)
     
     def __init__(self, db):
         self.setDb(db.engine)
-
+    
     def setDb(self, db):
         self._db = db
-        
+    
     def getDb(self):
         return self._db
     
     db = property(getDb, setDb, "Database engine")
 
+
 class DbStorage(DbEnabled):
-    """Mixin providing object serialization to a sqlalchemy SQL database.
-            
+    """
+    Mixin providing object serialization to a sqlalchemy SQL database.
+    
     Internal integer ids are stored into the _id attribute of Serializable 
     objects. Each object has an unique id for that object type.
     
@@ -256,7 +280,7 @@ class DbStorage(DbEnabled):
                     q.append_column(table.c[colname])
                 
         return q, joins
-
+    
     def _generate_objs(self, cls, result, objs):
         table = cls.db_table
         values = dict()
@@ -334,7 +358,7 @@ class DbStorage(DbEnabled):
         # add child objects last which correspond to a 'to-many' relation
         objs.extend(to_many)
         return objs
-
+    
     def _order_by(self, q, table, mapping, order_by = dict()):
         for col, direction in order_by.iteritems():
 #             tables in ORDER BY clause also have to be in FROM clause
@@ -358,7 +382,8 @@ class DbStorage(DbEnabled):
         return expr.replace('*', '%')
         
     def store(self, *objs, **kwargs):
-        """store a (list of) Serializable object(s) into specified db table  
+        """
+        Store a (list of) Serializable object(s) into specified DB table  
         if objs is a list, all objects in list will be stored within the same 
         transaction.
         
@@ -407,10 +432,12 @@ class DbStorage(DbEnabled):
         return True
     
     def update(self, *objs, **kwargs):
-        """Update a (list of) Serializable object(s).  
-        if objs is a list, all objects in list will be updated within the same 
-        transaction.
-        Objects to update have to provide an _id attribute to be identified.
+        """
+        Update a (list of) Serializable object(s).
+        
+        If objs is a list, all objects in list will be updated within the same 
+        transaction. Objects to update have to provide an _id attribute to be 
+        identified.
         
         @keyword cascading: If True, also underlying related objects are 
                             updated, default is False.
@@ -421,9 +448,10 @@ class DbStorage(DbEnabled):
         
 
     def pickup(self, cls, **keys):
-        """Read Serializable objects with given keys from database.
+        """
+        Read Serializable objects with given keys from database.
         @param cls: Object type to be retrieved.
-        @keyword _order_by: dictionary of the form: 
+        @keyword _order_by: dictionary of the form:  
             {'attribute':'ASC'|'DESC', ...}
         @keyword _limit: result limit
         @keyword _offset: result offset (used in combination with limit)
@@ -488,7 +516,8 @@ class DbStorage(DbEnabled):
         return self._to_list(objs[cls])
     
     def drop(self, cls, **keys):
-        """Delete object with given keys from database.
+        """
+        Delete object with given keys from database.
         
         @param cls: Object type to be removed.
         @param **keys: kwarg list of the form: 
@@ -540,7 +569,8 @@ class DbStorage(DbEnabled):
 
 
 class Serializable(object):
-    """Subclasses may be serialized into a DbStorage.
+    """
+    Subclasses may be serialized into a DbStorage.
     
     Serializable objects should implement serializable attributes via the
     db_property descriptor.
@@ -558,13 +588,13 @@ class Serializable(object):
     def __init__(self, *args, **kwargs):
         # TODO: remove?
         self._id = None
-        
+    
     def _getId(self):
         try:
             return self._serializable_id
         except:
             return None
-        
+    
     def _setId(self, id):
         if id and not (isinstance(id, int) or isinstance(id, long)):
             raise TypeError("Id has to be integer or long. Got a %s." %\
@@ -581,9 +611,9 @@ class Serializable(object):
                 for o in objs:
                     rel_attr = col.name + '_id'
                     o.__setattr__(rel_attr, id)
-        
-    _id = property(_getId, _setId, 'Internal id (integer)')
     
+    _id = property(_getId, _setId, 'Internal id (integer)')
+
 
 class DbObjectProxy(object):
     implements(IDbObjectProxy)
@@ -593,17 +623,18 @@ class DbObjectProxy(object):
         self.cls = cls
         self.kwargs = kwargs
         directlyProvides(self, list(implementedBy(cls)))
-        
+    
     def get(self):
         try:
             return self.db_storage.pickup(self.cls, **self.kwargs)[0]
         except IndexError:
             raise DbError('A related object could not be located in '+\
                           'the database. %s: %s' % (self.cls, self.kwargs))
-            
+
 
 class DbAttributeProxy(object):
-    """@param attr: LazyAttribute instance
+    """
+    @param attr: LazyAttribute instance
     @param table: table containing attribute and keys
     @param keyargs: attribute dict uniquely identifying the object
     """
@@ -614,7 +645,7 @@ class DbAttributeProxy(object):
         self.attr_name = attr.name
         self.table = table
         self.keyargs = keyargs
-        
+    
     def get(self):
         w = ClauseList()
         for k in self.keyargs.keys():
@@ -630,12 +661,12 @@ class DbAttributeProxy(object):
 
 
 class db_property(property):
-    """Use this property instead of the python 'property' descriptor to support 
+    """
+    Use this property instead of the python 'property' descriptor to support 
     lazy object getting.
     Usage is like standard 'property' descriptor with an additional parameter:
     @param attr: name of the attribute used by the property 
     """
-    
     def __init__(self, *args, **kwargs):
         self.attr = kwargs.pop('attr', None)
         property.__init__(self, *args, **kwargs)
@@ -656,10 +687,11 @@ class db_property(property):
             obj.__setattr__(self.attr, value)
             return
         return property.__set__(self, obj, value)
-            
+
 
 class Relation(object):
-    """Defines a one-to-one/many-to-one relation between Serializable objects.
+    """
+    Defines a one-to-one/many-to-one relation between Serializable objects.
     
     @param cls: class of target object type
     @param name: name of the referencing column in database table
@@ -671,7 +703,6 @@ class Relation(object):
     Note: If set to 'to-one' name is a column in the referer's table, if set to
     'to-many' in the referee's table.
     """
-    
     implements(IRelation)
     
     def __init__(self, cls, name, lazy = True, cascading_delete = False,
@@ -684,16 +715,16 @@ class Relation(object):
         if relation_type == 'to-many':
             # inject backreference attribute into db_mapping:
             cls.db_mapping.setdefault(name + '_id', name)
-        
+
 
 class LazyAttribute(object):
-    """Defines a lazy object attribute.
+    """
+    Defines a lazy object attribute.
     Loads a propertie's data not until attribute is accessed for the first 
     time.
     
     @param name: name of the database column holding attribute data 
     """
-
     implements(ILazyAttribute)
     
     def __init__(self, name):

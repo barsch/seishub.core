@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
 
-import unittest
-import sqlalchemy as sa
-
+from seishub.db.manager import meta
+from seishub.db.orm import DbAttributeProxy, DB_NULL, DB_LIMIT, Serializable, \
+    Relation, LazyAttribute, DbStorage, db_property, DbError, DbObjectProxy
 from seishub.test import SeisHubEnvironmentTestCase
-from seishub.db.dbmanager import meta
-from seishub.db.util import Serializable, Relation, LazyAttribute, DbStorage
-from seishub.db.util import db_property, DbError, DbObjectProxy 
-from seishub.db.util import DbAttributeProxy, DB_NULL, DB_LIMIT
+import sqlalchemy as sa
+import unittest
+
 
 test_meta = meta
 
@@ -151,10 +150,7 @@ class Parent(Serializable):
     child2 = db_property(getChild2, setChild2, attr = '_child2')
 
 
-class DbUtilTest(SeisHubEnvironmentTestCase):
-#    def _config(self):
-#        self.config.set('db', 'verbose', True)
-    
+class ORMTest(SeisHubEnvironmentTestCase):
     def setUp(self):
         self.db = DbStorage(self.env.db, debug = False)
         brick1 = LegoBrick('red', 2)
@@ -453,11 +449,11 @@ class DbUtilTest(SeisHubEnvironmentTestCase):
         self.assertEqual(grandchild, [])
         legobricks = self.db.pickup(LegoBrick)
         self.assertEqual(legobricks, [])
-        
-        
+
 
 def suite():
-    return unittest.makeSuite(DbUtilTest, 'test')
+    return unittest.makeSuite(ORMTest, 'test')
+
 
 if __name__ == '__main__':
     unittest.main(defaultTest='suite')

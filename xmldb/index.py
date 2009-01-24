@@ -6,7 +6,7 @@ from twisted.python import log
 
 from seishub.core import implements, ExtensionPoint
 from seishub.exceptions import InvalidObjectError
-from seishub.db.util import Serializable, Relation, db_property
+from seishub.db.orm import Serializable, Relation, db_property
 from seishub.packages.interfaces import IProcessorIndex
 from seishub.packages.package import ResourceTypeWrapper
 from seishub.xmldb import defaults

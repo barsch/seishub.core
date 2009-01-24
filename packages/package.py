@@ -4,7 +4,7 @@ from zope.interface import implements
 
 from seishub.util.text import validate_id, to_uri, to_xpath_query
 from seishub.util.xmlwrapper import XmlSchema, XmlStylesheet
-from seishub.db.util import Serializable, Relation, db_property
+from seishub.db.orm import Serializable, Relation, db_property
 from seishub.xmldb.interfaces import IResource
 import seishub.xmldb.resource
 from seishub.packages.interfaces import IPackageWrapper, IResourceTypeWrapper

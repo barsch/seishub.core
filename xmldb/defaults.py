@@ -7,7 +7,7 @@ from sqlalchemy import UniqueConstraint, PrimaryKeyConstraint
 from sqlalchemy.sql import text
 from sqlalchemy.types import TypeDecorator
 
-from seishub.db.dbmanager import meta as metadata
+from seishub.db.manager import meta as metadata
 
 DEFAULT_PREFIX = 'default_'
 DOCUMENT_TABLE = 'document'

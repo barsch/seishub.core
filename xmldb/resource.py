@@ -3,7 +3,7 @@
 from zope.interface import implements
 
 from seishub.exceptions import InvalidObjectError, InvalidParameterError
-from seishub.db.util import Serializable, Relation, db_property, LazyAttribute
+from seishub.db.orm import Serializable, Relation, db_property, LazyAttribute
 from seishub.util.xmlwrapper import IXmlDoc, XmlTreeDoc, InvalidXmlDataError
 from seishub.util.text import validate_id
 from seishub.util.xml import toUnicode, parseXMLDeclaration, addXMLDeclaration 

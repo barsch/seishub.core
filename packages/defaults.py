@@ -1,7 +1,7 @@
 from sqlalchemy import Table, Column, ForeignKey, UniqueConstraint  #@UnresolvedImport 
 from sqlalchemy import Integer, Text, Boolean #@UnresolvedImport 
                        
-from seishub.db.dbmanager import meta as metadata
+from seishub.db.manager import meta as metadata
 
 DEFAULT_PREFIX = 'default_'
 PACKAGES_TABLE = 'packages'

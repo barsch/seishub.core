@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from seishub.core import PackageManager
-from seishub.db.util import DbStorage, DB_NULL
+from seishub.db.orm import DbStorage, DB_NULL
 from seishub.exceptions import SeisHubError, DuplicateObjectError
 from seishub.packages.interfaces import IPackage, IResourceType, IMapper, \
     IPostgreSQLView, IProcessorIndex

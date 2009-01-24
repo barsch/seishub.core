@@ -1,18 +1,18 @@
 # -*- coding: utf-8 -*-
 
-import os
-import sqlalchemy as sa
-
 from seishub.config import Option
 from seishub.defaults import DEFAULT_DB_URI
+import os
+import sqlalchemy as sa
 
 
 meta = sa.MetaData()
 
 
 class DatabaseManager(object):
-    """A wrapper around SQLAlchemy connection pool."""
-    
+    """
+    A wrapper around SQLAlchemy connection pool.
+    """
     Option('db', 'uri', DEFAULT_DB_URI, "Database URI.")
     Option('db', 'verbose', False, "Enables database verbosity.")
     
@@ -29,14 +29,18 @@ class DatabaseManager(object):
         self.env.log.info('DB connection pool started')
         
     def _initDb(self):
-        """Initialise the database."""
+        """
+        Initialize the database.
+        """
         self.metadata = meta
         self.metadata.bind = self.engine
         #this will check for the presence of a table first before creating
         self.metadata.create_all(self.engine, checkfirst = True)
     
     def _getEngine(self):
-        """Creates an database engine by processing self.uri."""
+        """
+        Creates an database engine by processing self.uri.
+        """
         if self.uri.startswith('sqlite:///'):
             # we got someSQLite database
             filename =  self.uri[10:]
@@ -69,8 +73,10 @@ class DatabaseManager(object):
                                 pool_size = self.pool_size)
     
     def _getSQLiteEngine(self):
-        """Return a SQLite engine without a connection pool."""
-        # present a big warn message if using SQLite as data backend
+        """
+        Return a SQLite engine without a connection pool.
+        """
+        # warn if using SQLite as database
         self.env.log.warn("A SQLite database should never be used in a "
                           "productive environment!")
         # create engine
