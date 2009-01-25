@@ -47,41 +47,20 @@ class ComponentLoader(object):
         distributions, errors = pkg_resources.working_set.find_plugins(
             pkg_resources.Environment(search_path)
         )
-        for dist in distributions:
-            self.env.log.debug('Processing egg %s from %s' % 
-                               (dist, dist.location))
-            pkg_resources.working_set.add(dist)
-        
-        def _logError(item, e):
-            if isinstance(e, pkg_resources.DistributionNotFound):
-                self.env.log.warn('Skipping "%s": ("%s" not found)' % 
-                                  (item, e), e)
-            elif isinstance(e, pkg_resources.VersionConflict):
-                self.env.log.error('Skipping "%s": (version conflict "%s")' 
-                                   % (item, e), e)
-            elif isinstance(e, pkg_resources.UnknownExtra):
-                self.env.log.error('Skipping "%s": (unknown extra "%s")' % 
-                                   (item, e), e)
-            elif isinstance(e, pkg_resources.ImportError):
-                self.env.log.error('Skipping "%s": (can\'t import "%s")' % 
-                                   (item, e), e)
-            else:
-                self.env.log.error('Skipping "%s": (error "%s")' % 
-                                   (item, e), e)
+        for d in distributions:
+            self.env.log.debug('Processing egg %s from %s' % (d, d.location))
+            pkg_resources.working_set.add(d)
         
         for dist, e in errors.iteritems():
-            _logError(dist, e)
+            self.env.log.error('Skipping "%s": %s' % (dist, e))
         
         for entry in pkg_resources.working_set.iter_entry_points(entry_point):
             self.env.log.info('Loading egg %s from %s' % (entry.name,
                               entry.dist.location))
             try:
                 entry.load(require=True)
-            except (pkg_resources.ImportError, 
-                    pkg_resources.DistributionNotFound, 
-                    pkg_resources.VersionConflict,
-                    pkg_resources.UnknownExtra), e:
-                _logError(entry, e)
+            except Exception, e:
+                self.env.log.error('Skipping "%s": %s' % (entry.name, e))
     
     def _loadPyFiles(self, search_path):
         """
