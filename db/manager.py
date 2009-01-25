@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from seishub.config import Option
-from seishub.defaults import DEFAULT_DB_URI
+from seishub.config import Option, IntOption
+from seishub.db import DEFAULT_MAX_OVERFLOW, DEFAULT_POOL_SIZE, DEFAULT_DB_URI
 import os
 import sqlalchemy as sa
 
@@ -15,19 +15,24 @@ class DatabaseManager(object):
     """
     Option('db', 'uri', DEFAULT_DB_URI, "Database URI.")
     Option('db', 'verbose', False, "Enables database verbosity.")
-    
-    pool_size = 5
-    max_overflow = 10
+    IntOption('db', 'max_overflow', DEFAULT_MAX_OVERFLOW, 
+        "The number of connections to allow in connection pool “overflow”, "
+        "that is connections that can be opened above and beyond the " +
+        "pool_size setting, which defaults to five.")
+    IntOption('db', 'pool_size', DEFAULT_POOL_SIZE, 
+        "The number of connections to keep open inside the connection pool.")
     
     def __init__(self, env):
         self.version = sa.__version__
         self.env = env
         self.uri = self.env.config.get('db', 'uri')
         self.echo = self.env.config.getbool('db', 'verbose')
+        self.max_overflow = self.env.config.getint('db', 'max_overflow')
+        self.pool_size = self.env.config.getint('db', 'pool_size')
         self.engine = self._getEngine()
         self._initDb()
         self.env.log.info('DB connection pool started')
-        
+    
     def _initDb(self):
         """
         Initialize the database.
@@ -45,20 +50,20 @@ class DatabaseManager(object):
             # we got someSQLite database
             filename =  self.uri[10:]
             filepart = filename.split('/')
-            #it is a plain filename without sub directories
+            # it is a plain filename without sub directories
             if len(filepart)==1:
                 self.uri = 'sqlite:///' + os.path.join(self.env.config.path, 
                                                        'db', filename)
                 return self._getSQLiteEngine()
-            #there is a db sub directory given in front of the filename
+            # there is a db sub directory given in front of the filename
             if len(filepart)==2 and filepart[0]=='db':
                 self.uri = 'sqlite:///' + os.path.join(self.env.config.path, 
                                                        filename)
                 return self._getSQLiteEngine()
-            #check if it is a full absolute file path
+            # check if it is a full absolute file path
             if os.path.isdir(os.path.dirname(filename)):
                 return self._getSQLiteEngine()
-            #ok return a plain memory based database
+            # ok return a plain memory based database
             else:
                 self.uri='sqlite://'
                 return self._getSQLiteEngine()

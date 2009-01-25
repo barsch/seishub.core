@@ -4,7 +4,7 @@ Catalog and database related administration panels.
 """
 
 from seishub.core import Component, implements
-from seishub.db import DEFAULT_PREFIX
+from seishub.db import DEFAULT_PREFIX, DEFAULT_POOL_SIZE, DEFAULT_MAX_OVERFLOW
 from seishub.exceptions import SeisHubError, InvalidParameterError
 from seishub.packages.interfaces import IAdminPanel
 from sqlalchemy import create_engine #@UnresolvedImport
@@ -26,6 +26,8 @@ class BasicPanel(Component):
         data = {
           'db': db,
           'uri': self.config.get('db', 'uri'),
+          'pool_size': self.config.getint('db', 'pool_size'),
+          'max_overflow': self.config.getint('db', 'max_overflow'),
         }
         if db.engine.name=='sqlite':
             data['info'] = ("SQLite Database enabled!", "A SQLite database "
@@ -37,8 +39,13 @@ class BasicPanel(Component):
                             "wiki/DatabaseNotes</a>.")
         if request.method == 'POST':
             uri = request.args.get('uri',[''])[0]
-            verbose = request.args.get('verbose',[''])[0]
+            pool_size = request.args.get('pool_size' ,[DEFAULT_POOL_SIZE])[0]
+            max_overflow = request.args.get('max_overflow',
+                                            [DEFAULT_MAX_OVERFLOW])[0]
+            verbose = request.args.get('verbose',[False])[0]
             self.config.set('db', 'verbose', verbose)
+            self.config.set('pool_size', 'pool_size', pool_size)
+            self.config.set('max_overflow', 'max_overflow', max_overflow)
             data['uri'] = uri
             try:
                 engine = create_engine(uri)
@@ -46,15 +53,18 @@ class BasicPanel(Component):
             except:
                 data['error'] = ("Could not connect to database %s" % uri, 
                                  "Please make sure the database URI has " + \
-                                 "the following syntax: dialect://user:" + \
+                                 "the correct syntax: dialect://user:" + \
                                  "password@host:port/dbname.")
             else:
                 self.config.set('db', 'uri', uri)
-                data['info'] = ("Connection to new database was successful", 
+                data['info'] = ("Connection to database was successful", 
                                 "You have to restart SeisHub in order to " + \
                                 "see any changes at the database settings.")
             self.config.save()
         data['verbose'] = self.config.getbool('db', 'verbose')
+        data['pool_size'] = self.config.getint('pool_size', 'pool_size')
+        data['max_overflow'] = self.config.getint('max_overflow', 
+                                                  'max_overflow')
         return data
 
 

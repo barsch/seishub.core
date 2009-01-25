@@ -2,8 +2,6 @@
 
 import os
 
-# default db settings
-DEFAULT_DB_URI = 'sqlite:///db/seishub.db'
 
 # default components
 DEFAULT_COMPONENTS = ('seishub.packages.admin.web.general.PluginsPanel',
