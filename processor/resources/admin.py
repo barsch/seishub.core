@@ -9,8 +9,10 @@ from seishub import __version__ as SEISHUB_VERSION
 from seishub.core import ExtensionPoint
 from seishub.packages.interfaces import IAdminPanel, IAdminTheme, \
     IAdminStaticContent
+from seishub.processor.interfaces import IAdminResource
 from seishub.processor.resources.filesystem import FileSystemResource
 from seishub.processor.resources.resource import Resource, StaticFolder
+from zope.interface import implements
 import os
 
 
@@ -18,6 +20,7 @@ class AdminPanel(Resource):
     """
     A administrative panel.
     """
+    implements(IAdminResource)
     
     def __init__(self, root, panel):
         Resource.__init__(self)
@@ -113,6 +116,7 @@ class AdminFolder(StaticFolder):
     """
     A administrative sub folder.
     """
+    implements(IAdminResource)
     
     def __init__(self, root, panels):
         Resource.__init__(self)
@@ -138,6 +142,7 @@ class AdminRootFolder(StaticFolder):
     """
     The root folder resource containing all active administrative resources.
     """
+    implements(IAdminResource)
     
     def __init__(self, env):
         Resource.__init__(self)
@@ -249,7 +254,7 @@ class AdminRootFolder(StaticFolder):
         Return CSS request URL of the activated administrative theme.
         """
         theme_id = self.env.config.get('webadmin', 'theme')
-        if self.themes.has_key(theme_id):
+        if theme_id in self.themes:
             return self.themes.get(theme_id).theme_css_resource
         else:
             return '/css/magic.css'

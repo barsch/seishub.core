@@ -47,7 +47,7 @@ class SSHServiceProtocol(recvline.HistoricRecvLine):
         else:
             self.lineBuffer[self.lineBufferIndex:self.lineBufferIndex+1] = [ch]
         self.lineBufferIndex += 1
-        if not self.status.has_key('hide'):
+        if 'hide' not in self.status:
             self.terminal.write(ch)
     
     def lineReceived(self, line):
@@ -101,7 +101,7 @@ class SSHServiceProtocol(recvline.HistoricRecvLine):
         self.write('\r\n')
     
     def handle_RETURN(self):
-        if self.lineBuffer and not self.status.has_key('hide'):
+        if self.lineBuffer and 'hide' not in self.status:
             self.historyLines.append(''.join(self.lineBuffer))
         self.historyPosition = len(self.historyLines)
         line = ''.join(self.lineBuffer)
@@ -148,7 +148,7 @@ class SSHServiceProtocol(recvline.HistoricRecvLine):
         """Changes your password."""
         uid = self.user.username
         status = self.status.get('cmd','')
-        current = self.status.has_key('current')
+        current = 'current' in self.status
         password = self.status.get('password','')
         if not status:
             # start

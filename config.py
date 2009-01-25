@@ -15,11 +15,10 @@
 # Author: Christopher Lenz <cmlenz@gmx.de>
 
 from ConfigParser import ConfigParser
-import os
-from sets import Set as set
-
 from seishub.exceptions import SeisHubError
 from seishub.util.text import toUnicode
+import os
+
 
 __all__ = ['Configuration', 'Option', 'BoolOption', 'IntOption', 'ListOption',
            'ConfigurationError']
@@ -29,11 +28,14 @@ CRLF = '\r\n'
 
 
 class ConfigurationError(SeisHubError):
-    """Exception raised when a value in the configuration file is not valid."""
+    """
+    Exception raised when a value in the configuration file is not valid.
+    """
 
 
 class Configuration(object):
-    """Thin layer over `ConfigParser` from the Python standard library.
+    """
+    Thin layer over `ConfigParser` from the Python standard library.
     
     In addition to providing some convenience methods, the class remembers
     the last modification time of the configuration file, and reparses it
@@ -48,23 +50,28 @@ class Configuration(object):
         self.parse_if_needed()
     
     def __contains__(self, name):
-        """Return whether the configuration contains a section of the given
-        name.
+        """
+        Return whether the configuration contains a section of the given name.
         """
         return self.parser.has_section(name)
     
     def __getitem__(self, name):
-        """Return the configuration section with the specified name."""
+        """
+        Return the configuration section with the specified name.
+        """
         if name not in self._sections:
             self._sections[name] = Section(self, name)
         return self._sections[name]
     
     def get(self, section, name, default=None):
-        """Return the value of the specified option."""
+        """
+        Return the value of the specified option.
+        """
         return self[section].get(name, default)
     
     def getbool(self, section, name, default=None):
-        """Return the specified option as boolean value.
+        """
+        Return the specified option as boolean value.
         
         If the value of the option is one of "yes", "true",  "on", or "1", this
         method will return `True`, otherwise `False`.
@@ -72,7 +79,8 @@ class Configuration(object):
         return self[section].getbool(name, default)
     
     def getint(self, section, name, default=None):
-        """Return the value of the specified option as integer.
+        """
+        Return the value of the specified option as integer.
         
         If the specified option can not be converted to an integer, a
         `ConfigurationError` exception is raised.
@@ -80,7 +88,8 @@ class Configuration(object):
         return self[section].getint(name, default)
     
     def getlist(self, section, name, default=None, sep=',', keep_empty=False):
-        """Return a list of values that have been specified as a single
+        """
+        Return a list of values that have been specified as a single
         comma-separated option.
         
         A different separator can be specified using the `sep` parameter. If
@@ -90,21 +99,25 @@ class Configuration(object):
         return self[section].getlist(name, default, sep, keep_empty)
     
     def set(self, section, name, value):
-        """Change a configuration value.
+        """
+        Change a configuration value.
         
         These changes are not persistent unless saved with `save()`.
         """
         self[section].set(name, value)
     
     def defaults(self):
-        """Returns a dictionary of the default configuration values."""
+        """
+        Returns a dictionary of the default configuration values.
+        """
         defaults = {}
         for (section, name), option in Option.registry.items():
             defaults.setdefault(section, {})[name] = option.default
         return defaults
     
     def options(self, section):
-        """Return a list of `(name, value)` tuples for every option in the
+        """
+        Return a list of `(name, value)` tuples for every option in the
         specified section.
         
         This includes options that have default values that haven't been
@@ -113,12 +126,16 @@ class Configuration(object):
         return self[section].options()
     
     def remove(self, section, name):
-        """Remove the specified option."""
+        """
+        Remove the specified option.
+        """
         if self.parser.has_section(section):
             self.parser.remove_option(section, name)
     
     def sections(self):
-        """Return a list of section names."""
+        """
+        Return a list of section names.
+        """
         return sorted(set(self.parser.sections() + self.parser.sections()))
     
     def save(self):
@@ -170,7 +187,8 @@ class Configuration(object):
 
 
 class Section(object):
-    """Proxy for a specific configuration section.
+    """
+    Proxy for a specific configuration section.
     
     Objects of this class should not be instantiated directly.
     """
@@ -195,7 +213,9 @@ class Section(object):
         return '<Section [%s]>' % (self.name)
     
     def get(self, name, default=None):
-        """Return the value of the specified option."""
+        """
+        Return the value of the specified option.
+        """
         if self.config.parser.has_option(self.name, name):
             value = self.config.parser.get(self.name, name)
         else:
@@ -209,7 +229,8 @@ class Section(object):
         return toUnicode(value)
     
     def getbool(self, name, default=None):
-        """Return the value of the specified option as boolean.
+        """
+        Return the value of the specified option as boolean.
         
         This method returns `True` if the option value is one of "yes", "true",
         "on", or "1", ignoring case. Otherwise `False` is returned.
@@ -220,7 +241,8 @@ class Section(object):
         return bool(value)
     
     def getint(self, name, default=None):
-        """Return the value of the specified option as integer.
+        """
+        Return the value of the specified option as integer.
         
         If the specified option can not be converted to an integer, a
         `ConfigurationError` exception is raised.
@@ -234,7 +256,8 @@ class Section(object):
             raise ConfigurationError('expected integer, got %s' % repr(value))
     
     def getlist(self, name, default=None, sep=',', keep_empty=True):
-        """Return a list of values that have been specified as a single
+        """
+        Return a list of values that have been specified as a single
         comma-separated option.
         
         A different separator can be specified using the `sep` parameter. If
@@ -251,12 +274,15 @@ class Section(object):
         return items
     
     def options(self):
-        """Return `(name, value)` tuples for every option in the section."""
+        """
+        Return `(name, value)` tuples for every option in the section.
+        """
         for name in self:
             yield name, self.get(name)
     
     def set(self, name, value):
-        """Change a configuration value.
+        """
+        Change a configuration value.
         
         These changes are not persistent unless saved with `save()`.
         """
@@ -271,13 +297,15 @@ class Section(object):
 
 
 class Option(object):
-    """Descriptor for configuration options on `Configurable` subclasses."""
-    
+    """
+    Descriptor for configuration options on `Configurable` subclasses.
+    """
     registry = {}
     accessor = Section.get
     
     def __init__(self, section, name, default=None, doc=''):
-        """Create the extension point.
+        """
+        Create the extension point.
         
         @param section: the name of the configuration section this option
             belongs to
@@ -302,7 +330,7 @@ class Option(object):
         return None
     
     def __set__(self, instance, value):
-        raise AttributeError, 'can\'t set attribute'
+        raise AttributeError('can\'t set attribute')
     
     def __repr__(self):
         return '<%s [%s] "%s">' % (self.__class__.__name__, self.section,
@@ -310,19 +338,24 @@ class Option(object):
 
 
 class BoolOption(Option):
-    """Descriptor for boolean configuration options."""
+    """
+    Descriptor for boolean configuration options.
+    """
     accessor = Section.getbool
 
 
 class IntOption(Option):
-    """Descriptor for integer configuration options."""
+    """
+    Descriptor for integer configuration options.
+    """
     accessor = Section.getint
 
 
 class ListOption(Option):
-    """Descriptor for configuration options that contain multiple values
-    separated by a specific character."""
-    
+    """
+    Descriptor for configuration options that contain multiple values
+    separated by a specific character.
+    """
     def __init__(self, section, name, default=None, sep=',', keep_empty=False,
                  doc=''):
         Option.__init__(self, section, name, default, doc)

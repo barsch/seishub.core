@@ -15,7 +15,8 @@ class HeartbeatProtocol(protocol.DatagramProtocol):
     def __init__(self, env):
         self.env = env
     
-    def datagramReceived(self, data, (ip, port)):
+    def datagramReceived(self, data, ip_port_tuple):
+        (ip, _port) = ip_port_tuple
         if data=='SeisHub':
             # XXX: Check for version and given REST port
             self.env.config.hubs[ip] = [time.time(), data]

@@ -100,7 +100,7 @@ class ProcessorTests(SeisHubEnvironmentTestCase):
         self.assertFalse(data)
         self.assertEqual(proc.code, http.CREATED)
         self.assertTrue(isinstance(proc.headers, dict))
-        self.assertTrue(proc.headers.has_key('Location'))
+        self.assertTrue('Location' in proc.headers)
         location = proc.headers.get('Location')
         self.assertTrue(location.startswith(self.env.getRestUrl() + proc.path))
         # strip REST url from location
@@ -122,7 +122,7 @@ class ProcessorTests(SeisHubEnvironmentTestCase):
         self.assertFalse(data)
         self.assertEqual(proc.code, http.CREATED)
         self.assertTrue(isinstance(proc.headers, dict))
-        self.assertTrue(proc.headers.has_key('Location'))
+        self.assertTrue('Location' in proc.headers)
         location = proc.headers.get('Location')
         self.assertTrue(location.startswith(self.env.getRestUrl() + proc.path))
         # GET resource
@@ -155,7 +155,7 @@ class ProcessorTests(SeisHubEnvironmentTestCase):
         self.assertFalse(data)
         self.assertEqual(proc.code, http.CREATED)
         self.assertTrue(isinstance(proc.headers, dict))
-        self.assertTrue(proc.headers.has_key('Location'))
+        self.assertTrue('Location' in proc.headers)
         location = proc.headers.get('Location')
         self.assertTrue(location.startswith(self.env.getRestUrl() + proc.path))
         # overwrite this resource via POST request
@@ -165,7 +165,7 @@ class ProcessorTests(SeisHubEnvironmentTestCase):
         self.assertFalse(data)
         self.assertEqual(proc.code, http.NO_CONTENT)
         self.assertTrue(isinstance(proc.headers, dict))
-        self.assertTrue(proc.headers.has_key('Location'))
+        self.assertTrue('Location' in proc.headers)
         location = proc.headers.get('Location')
         self.assertTrue(location.startswith(self.env.getRestUrl() + proc.path))
         # GET latest revision

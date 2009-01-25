@@ -194,7 +194,7 @@ class RestMOVETests(SeisHubEnvironmentTestCase):
         self.assertEqual(proc.code, http.CREATED)
         # test if location header is set
         self.assertTrue(isinstance(proc.headers, dict))
-        self.assertTrue(proc.headers.has_key('Location'))
+        self.assertTrue('Location' in proc.headers)
         location = proc.headers.get('Location')
         self.assertEquals(location, uri)
         # get original resource

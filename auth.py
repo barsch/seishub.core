@@ -33,7 +33,7 @@ class PasswordDictChecker:
         Alternatively, return the result itself.
         """
         username = credentials.username
-        if self.env.auth.passwords.has_key(username):
+        if username in self.env.auth.passwords:
             if hash(credentials.password) == self.env.auth.passwords[username]:
                 return defer.succeed(username)
         err = error.UnauthorizedLogin("No such user or bad password")

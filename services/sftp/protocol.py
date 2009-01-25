@@ -5,15 +5,17 @@ from seishub.exceptions import InternalServerError, ForbiddenError, \
 from seishub.processor import Processor, PUT, DELETE, GET, MOVE, HEAD, \
     getChildForRequest
 from seishub.processor.interfaces import IFileSystemResource, IStatical, \
-    IResource, IScriptResource, IRESTResource, IXMLIndex
+    IResource, IScriptResource, IRESTResource, IXMLIndex, IAdminResource
+from seishub.util.ls import lsLine
 from seishub.util.path import absPath
 from twisted.conch.interfaces import ISFTPFile, ISFTPServer
-from twisted.conch.ls import lsLine
 from twisted.conch.ssh.filetransfer import SFTPError, FX_FILE_ALREADY_EXISTS, \
     FX_FAILURE, FX_OP_UNSUPPORTED, FXF_READ, FXF_WRITE, FX_NO_SUCH_FILE
 from zope.interface import implements
 import StringIO
 import sys
+#XXX:http://twistedmatrix.com/trac/ticket/3503
+#from twisted.conch.ls import lsLine
 
 
 DEFAULT_GID = 1000
@@ -323,6 +325,8 @@ class SFTPServiceProtocol:
         for id in ids:
             obj = result.get(id)
             if IXMLIndex.providedBy(obj):
+                continue
+            if IAdminResource.providedBy(obj):
                 continue
             attrs = obj.getMetadata()
             if attrs:

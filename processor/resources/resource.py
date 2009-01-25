@@ -103,7 +103,7 @@ class Resource(object):
         This will check to see if I have a pre-registered child resource of the
         given name, and call getChild if I do not.
         """
-        if self.children.has_key(id):
+        if id in self.children:
             return self.children[id]
         return self.getChild(id, request)
     

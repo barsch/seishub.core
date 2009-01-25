@@ -97,9 +97,9 @@ class RestGETTests(SeisHubEnvironmentTestCase):
         # data must be a dict
         self.assertTrue(isinstance(data, dict))
         # check content
-        self.assertTrue(data.has_key('get-test'))
-        self.assertTrue(data.has_key('seishub'))
-        self.assertFalse(data.has_key('get-test2'))
+        self.assertTrue('get-test' in data)
+        self.assertTrue('seishub' in data)
+        self.assertFalse('get-test2' in data)
     
     def test_getPackage(self):
         proc = Processor(self.env)
@@ -112,8 +112,8 @@ class RestGETTests(SeisHubEnvironmentTestCase):
         # data must be a dict
         self.assertTrue(isinstance(data, dict))
         # check content
-        self.assertTrue(data.has_key('notvc'))
-        self.assertTrue(data.has_key('vc'))
+        self.assertTrue('notvc' in data)
+        self.assertTrue('vc' in data)
     
     def test_getNotExistingPackage(self):
         proc = Processor(self.env)
@@ -165,7 +165,7 @@ class RestGETTests(SeisHubEnvironmentTestCase):
         # data must be a dictionary
         self.assertTrue(isinstance(data, dict))
         # check content
-        self.assertTrue(data.has_key('test.xml'))
+        self.assertTrue('test.xml' in data)
         # delete resource
         data = proc.run(DELETE, '/get-test/notvc/test.xml')
     
@@ -189,8 +189,8 @@ class RestGETTests(SeisHubEnvironmentTestCase):
         # data must be a dict
         self.assertTrue(isinstance(data, dict))
         # check content
-        self.assertTrue(data.has_key('test.xml'))
-        self.assertTrue(data.has_key('test2.xml'))
+        self.assertTrue('test.xml' in data)
+        self.assertTrue('test2.xml' in data)
         # check documents -> must not be a list
         self.assertFalse(isinstance(data['test.xml'].res.document, list))
         self.assertFalse(isinstance(data['test2.xml'].res.document, list))

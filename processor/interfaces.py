@@ -83,3 +83,9 @@ class IFileSystemResource(IResource):
         
         Please refer to to os.stat documentation for more information.
         """) 
+
+
+class IAdminResource(IResource):
+    """
+    A marker interface for a web based administrative resource.
+    """

@@ -299,11 +299,11 @@ class ServicesPanel(Component):
     
     def render(self, request):
         if request.method == 'POST':
-            if request.args.has_key('shutdown'):
+            if 'shutdown' in request.args:
                 self._shutdownSeisHub()
-            elif request.args.has_key('reload'):
+            elif 'reload' in request.args:
                 self._changeServices(request)
-            elif request.args.has_key('restart'):
+            elif 'restart' in request.args:
                 self._restartSeisHub()
         data = {
           'services': service.IServiceCollection(self.env.app),
