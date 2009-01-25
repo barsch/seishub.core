@@ -25,14 +25,6 @@ addresses = Table(DEFAULT_PREFIX+'addresses', test_meta,
     Column('email_address', String, nullable=False)
 )
 
-SQL_QUERY_1 = """SELECT default_users.fullname || ', ' || default_addresses.email_address AS title 
-FROM default_users, default_addresses 
-WHERE default_users.id = default_addresses.user_id AND default_users.name BETWEEN 'm' AND 'z' AND (default_addresses.email_address LIKE '%@aol.com' OR default_addresses.email_address LIKE '%@msn.com')"""
-
-SQL_QUERY_2 = """SELECT default_users.id, default_users.name, default_users.fullname, default_addresses.id, default_addresses.user_id, default_addresses.email_address 
-FROM default_users LEFT OUTER JOIN default_addresses ON default_users.id = default_addresses.user_id 
-WHERE default_users.name LIKE 'jack' || '%' OR default_addresses.email_address LIKE 'jack' || '@%'"""
-
 
 class DBUtilTest(SeisHubEnvironmentTestCase):
     """
@@ -59,7 +51,7 @@ class DBUtilTest(SeisHubEnvironmentTestCase):
         addresses.drop()
         users.drop()
     
-    def test_compileStaticSQLStatement(self):
+    def test_compileStaticStatement(self):
         """
         Tests compiling of a static statement.
         """
@@ -81,7 +73,6 @@ class DBUtilTest(SeisHubEnvironmentTestCase):
         self.assertEquals(result, [(u'Wendy Williams, wendy@aol.com',)])
         # compiled statement
         sql_compiled = util.compileStatement(sql_auto)
-        self.assertEquals(sql_compiled, SQL_QUERY_1)
         # check result
         result = self.db.execute(sql.text(sql_compiled))
         result = result.fetchall()
@@ -105,14 +96,13 @@ class DBUtilTest(SeisHubEnvironmentTestCase):
         self.assertEquals(result, [('Wendy Williams, wendy@aol.com',)])
         # compiled statement
         sql_compiled = util.compileStatement(sql_auto, bind = self.db,
-                                             x="'%@aol.com'", y="'%@msn.com'")
-        self.assertEquals(sql_compiled, SQL_QUERY_1)
+                                             x='%@aol.com', y='%@msn.com')
         # check result
         result = self.db.execute(sql.text(sql_compiled))
         result = result.fetchall()
         self.assertEquals(result, [('Wendy Williams, wendy@aol.com',)])
     
-    def test_compileStatementWithBindParameter(self):
+    def test_compileStatementWithStringBindParameter(self):
         sql_auto = sql.select([users, addresses],
             users.c.name.like(
                 sql.bindparam('name', type_=String) + sql.text("'%'")) |
@@ -128,8 +118,7 @@ class DBUtilTest(SeisHubEnvironmentTestCase):
             (1, u'jack', u'Jack Jones', 2, 1, u'jack@msn.com')]
         )
         # compiled statement
-        sql_compiled = util.compileStatement(sql_auto, name="'jack'")
-        self.assertEquals(sql_compiled, SQL_QUERY_2)
+        sql_compiled = util.compileStatement(sql_auto, name='jack')
         # check result
         result = self.db.execute(sql.text(sql_compiled))
         result = result.fetchall()
@@ -137,6 +126,21 @@ class DBUtilTest(SeisHubEnvironmentTestCase):
             (1, u'jack', u'Jack Jones', 1, 1, u'jack@yahoo.com'), 
             (1, u'jack', u'Jack Jones', 2, 1, u'jack@msn.com')]
         )
+    
+    def test_compileStatementWithIntegerBindParameter(self):
+        sql_auto = sql.select([users],
+            users.c.id==sql.bindparam('id', type_=Integer)
+        )
+        # check result
+        result = self.db.execute(sql_auto, id=2)
+        result = result.fetchall()
+        self.assertEquals(result, [(2, u'wendy', u'Wendy Williams')])
+        # compiled statement
+        sql_compiled = util.compileStatement(sql_auto, id=2, name='www')
+        # check result
+        result = self.db.execute(sql.text(sql_compiled))
+        result = result.fetchall()
+        self.assertEquals(result, [(2, u'wendy', u'Wendy Williams')])
 
 
 def suite():

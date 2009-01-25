@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+import sqlalchemy as sa
+
 
 def compileStatement(stmt, bind=None, params={}, **kwargs):
     """
@@ -10,11 +12,17 @@ def compileStatement(stmt, bind=None, params={}, **kwargs):
     @see L{http://www.sqlalchemy.org/trac/wiki/DebugInlineParams}
     """
     if not bind:
-        bind = stmt.bind 
+        bind = stmt.bind
     compiler = bind.dialect.statement_compiler(bind.dialect, stmt)
-    compiler.bindtemplate = "%%(%(name)s)s"
+    compiler.bindtemplate = "[[[%(name)s]]]"
     compiler.compile()
-    d = dict((k,repr(v)) for k,v in compiler.params.items())
+    d = compiler.params
     d.update(params)
     d.update(kwargs)
-    return compiler.string % d
+    s = compiler.string
+    for id, value in d.iteritems():
+        s=s.replace('[[['+id+']]]',  repr(value))
+    # this omits an annoying warning
+    if bind.engine.name=='postgres':
+        s=s.replace('%%','%')
+    return s

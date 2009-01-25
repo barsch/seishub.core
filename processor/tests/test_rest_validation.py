@@ -120,16 +120,13 @@ class RestValidationTests(SeisHubEnvironmentTestCase):
         self.env.tree = RESTFolder()
     
     def tearDown(self):
-        self.env.registry.db_deleteResourceType('put-validation-test', 
-                                                'relaxng')
-        self.env.registry.db_deleteResourceType('put-validation-test', 
-                                                'schematron')
-        self.env.registry.db_deleteResourceType('put-validation-test', 
-                                                'complex')
-        self.env.registry.db_deleteResourceType('put-validation-test', 
-                                                'multi')
-        self.env.registry.db_deleteResourceType('put-validation-test', 
-                                                'xmlschema')
+        # delete all package schemas
+        for schema in self.env.registry.schemas.get('put-validation-test'):
+            self.env.registry.schemas.delete(document_id=schema.document_id)
+        # delete all resource types
+        for rt in self.env.registry.getResourceTypeIds('put-validation-test'):
+            self.env.registry.db_deleteResourceType('put-validation-test', rt)
+        # delete package
         self.env.registry.db_deletePackage('put-validation-test')
     
     def test_validateRelaxNG(self):
