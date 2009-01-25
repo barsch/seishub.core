@@ -19,10 +19,18 @@ class SeisHubError(Exception):
         message = kwargs.pop('message', None)
         if not message and args:
             message = str(args[0])
-        self.message = message or http.RESPONSES.get(self.code, '')
+        self._message = message or http.RESPONSES.get(self.code, '')
         code = kwargs.pop('code', http.INTERNAL_SERVER_ERROR)
         self.code = self.code or code
         Exception.__init__(self, *args, **kwargs)
+    
+    def _get_message(self): 
+        return self._message
+    
+    def _set_message(self, message): 
+        self._message = message
+    
+    message = property(_get_message, _set_message)
 
 
 class UnauthorizedError(SeisHubError):

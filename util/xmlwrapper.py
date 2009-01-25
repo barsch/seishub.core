@@ -8,66 +8,99 @@ from zope.interface.exceptions import DoesNotImplement
 
 
 class IXmlNode(Interface):
-    """Basic xml node object"""
+    """
+    Basic XML node object.
+    """
     def getStrContent():
-        """@return: element content of node as a string"""
+        """
+        @return: element content of node as a string
+        """
 
 
 class IXmlStylesheet(Interface):
-    """Parsed XML Stylesheet document"""
+    """
+    Parsed XML Stylesheet document.
+    """
     def transform(xmltree_doc):
-        """Transform given xmltree_doc with the stylesheet.
+        """
+        Transform given xmltree_doc with the stylesheet.
+        
         @param xml_doc: XML Tree Document
         @type xml_doc: IXmlDoc 
-        @return: XML Document"""
+        @return: XML Document
+        """
 
 
 class IXmlSchema(Interface):
-    """parsed XML Schema document"""
+    """
+    Parsed XML Schema document.
+    """
     def setSchemaDoc(self, schema_doc):
-        """@param schema_doc: XML Schema document as plain text
-        @type schema_doc: string"""
-        
+        """
+        @param schema_doc: XML Schema document as plain text
+        @type schema_doc: string
+        """
+    
     def getSchemaDoc(self):
-        """@return: XML Schema document as plain text
-        @rtype: string"""
+        """
+        @return: XML Schema document as plain text
+        @rtype: string
+        """
     
     def validate(xml_doc):
-        """Validate xml_doc against the schema.
+        """
+        Validate xml_doc against the schema.
+        
         @param xml_doc: XML Document
         @type xml_doc: IXmlDoc 
-        @return: boolean"""
+        @return: boolean
+        """
 
 
 class IXmlDoc(Interface):
-    """General xml document"""
+    """
+    General XML document.
+    """
     def getXml_doc():
-        """return an internal representation of the parsed xml_document"""
+        """
+        Return an internal representation of the parsed xml_document.
+        """
 
 
 class IXmlTreeDoc(IXmlDoc):
-    """parses a document into a tree representation"""
-    options=Attribute("""dictionary specifying some options:
-                     'blocking' : True|False : raises an Exception on parser 
-                                               error and stops parser if set 
-                                               to True
-                      """)
+    """
+    Parses a document into a tree representation.
+    """
+    options=Attribute("""
+        Dictionary specifying some options:
+        'blocking' : True|False : raises an Exception on parser error and 
+                                  stops parser if set to True
+    """)
     
     def getErrors():
-        """return error messages, that occured during parsing"""
+        """
+        Return error messages, that occurred during parsing.
+        """
     
     def evalXPath(expr):
-        """Evaluate an XPath expression
+        """
+        Evaluate an XPath expression.
+        
         @param expr: string
-        @return: array of resulting nodes"""
+        @return: array of resulting nodes
+        """
 
 
 class IXmlSaxDoc(IXmlDoc):
-    """parses a document using an event based sax parser"""
+    """
+    Parses a document using an event based SAX parser.
+    """
 
 
 class InvalidXmlDataError(SeisHubError):
-    """raised on xml parser errors in blocking mode"""
+    """
+    Raised on xml parser errors in blocking mode.
+    """
     pass
 
 
@@ -76,21 +109,23 @@ class InvalidXPathExpression(SeisHubError):
 
 
 class XmlNode(object):
-    """simple wrapper for libxml2.xmlNode"""
+    """
+    Simple wrapper for libxml2.xmlNode.
+    """
     encoding = "utf-8"
     
     def __init__(self,node_obj=None):
         self.setNode_obj(node_obj)
-        
+    
     def __str__(self):
         return self.getStrContent()
-            
+    
     def setNode_obj(self,node_obj):
         self._node_obj = node_obj
-        
+    
     def getNode_obj(self):
         return self._node_obj
-        
+    
     def getStrContent(self):
         if isinstance(self._node_obj, basestring):
             str = self._node_obj
@@ -103,7 +138,9 @@ class XmlNode(object):
 
 
 class XmlStylesheet(object):
-    """XSLT document representation"""
+    """
+    XSLT document representation.
+    """
     implements(IXmlStylesheet)
     
     def __init__(self, stylesheet_data):
@@ -156,11 +193,13 @@ class XmlSchema(object):
                 raise SeisHubError(msg)
         except etree.DocumentInvalid, e:
             msg = "Could not validate document. (%s)"
-            raise InvalidXmlDataError(msg % e.message)
+            raise InvalidXmlDataError(msg % str(e))
 
 
 class XmlDoc(object):
-    """XML document"""
+    """
+    XML document.
+    """
     implements(IXmlDoc)
     
     def __init__(self,xml_doc=None):
@@ -180,7 +219,9 @@ class XmlDoc(object):
 
 
 class XmlTreeDoc(XmlDoc):
-    """XML document using lxml's element tree parser""" 
+    """
+    XML document using lxml's element tree parser.
+    """ 
     implements(IXmlTreeDoc)
     
     def __init__(self, xml_data=None, resource_name="", blocking=False):
@@ -193,7 +234,7 @@ class XmlTreeDoc(XmlDoc):
             raise InvalidXmlDataError("No xml data str was given: %s" % xml_data)
         self._resource_name = resource_name
         self._parse()
-        
+    
     def _parse(self):
         parser = etree.XMLParser()
         data = StringIO(self._xml_data)
@@ -208,10 +249,9 @@ class XmlTreeDoc(XmlDoc):
     
     def getErrors(self):
         return self.errors
-
+    
     def evalXPath(self,expr):
-        #import pdb;pdb.set_trace()
-        if not isinstance(expr,basestring):
+        if not isinstance(expr, basestring):
             raise TypeError('String expected: %s' % expr)
         root = self.getRoot()
         try:
