@@ -136,7 +136,7 @@ class DBUtilTest(SeisHubEnvironmentTestCase):
         result = result.fetchall()
         self.assertEquals(result, [(2, u'wendy', u'Wendy Williams')])
         # compiled statement
-        sql_compiled = util.compileStatement(sql_auto, id=2, name='www')
+        sql_compiled = util.compileStatement(sql_auto, id=2)
         # check result
         result = self.db.execute(sql.text(sql_compiled))
         result = result.fetchall()

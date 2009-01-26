@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from zope.interface import implements
+from seishub.core import implements
 
 from seishub.exceptions import InvalidObjectError, InvalidParameterError
 from seishub.db.orm import Serializable, Relation, db_property, LazyAttribute
@@ -8,7 +8,7 @@ from seishub.util.xmlwrapper import IXmlDoc, XmlTreeDoc, InvalidXmlDataError
 from seishub.util.text import validate_id
 from seishub.util.xml import toUnicode, parseXMLDeclaration, addXMLDeclaration 
 from seishub.util.text import hash
-from seishub.packages.package import ResourceTypeWrapper
+from seishub.registry.package import ResourceTypeWrapper
 from seishub.xmldb.defaults import resource_tab, document_tab, document_meta_tab
 from seishub.xmldb.interfaces import IResource, IXmlDocument, IDocumentMeta
 

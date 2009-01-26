@@ -11,7 +11,7 @@ from seishub.config import Configuration, Option, _TRUE_VALUES
 from seishub.core import ComponentManager
 from seishub.db.manager import DatabaseManager
 from seishub.defaults import DEFAULT_COMPONENTS, HTTP_PORT
-from seishub.loader import ComponentLoader
+from seishub.util.loader import ComponentLoader
 from seishub.log import Logger
 from seishub.packages.installer import PackageInstaller
 from seishub.processor import ResourceTree
@@ -22,7 +22,7 @@ import os
 import sys
 import time
 # this line must be the last import - don't move!
-from seishub.packages.registry import ComponentRegistry
+from seishub.registry.registry import ComponentRegistry
 
 
 __all__ = ['Environment']

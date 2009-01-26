@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 
-from zope.interface import implements
-from sqlalchemy.sql import and_
+from seishub.core import implements
 
 from seishub.exceptions import SeisHubError, InvalidParameterError
-from seishub.exceptions import NotFoundError, DeletedObjectError
+from seishub.exceptions import NotFoundError
 from seishub.exceptions import DuplicateObjectError
 from seishub.db.orm import DbStorage, DbError, DB_LIMIT
 from seishub.xmldb.interfaces import IResourceStorage

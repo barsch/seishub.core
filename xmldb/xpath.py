@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
-from zope.interface import implements
-import re
+from seishub.core import implements
 
 from seishub.util import pyparsing as pp
 from seishub.exceptions import InvalidParameterError

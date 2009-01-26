@@ -3,8 +3,8 @@
 import doctest
 import unittest
 
-from seishub.packages.tests import test_registry
-from seishub.packages.tests import test_registry_fromfilesystem
+from seishub.registry.tests import test_registry
+from seishub.registry.tests import test_registry_fromfilesystem
 
 
 def suite():

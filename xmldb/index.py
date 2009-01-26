@@ -4,14 +4,13 @@ import sys
 from datetime import datetime
 from twisted.python import log
 
-from seishub.core import implements, ExtensionPoint
-from seishub.exceptions import InvalidObjectError
+from seishub.core import implements
 from seishub.db.orm import Serializable, Relation, db_property
-from seishub.packages.interfaces import IProcessorIndex
-from seishub.packages.package import ResourceTypeWrapper
+from seishub.registry.package import ResourceTypeWrapper
 from seishub.xmldb import defaults
 from seishub.xmldb.interfaces import IXmlDocument, IXmlIndex
 from seishub.xmldb.resource import XmlDocument
+
 
 TEXT_INDEX = 0
 NUMERIC_INDEX = 1

@@ -7,8 +7,8 @@ from seishub.util.xmlwrapper import XmlSchema, XmlStylesheet
 from seishub.db.orm import Serializable, Relation, db_property
 from seishub.xmldb.interfaces import IResource
 import seishub.xmldb.resource
-from seishub.packages.interfaces import IPackageWrapper, IResourceTypeWrapper
-from seishub.packages.defaults import schema_tab, stylesheet_tab, alias_tab,\
+from seishub.registry.interfaces import IPackageWrapper, IResourceTypeWrapper
+from seishub.registry.defaults import schema_tab, stylesheet_tab, alias_tab,\
                                       packages_tab, resourcetypes_tab
 
 

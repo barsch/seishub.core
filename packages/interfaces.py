@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from seishub.core import Interface
-from zope.interface import Attribute
+from seishub.core import Interface, Attribute
 
 
 class IPackage(Interface):
@@ -21,29 +20,11 @@ class IPackage(Interface):
     """)
 
 
-class IPackageWrapper(IPackage):
-    """
-    Interface definition for a PackageWrapper class.
-    
-    A PackageWrapper is returned by the registry whenever a Package isn't 
-    present in the file system anymore but only in the database.
-    """
-
-
 class IResourceType(IPackage):
     """
     Interface definition for a unique resource type of a package.
     """
     resourcetype_id = Attribute("""Defines the ID of this resource type.""")
-
-
-class IResourceTypeWrapper(IResourceType):
-    """
-    Interface definition for a ResourceTypeWrapper class.
-    
-    A ResourceTypeWrapper is returned by the registry whenever a ResourceType 
-    isn't present in the file system anymore but only in the database.
-    """
 
 
 class IMapper(IPackage):

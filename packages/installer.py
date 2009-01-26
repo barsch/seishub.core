@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
 from seishub.exceptions import SeisHubError
-import sys
 import os
+import sys
 
 
 class PackageInstaller(object):

@@ -58,7 +58,7 @@ class PackageRegistryFilesystemTest(SeisHubEnvironmentTestCase):
             resourcetype_id = 'aresourcetype'
             registerSchema('path/to/file2', 'xhtml')
         
-        p2 = os.path.join(self.env.config.path,'seishub','packages','tests',
+        p2 = os.path.join(self.env.config.path,'seishub','registry','tests',
                          'path/to/file2')
         assert {'filename': p2, 'type': 'xhtml'} in\
                 FooBar._registry_schemas
@@ -83,11 +83,11 @@ class PackageRegistryFilesystemTest(SeisHubEnvironmentTestCase):
             resourcetype_id = 'aresourcetype'
             registerStylesheet('path/to/file2', 'xhtml')
         
-        _p0 = os.path.join(self.env.config.path,'seishub','packages','tests',
+        _p0 = os.path.join(self.env.config.path,'seishub','registry','tests',
                          'blah')
-        p1 = os.path.join(self.env.config.path,'seishub','packages','tests',
+        p1 = os.path.join(self.env.config.path,'seishub','registry','tests',
                          'path/to/file1')
-        p2 = os.path.join(self.env.config.path,'seishub','packages','tests',
+        p2 = os.path.join(self.env.config.path,'seishub','registry','tests',
                          'path/to/file2')
         assert {'filename': p1, 'type': 'xhtml'} in Bar._registry_stylesheets
         assert {'filename': p2, 'type': 'xhtml'} in\
@@ -121,13 +121,13 @@ class PackageRegistryFilesystemTest(SeisHubEnvironmentTestCase):
         stylesheet = self.registry.stylesheets.get('atestpackage', 
                                                    'aresourcetype', 'aformat')
         self.assertEqual(len(stylesheet), 1)
-        p = os.path.join(self.env.config.path,'seishub','packages','tests',
+        p = os.path.join(self.env.config.path,'seishub','registry','tests',
                          'data','resourcelist_json.xslt')
         self.assertEqual(stylesheet[0].resource.document.data, file(p).read())
         stylesheet = self.registry.stylesheets.get('atestpackage', None, 
                                                    'resourcelist')
         self.assertEqual(len(stylesheet), 1)
-        p = os.path.join(self.env.config.path,'seishub','packages','tests',
+        p = os.path.join(self.env.config.path,'seishub','registry','tests',
                          'data','resourcelist_json.xslt')
         self.assertEqual(stylesheet[0].resource.document.data, file(p).read())
         # aliases

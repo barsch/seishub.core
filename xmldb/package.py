@@ -1,6 +1,8 @@
-from seishub.util.text import validate_id
-from seishub.packages.package import PackageWrapper, ResourceTypeWrapper,\
-                                     IPackageWrapper, IResourceTypeWrapper
+# -*- coding: utf-8 -*-
+
+from seishub.registry.package import PackageWrapper, ResourceTypeWrapper, \
+    IPackageWrapper, IResourceTypeWrapper
+
 
 class PackageSpecific(object):
     """Mixin providing package specific information to the class"""

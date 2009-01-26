@@ -5,9 +5,9 @@ from seishub.db.orm import DbStorage, DB_NULL
 from seishub.exceptions import SeisHubError, DuplicateObjectError
 from seishub.packages.interfaces import IPackage, IResourceType, IMapper, \
     IPostgreSQLView, IProcessorIndex
-from seishub.packages.package import Alias, Schema, Stylesheet, PackageWrapper, \
+from seishub.registry.package import Alias, Schema, Stylesheet, PackageWrapper, \
     ResourceTypeWrapper
-from seishub.packages.util import RegistryListProxy
+from seishub.registry.util import RegistryListProxy
 from seishub.util.text import from_uri
 from seishub.xmldb import index
 from zope.interface.verify import verifyClass

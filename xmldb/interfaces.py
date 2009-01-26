@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
-from zope.interface import Interface, Attribute
+
+from seishub.core import Interface, Attribute
+
 
 # interfaces that are subject to remove (only there for documentation issues):
 #  - IXmlCatalog, IResourceStorage, IXmlIndexCatalog

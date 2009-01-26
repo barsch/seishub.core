@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-from zope.interface import implements
+from seishub.core import implements
 
 from seishub.exceptions import NotFoundError, InvalidObjectError 
-from seishub.exceptions import InvalidParameterError, SeisHubError
+from seishub.exceptions import InvalidParameterError
 from seishub.xmldb.interfaces import IXmlCatalog, IResource, IXmlDocument
 from seishub.xmldb.xmldbms import XmlDbManager
 from seishub.xmldb.xmlindexcatalog import XmlIndexCatalog

@@ -17,7 +17,7 @@
 #         Christopher Lenz <cmlenz@gmx.de>
 
 from seishub.exceptions import SeisHubError
-from zope.interface import Interface #@UnusedImport
+from zope.interface import Interface, Attribute #@UnusedImport
 from zope.interface.declarations import _implements, classImplements
 import sys
 
