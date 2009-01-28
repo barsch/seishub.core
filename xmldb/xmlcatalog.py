@@ -336,7 +336,36 @@ class XmlCatalog(object):
     
     def query(self, query):
         """
-        @see: L{seishub.xmldb.interfaces.IXmlCatalog}
+        Query the catalog via restricted XPath queries.
+        
+        In general there are two types of return values for queries, depending
+        on the type of query.
+        
+        ==Resource-level queries==
+         - start with '/package/resourcetype/rootnode' (wildcards '*' allowed)
+         - optionally followed by a predicate expression, 
+           e.g. '[element1 <= 50]'
+         - return a list of resource objects
+         
+        ==XML-node-level queries==
+         - start with '/package/resourcetype/rootnode' (wildcards '*' allowed)
+         - followed by an arbitrary number of location steps, 
+           e.g. 'node1/node2'
+         - optionally followed by a predicate expression, 
+           e.g. '[element1 <= 50]'
+         - return a list of QueryResult objects, containing the indexed data
+           for the requested resources
+        
+        Optionally, the flag 't' (tiny result) at the beginning of a query 
+        instructs the query processor to return QueryResults, rather than the
+        full resource objects, in any case.
+        
+        For further detail on the restricted XPath query syntax, see 
+        L{seishub.xmldb.xpath}
+        
+        @param query: Restricted XPath query to be executed.
+        @type query: basestring
+        @return: Either a list of Resource objects, or a list of QueryResults
         """
         # XXX: query by metadata
 #        if isinstance(query, dict):

@@ -14,8 +14,7 @@ class XPathQueryParserTest(SeisHubEnvironmentTestCase):
         del self.parser
         
     def testInvalid(self):
-        queries = ["/pkg/rt/rootnode/childnode",
-                   "/testtype/rootnode[./element1]",
+        queries = ["/testtype/rootnode[./element1]",
                    "/rootnode[./element1]",
                    "/pkg/rt/rootnode[child[blah]]",
                    "[/rootnode/child]",
@@ -161,6 +160,15 @@ class XPathQueryParserTest(SeisHubEnvironmentTestCase):
 #            print str(r.limit)
 #            print str(r.offset)
 
+    def testXMLNodeLevelQuery(self):
+        queries = ['/pid/rid/rn/node',
+                   '/pid/rid/rn/@attr1',
+                   '/pid/rid/*/node',
+                   '/*/*/*/node',
+                   '/pid/rid/rn/node[@id = "abc"]',
+                   ]
+        res = [self.parser.parse(q) for q in queries]
+
      
 class XPathQueryTest(SeisHubEnvironmentTestCase):
     def testXPathQuery(self):
@@ -177,7 +185,14 @@ class XPathQueryTest(SeisHubEnvironmentTestCase):
                                                'rootnode/element3'], 'asc']])
         self.assertEqual(query.getLimit(), 10)
         self.assertEqual(query.getOffset(), 20)
+        self.assertEqual(query.isTiny(), False)
         
+    def testTinyFlag(self):
+        q = "t/testpackage/testtype/rootnode[./element1/element2 = 'blub' " +\
+            "and ./element1/@id <= 5] "+\
+            "order by element1/element2 desc, element3 asc limit 10,20"
+        query = XPathQuery(q)
+        self.assertEqual(query.isTiny(), True)
         
 #    test_expr = "/testpackage/testtype/rootnode[./element1/element2 = 'blub' and ./element1/@id <= 5]"
 #    wildcard_expr = "/*/*/rootnode[./element1/element2 = 'blub']"
