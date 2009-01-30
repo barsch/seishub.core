@@ -73,6 +73,7 @@ class XPathQueryParserTest(SeisHubEnvironmentTestCase):
                    '/pid/rid/rn[../../../pid2/rid2/*/node/attr = "blah"]',
                    '/pid/rid/rn[../../rid2/*/node/attr = "blah"]',
                    '/pid/rid/rn[../*/node/attr = "blah"]',
+                   '/pid/rid/rn[attr = -1.5]'
                    ]
         res = [self.parser.parse(q) for q in queries]
 #        for r in res:
@@ -176,8 +177,8 @@ class XPathQueryTest(SeisHubEnvironmentTestCase):
             "and ./element1/@id <= 5] "+\
             "order by element1/element2 desc, element3 asc limit 10,20"
         query = XPathQuery(q)
-        self.assertEqual(query.getLocationPath(), ('testpackage', 'testtype', 
-                                                   'rootnode'))
+        self.assertEqual(query.getLocationPath(), ['testpackage', 'testtype', 
+                                                   'rootnode'])
         self.assertEqual(query.getOrderBy(), [[['testpackage', 'testtype', 
                                               'rootnode/element1/element2'], 
                                               'desc'],
@@ -193,6 +194,17 @@ class XPathQueryTest(SeisHubEnvironmentTestCase):
             "order by element1/element2 desc, element3 asc limit 10,20"
         query = XPathQuery(q)
         self.assertEqual(query.isTiny(), True)
+        
+    def testLocationPath(self):
+        q = "/pkg/rt/rootnode"
+        query = XPathQuery(q)
+        self.assertEqual(query.getLocationPath(), q.split('/')[1:])
+        q = "/pkg/rt/rootnode/node1/node2"
+        query = XPathQuery(q)
+        self.assertEqual(query.getLocationPath(), q.split('/')[1:])
+        q = "/pkg/rt/rootnode/node2/node1"
+        query = XPathQuery(q)
+        self.assertEqual(query.getLocationPath(), q.split('/')[1:])
         
 #    test_expr = "/testpackage/testtype/rootnode[./element1/element2 = 'blub' and ./element1/@id <= 5]"
 #    wildcard_expr = "/*/*/rootnode[./element1/element2 = 'blub']"

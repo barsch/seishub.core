@@ -30,7 +30,7 @@ class RestrictedXPathQueryParser(object):
     nodename     ::= [@][NameStartChar[NameChar]*][:]NameStartChar[NameChar]*
     node         ::= wildcard | parentNd | selfNd | nodename
     literalValue ::= '"'[^"]*'"' | '''[^']*'''
-    numericValue ::= [0-9]*[.][0-9]*
+    numericValue ::= [-][0-9]*[.][0-9]*
     
     eqOp         ::= '==' | '=' 
     ltOp         ::= '<'
@@ -75,6 +75,7 @@ class RestrictedXPathQueryParser(object):
         self.package_id = None
         self.resourcetype_id = None
         self.rootnode = None
+        self.location_steps = None
         self.predicates = None
         self.order_by = None
         self.limit = None
@@ -164,8 +165,9 @@ class RestrictedXPathQueryParser(object):
                            pp.CharsNotIn("'") +\
                        pp.Literal("'").suppress()   # literal value delimited
                                                     # by either "" or ''
-        numericValue = pp.Combine(pp.Word(pp.nums) +\
-                       pp.Optional('.' + pp.Word(pp.nums))) # Numbers
+        numericValue = pp.Combine(pp.Optional('-') +\
+                                  pp.Word(pp.nums) +\
+                                  pp.Optional('.' + pp.Word(pp.nums)))# Numbers 
         
         # keywords
         orderBy = pp.CaselessKeyword('order by')
@@ -200,7 +202,8 @@ class RestrictedXPathQueryParser(object):
                    setResultsName('rootnode').\
                    setParseAction(self.evalRootnode).suppress()
         
-        locationStep = sep.suppress() + ndName
+        locationStep = (sep.suppress() + ndName).\
+                       setResultsName('locationStep', True)
         location = sep.suppress() + package_id +\
                    sep.suppress() + resourcetype_id +\
                    sep.suppress() + rootnode +\
@@ -243,6 +246,9 @@ class RestrictedXPathQueryParser(object):
         return query.parseString
     
     def setAttributes(self, parsed):
+        location_steps = parsed.get('locationStep')
+        if isinstance(location_steps, pp.ParseResults):
+            self.location_steps = [ls[0] for ls in location_steps.asList()]
         predicates = parsed.get('predicates')
         if isinstance(predicates, pp.ParseResults):
             self.predicates = predicates.asList()
@@ -289,7 +295,10 @@ class XPathQuery(RestrictedXPathQueryParser):
         rn = self.rootnode
         if rn == self.WILDCARD:
             rn = None
-        return pkg, rt, rn
+        location_path = [pkg, rt, rn]
+        if self.location_steps:
+            location_path.extend(self.location_steps)
+        return location_path
     
     def getPredicates(self):
         # TODO: sometimes there's an unneeded additional [ ] wrapped around predicates ?

@@ -11,8 +11,7 @@ class IXmlCatalog(Interface):
     This is the main interface to access the XML catalog
     """ 
     def registerIndex(xml_index):
-        """register a new index
-        """
+        """"""
         
     def removeIndex(self, xpath_expr):
         """remove an index"""

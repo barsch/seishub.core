@@ -198,7 +198,9 @@ class XmlCatalog(object):
     def registerIndex(self, package_id = None, resourcetype_id = None, 
                       xpath = None, type = "text", options = None):
         """
-        @see: L{seishub.xmldb.interfaces.IXmlCatalog}
+        Register an index.
+        
+        @param type: "text" | "numeric" | "float" | "datetime" | "boolean"
         """
         if not xpath:
             msg = "registerIndex: Empty XPath expression!"
@@ -213,15 +215,20 @@ class XmlCatalog(object):
         index = XmlIndex(resourcetype, xpath, type, options)
         index = self.index_catalog.registerIndex(index)
         self.reindex(package_id, resourcetype_id, xpath)
+        # create or update view:
+        self.index_catalog.createView(package_id, resourcetype_id)
         return index
     
     def removeIndex(self, package_id = None, resourcetype_id = None, 
                     xpath = None):
         """
-        @see: L{seishub.xmldb.interfaces.IXmlCatalog}
+        Remove an index.
         """
-        return self.index_catalog.removeIndex(package_id, resourcetype_id, 
-                                              xpath)
+        res = self.index_catalog.removeIndex(package_id, resourcetype_id, 
+                                             xpath)
+        # create or update view:
+        self.index_catalog.createView(package_id, resourcetype_id)
+        return res 
     
     def getIndex(self, package_id = None, resourcetype_id = None, 
                  xpath = None, type = "text", options = None):
@@ -260,12 +267,6 @@ class XmlCatalog(object):
         """
         @see: L{seishub.xmldb.interfaces.IXmlCatalog}
         """
-#        if package_id and resourcetype_id:
-#            expr = self._to_xpath(package_id, resourcetype_id, xpath)
-#        else:
-#            # assume that xpath starts with '/package_id/resourcetype_id'
-#            expr = xpath
-        # exp_obj = IndexDefiningXpathExpression(expr)
         return self.index_catalog.flushIndex(package_id, resourcetype_id, 
                                              xpath)
     
@@ -274,21 +275,6 @@ class XmlCatalog(object):
         """
         @see: L{seishub.xmldb.interfaces.IXmlCatalog}
         """
-#        if not (package_id or resourcetype_id):
-#            return self.index_catalog.getIndexes(data_type = data_type)
-        
-        # value path has the following form /package_id/resourcetype_id/rootnode
-        # XXX: rootnode to be removed 
-#        value_path = ''
-#        if package_id:
-#            value_path += package_id + '/'
-#        else:
-#            value_path += '*/'
-#        if resourcetype_id:
-#            value_path += resourcetype_id + '/'
-#        else:
-#            value_path += '*/'
-#        value_path += '*'
         type = INDEX_TYPES.get(type.lower(), TEXT_INDEX)
         return self.index_catalog.getIndexes(package_id, resourcetype_id, 
                                              type = type)
@@ -306,27 +292,6 @@ class XmlCatalog(object):
         """
         @see: L{seishub.xmldb.interfaces.IXmlCatalog}
         """
-#        if package_id and resourcetype_id:
-#            expr = self._to_xpath(package_id, resourcetype_id, xpath)
-#        else:
-#            # assume that xpath starts with '/package_id/resourcetype_id'
-#            expr = xpath
-            
-#        # get index
-#        index = self.index_catalog.getIndexes(package_id, resourcetype_id, 
-#                                              xpath)
-#        
-#        # flush index
-        
-#        
-#        # find all resources the index applies to by resource type
-#        # value_path = index.value_path
-#        # key_path = index.key_path
-#        xpath = index.xpath
-##        if value_path.startswith('/'):
-##            value_path = value_path[1:]
-#        #XXX: rootnode ??
-#        # package, type, rootnode  = value_path.split('/')
         self.flushIndex(package_id, resourcetype_id, xpath)
         reslist = self.getResourceList(package_id, resourcetype_id)
         # reindex
@@ -334,52 +299,41 @@ class XmlCatalog(object):
             self.index_catalog.indexResource(res, xpath)
         return True
     
-    def query(self, query):
+    def query(self, query, full = False):
         """
         Query the catalog via restricted XPath queries.
         
-        In general there are two types of return values for queries, depending
-        on the type of query.
+        The values returned depend on the type of query:
         
-        ==Resource-level queries==
-         - start with '/package/resourcetype/rootnode' (wildcards '*' allowed)
-         - optionally followed by a predicate expression, 
-           e.g. '[element1 <= 50]'
-         - return a list of resource objects
-         
-        ==XML-node-level queries==
-         - start with '/package/resourcetype/rootnode' (wildcards '*' allowed)
-         - followed by an arbitrary number of location steps, 
-           e.g. 'node1/node2'
-         - optionally followed by a predicate expression, 
-           e.g. '[element1 <= 50]'
-         - return a list of QueryResult objects, containing the indexed data
-           for the requested resources
+        Is the location path of a query on resource level, i.e. on rootnode or 
+        above (e.g. '/package/resourcetype/*'), ALL indexes known for that 
+        resource are requested and returned as a dict.
         
-        Optionally, the flag 't' (tiny result) at the beginning of a query 
-        instructs the query processor to return QueryResults, rather than the
-        full resource objects, in any case.
+        Does the location path address a node other than the rootnode (e.g.
+        '/package/resourcetype/rootnode/node1/node2'), indexed data for that
+        node ONLY is returned. 
+        Note: The index '/package/resourcetype/rootnode/node1/node2' has to 
+        exist, of course. 
+        
+        The result set is a dict of the form {document_ids : {xpath:value}, 
+        ...}. 
+        There is an additional key 'ordered' containing an ORDERED list of
+        document ids, which is of interest in case there is an order by clause,
+        as the dict itself does not preserve order.
         
         For further detail on the restricted XPath query syntax, see 
         L{seishub.xmldb.xpath}
         
         @param query: Restricted XPath query to be executed.
         @type query: basestring
-        @return: Either a list of Resource objects, or a list of QueryResults
+        @param full: If True, picks the resource objects for the results
+        @return: Either a list of Resource objects, or a dict
         """
-        # XXX: query by metadata
-#        if isinstance(query, dict):
-#            order_by = query.get('order_by', None)
-#            limit = query.get('limit', None)
-#            query = query.get('query', '')
-        # remove line breaks and apply macros
+        # XXX: query by metadata?
         query = applyMacros(query)
-#        qu = map(self._convert_wildcards, query.split('/'))
-#        if len(qu) == 4 and not qu[3]:
-#            # XXX: this is not an index query ,but this should be handled by 
-#            # the index catalog as well in case an order by clause is present
-#            return self.getResourceList(qu[1], qu[2])
         q = XPathQuery(query)
-        doc_ids = self.index_catalog.query(q)
-        # XXX: this is really bad, what information is really needed in the first place?
-        return [self.xmldb.getResource(document_id = id) for id in doc_ids]
+        results = self.index_catalog.query(q)
+        if not full:
+            return results
+        return [self.xmldb.getResource(document_id = id) 
+                for id in results['ordered']]

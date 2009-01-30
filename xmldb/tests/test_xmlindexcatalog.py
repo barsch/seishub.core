@@ -5,6 +5,7 @@ from seishub.test import SeisHubEnvironmentTestCase
 from seishub.xmldb.index import XmlIndex, DATETIME_INDEX
 from seishub.xmldb.resource import Resource, newXMLDocument
 from seishub.xmldb.xpath import XPathQuery
+from sqlalchemy.exceptions import ProgrammingError
 import inspect
 import os
 import unittest
@@ -56,7 +57,8 @@ so_indexes = ['/sortorder/int1',
               '/sortorder/int2', 
               '/sortorder/str1', 
               '/sortorder/str2',
-              '/sortorder']
+              #'/sortorder'
+              ]
 
 class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
     #TODO: testGetIndexes
@@ -103,7 +105,8 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         self.env.catalog.registerIndex("testpackage", "testml", IDX3)
         self.env.catalog.registerIndex("testpackage", "station", IDX4)
         # index rootnode, too
-        self.env.catalog.registerIndex("testpackage", "station", "/station")
+        self.env.catalog.registerIndex("testpackage", "station", "/station",
+                                       type = "boolean")
         
         self.env.catalog.reindex("testpackage", "station", IDX1)
         self.env.catalog.reindex("testpackage", "station", IDX2)
@@ -359,7 +362,6 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         pass
         
     def testXPathQuery(self):
-        """XXX: these tests fail, will be fixed with #75"""
         # create test catalog
         self._setup_testdata()
         
@@ -370,26 +372,26 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         # rootnode 'station'
         q = "/testpackage/station/station"
         res = self.catalog.query(XPathQuery(q))
-        self.assertEqual(len(res), 2)
+        self.assertEqual(len(res['ordered']), 2)
         self.assertTrue(self.res1.document._id in res)
         self.assertTrue(self.res2.document._id in res)
         # all resources of package testpackage, resourcetype 'station'
         q = "/testpackage/station/*"
         res = self.catalog.query(XPathQuery(q))
-        self.assertEqual(len(res), 2)
+        self.assertEqual(len(res['ordered']), 2)
         self.assertTrue(self.res1.document._id in res)
         self.assertTrue(self.res2.document._id in res)
         # all resources of package testpackage
         q = "/testpackage/*/*"
         res = self.catalog.query(XPathQuery(q))
-        self.assertEqual(len(res), 3)
+        self.assertEqual(len(res['ordered']), 3)
         self.assertTrue(self.res1.document._id in res)
         self.assertTrue(self.res2.document._id in res)
         self.assertTrue(self.res3.document._id in res)
         # all resources
         q = "/*/*/*"
         res = self.catalog.query(XPathQuery(q))
-        assert len(res) >= 3
+        assert len(res['ordered']) >= 3
         self.assertTrue(self.res1.document._id in res)
         self.assertTrue(self.res2.document._id in res)
         self.assertTrue(self.res3.document._id in res)
@@ -399,9 +401,14 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         #====================================================================== 
         q = "/testpackage/station/station[lat]"
         res = self.catalog.query(XPathQuery(q))
-        self.assertEqual(len(res), 2)
+        self.assertEqual(len(res['ordered']), 2)
         self.assertTrue(self.res1.document._id in res)
         self.assertTrue(self.res2.document._id in res)
+        
+        q = "/testpackage/station/station[XY/paramXY]"
+        res = self.catalog.query(XPathQuery(q))
+        self.assertEqual(len(res['ordered']), 1)
+        self.assertEqual(res['ordered'], [self.res2.document._id])
         
         #======================================================================
         # key queries
@@ -410,15 +417,31 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         q = "/testpackage/station/station[lon = 12.51200]"
         xpq = XPathQuery(q)
         res = self.catalog.query(xpq)
-        self.assertEqual(res, [self.res1.document._id])
+        self.assertEqual(res['ordered'], [self.res1.document._id])
         
         # multiple key queries
         q = "/testpackage/station/station[lon != 12.51200 and lat = 55.23200]"
         res = self.catalog.query(XPathQuery(q))
-        self.assertEqual(res, [self.res2.document._id])
+        self.assertEqual(res['ordered'], [self.res2.document._id])
         q = "/testpackage/station/station[lat = 55.23200 and lon != 12.51200]"
         res = self.catalog.query(XPathQuery(q))
-        self.assertEqual(res, [self.res2.document._id])
+        self.assertEqual(res['ordered'], [self.res2.document._id])
+        q = "/testpackage/station/station[lon = 12.51200 or lon = 22.51200]"
+        res = self.catalog.query(XPathQuery(q))
+        self.assertEqual(len(res['ordered']), 2)
+        self.assertTrue(self.res1.document._id in res)
+        self.assertTrue(self.res2.document._id in res)
+        q = "/testpackage/station/station[lon = 12.51200 or lon = 0.51200]"
+        res = self.catalog.query(XPathQuery(q))
+        self.assertEqual(res['ordered'], [self.res1.document._id])
+        q = "/testpackage/station/station[lon = 12.51200 or XY/paramXY = 2.5]"
+        res = self.catalog.query(XPathQuery(q))
+        self.assertEqual(len(res['ordered']), 2)
+        self.assertTrue(self.res1.document._id in res)
+        self.assertTrue(self.res2.document._id in res)
+        q = "/testpackage/station/station[lon = 12.51200 or XY/paramXY = -100]"
+        res = self.catalog.query(XPathQuery(q))
+        self.assertEqual(res['ordered'], [self.res1.document._id])
         
         #======================================================================
         # combined queries
@@ -426,21 +449,21 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         # node existance AND key query
         q = "/testpackage/station/station[XY/paramXY and lon = 12.51200]"
         res = self.catalog.query(XPathQuery(q))
-        self.assertEqual(len(res), 0)
+        self.assertEqual(len(res['ordered']), 0)
         q = "/testpackage/station/station[XY/paramXY and lon = 22.51200]"
         res = self.catalog.query(XPathQuery(q))
-        self.assertEqual(res, [self.res2.document._id])
+        self.assertEqual(res['ordered'], [self.res2.document._id])
         q = "/testpackage/station/station[lon = 12.51200 and XY/paramXY]"
         res = self.catalog.query(XPathQuery(q))
-        self.assertEqual(len(res), 0)
+        self.assertEqual(len(res['ordered']), 0)
         q = "/testpackage/station/station[lon = 22.51200 and XY/paramXY]"
         res = self.catalog.query(XPathQuery(q))
-        self.assertEqual(res, [self.res2.document._id])
+        self.assertEqual(res['ordered'], [self.res2.document._id])
         
         # node existance OR key query
         q = "/testpackage/station/station[XY/paramXY or lon = 12.51200]"
         res = self.catalog.query(XPathQuery(q))
-        self.assertEqual(len(res), 2)
+        self.assertEqual(len(res['ordered']), 2)
         self.assertTrue(self.res1.document._id in res)
         self.assertTrue(self.res2.document._id in res)
 
@@ -452,22 +475,41 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         res = self.catalog.query(XPathQuery(q))
         res_ids = [id[3] for id in self.so_ids]
         res_ids.reverse()
-        self.assertEqual(res, res_ids)
+        self.assertEqual(res['ordered'], res_ids)
         
         so1 = "/sortordertests/sotest/sortorder[int1] order by int1 desc " +\
               "limit 3"
         so2 = "/sortordertests/sotest/sortorder[int1] order by int2 asc, "+\
               "str2 desc limit 5"
-        so3 = "/sortordertests/sotest/sortorder order by int2 desc limit 3"
+        so3 = "/sortordertests/sotest/sortorder order by int2 desc, " +\
+              "str2 desc limit 3"
         res2 = self.catalog.query(XPathQuery(so1))
         res3 = self.catalog.query(XPathQuery(so2))
         res4 = self.catalog.query(XPathQuery(so3))
         
-        self.assertEqual(res2, res_ids[:3])
+        self.assertEqual(res2['ordered'], res_ids[:3])
         res_ids.reverse()
-        self.assertEqual(res3,[res_ids[0],res_ids[3],res_ids[4],
+        self.assertEqual(res3['ordered'],[res_ids[0],res_ids[3],res_ids[4],
                                res_ids[1],res_ids[2]])
-        self.assertEqual(res4,[res_ids[1],res_ids[2],res_ids[0]])
+        self.assertEqual(res4['ordered'],[res_ids[1],res_ids[2],res_ids[0]])
+        
+        #======================================================================
+        # node level queries
+        #======================================================================
+        # all indexed data for the given xpath, note: also documents NOT having
+        # the requested node are returned!
+        q = "/testpackage/station/station/XY/paramXY"
+        res = self.catalog.query(XPathQuery(q))
+        self.assertEqual(len(res['ordered']), 2)
+        self.assertTrue(self.res1.document._id in res)
+        self.assertTrue(self.res2.document._id in res)
+        self.assertEqual(res[self.res1.document._id]
+                         ["/testpackage/station/station/XY/paramXY"],
+                         None)
+        self.assertEqual(res[self.res2.document._id]
+                         ["/testpackage/station/station/XY/paramXY"],
+                         ['0', '2.5', '99'])
+        # XXX: more testing!
         
         #======================================================================
         # invalid queries
@@ -490,6 +532,25 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         
         # print self.catalog.dumpIndex("testpackage", "station", "/station/station_code")
         
+    def testCreateView(self):
+        """Fails with SQLite. (no support for views)
+        """
+        # create test catalog
+        self._setup_testdata()
+        
+        self.catalog.createView("testpackage", "station")
+        sql = 'SELECT * FROM "/testpackage/station"'
+        res = self.env.db.engine.execute(sql).fetchall()
+        self.assertEquals(res, 
+                          [(6, '12.51200', '50.23200', None, True), 
+                           (7, '22.51200', '55.23200', '0', True), 
+                           (7, '22.51200', '55.23200', '2.5', True), 
+                           (7, '22.51200', '55.23200', '99', True)])
+        self.catalog.dropView("testpackage", "station")
+        sql = 'SELECT * FROM "/testpackage/station"'
+        self.assertRaises(ProgrammingError, self.env.db.engine.execute, sql)
+        # remove test catalog
+        self._cleanup_testdata()
         
 
 def suite():

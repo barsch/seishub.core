@@ -56,6 +56,12 @@ RAW_XML3 = """<?xml version="1.0"?>
 </testml>
 """
 
+RAW_XML4 = """<?xml version="1.0"?>
+<testml>
+<blah1 id="4"><blahblah1>moep</blahblah1></blah1>
+</testml>
+"""
+
 URI = "/testpackage/station"
 URI1 = "/real/bern"
 URI2 = "/fake/genf"
@@ -214,24 +220,50 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         self.assertEqual(len(l), 0)
         
     def testQuery(self):
-        """
+        """XXX: problem with limit clauses on resultsets containing indexes with multiple values per document.
         """
         # set up
         self.env.catalog.reindex("testpackage", "station", IDX1)
-        self.env.catalog.registerIndex(pid1, rid1, IDX4)
+        self.env.catalog.registerIndex(pid1, rid1, IDX4, "boolean")
         self.env.catalog.reindex(pid1, rid1, IDX4)
-        self.env.catalog.registerIndex(pid1, rid2, IDX5)
+        self.env.catalog.registerIndex(pid1, rid2, IDX5, "boolean")
         self.env.catalog.reindex(pid1, rid2, IDX5)
         
         res1 = self.env.catalog.query('/testpackage/station/station ' +\
-                                      'order by XY/paramXY asc limit 2')
+                                      'order by XY/paramXY asc limit 2', 
+                                      full = True)
         self.assertEqual(len(res1), 2)
         self.assertEqual(res1[0]._id, self.res2._id)
         self.assertEqual(res1[0].document._id, self.res2.document._id)
         self.assertEqual(res1[1]._id, self.res1._id)
         self.assertEqual(res1[1].document._id, self.res1.document._id)
+        
+        # XXX: using limit here may lead to confusing results!!!
+        res1 = self.env.catalog.query('/testpackage/station/station ' +\
+                                      'order by XY/paramXY asc')
+        self.assertEqual(len(res1['ordered']), 2)
+        self.assertEqual(res1['ordered'][0], self.res2.document._id)
+        self.assertEqual(res1['ordered'][1], self.res1.document._id)
+        idx_data = res1[self.res2.document._id]['/testpackage/station' + IDX1]
+        idx_data.sort()
+        self.assertEqual(idx_data, ['0', '2.5', '99'])
+        idx_data = res1[self.res1.document._id]['/testpackage/station' + IDX1]
+        idx_data.sort()
+        self.assertEqual(idx_data, ['11.5', '20.5', 'blah'])
+        
+        res1 = self.env.catalog.query('/testpackage/station/station ' +\
+                                      'order by XY/paramXY asc limit 2')
+        self.assertEqual(len(res1['ordered']), 2)
+        self.assertEqual(res1['ordered'][0], self.res2.document._id)
+        self.assertEqual(res1['ordered'][1], self.res1.document._id)
+        idx_data = res1[self.res2.document._id]['/testpackage/station' + IDX1]
+        idx_data.sort()
+        self.assertEqual(idx_data, ['0', '2.5', '99'])
+        idx_data = res1[self.res1.document._id]['/testpackage/station' + IDX1]
+        idx_data.sort()
+        self.assertEqual(idx_data, ['11.5', '20.5', 'blah'])
 
-        res3 = self.env.catalog.query('/testpackage/*/*')
+        res3 = self.env.catalog.query('/testpackage/*/*', full = True)
         self.assertEqual(len(res3), 3)
         self.assertEqual(res3[0]._id, self.res1._id)
         self.assertEqual(res3[0].document._id, self.res1.document._id)
@@ -240,10 +272,12 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         self.assertEqual(res3[2]._id, self.res3._id)
         self.assertEqual(res3[2].document._id, self.res3.document._id)
         
-        _res4 = self.env.catalog.query('/testpackage/*/station')
+        # XXX: not supported yet ?
+        res4 = self.env.catalog.query('/testpackage/*/station')
 #        self.assertEqual(res4, [self.res1.document._id,
 #                                self.res2.document._id])
-        res5 = self.env.catalog.query('/testpackage/testml/testml')
+        res5 = self.env.catalog.query('/testpackage/testml/testml', 
+                                      full = True)
         self.assertEqual(len(res5), 1)
         self.assertEqual(res5[0]._id, self.res3._id)
         self.assertEqual(res5[0].document._id, self.res3.document._id)
@@ -326,6 +360,42 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         # remove everything
         self.env.registry.db_deleteResourceType("test-catalog", "index")
         self.env.registry.db_deletePackage("test-catalog")
+        
+    def testAutomaticViewCreation(self):
+        """Fails with SQLite.
+        """
+        # set up
+        self.env.catalog.reindex("testpackage", "station", IDX1)
+        self.env.catalog.registerIndex(pid1, rid1, IDX4, "boolean")
+        self.env.catalog.reindex(pid1, rid1, IDX4)
+        self.env.catalog.registerIndex(pid1, rid2, IDX5, "boolean")
+        self.env.catalog.reindex(pid1, rid2, IDX5)
+        
+        sql = 'SELECT * FROM "/testpackage/station"'
+        res = self.env.db.engine.execute(sql).fetchall()
+        self.assertEqual(res, 
+                         [(6, '11.5', True), 
+                          (6, '20.5', True), 
+                          (6, 'blah', True), 
+                          (7, '0', True), 
+                          (7, '2.5', True), 
+                          (7, '99', True)])
+        sql = 'SELECT * FROM "/testpackage/testml"'
+        res = self.env.db.engine.execute(sql).fetchall()
+        self.assertEqual(res, [(8, '3', True)])
+        
+        # add a second resource and a new index
+        self.env.catalog.addResource(pid1, rid2, RAW_XML4)
+        self.env.catalog.registerIndex(pid1, rid2, "/testml/blah1/blahblah1")
+        sql = 'SELECT * FROM "/testpackage/testml"'
+        res = self.env.db.engine.execute(sql).fetchall()
+        self.assertEqual(res, 
+                         [(8, '3', True, 'blahblahblah'), 
+                          (9, '4', True, 'moep')])
+        
+        # clean up
+        self.env.catalog.removeIndex(pid1, rid1, IDX4)
+        self.env.catalog.removeIndex(pid1, rid2, IDX5)
 
 
 def suite():

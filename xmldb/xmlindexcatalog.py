@@ -1,12 +1,15 @@
 # -*- coding: utf-8 -*-
 from zope.interface.exceptions import DoesNotImplement
 from sqlalchemy import select, sql
+from sqlalchemy.exceptions import ProgrammingError
 
 from seishub.exceptions import SeisHubError, NotFoundError
 from seishub.exceptions import DuplicateObjectError, InvalidParameterError
 from seishub.db.orm import DbStorage, DbError
+from seishub.db.util import compileStatement
 from seishub.xmldb.interfaces import IXPathQuery, IResource, IXmlIndex
-from seishub.xmldb.defaults import document_tab
+from seishub.xmldb.defaults import document_tab, resource_tab
+from seishub.registry.defaults import resourcetypes_tab, packages_tab
 from seishub.xmldb.index import XmlIndex, type_classes
 from seishub.xmldb import index
 from seishub.xmldb.xpath import XPathQuery
@@ -19,8 +22,57 @@ INDEX_TYPES = {"text":index.TEXT_INDEX,
                "nonetype":index.NONETYPE_INDEX
                }
 
+
+class _IndexViewer(object):
+    """
+    Mixin for XMLIndexCatalog providing "horizontal" views on the indexed data
+    per resourcetype.
+    
+    WARNING: This is only tested/working on PostgreSQL!
+    """
+    def _isSQLite(self):
+        return self.db.dialect.name == 'sqlite'
+    
+    def createView(self, package, resourcetype, name = None):
+        """
+        Create a view for the given package and resourcetype.
+        """
+        if self._isSQLite():
+            # XXX: log.warn
+            return
+        name = name or '/%s/%s' % (package, resourcetype)
+        q = select([document_tab.c['id'].label("document_id")])
+        location_path = [package, resourcetype, None]
+        q, joins = self._process_location_path(location_path, q)
+        q = q.select_from(joins)
+        # CREATE OR REPLACE is not allowed to change number of columns in postgres
+        # sql = 'CREATE OR REPLACE VIEW "%s" AS %s' % (name, compileStatement(q))
+        try:
+            self.dropView(package, resourcetype, name)
+        except NotFoundError:
+            pass
+        sql = 'CREATE VIEW "%s" AS %s' % (name, compileStatement(q))
+        self._db.execute(sql)
+    
+    def dropView(self, package, resourcetype, name = None):
+        """
+        Remove specified view.
+        """
+        if self._isSQLite():
+            # XXX: log.warn
+            return
+        name = name or '/%s/%s' % (package, resourcetype)
+        sql = 'DROP VIEW "%s"' % name
+        try:
+            self._db.execute(sql)
+        except ProgrammingError, e:
+            msg = "A view with the name %s does not exist."
+            raise NotFoundError(msg % name)
+
 class _QueryProcessor(object):
-    """Mixin for XMLIndexCatalog providing query processing."""
+    """
+    Mixin for XMLIndexCatalog providing query processing.
+    """
     
     def _raiseIndexNotFound(self, query_base, expr):
         msg = "Error processing query. No index found for: %s"
@@ -28,8 +80,10 @@ class _QueryProcessor(object):
         raise NotFoundError(msg % idx_str)
     
     def findIndex(self, query_base, expr = None, tolerant = True):
-        """Tries to find the index fitting best for expr. If no expression is 
-        given returns the rootnode index according to query_base."""
+        """
+        Tries to find the index fitting best for expr. If no expression is 
+        given returns the rootnode index according to query_base.
+        """
         # XXX: caching!
         if expr:
             expr = '/' + expr
@@ -70,31 +124,51 @@ class _QueryProcessor(object):
             return sql.or_(left, right)
         raise InvalidParameterError("Operator '%s' not specified." % self._op)
 
-    def _join_on_index(self, idx, q, joins = None, op = "and"):
+    def _join_on_index(self, idx, joins = None, method = "outerjoin"):
+        join = getattr(joins or document_tab, method)
         idx_tab = idx._getElementCls().db_table.alias()
-        if not joins:
-            joins = document_tab.outerjoin(idx_tab, 
-                                     onclause = (idx_tab.c['document_id'] ==\
-                                                 document_tab.c['id']))
-        else:
-            joins = joins.outerjoin(idx_tab, 
-                                    onclause = (idx_tab.c['document_id'] ==\
-                                                document_tab.c['id']))
-        if op == 'or':
-            # OR operator...
-            raise ("'or' not implemented yet")
-        else:
-            w = idx_tab.c['index_id'] == idx._id
-            # q = q.where(idx_tab.c['index_id'] == idx._id)
-        return q, joins, idx_tab, w
+        oncl = sql.and_(idx_tab.c['document_id'] == document_tab.c['id'],
+                        idx_tab.c['index_id'] == idx._id)
+        joins = join(idx_tab, onclause = oncl)
+        return joins, idx_tab
     
-    def _process_rootnode(self, lp, q, joins = None):
-        idx = self.findIndex(lp)
-        q, joins, _, w = self._join_on_index(idx, q, joins)
-        q = q.where(w)
+    def _join_on_resourcetype(self, package, resourcetype, joins = None):
+        oncl = (resource_tab.c['id'] == document_tab.c['resource_id']) 
+        joins = document_tab.join(resource_tab, onclause = oncl)
+        oncl = resourcetypes_tab.c['id'] == resource_tab.c['resourcetype_id']
+        if resourcetype:
+            oncl = sql.and_(oncl, resourcetypes_tab.c['name'] == resourcetype)
+        joins = joins.join(resourcetypes_tab, onclause = oncl)
+        oncl = resourcetypes_tab.c['package_id'] == packages_tab.c['id']
+        if package:
+            oncl = sql.and_(oncl, packages_tab.c['name'] == package)
+        joins = joins.join(packages_tab, onclause = oncl)
+        return joins
+    
+    def _process_location_path(self, location_path, q, joins = None):
+        """
+        Select all data indexed for the current location path, if only 
+        /package/resourcetype/* is given, select all indexes for the given
+        resourcetype.
+        The column names in the selection correspond to the xpath expressions
+        of the indexes.
+        """
+        pkg, rt = location_path[0:2]
+        joins = self._join_on_resourcetype(pkg, rt)
+        if len(location_path) == 3: # and location_path[2] is None:
+            # location path is on resource level => select _all_ known indexes 
+            # for that resourcetype
+            indexes = self.getIndexes(pkg, rt)
+        else:
+            xpath = '/'.join(location_path[2:])
+            indexes = [self.findIndex([pkg, rt], xpath, False)]
+        for idx in indexes:
+            joins, idx_tab = self._join_on_index(idx, joins)
+            # also add the index keyval column to selected columns
+            q.append_column(idx_tab.c['keyval'].label(str(idx)))
         return q, joins
     
-    def _process_predicates(self, p, q, joins = None, parent_op = 'and'):
+    def _process_predicates(self, p, q, joins = None):
         w = None
         if len(p) == 3:
             # binary expression
@@ -104,24 +178,23 @@ class _QueryProcessor(object):
             if op in XPathQuery._relational_ops:
                 # relational operator, l is a path expression => find an index
                 lidx = self.findIndex([l[0], l[1]], l[2], False)
-                q, joins, ltab, w = self._join_on_index(lidx, q, joins)
+                joins, ltab = self._join_on_index(lidx, joins)
                 if isinstance(r, list): # joined path query
                     ridx = self.findIndex([r[0], r[1]], r[2], False)
-                    q, joins, rtab, ridxw = self._join_on_index(ridx, q, joins)
-                    w = sql.and_(w, ridxw, 
-                                 ltab.c['keyval'] == rtab.c['keyval'])
+                    joins, rtab = self._join_on_index(ridx, joins)
+                    w = ltab.c['keyval'] == rtab.c['keyval']
                 else: # key / value query
-                    w = sql.and_(w, self._applyOp(op, ltab.c['keyval'], 
-                                                  lidx.prepareKey(r)))
+                    w = self._applyOp(op, ltab.c['keyval'], lidx.prepareKey(r))
             else:
                 # logical operator
                 q, joins, lw = self._process_predicates(l, q, joins)
-                q, joins, rw = self._process_predicates(r, q, joins, op)
+                q, joins, rw = self._process_predicates(r, q, joins)
                 q = q.where(self._applyOp(op, lw, rw))
         else:
-            # unary expression
+            # unary expression => require node existence
             idx = self.findIndex([p[0][0], p[0][1]], p[0][2], False)
-            q, joins, _, w = self._join_on_index(idx, q, joins)
+            joins, idx_tab = self._join_on_index(idx, joins)
+            w = (idx_tab.c['keyval'] != None)
         return q, joins, w
     
     def _process_order_by(self, order_by, q, joins = None):
@@ -129,66 +202,73 @@ class _QueryProcessor(object):
             # an order_by element is of the form: 
             # [[package, resourcetype, xpath], direction]
             idx = self.findIndex([ob[0][0], ob[0][1]], ob[0][2], False)
-            q, joins, idx_tab, w = self._join_on_index(idx, q, joins)
-            q = q.where(w)
-            o = idx_tab.c['keyval'].asc()
+            idx_name = str(idx)
+            # if idx is already in selected columns, no need to join
+            if not idx_name in q.columns:
+                joins, idx_tab = self._join_on_index(idx, joins)
+                col = idx_tab.c['keyval']
+                q.append_column(col)
+            else:
+                col = q.columns[idx_name]
+            o = col.asc()
             if ob[1] == "desc": 
-                o = idx_tab.c['keyval'].desc()
+                o = col.desc()
             q = q.order_by(o)
-            # order by columns must show up in the group by clause, too
-            q = q.group_by(idx_tab.c['keyval'])
         return q, joins
+    
+    def _process_results(self, res):
+        results = {'ordered':[]}
+        cols = res.keys
+        cols.remove('document_id')
+        for row in res:
+            idx_values = dict()
+            id = row["document_id"]
+            for idx in cols:
+                idx_values[idx] = row[idx]
+            if not id in results['ordered']:
+                results['ordered'].append(id)                  
+                results[id] = idx_values
+            else:
+                # XXX: an util.merge_dicts() would be handy
+                for key, val in idx_values.iteritems():
+                    if not results[id][key] == val:
+                        if not isinstance(results[id][key], list):
+                            results[id][key] = [results[id][key]]
+                        results[id][key].append(val)
+        return results
 
     def query(self, query):
         """@see: L{seishub.xmldb.interfaces.IXmlIndexCatalog}"""
         if not IXPathQuery.providedBy(query):
             raise DoesNotImplement(IXPathQuery)
-        # query_base = query.getQueryBase()
         location_path = query.getLocationPath()
         predicates = query.getPredicates()
         order_by = query.getOrderBy() or list()
         limit = query.getLimit()
         offset = query.getOffset()
         
-        q = select([document_tab.c['id']], use_labels = True)
-        joins = None
-        if not (predicates or order_by):
-            if not location_path[2]:
-                # index-less query => /package/resourcetype only
-                return self._resourceTypeQuery(location_path[0], 
-                                               location_path[1])
-            else:
-                # rootnode was specified => /package/resourcetype/rootnode
-                q, joins = self._process_rootnode(location_path, q)
+        q = select([document_tab.c['id'].label("document_id")], 
+                   use_labels = True).distinct()
+        q, joins = self._process_location_path(location_path, q)
         if predicates:
-            q, joins, w = self._process_predicates(predicates, q)
+            q, joins, w = self._process_predicates(predicates, q, joins)
             if w:
                 q = q.where(w)
-        if order_by:    
+        if order_by:
             q, joins = self._process_order_by(order_by, q, joins)
+        else:
+            q = q.order_by(document_tab.c['id'])
         if joins:
             q = q.select_from(joins)
-        q = q.group_by(document_tab.c['id'])
         q = q.limit(limit).offset(offset)
-#        from sqlalchemy.ext.serializer import dumps, loads
-#        from seishub.db.manager import meta
-#        blah = dumps(q)
-#        print "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-#        print len(blah)
-#        blah = 'huihui' + blah + 'huhuhhuh'
-#        muh = loads(blah, meta)
-#        blah = q.params()
-#        bluh = q.compile()
-#        from sqlalchemy.sql import text
-#        sql = text(str(q))
-        # import pdb;pdb.set_trace() 
+        #print compileStatement(q)
         res = self._db.execute(q)
-        results = [result[0] for result in res.fetchall()]
+        results = self._process_results(res)
         res.close()
         return results
 
 
-class XmlIndexCatalog(DbStorage, _QueryProcessor):
+class XmlIndexCatalog(DbStorage, _QueryProcessor, _IndexViewer):
     def __init__(self, db, resource_storage = None):
         DbStorage.__init__(self, db)
         self._storage = resource_storage
