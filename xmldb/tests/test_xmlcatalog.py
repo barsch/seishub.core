@@ -374,15 +374,15 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         sql = 'SELECT * FROM "/testpackage/station"'
         res = self.env.db.engine.execute(sql).fetchall()
         self.assertEqual(res, 
-                         [(6, u'11.5', 0, 1, 0), 
-                          (6, u'20.5', 0, 1, 0), 
-                          (6, u'blah', 0, 1, 0), 
-                          (7, u'0', 0, 1, 0), 
-                          (7, u'2.5', 0, 1, 0), 
-                          (7, u'99', 0, 1, 0)])
+                         [(6, u'11.5', 1), 
+                          (6, u'20.5', 1), 
+                          (6, u'blah', 1), 
+                          (7, u'0', 1), 
+                          (7, u'2.5', 1), 
+                          (7, u'99', 1)])
         sql = 'SELECT * FROM "/testpackage/testml"'
         res = self.env.db.engine.execute(sql).fetchall()
-        self.assertEqual(res, [(8, u'3', 0, 1, 0)])
+        self.assertEqual(res, [(8, u'3', 1)])
         
         # add a second resource and a new index
         self.env.catalog.addResource(pid1, rid2, RAW_XML4)
@@ -390,8 +390,8 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         sql = 'SELECT * FROM "/testpackage/testml"'
         res = self.env.db.engine.execute(sql).fetchall()
         self.assertEqual(res, 
-                         [(8, u'3', 0, 1, 0, u'blahblahblah', 0), 
-                          (9, u'4', 0, 1, 0, u'moep', 0)])
+                         [(8, u'3', 1, u'blahblahblah'), 
+                          (9, u'4', 1, u'moep')])
         
         # clean up
         self.env.catalog.removeIndex(pid1, rid1, IDX4)
