@@ -597,11 +597,11 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         self.catalog.createView("testpackage", "station")
         sql = 'SELECT * FROM "/testpackage/station"'
         res = self.env.db.engine.execute(sql).fetchall()
-        self.assertEquals(res, 
-                          [(6, '12.51200', '50.23200', None, True), 
-                           (7, '22.51200', '55.23200', '0', True), 
-                           (7, '22.51200', '55.23200', '2.5', True), 
-                           (7, '22.51200', '55.23200', '99', True)])
+        self.assertEquals(res, [
+                         (6, u'12.51200', 0, u'50.23200', 0, None, None, 1, 0), 
+                         (7, u'22.51200', 0, u'55.23200', 0, u'0', 0, 1, 0), 
+                         (7, u'22.51200', 0, u'55.23200', 0, u'2.5', 0, 1, 0), 
+                         (7, u'22.51200', 0, u'55.23200', 0, u'99', 0, 1, 0)])
         self.catalog.dropView("testpackage", "station")
         sql = 'SELECT * FROM "/testpackage/station"'
         self.assertRaises(Exception, self.env.db.engine.execute, sql)

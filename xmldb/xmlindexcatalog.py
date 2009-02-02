@@ -140,8 +140,11 @@ class _QueryProcessor(object):
             indexes = [self.findIndex([pkg, rt], xpath, False)]
         for idx in indexes:
             joins, idx_tab = self._join_on_index(idx, joins)
-            # also add the index keyval column to selected columns
-            q.append_column(idx_tab.c['keyval'].label(str(idx)))
+            # also add the index keyval and group_pos column to selected columns
+            keyval_label = str(idx)
+            group_pos_label = "#(%s)" % keyval_label
+            q.append_column(idx_tab.c['keyval'].label(keyval_label))
+            q.append_column(idx_tab.c['group_pos'].label(group_pos_label))
         return q, joins
     
     def _process_predicates(self, p, q, joins = None):
