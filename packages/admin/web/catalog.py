@@ -86,6 +86,7 @@ class DatabaseQueryPanel(Component):
             'result': '',
             'cols': '',
             'tables': tables,
+            'views': self.env.db.getViews(),
             'prefix': DEFAULT_PREFIX,
         }
         args = request.args
@@ -93,10 +94,12 @@ class DatabaseQueryPanel(Component):
             query = None
             if 'query' in args.keys() and 'send' in args.keys():
                 query = data['query'] = request.args['query'][0]
-            else:
-                for table in tables:
-                    if table in args.keys():
-                        query = 'SELECT * FROM ' + table + ' LIMIT 20;'
+            elif 'table' in args.keys():
+                table = DEFAULT_PREFIX + request.args['table'][0]
+                query = 'SELECT * FROM ' + table + ' LIMIT 20;'
+            elif 'view' in args.keys():
+                view = request.args['view'][0]
+                query = 'SELECT * FROM "' + view + '" LIMIT 20;'
             if query:
                 data['query'] = query
                 try:

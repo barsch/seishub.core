@@ -109,3 +109,16 @@ class DatabaseManager(object):
         except Exception:
             msg = "A view with the name %s does not exist."
             raise NotFoundError(msg % name)
+    
+    def getViews(self):
+        if self.engine.name == 'sqlite':
+            sql = "SELECT name from sqlite_master WHERE type='view';"
+            temp = self.engine.execute(sql).fetchall()
+            return [id[0] for id in temp]
+        elif self.engine.name == 'postgres':
+            sql = """SELECT viewname FROM pg_views 
+                     WHERE schemaname 
+                     NOT IN('information_schema', 'pg_catalog');"""
+            temp = self.engine.execute(sql).fetchall()
+            return [id[0] for id in temp]
+        return []

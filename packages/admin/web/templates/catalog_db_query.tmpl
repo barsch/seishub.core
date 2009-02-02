@@ -8,7 +8,11 @@
   
   <div class="button">
     #for $table in $tables
-    <input type="submit" name="$table" value="$table.replace($prefix, '')" />
+    <input type="submit" name="table" value="$table.replace($prefix, '')" />
+    #end for
+    <br /><br />
+    #for $view in $views
+    <input type="submit" name="view" value="$view" />
     #end for
     <br /><br />
     <input type="submit" name="send" value="Query" />
