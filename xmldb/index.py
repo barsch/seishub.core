@@ -17,7 +17,7 @@ NUMERIC_INDEX = 1
 FLOAT_INDEX = 2
 DATETIME_INDEX = 3
 BOOLEAN_INDEX = 4
-NONETYPE_INDEX = 5
+# NONETYPE_INDEX = 5
 PROCESSOR_INDEX = 6
 
 ISO_FORMAT = "%Y%m%d %H:%M:%S"
@@ -48,15 +48,18 @@ class XmlIndex(Serializable):
     db_mapping = {'resourcetype':Relation(ResourceTypeWrapper, 
                                           'resourcetype_id'),
                   'xpath':'xpath',
+                  'group_path':'group_path',
                   'type':'type',
                   'options':'options'}
     
     def __init__(self, resourcetype = None, xpath = None, type = TEXT_INDEX, 
-                 options = None):
+                 options = None, group_path = None):
         self.resourcetype = resourcetype
         self.xpath = xpath
         self.type = type
         self.options = options
+        self.group_path = group_path
+        self.relative_xpath = None 
     
     def __str__(self):
         return '/' + self.resourcetype.package.package_id + '/' + \
@@ -95,6 +98,17 @@ class XmlIndex(Serializable):
     
     options = property(getOptions, setOptions, "Options")
     
+    def getRelative_xpath(self):
+        if self.group_path and not self._relative_xpath:
+            self._relative_xpath = self.xpath[len(self.group_path)+1:]
+        return self._relative_xpath
+        
+    def setRelative_xpath(self, data):
+        self._relative_xpath = data
+    
+    relative_xpath = property(getRelative_xpath, setRelative_xpath, 
+                              "relative xpath")
+    
     def _selectElementCls(self, type):
         return type_classes[type]
         
@@ -118,11 +132,15 @@ class XmlIndex(Serializable):
             raise TypeError("%s is not an IXmlDocument." % str(xml_doc))
         parsed_doc = xml_doc.getXml_doc()
         try:
-            nodes = parsed_doc.evalXPath(self.xpath)
+            if self.group_path:
+                nodes = parsed_doc.evalXPath(self.group_path)
+                return [node.evalXPath(self.relative_xpath) 
+                        for node in nodes]
+            return [parsed_doc.evalXPath(self.xpath)]
         except Exception, e:
             log.err(e)
             return list()
-        return [node.getStrContent() for node in nodes]
+        #return [r.getStrContent() for r in res]
     
     def eval(self, xml_doc, env = None):
         if self.type == PROCESSOR_INDEX:
@@ -131,19 +149,24 @@ class XmlIndex(Serializable):
             elements = pidx.eval(xml_doc)
             if not isinstance(elements, list):
                 elements = [elements]
+            elements = [elements]
         else:
             type = self.type
             elements = self._eval(xml_doc, env)
         res = list()
-        for el in elements:
-            try:
-                res.append(self._selectElementCls(type)(self, el, xml_doc))
-            except Exception, e:
-                if env:
-                    env.log.info(e)
-                else:
-                    log.err(e)
-                    continue
+        for pos, el_list in enumerate(elements):
+            for el in el_list:
+                if not self.type == PROCESSOR_INDEX:
+                    el = el.getStrContent()
+                try:
+                    res.append(self._selectElementCls(type)(self, el, 
+                                                            xml_doc, pos))
+                except Exception, e:
+                    if env:
+                        env.log.info(e)
+                    else:
+                        log.err(e)
+                        continue
         return res
     
     def prepareKey(self, data):
@@ -153,14 +176,17 @@ class XmlIndex(Serializable):
 class KeyIndexElement(Serializable):
     db_mapping = {'index':Relation(XmlIndex, 'index_id'),
                   'key':'keyval',
+                  'group_pos':'group_pos',
                   'document':Relation(XmlDocument, 'document_id')
                   }
     
-    def __init__(self, index = None, key = None, document = None):
+    def __init__(self, index = None, key = None, document = None,
+                 group_pos = None):
         self.index = index
         if key:
             self.key = self._filter_key(key)
         self.document = document
+        self.group_pos = group_pos
         
     def _filter_key(self, data):
         """Overwritten to do a type specific key handling"""
@@ -195,33 +221,33 @@ class KeyIndexElement(Serializable):
     key = property(getKey, setKey, "Index key")
         
     
-class QualifierIndexElement(Serializable):
-    db_mapping = {'index':Relation(XmlIndex, 'index_id'),
-                  'document':Relation(XmlDocument, 'document_id')
-                  }
-    
-    def __init__(self, index = None, key = None, document = None):
-        self.index = index
-        # ignore key
-        self.key = None
-        self.document = document
-        
-    def getIndex(self):
-        return self._index
-     
-    def setIndex(self, data):
-        self._index = data
-        
-    index = db_property(getIndex, setIndex, "Index", attr = '_index')
-    
-    def getDocument(self):
-        return self._document
-     
-    def setDocument(self, data):
-        self._document = data
-        
-    document = db_property(getDocument, setDocument, "XmlDocument", 
-                           attr = '_document')
+#class QualifierIndexElement(Serializable):
+#    db_mapping = {'index':Relation(XmlIndex, 'index_id'),
+#                  'document':Relation(XmlDocument, 'document_id')
+#                  }
+#    
+#    def __init__(self, index = None, key = None, document = None):
+#        self.index = index
+#        # ignore key
+#        self.key = None
+#        self.document = document
+#        
+#    def getIndex(self):
+#        return self._index
+#     
+#    def setIndex(self, data):
+#        self._index = data
+#        
+#    index = db_property(getIndex, setIndex, "Index", attr = '_index')
+#    
+#    def getDocument(self):
+#        return self._document
+#     
+#    def setDocument(self, data):
+#        self._document = data
+#        
+#    document = db_property(getDocument, setDocument, "XmlDocument", 
+#                           attr = '_document')
     
 
 class TextIndexElement(KeyIndexElement):
@@ -299,13 +325,14 @@ class BooleanIndexElement(KeyIndexElement):
         return bool(data)
 
 
-class NoneTypeIndexElement(QualifierIndexElement):
-    db_table = defaults.index_keyless_tab
+#class NoneTypeIndexElement(QualifierIndexElement):
+#    db_table = defaults.index_keyless_tab
+
 
 type_classes = {TEXT_INDEX:TextIndexElement, 
                 NUMERIC_INDEX:NumericIndexElement, 
                 FLOAT_INDEX:FloatIndexElement, 
                 DATETIME_INDEX:DateTimeIndexElement, 
                 BOOLEAN_INDEX:BooleanIndexElement, 
-                NONETYPE_INDEX:NoneTypeIndexElement
+                #NONETYPE_INDEX:NoneTypeIndexElement
                 }

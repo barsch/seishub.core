@@ -13,7 +13,6 @@ import time
 import unittest
 
 
-
 RAW_XML1 = u"""
 <station rel_uri="bern">
     <station_code>BERN</station_code>
@@ -26,6 +25,33 @@ RAW_XML1 = u"""
         <paramXY>20.5</paramXY>
         <paramXY>11.5</paramXY>
         <paramXY>blah</paramXY>
+    </XY>
+    <creation_date>%s</creation_date>
+    <bool>%s</bool>
+</station>
+"""
+
+RAW_XML2 = u"""
+<station rel_uri="bern">
+    <station_code>BERN</station_code>
+    <chan_code>1</chan_code>
+    <stat_type>0</stat_type>
+    <lon>12.51200</lon>
+    <lat>50.23200</lat>
+    <stat_elav>0.63500</stat_elav>
+    <XY>
+        <X>1</X>
+        <Y id = "1">2</Y>
+        <Z>
+            <value>3</value>
+        </Z>
+    </XY>
+    <XY>
+        <X>4</X>
+        <Y id = "2">5</Y>
+        <Z>
+            <value>6</value>
+        </Z>
     </XY>
     <creation_date>%s</creation_date>
     <bool>%s</bool>
@@ -151,24 +177,62 @@ class XmlIndexTest(SeisHubEnvironmentTestCase):
         doc = newXMLDocument(RAW_XML1 % ("", "something"))
         res = idx.eval(doc, self.env)[0]
         self.assertEqual(res.key, True)
-
-    def testNoneTypeIndex(self):
-        doc = newXMLDocument(RAW_XML1)
-        idx = XmlIndex(self.rt1, "/station/stat_type", index.NONETYPE_INDEX)
-        res = idx.eval(doc, self.env)
-        self.assertEquals(type(res[0]), index.NoneTypeIndexElement)
-        self.assertEquals(res[0].key, None)
         
-        idx = XmlIndex(self.rt1, "/station/not_there", index.NONETYPE_INDEX)
-        res = idx.eval(doc, self.env)
-        self.assertEquals(len(res), 0)
+    def testIndexGrouping(self):
+        doc = newXMLDocument(RAW_XML2)
+        idx1 = XmlIndex(self.rt1, "/station/XY/X", index.NUMERIC_INDEX,
+                        group_path = "/station/XY")
+        res = idx1.eval(doc, self.env)
+        self.assertEqual(len(res), 2)
+        self.assertEqual(res[0].key, '1')
+        self.assertEqual(res[0].group_pos, 0)
+        self.assertEqual(res[1].key, '4')
+        self.assertEqual(res[1].group_pos, 1)
         
-        idx = XmlIndex(self.rt1, "/station/XY/paramXY[. = 20.5]", 
-                       index.NONETYPE_INDEX)
-        res = idx.eval(doc, self.env)
-        self.assertEquals(len(res), 1)
-        self.assertEquals(type(res[0]), index.NoneTypeIndexElement)
-        self.assertEquals(res[0].key, None)
+        idx2 = XmlIndex(self.rt1, "/station/XY/Y", index.NUMERIC_INDEX,
+                        group_path = "/station/XY")
+        res = idx2.eval(doc, self.env)
+        self.assertEqual(len(res), 2)
+        self.assertEqual(res[0].key, '2')
+        self.assertEqual(res[0].group_pos, 0)
+        self.assertEqual(res[1].key, '5')
+        self.assertEqual(res[1].group_pos, 1)
+        
+        idx3 = XmlIndex(self.rt1, "/station/XY/Y/@id", index.NUMERIC_INDEX,
+                        group_path = "/station/XY")
+        res = idx3.eval(doc, self.env)
+        self.assertEqual(len(res), 2)
+        self.assertEqual(res[0].key, '1')
+        self.assertEqual(res[0].group_pos, 0)
+        self.assertEqual(res[1].key, '2')
+        self.assertEqual(res[1].group_pos, 1)
+        
+        idx4 = XmlIndex(self.rt1, "/station/XY/Z/value", index.NUMERIC_INDEX,
+                        group_path = "/station/XY")
+        res = idx4.eval(doc, self.env)
+        self.assertEqual(len(res), 2)
+        self.assertEqual(res[0].key, '3')
+        self.assertEqual(res[0].group_pos, 0)
+        self.assertEqual(res[1].key, '6')
+        self.assertEqual(res[1].group_pos, 1)
+        
+#    def testNoneTypeIndex(self):
+#        doc = newXMLDocument(RAW_XML1)
+#        idx = XmlIndex(self.rt1, "/station/stat_type", index.NONETYPE_INDEX)
+#        res = idx.eval(doc, self.env)
+#        self.assertEquals(type(res[0]), index.NoneTypeIndexElement)
+#        self.assertEquals(res[0].key, None)
+#        
+#        idx = XmlIndex(self.rt1, "/station/not_there", index.NONETYPE_INDEX)
+#        res = idx.eval(doc, self.env)
+#        self.assertEquals(len(res), 0)
+#        
+#        idx = XmlIndex(self.rt1, "/station/XY/paramXY[. = 20.5]", 
+#                       index.NONETYPE_INDEX)
+#        res = idx.eval(doc, self.env)
+#        self.assertEquals(len(res), 1)
+#        self.assertEquals(type(res[0]), index.NoneTypeIndexElement)
+#        self.assertEquals(res[0].key, None)
         
 class ProcessorIndexTestPackage(Component):
     implements(IPackage)

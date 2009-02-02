@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from zope.interface.exceptions import DoesNotImplement
 from sqlalchemy import select, sql
-from sqlalchemy.exceptions import ProgrammingError
 
 from seishub.exceptions import SeisHubError, NotFoundError
 from seishub.exceptions import DuplicateObjectError, InvalidParameterError
@@ -18,7 +17,7 @@ INDEX_TYPES = {"text":index.TEXT_INDEX,
                "float":index.FLOAT_INDEX,
                "datetime":index.DATETIME_INDEX,
                "boolean":index.BOOLEAN_INDEX,
-               "nonetype":index.NONETYPE_INDEX
+               #"nonetype":index.NONETYPE_INDEX
                }
 
 

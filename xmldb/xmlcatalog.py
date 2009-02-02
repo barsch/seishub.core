@@ -19,7 +19,8 @@ INDEX_TYPES = {"text":index.TEXT_INDEX,
                "float":index.FLOAT_INDEX,
                "datetime":index.DATETIME_INDEX,
                "boolean":index.BOOLEAN_INDEX,
-               "nonetype":index.NONETYPE_INDEX}
+               #"nonetype":index.NONETYPE_INDEX
+               }
 
 
 class XmlCatalog(object):
@@ -206,13 +207,21 @@ class XmlCatalog(object):
             msg = "registerIndex: Empty XPath expression!"
             raise InvalidParameterError(msg)
         xpath = xpath.strip()
+        group_path = None
+        if '#' in xpath:
+            try:
+                group_path, temp = xpath.split('#')
+            except ValueError, e:
+                msg = "Invalid index expression. %s"
+                raise InvalidParameterError(msg % str(e))
+            xpath = '/'.join([group_path, temp])
         type = INDEX_TYPES.get(type.lower(), None)
         if type is None:
             msg = "registerIndex: Invalid index type '%s'."
             raise InvalidParameterError(msg % type)
         _, resourcetype = self.env.registry.objects_from_id(package_id, 
                                                             resourcetype_id)
-        index = XmlIndex(resourcetype, xpath, type, options)
+        index = XmlIndex(resourcetype, xpath, type, options, group_path)
         index = self.index_catalog.registerIndex(index)
         self.reindex(package_id, resourcetype_id, xpath)
         # create or update view:

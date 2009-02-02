@@ -135,6 +135,22 @@ class XmlNode(object):
             str = etree.tostring(self._node_obj, 
                                  encoding = self.encoding)
         return str
+    
+    def evalXPath(self, expr):
+        if not isinstance(expr, basestring):
+            raise TypeError('String expected: %s' % expr)
+        node_obj = self.getNode_obj()
+        root = node_obj.getroottree().getroot()
+        try:
+            res = node_obj.xpath(expr, namespaces = root.nsmap)
+        except Exception, e:
+            raise InvalidXPathExpression(("Error evaluating a XPath " +\
+                                         "expression: %s") % str(expr), e)
+        if res:
+            nodes = [XmlNode(node) for node in res]
+        else:
+            nodes = list()
+        return nodes
 
 
 class XmlStylesheet(object):

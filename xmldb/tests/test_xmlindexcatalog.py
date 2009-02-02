@@ -43,6 +43,33 @@ RAW_XML3 = """<?xml version="1.0"?>
 </testml>
 """
 
+RAW_XML4 = u"""
+<station rel_uri="bern">
+    <station_code>BERN</station_code>
+    <chan_code>1</chan_code>
+    <stat_type>0</stat_type>
+    <lon>12.51200</lon>
+    <lat>50.23200</lat>
+    <stat_elav>0.63500</stat_elav>
+    <XY>
+        <X>1</X>
+        <Y id = "1">2</Y>
+        <Z>
+            <value>3</value>
+        </Z>
+    </XY>
+    <XY>
+        <X>4</X>
+        <Y id = "2">5</Y>
+        <Z>
+            <value>6</value>
+        </Z>
+    </XY>
+    <creation_date>%s</creation_date>
+    <bool>%s</bool>
+</station>
+"""
+
 URI1 = "/real/bern"
 URI2 = "/fake/genf"
 URI3 = "/testml/res1"
@@ -305,6 +332,35 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         self.catalog.removeIndex(self.rt1.package.package_id,
                                  self.rt1.resourcetype_id,
                                  "/station/XY/paramXY")
+        self.xmldb.deleteResource(id = res.id)
+        
+    def testIndexResourceWithGrouping(self):
+        # set up
+        res = Resource(self.rt1, document = newXMLDocument(RAW_XML4))
+        self.xmldb.addResource(res)
+        index = XmlIndex(self.rt1, "/station/XY/Z/value",
+                         group_path = "/station/XY")
+        self.catalog.registerIndex(index)
+        
+        r = self.catalog.indexResource(res)
+        self.assertEquals(len(r), 2)
+        el = self.catalog.dumpIndex(self.pkg1.package_id, 
+                                    self.rt1.resourcetype_id, 
+                                    "/station/XY/Z/value")
+        self.assertEquals(len(el), 2)
+        self.assertEquals(el[0].key, "3")
+        self.assertEquals(el[0].group_pos, 0)
+        self.assertEquals(el[0].document.data, res.document.data)
+        self.assertEquals(el[1].key, "6")
+        self.assertEquals(el[1].group_pos, 1)
+        self.assertEquals(el[1].document.data, res.document.data)
+        
+        
+        
+        # clean up
+        self.catalog.removeIndex(self.rt1.package.package_id,
+                                 self.rt1.resourcetype_id,
+                                 "/station/XY/Z/value")
         self.xmldb.deleteResource(id = res.id)
     
     def testFlushIndex(self):
