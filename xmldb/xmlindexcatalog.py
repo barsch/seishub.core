@@ -194,24 +194,26 @@ class _QueryProcessor(object):
         return q, joins
     
     def _process_results(self, res):
-        results = {'ordered':[]}
-        cols = res.keys
-        cols.remove('document_id')
+        ordered = list()
+        results = dict()
         for row in res:
-            idx_values = dict()
             id = row["document_id"]
-            for idx in cols:
-                idx_values[idx] = row[idx]
-            if not id in results['ordered']:
-                results['ordered'].append(id)                  
+            idx_values = dict(row)
+            if not id in ordered:
+                ordered.append(id)
                 results[id] = idx_values
             else:
-                # XXX: an util.merge_dicts() would be handy
+                # cycle through results and reformat output to avoid duplicates
                 for key, val in idx_values.iteritems():
-                    if not results[id][key] == val:
-                        if not isinstance(results[id][key], list):
+                    # check if list; append new element, but ignore duplicates
+                    if isinstance(results[id][key], list):
+                        if not val in results[id][key]:
+                            results[id][key].append(val)
+                    else:
+                        if not results[id][key] == val:
                             results[id][key] = [results[id][key]]
-                        results[id][key].append(val)
+                            results[id][key].append(val)
+        results['ordered'] = ordered
         return results
 
     def query(self, query):
