@@ -6,7 +6,6 @@ from sqlalchemy.exceptions import ProgrammingError
 from seishub.exceptions import SeisHubError, NotFoundError
 from seishub.exceptions import DuplicateObjectError, InvalidParameterError
 from seishub.db.orm import DbStorage, DbError
-from seishub.db.util import compileStatement
 from seishub.xmldb.interfaces import IXPathQuery, IResource, IXmlIndex
 from seishub.xmldb.defaults import document_tab, resource_tab
 from seishub.registry.defaults import resourcetypes_tab, packages_tab
@@ -27,47 +26,25 @@ class _IndexViewer(object):
     """
     Mixin for XMLIndexCatalog providing "horizontal" views on the indexed data
     per resourcetype.
-    
-    WARNING: This is only tested/working on PostgreSQL!
     """
-    def _isSQLite(self):
-        return self.db.dialect.name == 'sqlite'
     
     def createView(self, package, resourcetype, name = None):
         """
         Create a view for the given package and resourcetype.
         """
-        if self._isSQLite():
-            # XXX: log.warn
-            return
         name = name or '/%s/%s' % (package, resourcetype)
         q = select([document_tab.c['id'].label("document_id")])
         location_path = [package, resourcetype, None]
         q, joins = self._process_location_path(location_path, q)
         q = q.select_from(joins)
-        # CREATE OR REPLACE is not allowed to change number of columns in postgres
-        # sql = 'CREATE OR REPLACE VIEW "%s" AS %s' % (name, compileStatement(q))
-        try:
-            self.dropView(package, resourcetype, name)
-        except NotFoundError:
-            pass
-        sql = 'CREATE VIEW "%s" AS %s' % (name, compileStatement(q))
-        self._db.execute(sql)
+        self._db_manager.createView(name, q)
     
     def dropView(self, package, resourcetype, name = None):
         """
         Remove specified view.
         """
-        if self._isSQLite():
-            # XXX: log.warn
-            return
         name = name or '/%s/%s' % (package, resourcetype)
-        sql = 'DROP VIEW "%s"' % name
-        try:
-            self._db.execute(sql)
-        except ProgrammingError, e:
-            msg = "A view with the name %s does not exist."
-            raise NotFoundError(msg % name)
+        self._db_manager.dropView(name)
 
 class _QueryProcessor(object):
     """
@@ -271,6 +248,7 @@ class _QueryProcessor(object):
 class XmlIndexCatalog(DbStorage, _QueryProcessor, _IndexViewer):
     def __init__(self, db, resource_storage = None):
         DbStorage.__init__(self, db)
+        self._db_manager = db
         self._storage = resource_storage
     
 #    def _parse_xpath_query(expr):

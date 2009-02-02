@@ -548,7 +548,7 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
                            (7, '22.51200', '55.23200', '99', True)])
         self.catalog.dropView("testpackage", "station")
         sql = 'SELECT * FROM "/testpackage/station"'
-        self.assertRaises(ProgrammingError, self.env.db.engine.execute, sql)
+        self.assertRaises(Exception, self.env.db.engine.execute, sql)
         # remove test catalog
         self._cleanup_testdata()
         

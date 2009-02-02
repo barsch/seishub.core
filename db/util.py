@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import sqlalchemy as sa
-
-
 def compileStatement(stmt, bind=None, params={}, **kwargs):
     """
     Compiles a statement with inlines bindparams and additional arguments.

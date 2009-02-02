@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 
 from seishub.config import Option, IntOption
-from seishub.db import DEFAULT_MAX_OVERFLOW, DEFAULT_POOL_SIZE, DEFAULT_DB_URI
+from seishub.db import DEFAULT_MAX_OVERFLOW, DEFAULT_POOL_SIZE, DEFAULT_DB_URI, \
+    util
+from seishub.exceptions import NotFoundError
 import os
 import sqlalchemy as sa
 
@@ -89,3 +91,21 @@ class DatabaseManager(object):
                                 echo = self.echo,
                                 encoding = 'utf-8', 
                                 convert_unicode = True)
+        
+    def createView(self, name, query):
+        # CREATE OR REPLACE is not allowed to change number of columns in postgres
+        # sql = 'CREATE OR REPLACE VIEW "%s" AS %s' % (name, compileStatement(q))
+        try:
+            self.dropView(name)
+        except NotFoundError:
+            pass
+        sql = 'CREATE VIEW "%s" AS %s' % (name, util.compileStatement(query))
+        self.engine.execute(sql)
+    
+    def dropView(self, name):
+        sql = 'DROP VIEW "%s"' % name
+        try:
+            self.engine.execute(sql)
+        except Exception:
+            msg = "A view with the name %s does not exist."
+            raise NotFoundError(msg % name)
