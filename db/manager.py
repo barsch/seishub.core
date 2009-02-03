@@ -91,10 +91,8 @@ class DatabaseManager(object):
                                 echo = self.echo,
                                 encoding = 'utf-8', 
                                 convert_unicode = True)
-        
+    
     def createView(self, name, query):
-        # CREATE OR REPLACE is not allowed to change number of columns in postgres
-        # sql = 'CREATE OR REPLACE VIEW "%s" AS %s' % (name, compileStatement(q))
         try:
             self.dropView(name)
         except NotFoundError:
@@ -104,6 +102,8 @@ class DatabaseManager(object):
     
     def dropView(self, name):
         sql = 'DROP VIEW "%s"' % name
+        if self.engine.name == 'postgres':
+            sql += ' CASCADE';
         try:
             self.engine.execute(sql)
         except Exception:

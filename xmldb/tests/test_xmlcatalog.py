@@ -5,6 +5,7 @@ This test suite consists of various tests related to the catalog interface.
 
 from seishub.exceptions import SeisHubError
 from seishub.test import SeisHubEnvironmentTestCase
+from twisted.web import http
 import unittest
 
 
@@ -20,6 +21,7 @@ RAW_XML = """<station rel_uri="bern">
         <paramXY>11.5</paramXY>
         <paramXY>blah</paramXY>
     </XY>
+    
 </station>"""
 
 RAW_XML1 = """<station rel_uri="bern">
@@ -47,6 +49,11 @@ RAW_XML2 = """<station rel_uri="genf">
         <paramXY>2.5</paramXY>
         <paramXY>0</paramXY>
         <paramXY>99</paramXY>
+    </XY>
+    <XY>
+        <paramXY>2110.5</paramXY>
+        <paramXY>111.5</paramXY>
+        <paramXY>cblah</paramXY>
     </XY>
 </station>"""
 
@@ -80,9 +87,6 @@ IDX5 = "/testml"
 
 
 class XmlCatalogTest(SeisHubEnvironmentTestCase):
-#    def _config(self):
-#        self.config.set('db', 'verbose', True)
-
     def setUp(self):
         # register packages
         self.pkg1 = self.env.registry.db_registerPackage(pid1)
@@ -90,7 +94,6 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         self.rt2 = self.env.registry.db_registerResourceType(pid1, rid2)
         self.pkg2 = self.env.registry.db_registerPackage(pid2)
         self.rt3 = self.env.registry.db_registerResourceType(pid2, rid3)
-        
         # create a small test catalog
         self.res1 = self.env.catalog.addResource(pid1, rid1, RAW_XML1)
         self.res2 = self.env.catalog.addResource(pid1, rid1, RAW_XML2)
@@ -360,7 +363,7 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         # remove everything
         self.env.registry.db_deleteResourceType("test-catalog", "index")
         self.env.registry.db_deletePackage("test-catalog")
-        
+    
     def testAutomaticViewCreation(self):
         """Fails with SQLite.
         """
@@ -396,10 +399,156 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         # clean up
         self.env.catalog.removeIndex(pid1, rid1, IDX4)
         self.env.catalog.removeIndex(pid1, rid2, IDX5)
+    
+    def test_queryCatalogWithOperators(self):
+        """
+        Tests a lot of operators with catalog queries.
+        """
+        # create a resourcetype
+        self.env.registry.db_registerPackage("package")
+        self.env.registry.db_registerResourceType("package", "rt")
+        # add indexes
+        self.env.catalog.registerIndex("package", "rt", "/station/lat")
+        self.env.catalog.registerIndex("package", "rt", "/station/lon")
+        # add resources
+        self.env.catalog.addResource("package", "rt", RAW_XML, name='1')
+        self.env.catalog.addResource("package", "rt", RAW_XML1, name='2')
+        self.env.catalog.addResource("package", "rt", RAW_XML2, name='3')
+        # queries
+        # all
+        query =  '/package/rt/*'
+        result = self.env.catalog.query(query, full=True)
+        self.assertEqual(len(result), 3)
+        # lat != 51
+        query =  '/package/rt/station[lat!=55.23200]'
+        result = self.env.catalog.query(query, full=True)
+        self.assertEqual(len(result), 2)
+        # lat < 51
+        query =  '/package/rt/station[lat<51]'
+        result = self.env.catalog.query(query, full=True)
+        self.assertEqual(len(result), 2)
+# XXX: Fails!
+        query =  '/package/rt/*[lat<51]'
+        result = self.env.catalog.query(query, full=True)
+        self.assertEqual(len(result), 2)
+        # lat > 51
+        query =  '/package/rt/station[lat>51]'
+        result = self.env.catalog.query(query, full=True)
+        self.assertEqual(len(result), 1)
+# XXX: Fails!
+        query =  '/package/rt/*[lat>51]'
+        result = self.env.catalog.query(query, full=True)
+        self.assertEqual(len(result), 1)
+        # lat = 50.232001
+        query =  '/package/rt/station[lat=50.232001]'
+        result = self.env.catalog.query(query, full=True)
+        self.assertFalse(result)
+# XXX: Fails!
+        query =  '/package/rt/station[lat==50.232001]'
+        result = self.env.catalog.query(query, full=True)
+        self.assertFalse(result)
+        # lat = 50.23200
+        query =  '/package/rt/station[lat=50.23200]'
+        result = self.env.catalog.query(query, full=True)
+        self.assertEqual(len(result), 2)
+# XXX: Fails!
+        query =  '/package/rt/station[lat==50.23200]'
+        result = self.env.catalog.query(query, full=True)
+        self.assertEqual(len(result), 2)
+        # lat > 49 and lat < 51 
+        query =  '/package/rt/station[lat>49 and lat<51]'
+        result = self.env.catalog.query(query, full=True)
+        self.assertEqual(len(result), 2)
+        query =  '/package/rt/station[lat<51 and lat>49]'
+        result = self.env.catalog.query(query, full=True)
+        self.assertEqual(len(result), 2)
+        query =  '/package/rt/station[(lat<51 and lat>49)]'
+        result = self.env.catalog.query(query, full=True)
+        self.assertEqual(len(result), 2)
+# XXX: Fails!
+        query =  '/package/rt/*[lat>49 and lat<51]'
+        result = self.env.catalog.query(query, full=True)
+        self.assertEqual(len(result), 2)
+        query =  '/package/rt/*[lat<51 and lat>49]'
+        result = self.env.catalog.query(query, full=True)
+        self.assertEqual(len(result), 2)
+        query =  '/package/rt/*[(lat<51 and lat>49)]'
+        result = self.env.catalog.query(query, full=True)
+        self.assertEqual(len(result), 2)
+        # lat > 49 and lon == 22.51200
+        query =  '/package/rt/station[lat>49 and lon=22.51200]'
+        result = self.env.catalog.query(query, full=True)
+        self.assertEqual(len(result), 1)
+        # (lat > 49 and lat < 56) and lon == 22.51200
+        query =  '/package/rt/station[(lat>49 and lat<56) and lon=22.51200]'
+        result = self.env.catalog.query(query, full=True)
+        self.assertEqual(len(result), 1)
+        # lat > 49 and (lat < 56 and lon == 22.51200)
+        query =  '/package/rt/station[lat>49 and (lat<56 and lon=22.51200)]'
+        result = self.env.catalog.query(query, full=True)
+        self.assertEqual(len(result), 1)
+# XXX: Fails!
+        # lat > 49 and lat < 56 and lon == 22.51200
+        query =  '/package/rt/station[lat>49 and lat<56 and lon=22.51200]'
+        result = self.env.catalog.query(query, full=True)
+        self.assertEqual(len(result), 1)
+        # remove everything
+        self.env.catalog.removeIndex("package", "rt", "/station/lat")
+        self.env.catalog.removeIndex("package", "rt", "/station/lon")
+        self.env.registry.db_deleteResourceType("package", "rt")
+        self.env.registry.db_deletePackage("package")
+    
+    def test_queryCatalogWithMacros(self):
+        """
+        Test macros usage with catalog queries.
+        """
+        # create a resourcetype
+        self.env.registry.db_registerPackage("package")
+        self.env.registry.db_registerResourceType("package", "rt")
+        # add indexes
+        self.env.catalog.registerIndex("package", "rt", "/station/XY/paramXY")
+        # add resources
+        self.env.catalog.addResource("package", "rt", RAW_XML, name='1')
+        self.env.catalog.addResource("package", "rt", RAW_XML1, name='2')
+        self.env.catalog.addResource("package", "rt", RAW_XML2, name='3')
+        # queries
+        query = '{a=XY/paramXY}/package/rt/station[{a}>10 and {a}=20.5]'
+        result = self.env.catalog.query(query, full=True)
+        self.assertEqual(len(result), 2)
+        # with space
+        query = '{a=XY/paramXY} /package/rt/station[{a}>10 and {a}=20.5]'
+        result = self.env.catalog.query(query, full=True)
+        self.assertEqual(len(result), 2)
+        # a lot more spaces
+        query = ' { b = XY/paramXY } /package/rt/station[{b}>10 and {b}=20.5]'
+        result = self.env.catalog.query(query, full=True)
+        self.assertEqual(len(result), 2)
+        # multiple parameter and line breaks
+        query = """{a=XY/paramXY, b=XY/paramXY}
+                   /package/rt/station[{a}>10 and {b}=20.5]"""
+        result = self.env.catalog.query(query, full=True)
+        self.assertEqual(len(result), 2)
+        # unused parameters should be ignored
+        query = """{a=XY/paramXY, b=XY/paramXY, c=XY/muh/kuh}
+                   /package/rt/station[{a}>10 and {b}=20.5]"""
+        result = self.env.catalog.query(query, full=True)
+        self.assertEqual(len(result), 2)
+        # undefined parameter should raise an error
+        query = '{a=XY/paramXY}/package/rt/station[{b}>10 and {b}=20.5]'
+        try:
+            self.env.catalog.query(query, full=True)
+            self.fail("Expected SeisHubError")
+        except SeisHubError, e:
+            self.assertEquals(e.code, http.BAD_REQUEST)
+        # remove everything
+        self.env.catalog.removeIndex("package", "rt", "/station/XY/paramXY")
+        self.env.registry.db_deleteResourceType("package", "rt")
+        self.env.registry.db_deletePackage("package")
 
 
 def suite():
     return unittest.makeSuite(XmlCatalogTest, 'test')
+
 
 if __name__ == '__main__':
     unittest.main(defaultTest='suite')
