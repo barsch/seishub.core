@@ -231,7 +231,7 @@ class PluginsPanel(Component):
         return self._viewPlugins(request, error)
     
     def _refreshPlugins(self):
-        from seishub.loader import ComponentLoader
+        from seishub.util.loader import ComponentLoader
         ComponentLoader(self.env)
     
     def _updatePlugins(self, request):
