@@ -58,6 +58,7 @@ RAW_XML2 = u"""
 </station>
 """
 
+
 class XmlIndexTest(SeisHubEnvironmentTestCase):
     def setUp(self):
         # register packages
@@ -69,7 +70,7 @@ class XmlIndexTest(SeisHubEnvironmentTestCase):
         # remove packages
         self.env.registry.db_deleteResourceType("testpackage", "station")
         self.env.registry.db_deletePackage("testpackage")
-        
+    
     def testIndexCommon(self):
         # index with single node key result:
         si = XmlIndex(self.rt1, xpath = "/station/station_code")
@@ -108,7 +109,7 @@ class XmlIndexTest(SeisHubEnvironmentTestCase):
         
         res = ni.eval(test_doc, self.env)
         self.assertEquals(res, [])
-        
+    
     def testTextIndex(self):
         test_doc = newXMLDocument(RAW_XML1)
         idx = XmlIndex(self.rt1, "/station/lon", index.TEXT_INDEX)
@@ -128,7 +129,7 @@ class XmlIndexTest(SeisHubEnvironmentTestCase):
         idx = XmlIndex(self.rt1, "/station/XY/paramXY", index.NUMERIC_INDEX)
         res = idx.eval(test_doc, self.env)
         self.assertEquals(len(res), 2)
-        
+    
     def testDateTimeIndex(self):
         dt = datetime(2008, 10, 10, 11, 53, 0, 54000)
         #timestamp = float(str(time.mktime(res.timetuple())) + ".054")
@@ -155,13 +156,13 @@ class XmlIndexTest(SeisHubEnvironmentTestCase):
         doc = newXMLDocument(RAW_XML1 % (timestr, ""))
         res = idx.eval(doc, self.env)[0]
         self.assertEqual(res.key, dt.replace(microsecond = 0))
-        
+    
     def testBooleanIndex(self):
         idx = XmlIndex(self.rt1, "/station/bool", index.BOOLEAN_INDEX)
         doc = newXMLDocument(RAW_XML1 % ("", "True"))
         res = idx.eval(doc, self.env)[0]
         self.assertEqual(res.key, True)
-
+        
         doc = newXMLDocument(RAW_XML1 % ("", "False"))
         res = idx.eval(doc, self.env)[0]
         self.assertEqual(res.key, False)
@@ -177,7 +178,7 @@ class XmlIndexTest(SeisHubEnvironmentTestCase):
         doc = newXMLDocument(RAW_XML1 % ("", "something"))
         res = idx.eval(doc, self.env)[0]
         self.assertEqual(res.key, True)
-        
+    
     def testIndexGrouping(self):
         doc = newXMLDocument(RAW_XML2)
         idx1 = XmlIndex(self.rt1, "/station/XY/X", index.NUMERIC_INDEX,
@@ -215,7 +216,7 @@ class XmlIndexTest(SeisHubEnvironmentTestCase):
         self.assertEqual(res[0].group_pos, 0)
         self.assertEqual(res[1].key, '6')
         self.assertEqual(res[1].group_pos, 1)
-        
+    
 #    def testNoneTypeIndex(self):
 #        doc = newXMLDocument(RAW_XML1)
 #        idx = XmlIndex(self.rt1, "/station/stat_type", index.NONETYPE_INDEX)
@@ -233,16 +234,19 @@ class XmlIndexTest(SeisHubEnvironmentTestCase):
 #        self.assertEquals(len(res), 1)
 #        self.assertEquals(type(res[0]), index.NoneTypeIndexElement)
 #        self.assertEquals(res[0].key, None)
-        
+
+
 class ProcessorIndexTestPackage(Component):
     implements(IPackage)
     package_id = 'processorindextest'
 
-class ProcessorIndexTestReosurcetype(Component):
+
+class ProcessorIndexTestResourcetype(Component):
     implements(IResourceType)
     package_id = 'processorindextest'
     resourcetype_id = 'testtype'
-        
+
+
 class TestIndex(Component):
     implements(IProcessorIndex)
     
@@ -252,16 +256,17 @@ class TestIndex(Component):
     
     def eval(self, document):
         return [1,2,3]
-            
+
+
 class ProcessorIndexTest(SeisHubEnvironmentTestCase):
     def setUp(self):
         self.env.enableComponent(ProcessorIndexTestPackage)
-        self.env.enableComponent(ProcessorIndexTestReosurcetype)
-        
+        self.env.enableComponent(ProcessorIndexTestResourcetype)
+    
     def tearDown(self):
         self.env.disableComponent(ProcessorIndexTestPackage)
-        self.env.disableComponent(ProcessorIndexTestReosurcetype)
-        
+        self.env.disableComponent(ProcessorIndexTestResourcetype)
+    
     def testProcessorIndexRegistration(self):
         self.env.enableComponent(TestIndex)
         res = self.env.catalog.index_catalog.getIndexes('processorindextest', 
@@ -285,11 +290,13 @@ class ProcessorIndexTest(SeisHubEnvironmentTestCase):
         self.assertEqual(res[1].key, 2)
         self.assertEqual(res[2].key, 3)
 
+
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(XmlIndexTest, 'test'))
     suite.addTest(unittest.makeSuite(ProcessorIndexTest, 'test'))
     return suite
+
 
 if __name__ == '__main__':
     unittest.main(defaultTest='suite')

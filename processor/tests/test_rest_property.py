@@ -234,7 +234,7 @@ class RestPropertyTests(SeisHubEnvironmentTestCase):
         proc.run(DELETE, '/property-test/notvc/1')
     
     def test_validDateTimeIndexes(self):
-        """XXX: Fails yet - see #108 and #107.
+        """
         Test indexing of XML documents with valid datetime fields.
         """
         proc = Processor(self.env)
@@ -274,33 +274,33 @@ class RestPropertyTests(SeisHubEnvironmentTestCase):
         data = proc.run(GET, '/property-test/notvc2/1/.index').render_GET(proc)
         self.assertTrue("<value>2009-12-20 12:12:21.123000</value>" in data)
         proc.run(DELETE, '/property-test/notvc2/1')
-        # date only
-        # XXX: this should be indexed right without error message
+        # date only -> defaults to 00:00:00
         xml_doc = XML_DOC4 % "2009-12-20"
         proc.run(PUT, '/property-test/notvc2/1', StringIO(xml_doc))
         data = proc.run(GET, '/property-test/notvc2/1/.index').render_GET(proc)
-        self.assertTrue("<value>2009-12-20</value>" in data)
+        self.assertTrue("<value>2009-12-20 00:00:00</value>" in data)
         proc.run(DELETE, '/property-test/notvc2/1')
     
     def test_invalidDateTimeIndexes(self):
-        """XXX: Fails yet - see #107.
+        """
         Test indexing of XML documents with invalid datetime fields.
+        
+        Invalid values for indexes should be ignored - otherwise we decline 
+        every uploaded resource if someone adds a wrong index!
         """
         proc = Processor(self.env)
         # invalid date 
         xml_doc = XML_DOC4 % "2009-20-12"
-        try:
-            proc.run(PUT, '/property-test/notvc2/1', StringIO(xml_doc))
-            self.fail("Expected SeisHubError")
-        except SeisHubError, e:
-            self.assertEqual(e.code, http.CONFLICT)
+        proc.run(PUT, '/property-test/notvc2/1', StringIO(xml_doc))
+        data = proc.run(GET, '/property-test/notvc2/1/.index').render_GET(proc)
+        self.assertFalse("2009-20-12" in data)
+        proc.run(DELETE, '/property-test/notvc2/1')
         # invalid datetime 
         xml_doc = XML_DOC4 % "2009-20-12T12:12:20"
-        try:
-            proc.run(PUT, '/property-test/notvc2/1', StringIO(xml_doc))
-            self.fail("Expected SeisHubError")
-        except SeisHubError, e:
-            self.assertEqual(e.code, http.CONFLICT)
+        proc.run(PUT, '/property-test/notvc2/1', StringIO(xml_doc))
+        data = proc.run(GET, '/property-test/notvc2/1/.index').render_GET(proc)
+        self.assertFalse("2009-20-12" in data)
+        proc.run(DELETE, '/property-test/notvc2/1')
 
 
 def suite():

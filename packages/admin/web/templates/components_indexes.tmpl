@@ -34,7 +34,6 @@
     <label>XPath expression</label><br />
     <input type="text" size="80" name="xpath" value="$xpath" />
   </div>
-
   <div class="button">
     <input type="submit" name="add" value="Add" />
   </div>
@@ -52,7 +51,8 @@
       <th>Resourcetype</th>
       <th>Type</th>
       <th>Options</th>
-      <th>Expression</th>
+      <th>XPath</th>
+      <th>Group XPath</th>
     </tr>
     #for $index in $indexes
     <tr> 
@@ -65,6 +65,7 @@
       <td>$index_types_dict[$index.type]</td>
       <td>$index.options</td>
       <td>$index.xpath</td>
+      <td>$index.group_path</td>
     </tr>
     #end for
   </table>

@@ -1,15 +1,14 @@
 # -*- coding: utf-8 -*-
 
-import sys
 from datetime import datetime
-from twisted.python import log
-
 from seishub.core import implements
 from seishub.db.orm import Serializable, Relation, db_property
 from seishub.registry.package import ResourceTypeWrapper
 from seishub.xmldb import defaults
 from seishub.xmldb.interfaces import IXmlDocument, IXmlIndex
 from seishub.xmldb.resource import XmlDocument
+from twisted.python import log
+import sys
 
 
 TEXT_INDEX = 0
@@ -25,7 +24,8 @@ _FALSE_VALUES = ('no', 'false', 'off', '0', 'disabled')
 
 
 class XmlIndex(Serializable):
-    """A XML index definition.
+    """
+    A XML index definition.
     
     @param resourcetype: ResourcetypeWrapper instance
     @param xpath: path to node in XML tree to be indexed, or any arbitrary 
@@ -64,19 +64,19 @@ class XmlIndex(Serializable):
     def __str__(self):
         return '/' + self.resourcetype.package.package_id + '/' + \
                 self.resourcetype.resourcetype_id + self.xpath
-                
+    
     def getResourceType(self):
         return self._resourcetype
-     
+    
     def setResourceType(self, data):
         self._resourcetype = data
-        
+    
     resourcetype = db_property(getResourceType, setResourceType, 
                                "Resource type", attr = '_resourcetype')
     
     def getXPath(self):
         return self._xpath
-        
+    
     def setXPath(self, xpath):
         self._xpath = xpath
     
@@ -92,7 +92,7 @@ class XmlIndex(Serializable):
     
     def getOptions(self):
         return self._options
-        
+    
     def setOptions(self, options):
         self._options = options
     
@@ -102,7 +102,7 @@ class XmlIndex(Serializable):
         if self.group_path and not self._relative_xpath:
             self._relative_xpath = self.xpath[len(self.group_path)+1:]
         return self._relative_xpath
-        
+    
     def setRelative_xpath(self, data):
         self._relative_xpath = data
     
@@ -171,7 +171,7 @@ class XmlIndex(Serializable):
     
     def prepareKey(self, data):
         return self._getElementCls()()._prepare_key(data)
-        
+
 
 class KeyIndexElement(Serializable):
     db_mapping = {'index':Relation(XmlIndex, 'index_id'),
@@ -187,9 +187,11 @@ class KeyIndexElement(Serializable):
             self.key = self._filter_key(key)
         self.document = document
         self.group_pos = group_pos
-        
+    
     def _filter_key(self, data):
-        """Overwritten to do a type specific key handling"""
+        """
+        Overwrite to do a type specific key handling.
+        """
         return data
     
     def _prepare_key(self, data):
@@ -197,15 +199,15 @@ class KeyIndexElement(Serializable):
         
     def getIndex(self):
         return self._index
-     
+    
     def setIndex(self, data):
         self._index = data
-        
+    
     index = db_property(getIndex, setIndex, "Index", attr = '_index')
     
     def getDocument(self):
         return self._document
-     
+    
     def setDocument(self, data):
         self._document = data
         
@@ -217,10 +219,10 @@ class KeyIndexElement(Serializable):
     
     def setKey(self, data):
         self._key = data
-        
-    key = property(getKey, setKey, "Index key")
-        
     
+    key = property(getKey, setKey, "Index key")
+
+
 #class QualifierIndexElement(Serializable):
 #    db_mapping = {'index':Relation(XmlIndex, 'index_id'),
 #                  'document':Relation(XmlDocument, 'document_id')
@@ -248,7 +250,7 @@ class KeyIndexElement(Serializable):
 #        
 #    document = db_property(getDocument, setDocument, "XmlDocument", 
 #                           attr = '_document')
-    
+
 
 class TextIndexElement(KeyIndexElement):
     db_table = defaults.index_text_tab
@@ -258,7 +260,7 @@ class TextIndexElement(KeyIndexElement):
     
     def _prepare_key(self, data):
         return unicode(data)
-        
+
 
 class NumericIndexElement(KeyIndexElement):
     db_table = defaults.index_numeric_tab
@@ -288,20 +290,13 @@ class DateTimeIndexElement(KeyIndexElement):
         if self.index.options:
             return datetime.strptime(data, self.index.options)
         try:
-            # XXX: this might lead to problems with iso strings that consist of numbers only
-            # another solution would be to have a special '%timestamp' option
+            # XXX: this might lead to problems with ISO strings that consist 
+            # of numbers only another solution would be to have a 
+            # special '%timestamp' option
             return datetime.fromtimestamp(float(data))
         except ValueError:
             pass
-        data = data.replace("-", "")
-        data = data.replace("T", " ")
-        ms = 0
-        if '.' in data:
-            data, ms = data.split('.')
-            ms = int(ms.ljust(6,'0')[:6]) 
-        dt = datetime.strptime(data, ISO_FORMAT)
-        dt = dt.replace(microsecond = ms)
-        return dt
+        return self._prepare_key(data)
     
     def _prepare_key(self, data):
         data = data.replace("-", "")
@@ -309,7 +304,7 @@ class DateTimeIndexElement(KeyIndexElement):
         ms = 0
         if '.' in data:
             data, ms = data.split('.')
-            ms = int(ms.ljust(6,'0')[:6]) 
+            ms = int(ms.ljust(6,'0')[:6])
         dt = datetime.strptime(data, ISO_FORMAT)
         dt = dt.replace(microsecond = ms)
         return dt
@@ -329,10 +324,11 @@ class BooleanIndexElement(KeyIndexElement):
 #    db_table = defaults.index_keyless_tab
 
 
-type_classes = {TEXT_INDEX:TextIndexElement, 
-                NUMERIC_INDEX:NumericIndexElement, 
-                FLOAT_INDEX:FloatIndexElement, 
-                DATETIME_INDEX:DateTimeIndexElement, 
-                BOOLEAN_INDEX:BooleanIndexElement, 
-                #NONETYPE_INDEX:NoneTypeIndexElement
-                }
+type_classes = {
+    TEXT_INDEX:TextIndexElement, 
+    NUMERIC_INDEX:NumericIndexElement, 
+    FLOAT_INDEX:FloatIndexElement, 
+    DATETIME_INDEX:DateTimeIndexElement, 
+    BOOLEAN_INDEX:BooleanIndexElement, 
+    #NONETYPE_INDEX:NoneTypeIndexElement
+}

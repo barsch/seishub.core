@@ -1,24 +1,26 @@
 # -*- coding: utf-8 -*-
-from zope.interface.exceptions import DoesNotImplement
-from sqlalchemy import select, sql
 
-from seishub.exceptions import SeisHubError, NotFoundError
-from seishub.exceptions import DuplicateObjectError, InvalidParameterError
 from seishub.db.orm import DbStorage, DbError, DB_LIKE
-from seishub.xmldb.interfaces import IXPathQuery, IResource, IXmlIndex
-from seishub.xmldb.defaults import document_tab, resource_tab
+from seishub.exceptions import DuplicateObjectError, InvalidParameterError, \
+    SeisHubError, NotFoundError
 from seishub.registry.defaults import resourcetypes_tab, packages_tab
-from seishub.xmldb.index import XmlIndex, type_classes
 from seishub.xmldb import index
+from seishub.xmldb.defaults import document_tab, resource_tab
+from seishub.xmldb.index import XmlIndex, type_classes
+from seishub.xmldb.interfaces import IXPathQuery, IResource, IXmlIndex
 from seishub.xmldb.xpath import XPathQuery
+from sqlalchemy import select, sql
+from zope.interface.exceptions import DoesNotImplement
 
-INDEX_TYPES = {"text":index.TEXT_INDEX,
-               "numeric":index.NUMERIC_INDEX,
-               "float":index.FLOAT_INDEX,
-               "datetime":index.DATETIME_INDEX,
-               "boolean":index.BOOLEAN_INDEX,
-               #"nonetype":index.NONETYPE_INDEX
-               }
+
+INDEX_TYPES = {
+    "text":     index.TEXT_INDEX,
+    "numeric":  index.NUMERIC_INDEX,
+    "float":    index.FLOAT_INDEX,
+    "datetime": index.DATETIME_INDEX,
+    "boolean":  index.BOOLEAN_INDEX,
+    #"nonetype": index.NONETYPE_INDEX
+}
 
 
 class _IndexViewer(object):
@@ -44,6 +46,7 @@ class _IndexViewer(object):
         """
         name = name or '/%s/%s' % (package, resourcetype)
         self._db_manager.dropView(name)
+
 
 class _QueryProcessor(object):
     """
@@ -83,9 +86,11 @@ class _QueryProcessor(object):
         return None
     
     def _resourceTypeQuery(self, package, resourcetype):
-        """overloaded by subclass"""
+        """
+        Overloaded by subclass.
+        """
         return None
-
+    
     def _isLogOp(self, p):
         return p[1] in XPathQuery._logical_ops
     
@@ -111,7 +116,7 @@ class _QueryProcessor(object):
         elif op == 'or':
             return sql.or_(left, right)
         raise InvalidParameterError("Operator '%s' not specified." % self._op)
-
+    
     def _join_on_index(self, idx, joins = None, method = "outerjoin"):
         join = getattr(joins or document_tab, method)
         idx_tab = idx._getElementCls().db_table.alias()
@@ -138,6 +143,7 @@ class _QueryProcessor(object):
         Select all data indexed for the current location path, if only 
         /package/resourcetype/* is given, select all indexes for the given
         resourcetype.
+        
         The column names in the selection correspond to the xpath expressions
         of the indexes.
         """
@@ -231,9 +237,11 @@ class _QueryProcessor(object):
                             results[id][key].append(val)
         results['ordered'] = ordered
         return results
-
+    
     def query(self, query):
-        """@see: L{seishub.xmldb.interfaces.IXmlIndexCatalog}"""
+        """
+        @see: L{seishub.xmldb.interfaces.IXmlIndexCatalog}
+        """
         if not IXPathQuery.providedBy(query):
             raise DoesNotImplement(IXPathQuery)
         location_path = query.getLocationPath()
@@ -256,8 +264,6 @@ class _QueryProcessor(object):
         if joins:
             q = q.select_from(joins)
         q = q.limit(limit).offset(offset)
-#        from seishub.db.util import compileStatement
-#        print compileStatement(q)
         res = self._db.execute(q)
         results = self._process_results(res)
         res.close()
@@ -275,14 +281,18 @@ class XmlIndexCatalog(DbStorage, _QueryProcessor, _IndexViewer):
 #    _parse_xpath_query=staticmethod(_parse_xpath_query)
 
     def _resourceTypeQuery(self, package_id, resourcetype_id):
-        """Returns the document ids of all documents belonging to specified 
-        package and resourcetype."""
+        """
+        Returns the document ids of all documents belonging to specified 
+        package and resourcetype.
+        """
         # XXX: older revisions are ignored!
         res = self._storage.getResourceList(package_id, resourcetype_id)
         return [r.document._id for r in res]
-
+    
     def registerIndex(self, xml_index):
-        """Register given index in the catalog."""
+        """
+        Register given index in the catalog.
+        """
         if not IXmlIndex.providedBy(xml_index):
             raise DoesNotImplement(IXmlIndex)
         try:
@@ -296,7 +306,9 @@ class XmlIndexCatalog(DbStorage, _QueryProcessor, _IndexViewer):
         return xml_index
     
     def removeIndex(self, package_id, resourcetype_id, xpath):
-        """Remove an index and all indexed data."""
+        """
+        Remove an index and all indexed data.
+        """
         self.flushIndex(package_id, resourcetype_id, xpath)
         self.drop(XmlIndex, 
                   resourcetype = {'package':{'package_id':package_id}, 
@@ -305,7 +317,9 @@ class XmlIndexCatalog(DbStorage, _QueryProcessor, _IndexViewer):
     
     def getIndexes(self, package_id = None, resourcetype_id = None, 
                    xpath = None, type = None, options = None):
-        """Return a list of all applicable indexes."""
+        """
+        Return a list of all applicable indexes.
+        """
         res = self.pickup(XmlIndex, 
                           resourcetype = {'package':{'package_id':package_id}, 
                                           'resourcetype_id':resourcetype_id}, 
@@ -320,7 +334,9 @@ class XmlIndexCatalog(DbStorage, _QueryProcessor, _IndexViewer):
 #        pass
     
     def indexResource(self, resource, xpath = None):
-        """Index the given resource."""
+        """
+        Index the given resource.
+        """
         if not IResource.providedBy(resource):
             raise TypeError("%s is not an IResource." % str(resource))
         idx_list = self.getIndexes(resource.package.package_id, 
@@ -340,21 +356,27 @@ class XmlIndexCatalog(DbStorage, _QueryProcessor, _IndexViewer):
         return elements
     
     def dumpIndex(self, package_id, resourcetype_id, xpath):
-        """Return all indexed values for the given index."""
+        """
+        Return all indexed values for the given index.
+        """
         xmlindex = self.getIndexes(package_id, resourcetype_id, xpath)[0]
         return self.pickup(xmlindex._getElementCls(), index = xmlindex)
     
     def dumpIndexByDocument(self, document_id):
-        """Return all IndexElements indexed for the specified document."""
+        """
+        Return all IndexElements indexed for the specified document.
+        """
         elements = list()
         for cls in type_classes.values():
             el = self.pickup(cls, document = {'_id':document_id})
             elements.extend(el)
         return elements
-
+    
     def flushIndex(self, package_id = None, resourcetype_id = None, 
                    xpath = None, xmlindex = None, resource = None):
-        """Remove all indexed data for given index."""
+        """
+        Remove all indexed data for given index.
+        """
         if not ((package_id and resourcetype_id and xpath) or xmlindex or resource):
             raise TypeError("flushIndex: invalid number of arguments.")
         if resource:
@@ -366,5 +388,3 @@ class XmlIndexCatalog(DbStorage, _QueryProcessor, _IndexViewer):
             xmlindex = self.getIndexes(package_id, resourcetype_id, xpath)[0]
         element_cls = xmlindex._getElementCls()
         self.drop(element_cls, index = xmlindex)
-    
-    
