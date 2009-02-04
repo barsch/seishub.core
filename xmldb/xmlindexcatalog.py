@@ -4,7 +4,7 @@ from sqlalchemy import select, sql
 
 from seishub.exceptions import SeisHubError, NotFoundError
 from seishub.exceptions import DuplicateObjectError, InvalidParameterError
-from seishub.db.orm import DbStorage, DbError
+from seishub.db.orm import DbStorage, DbError, DB_LIKE
 from seishub.xmldb.interfaces import IXPathQuery, IResource, IXmlIndex
 from seishub.xmldb.defaults import document_tab, resource_tab
 from seishub.registry.defaults import resourcetypes_tab, packages_tab
@@ -55,15 +55,27 @@ class _QueryProcessor(object):
         idx_str = '/' + '/'.join(map(str, query_base)) + expr or ''
         raise NotFoundError(msg % idx_str)
     
+    def _replace_wildcards(self, expr):
+        """
+        Replace the xpath wildcards '*' with SQL wildcards '%'
+        """
+        return expr.replace('*', '%')
+    
     def findIndex(self, query_base, expr = None, tolerant = True):
         """
-        Tries to find the index fitting best for expr. If no expression is 
-        given returns the rootnode index according to query_base.
+        Tries to find the index fitting best for [package, resourcetype], expr.
         """
         # XXX: caching!
         if expr:
             expr = '/' + expr
-        idx = self.getIndexes(query_base[0], query_base[1], expr)
+            if '*' in expr:
+                expr = DB_LIKE(self._replace_wildcards(expr))
+        idx = self.pickup(XmlIndex, 
+                          resourcetype = {'package':
+                                          {'package_id':query_base[0]}, 
+                                          'resourcetype_id':query_base[1]}, 
+                          xpath = expr)
+        # idx = self.getIndexes(query_base[0], , expr)
         if idx:
             return idx[0]
         if not tolerant:
@@ -169,7 +181,8 @@ class _QueryProcessor(object):
                 # logical operator
                 q, joins, lw = self._process_predicates(l, q, joins)
                 q, joins, rw = self._process_predicates(r, q, joins)
-                q = q.where(self._applyOp(op, lw, rw))
+                w = self._applyOp(op, lw, rw)
+                #q = q.where(self._applyOp(op, lw, rw))
         else:
             # unary expression => require node existence
             idx = self.findIndex([p[0][0], p[0][1]], p[0][2], False)
@@ -243,7 +256,8 @@ class _QueryProcessor(object):
         if joins:
             q = q.select_from(joins)
         q = q.limit(limit).offset(offset)
-        #print compileStatement(q)
+#        from seishub.db.util import compileStatement
+#        print compileStatement(q)
         res = self._db.execute(q)
         results = self._process_results(res)
         res.close()

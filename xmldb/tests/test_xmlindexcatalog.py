@@ -5,7 +5,6 @@ from seishub.test import SeisHubEnvironmentTestCase
 from seishub.xmldb.index import XmlIndex, DATETIME_INDEX
 from seishub.xmldb.resource import Resource, newXMLDocument
 from seishub.xmldb.xpath import XPathQuery
-from sqlalchemy.exceptions import ProgrammingError
 import inspect
 import os
 import unittest
@@ -453,7 +452,7 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         self.assertTrue(self.res3.document._id in res)
         
         #======================================================================
-        # node existance queries
+        # node existence queries
         #====================================================================== 
         q = "/testpackage/station/station[lat]"
         res = self.catalog.query(XPathQuery(q))

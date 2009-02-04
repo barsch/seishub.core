@@ -3,7 +3,8 @@
 from seishub.db import DEFAULT_PREFIX
 from seishub.db.manager import meta
 from seishub.db.orm import DbAttributeProxy, DB_NULL, DB_LIMIT, Serializable, \
-    Relation, LazyAttribute, DbStorage, db_property, DbError, DbObjectProxy
+    Relation, LazyAttribute, DbStorage, db_property, DbError, DbObjectProxy, \
+    DB_LIKE
 from seishub.test import SeisHubEnvironmentTestCase
 import sqlalchemy as sa
 import unittest
@@ -374,6 +375,32 @@ class ORMTest(SeisHubEnvironmentTestCase):
                                  child2 = {'grandchild':
                                            {'lego':DB_LIMIT('color', 'max')}}
                                  )
+        
+        #======================================================================
+        # string compare with DB_LIKE
+        #======================================================================
+        child = self.db.pickup(Child2, data = DB_LIKE("I'm child2."))
+        self.assertEqual(len(child), 1)
+        self.assertEqual(child[0].data, "I'm child2.")
+        child = self.db.pickup(Child2, data = DB_LIKE("%child2."))
+        self.assertEqual(len(child), 1)
+        self.assertEqual(child[0].data, "I'm child2.")
+        child = self.db.pickup(Child2, data = DB_LIKE("%child%."))
+        self.assertEqual(len(child), 3)
+        self.assertEqual(child[0].data, "I'm child2.")
+        self.assertEqual(child[1].data, "I'm child3.")
+        self.assertEqual(child[2].data, "I'm a child2 but have no parent.")
+        child = self.db.pickup(Child2, data = DB_LIKE("%lego%."))
+        self.assertEqual(len(child), 0)
+        parent = self.db.pickup(Parent, 
+                                child2 = {'data':DB_LIKE("I'm child3.")})
+        self.assertEqual(len(parent), 1)
+        self.assertEqual(parent[0].data, "I'm parent of child 1 and child 3.")
+        parent = self.db.pickup(Parent, 
+                                child2 = {'data':DB_LIKE("I'm child%.")})
+        self.assertEqual(len(parent), 2)
+        self.assertEqual(parent[0].data, "I'm parent of child 1 and child 2.")
+        self.assertEqual(parent[1].data, "I'm parent of child 1 and child 3.")
         
     def testUpdate(self):
         self.db.store(self.parent1, cascading = True)

@@ -249,7 +249,8 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         self.assertEqual(res1['ordered'][1], self.res1.document._id)
         idx_data = res1[self.res2.document._id]['/testpackage/station' + IDX1]
         idx_data.sort()
-        self.assertEqual(idx_data, ['0', '2.5', '99'])
+        self.assertEqual(idx_data, [u'0', u'111.5', u'2.5', 
+                                    u'2110.5', u'99', u'cblah'])
         idx_data = res1[self.res1.document._id]['/testpackage/station' + IDX1]
         idx_data.sort()
         self.assertEqual(idx_data, ['11.5', '20.5', 'blah'])
@@ -376,13 +377,15 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         
         sql = 'SELECT * FROM "/testpackage/station"'
         res = self.env.db.engine.execute(sql).fetchall()
-        self.assertEqual(res, 
-                         [(6, u'11.5', 1), 
-                          (6, u'20.5', 1), 
-                          (6, u'blah', 1), 
-                          (7, u'0', 1), 
-                          (7, u'2.5', 1), 
-                          (7, u'99', 1)])
+        self.assertTrue((6, '11.5', 1) in res) 
+        self.assertTrue((6, '20.5', 1) in res) 
+        self.assertTrue((6, 'blah', 1) in res) 
+        self.assertTrue((7, '0', 1) in res)  
+        self.assertTrue((7, '111.5', 1) in res)  
+        self.assertTrue((7, '2.5', 1) in res)  
+        self.assertTrue((7, '2110.5', 1) in res)  
+        self.assertTrue((7, '99', 1) in res)  
+        self.assertTrue((7, 'cblah', 1) in res)
         sql = 'SELECT * FROM "/testpackage/testml"'
         res = self.env.db.engine.execute(sql).fetchall()
         self.assertEqual(res, [(8, u'3', 1)])
@@ -393,8 +396,8 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         sql = 'SELECT * FROM "/testpackage/testml"'
         res = self.env.db.engine.execute(sql).fetchall()
         self.assertEqual(res, 
-                         [(8, u'3', 1, u'blahblahblah'), 
-                          (9, u'4', 1, u'moep')])
+                         [(8, '3', 1, 'blahblahblah'), 
+                          (9, '4', 1, 'moep')])
         
         # clean up
         self.env.catalog.removeIndex(pid1, rid1, IDX4)
@@ -427,7 +430,6 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         query =  '/package/rt/station[lat<51]'
         result = self.env.catalog.query(query, full=True)
         self.assertEqual(len(result), 2)
-# XXX: Fails!
         query =  '/package/rt/*[lat<51]'
         result = self.env.catalog.query(query, full=True)
         self.assertEqual(len(result), 2)
@@ -435,7 +437,6 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         query =  '/package/rt/station[lat>51]'
         result = self.env.catalog.query(query, full=True)
         self.assertEqual(len(result), 1)
-# XXX: Fails!
         query =  '/package/rt/*[lat>51]'
         result = self.env.catalog.query(query, full=True)
         self.assertEqual(len(result), 1)
@@ -487,11 +488,22 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         query =  '/package/rt/station[lat>49 and (lat<56 and lon=22.51200)]'
         result = self.env.catalog.query(query, full=True)
         self.assertEqual(len(result), 1)
-# XXX: Fails!
+        # lat > 49 and (lat < 56 and lon == 22.51200)
+        query =  '/package/rt/station[lat>49 and (lat<56 and lon=22.51200)]'
+        result = self.env.catalog.query(query, full=True)
+        self.assertEqual(len(result), 1)
         # lat > 49 and lat < 56 and lon == 22.51200
         query =  '/package/rt/station[lat>49 and lat<56 and lon=22.51200]'
         result = self.env.catalog.query(query, full=True)
         self.assertEqual(len(result), 1)
+        # lat > 49 and lat < 56 or lon == 22.51200
+        query =  '/package/rt/station[(lat>52 and lat<56) or lon=12.51200]'
+        result = self.env.catalog.query(query, full=True)
+        self.assertEqual(len(result), 3)
+        # lat > 49 or lat < 56 or lon == 22.51200
+        query =  '/package/rt/station[lat>49 or lat<56 or lon=22.51200]'
+        result = self.env.catalog.query(query, full=True)
+        self.assertEqual(len(result), 3)
         # remove everything
         self.env.catalog.removeIndex("package", "rt", "/station/lat")
         self.env.catalog.removeIndex("package", "rt", "/station/lon")

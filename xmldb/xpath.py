@@ -151,7 +151,7 @@ class RestrictedXPathQueryParser(object):
         pend = pp.Literal(']').suppress()           # end of predicates
         ncPrefix = pp.Word(xmlNameStartChar, xmlNameChar) + ':' # namespace prefix
         ndName = pp.Combine(pp.Optional('@') + pp.Optional(ncPrefix) +\
-                 pp.Word(xmlNameStartChar, xmlNameChar))            
+                 pp.Word(xmlNameStartChar, xmlNameChar))
                                                     # node name, may contain a
                                                     # namespace prefix and may 
                                                     # start with '@' for 
@@ -179,7 +179,8 @@ class RestrictedXPathQueryParser(object):
         tinyFlag = pp.CaselessKeyword('t')
         
         # operators
-        eqOp = pp.Literal('==') | pp.Literal('=') 
+        eqOp = pp.Literal('==').setParseAction(pp.replaceWith("=")) |\
+               pp.Literal('=') 
         ltOp = pp.Literal('<')
         gtOp = pp.Literal('>')
         leOp = pp.Literal('<=')
@@ -187,7 +188,7 @@ class RestrictedXPathQueryParser(object):
         ineqOp = pp.Literal('!=')
         orOp = pp.CaselessKeyword('or')
         andOp = pp.CaselessKeyword('and')
-        notOp = pp.CaselessKeyword('not')
+        notOp = pp.NoMatch() # pp.CaselessKeyword('not')
         relOp = eqOp | ineqOp | leOp | geOp | ltOp | gtOp
         logOp = orOp | andOp
         
@@ -210,17 +211,21 @@ class RestrictedXPathQueryParser(object):
                    pp.ZeroOrMore(locationStep)
         
         # predicate expression
-        pexpr = pp.Forward()
+        def blah(s, loc, tokens):
+            if len(tokens) == 1:
+                return tokens[0]
+        
+        pexpr = pp.Forward().setParseAction(blah)
         pathExpr = (pp.Optional(sep) + node +\
                     pp.ZeroOrMore(sep.suppress() + node)).\
                     setParseAction(self.evalPath)
         valueExpr = literalValue | numericValue
-        relExpr = pp.Group(pathExpr +\
-                           pp.Optional(relOp + (valueExpr | pathExpr)))
+        relExpr = pathExpr + pp.Optional(relOp + (valueExpr | pathExpr))
         # with grouping of parenthesized expressions
         parExpr = pp.Group(lpar + pexpr + rpar)
-        pexpr << pp.Optional(notOp) + (relExpr | parExpr) +\
-                 pp.ZeroOrMore(logOp + (pexpr | parExpr))
+#        logExpr = pp.Group((relExpr | parExpr) + pp.ZeroOrMore(logOp + (pexpr | parExpr)))
+#        pexpr << pp.Optional(notOp) + logExpr
+        pexpr << (pp.Group(relExpr) | parExpr) + pp.Optional(logOp + (pp.Group(pexpr) | parExpr))
 #        #without grouping:
 #        pexpr << pp.Optional(lpar) + pp.Optional(notOp) + (relExpr) +\
 #                 pp.ZeroOrMore(logOp + pexpr) + pp.Optional(rpar)
@@ -302,8 +307,8 @@ class XPathQuery(RestrictedXPathQueryParser):
     
     def getPredicates(self):
         # TODO: sometimes there's an unneeded additional [ ] wrapped around predicates ?
-        if self.predicates and len(self.predicates) == 1: 
-            return self.predicates[0]
+#        if self.predicates and len(self.predicates) == 1: 
+#            return self.predicates[0]
         return self.predicates
     
     def getOrderBy(self):

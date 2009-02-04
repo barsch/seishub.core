@@ -83,7 +83,23 @@ class DB_LIMIT(object):
         self.attr = attr
         self.type = type
         self.value = value
+        
 
+class DB_LIKE(object):
+    """
+    Pass this object to pickup(...) as a value, to select all objects where
+    a parameter is LIKE the given value.
+    Use '%' as wildcard.
+    """
+    def __init__(self, value):
+        """
+        @param attr: name of the attribute to be minimized/maximized/fixed
+        @param type: 'max'|'min'|'fixed'
+        @param value: if type == 'fixed', value to be taken by attribute
+        """
+        if not isinstance(value, basestring):
+            raise ValueError("DB_LIKE: String expected!")
+        self.value = value
 
 class DbEnabled(object):
     """
@@ -272,6 +288,8 @@ class DbStorage(DbEnabled):
                                                     rel_order_by)
             elif value == DB_NULL:
                 q = q.where(table.c[colname] == None)
+            elif isinstance(value, DB_LIKE):
+                q = q.where(table.c[colname].like(value.value))
             elif value:
                 q = q.where(table.c[colname] == value)
             # don't read lazy attribute columns
@@ -481,10 +499,6 @@ class DbStorage(DbEnabled):
         map = cls.db_mapping
         # generate query
         q = table.select(use_labels = True)
-        # XXX: very strange bug!!!
-        # if i do not explicitly set 'joins = list()' here,
-        # sometimes the local joins variable in _generate_query is NOT empty 
-        # in the beginning!!! XXX check if this is still valid...
         q, join_list = self._generate_query(q, table, map, keys, 
                                             order_by = order_by,
                                             joins = list())
