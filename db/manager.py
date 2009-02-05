@@ -29,8 +29,10 @@ class DatabaseManager(object):
         self.env = env
         self.uri = self.env.config.get('db', 'uri')
         self.echo = self.env.config.getbool('db', 'verbose')
-        self.max_overflow = self.env.config.getint('db', 'max_overflow')
-        self.pool_size = self.env.config.getint('db', 'pool_size')
+        self.max_overflow = self.env.config.getint('db', 'max_overflow') or \
+            DEFAULT_MAX_OVERFLOW
+        self.pool_size = self.env.config.getint('db', 'pool_size') or \
+            DEFAULT_POOL_SIZE
         self.engine = self._getEngine()
         self._initDb()
         self.env.log.info('DB connection pool started')
