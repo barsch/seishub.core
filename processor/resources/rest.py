@@ -243,12 +243,14 @@ class RESTProperty(Resource):
             index_dict = request.env.catalog.getIndexData(res)
             # create a XML document
             root = etree.Element("seishub")
-            for xpath, value in index_dict.iteritems():
+            for xpath, values_dict in index_dict.iteritems():
                 sub = etree.SubElement(root, "item")
                 etree.SubElement(sub, "xpath").text = xpath
-                if not isinstance(value, basestring):
-                    value=unicode(value)
-                etree.SubElement(sub, "value").text = value
+                values = etree.SubElement(sub, "values")
+                for _pos, value in values_dict.iteritems():
+                    if not isinstance(value, basestring):
+                        value=unicode(value)
+                    etree.SubElement(values, "value").text = value
             data = etree.tostring(root, pretty_print=True, encoding='utf-8')
             #import pdb;pdb.set_trace()
             format_prefix = 'index'

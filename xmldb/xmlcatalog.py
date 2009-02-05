@@ -306,10 +306,11 @@ class XmlCatalog(object):
             raise TypeError(msg % type(resource))
         # sanity check: document should have an id, else no data can be found
         assert doc._id
-        elmts = self.index_catalog.dumpIndexByDocument(doc._id)
+        elements = self.index_catalog.dumpIndexByDocument(doc._id)
         values = {}
-        for el in elmts:
-            values[el.index.xpath] = el.key
+        for element in elements:
+            values.setdefault(element.index.xpath, {})
+            values[element.index.xpath][element.group_pos]=element.key
         return values
     
     def indexResource(self, package_id = None, resourcetype_id = None, 

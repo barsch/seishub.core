@@ -5,13 +5,11 @@ A test suite for B{GET} request on REST resources.
 
 from StringIO import StringIO
 from seishub.core import Component, implements
-from seishub.exceptions import SeisHubError
 from seishub.packages.builtins import IResourceType, IPackage
 from seishub.packages.installer import registerIndex
 from seishub.processor import PUT, POST, DELETE, GET, Processor
 from seishub.processor.resources.rest import RESTFolder
 from seishub.test import SeisHubEnvironmentTestCase
-from twisted.web import http
 import unittest
 
 
@@ -31,6 +29,7 @@ XML_DOC = XML_BASE_DOC % ("üöäß", "5")
 XML_DOC2 = XML_BASE_DOC % ("üöäß", "%d")
 XML_DOC3 = XML_BASE_DOC % (CDATA, "5")
 XML_DOC4 = XML_BASE_DOC % ("%s", "egal")
+XML_DOC5 = XML_BASE_DOC % ("<v>1</v><v>2</v><v>122</v>", "egal")
 
 
 class AResourceType(Component):
@@ -56,6 +55,19 @@ class AResourceType2(Component):
     version_control = False
     registerIndex('/testml/blah1/blahblah1', 'datetime')
 
+
+class AResourceType3(Component):
+    """
+    A non versioned test resource type.
+    """
+    implements(IResourceType, IPackage)
+    
+    package_id = 'property-test'
+    resourcetype_id = 'notvc3'
+    version_control = False
+    registerIndex('/testml/blah1/blahblah1#v', 'numeric')
+
+
 class AVersionControlledResourceType(Component):
     """
     A version controlled test resource type.
@@ -76,12 +88,14 @@ class RestPropertyTests(SeisHubEnvironmentTestCase):
         self.env.enableComponent(AVersionControlledResourceType)
         self.env.enableComponent(AResourceType)
         self.env.enableComponent(AResourceType2)
+        self.env.enableComponent(AResourceType3)
         self.env.tree = RESTFolder()
     
     def tearDown(self):
         self.env.catalog.deleteAllIndexes('property-test')
         self.env.registry.db_deleteResourceType('property-test', 'notvc')
         self.env.registry.db_deleteResourceType('property-test', 'notvc2')
+        self.env.registry.db_deleteResourceType('property-test', 'notvc3')
         self.env.registry.db_deleteResourceType('property-test', 'vc')
         self.env.registry.db_deletePackage('property-test')
     
@@ -114,6 +128,22 @@ class RestPropertyTests(SeisHubEnvironmentTestCase):
         self.assertTrue("<value>üöäß</value>" in data)
         # remove resource
         proc.run(DELETE, '/property-test/notvc/test.xml')
+    
+    def test_getResourceIndexWithMultipleValues(self):
+        """
+        Tests resource index property.
+        """
+        proc = Processor(self.env)
+        # create resource
+        proc.run(PUT, '/property-test/notvc3/test.xml', StringIO(XML_DOC5))
+        # get index
+        res = proc.run(GET, '/property-test/notvc3/test.xml/.index')
+        data = res.render_GET(proc)
+        self.assertTrue("<value>1</value>" in data)
+        self.assertTrue("<value>2</value>" in data)
+        self.assertTrue("<value>122</value>" in data)
+        # remove resource
+        proc.run(DELETE, '/property-test/notvc3/test.xml')
     
     def test_getRevisionIndex(self):
         """

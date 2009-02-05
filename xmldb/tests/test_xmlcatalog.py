@@ -305,11 +305,11 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         # get index directly from catalog for latest revision
         res=self.env.catalog.getResource("test-catalog", "index", "muh.xml")
         index_dict=self.env.catalog.getIndexData(res)
-        self.assertEqual(index_dict, {u'/station/lat': u'50.23200'})
+        self.assertEqual(index_dict, {u'/station/lat': {0: u'50.23200'}})
         # get index directly from catalog for revision 3 (==latest)
         res=self.env.catalog.getResource("test-catalog", "index", "muh.xml", 3)
         index_dict=self.env.catalog.getIndexData(res)
-        self.assertEqual(index_dict, {u'/station/lat': u'50.23200'})
+        self.assertEqual(index_dict, {u'/station/lat': {0: u'50.23200'}})
         # get index directly from catalog for revision 2
         # XXX: older revison do not have any indexed values
         # this behaviour may change later
