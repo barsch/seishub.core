@@ -3,91 +3,6 @@
 from seishub.core import Interface, Attribute
 
 
-# interfaces that are subject to remove (only there for documentation issues):
-#  - IXmlCatalog, IResourceStorage, IXmlIndexCatalog
-
-class IXmlCatalog(Interface):
-    """
-    This is the main interface to access the XML catalog
-    """ 
-    def registerIndex(xml_index):
-        """"""
-        
-    def removeIndex(self, xpath_expr):
-        """remove an index"""
-    
-    def listIndexes(res_type = None, data_type = None):
-        """Return a list of registered indexes. 
-        (Optionally) indexes with the given parameters only: 
-        @param res_type: restrict results to specified resource type
-        @type res_type: string 
-        @param data_type: restrict results to a specified data type (string)
-        @type data_type: string 
-        @return: list of XmlIndexes
-        @rtype: list"""
-    
-    def query(query, order_by = None, limit = None):
-        """Query the catalog and return a list of URIs
-        where xpath_query is a XPath Query like string. 
-        (see L{seishub.xmldb.xpath.XPathQuery} and
-        L{seishub.xmldb.xpath.RestrictedXpathExpression})
-        
-        The following query types are supported by now (but may still be 
-        unstable though):
-        
-         - B{resource type queries}:
-         
-           "/resource_type"
-           
-           return all registered URIs with given resource type
-           
-         - B{index queries}:
-         
-           "/resource_type[key_path1 operator value (and|or) 
-           key_path2 operator value ...] 
-           
-           where operator can be: =, !=, <, >, <=, >=
-           
-        B{Order by clauses}
-        
-        (see also: L{seishub.xmldb.xpath.XPathQuery})
-        
-        One can order search results via order by clauses and also specify a 
-        limit to the number of returned results.
-        Order by clauses are of the following form::
-         order_by = [["/resource_type/sortindex1","asc|desc"],
-                     ["/resource_type/sortindex2","asc|desc"],
-                    ... ]
-        
-        @param query: restricted xpath expression
-        @type query: string
-        @param order_by: List of order by clauses
-        @type order_by: python list
-        @param limit: limit number of results
-        @type limit: int   
-        @return: list of URIs
-        @rtype: python list"""
-
-
-class IResourceStorage(Interface):
-    """Basic XML storage manager description"""
-    
-    def addResource(xmlResource):
-        """Add a new resource to the storage"""
-        
-    def updateResource(xmlResource):
-        """Update an existing resource"""
-        
-    def deleteResource(uri):
-        """Delete an existing resource"""
-        
-    def getResource(uri):
-        """Retreive an existing resource from the storage"""
-        
-    def getResList(package_id = None, resourcetype_id = None):
-        """Return a list of resource informations"""
-
-
 class IResource(Interface):
     """
     Marker interface for the xmldb resources.
@@ -165,21 +80,6 @@ class IXmlIndex(IIndexBase):
         @param xml_resource: xmldb.xmlresource.XmlResource object
         @return: list with key, value pairs on success, None else"""
 
-
-class IXmlIndexCatalog(Interface):
-    """
-    Catalog providing methods for xml resource indexing and searching
-    """
-    
-    def init(adbapi_connection):
-        """@param adbapi_connection: an adbapi conform db connector"""
-
-    def query(query):
-        """Drop a query on the catalog
-        @param query: xpath query to be performed
-        @type query: L{seishub.xmldb.interfaces.IXPathQuery}
-        @return: result set containing uris of resources this query applies to
-        @rtype: list of strings"""
 
 class IXPathQuery(Interface):
     """

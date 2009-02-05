@@ -4,7 +4,6 @@ from seishub.db.orm import DbStorage, DbError, DB_LIKE
 from seishub.exceptions import DuplicateObjectError, InvalidParameterError, \
     SeisHubError, NotFoundError
 from seishub.registry.defaults import resourcetypes_tab, packages_tab
-from seishub.xmldb import index
 from seishub.xmldb.defaults import document_tab, resource_tab
 from seishub.xmldb.index import XmlIndex, type_classes
 from seishub.xmldb.interfaces import IXPathQuery, IResource, IXmlIndex
@@ -13,39 +12,29 @@ from sqlalchemy import select, sql
 from zope.interface.exceptions import DoesNotImplement
 
 
-INDEX_TYPES = {
-    "text":     index.TEXT_INDEX,
-    "numeric":  index.NUMERIC_INDEX,
-    "float":    index.FLOAT_INDEX,
-    "datetime": index.DATETIME_INDEX,
-    "boolean":  index.BOOLEAN_INDEX,
-    #"nonetype": index.NONETYPE_INDEX
-}
-
-
-class _IndexViewer(object):
-    """
-    Mixin for XMLIndexCatalog providing "horizontal" views on the indexed data
-    per resourcetype.
-    """
-    
-    def createView(self, package, resourcetype, name = None):
-        """
-        Create a view for the given package and resourcetype.
-        """
-        name = name or '/%s/%s' % (package, resourcetype)
-        q = select([document_tab.c['id'].label("document_id")])
-        location_path = [package, resourcetype, None]
-        q, joins = self._process_location_path(location_path, q)
-        q = q.select_from(joins)
-        self._db_manager.createView(name, q)
-    
-    def dropView(self, package, resourcetype, name = None):
-        """
-        Remove specified view.
-        """
-        name = name or '/%s/%s' % (package, resourcetype)
-        self._db_manager.dropView(name)
+#class _IndexViewer(object):
+#    """
+#    Mixin for XMLIndexCatalog providing "horizontal" views on the indexed data
+#    per resourcetype.
+#    """
+#    
+#    def createView(self, package, resourcetype, name = None):
+#        """
+#        Create a view for the given package and resourcetype.
+#        """
+#        name = name or '/%s/%s' % (package, resourcetype)
+#        q = select([document_tab.c['id'].label("document_id")])
+#        location_path = [package, resourcetype, None]
+#        q, joins = self._process_location_path(location_path, q)
+#        q = q.select_from(joins)
+#        self._db_manager.createView(name, q)
+#    
+#    def dropView(self, package, resourcetype, name = None):
+#        """
+#        Remove specified view.
+#        """
+#        name = name or '/%s/%s' % (package, resourcetype)
+#        self._db_manager.dropView(name)
 
 
 class _QueryProcessor(object):
@@ -83,12 +72,6 @@ class _QueryProcessor(object):
             return idx[0]
         if not tolerant:
             raise self._raiseIndexNotFound(query_base, expr)
-        return None
-    
-    def _resourceTypeQuery(self, package, resourcetype):
-        """
-        Overloaded by subclass.
-        """
         return None
     
     def _isLogOp(self, p):
@@ -240,7 +223,12 @@ class _QueryProcessor(object):
     
     def query(self, query):
         """
-        @see: L{seishub.xmldb.interfaces.IXmlIndexCatalog}
+        Query the catalog.
+        
+        @param query: xpath query to be performed
+        @type query: L{seishub.xmldb.interfaces.IXPathQuery}
+        @return: result set containing uris of resources this query applies to
+        @rtype: list of strings
         """
         if not IXPathQuery.providedBy(query):
             raise DoesNotImplement(IXPathQuery)
@@ -270,56 +258,47 @@ class _QueryProcessor(object):
         return results
 
 
-class XmlIndexCatalog(DbStorage, _QueryProcessor, _IndexViewer):
+#class XmlIndexCatalog(DbStorage, _QueryProcessor, _IndexViewer):
+class XmlIndexCatalog(DbStorage, _QueryProcessor):
+    """
+    A catalog of indexes.
+    
+    Most methods use XMLIndex objects as input parameters. You may use the
+    getIndexes methods to query for valid XMLIndex objects.
+    """
     def __init__(self, db, resource_storage = None):
         DbStorage.__init__(self, db)
         self._db_manager = db
         self._storage = resource_storage
     
-#    def _parse_xpath_query(expr):
-#        pass
-#    _parse_xpath_query=staticmethod(_parse_xpath_query)
-
-    def _resourceTypeQuery(self, package_id, resourcetype_id):
+    def registerIndex(self, xmlindex):
         """
-        Returns the document ids of all documents belonging to specified 
-        package and resourcetype.
+        Register a given XMLIndex object into the XMLIndexCatalog.
         """
-        # XXX: older revisions are ignored!
-        res = self._storage.getResourceList(package_id, resourcetype_id)
-        return [r.document._id for r in res]
-    
-    def registerIndex(self, xml_index):
-        """
-        Register given index in the catalog.
-        """
-        if not IXmlIndex.providedBy(xml_index):
+        if not IXmlIndex.providedBy(xmlindex):
             raise DoesNotImplement(IXmlIndex)
         try:
-            self.store(xml_index)
+            self.store(xmlindex)
         except DbError, e:
             msg = "Error registering an index: Index '%s' already exists."
-            raise DuplicateObjectError(msg % str(xml_index), e)
+            raise DuplicateObjectError(msg % str(xmlindex), e)
         except Exception, e:
             msg = "Error registering an index: %s"
-            raise SeisHubError(msg % str(xml_index), e)
-        return xml_index
+            raise SeisHubError(msg % str(xmlindex), e)
+        return xmlindex
     
-    def removeIndex(self, package_id, resourcetype_id, xpath):
+    def deleteIndex(self, xmlindex):
         """
-        Remove an index and all indexed data.
+        Delete an XMLIndex and all related indexed data from the catalog.
         """
-        self.flushIndex(package_id, resourcetype_id, xpath)
-        self.drop(XmlIndex, 
-                  resourcetype = {'package':{'package_id':package_id}, 
-                                  'resourcetype_id':resourcetype_id}, 
-                  xpath = xpath)
+        self.flushIndex(xmlindex)
+        self.drop(XmlIndex, _id = xmlindex._id)
     
     def getIndexes(self, package_id = None, resourcetype_id = None, 
                    xpath = None, group_path = None, type = None, 
-                   options = None):
+                   options = None, index_id = None):
         """
-        Return a list of all applicable indexes.
+        Return a list of all applicable XMLIndex objects.
         """
         res = self.pickup(XmlIndex, 
                           resourcetype = {'package':{'package_id':package_id}, 
@@ -327,41 +306,39 @@ class XmlIndexCatalog(DbStorage, _QueryProcessor, _IndexViewer):
                           xpath = xpath,
                           group_path = group_path,
                           type = type,
-                          options = options)
+                          options = options,
+                          _id = index_id)
         return res
-
-#    def updateIndex(self,key_path,value_path,new_index):
-#        """Update index."""
-#        #TODO: updateIndex implementation
-#        pass
     
-    def indexResource(self, resource, xpath = None):
+    def indexResource(self, resource, xmlindex = None, index_id = None):
         """
-        Index the given resource.
+        Index the given resource using either all or a given XMLIndex.
         """
         if not IResource.providedBy(resource):
             raise TypeError("%s is not an IResource." % str(resource))
-        idx_list = self.getIndexes(resource.package.package_id, 
-                                   resource.resourcetype.resourcetype_id,
-                                   xpath)
+        package_id = resource.package.package_id
+        resourcetype_id = resource.resourcetype.resourcetype_id
+        index_id = (xmlindex and xmlindex._id) or index_id or None
+        xmlindex_list = self.getIndexes(package_id = package_id, 
+                                        resourcetype_id = resourcetype_id,
+                                        index_id = index_id)
+        
         elements = []
-        for idx in idx_list:
-            elements.extend(idx.eval(resource.document))
+        for xmlindex in xmlindex_list:
+            elements.extend(xmlindex.eval(resource.document))
         for el in elements:
             try:
                 self.store(el)
             except DbError:
                 # tried to store an index element with same parameters as one
                 # indexed before => ignore
-                # XXX: generate debug message
                 pass
         return elements
     
-    def dumpIndex(self, package_id, resourcetype_id, xpath):
+    def dumpIndex(self, xmlindex):
         """
-        Return all indexed values for the given index.
+        Return all indexed values for a given XMLIndex.
         """
-        xmlindex = self.getIndexes(package_id, resourcetype_id, xpath)[0]
         return self.pickup(xmlindex._getElementCls(), index = xmlindex)
     
     def dumpIndexByDocument(self, document_id):
@@ -374,19 +351,14 @@ class XmlIndexCatalog(DbStorage, _QueryProcessor, _IndexViewer):
             elements.extend(el)
         return elements
     
-    def flushIndex(self, package_id = None, resourcetype_id = None, 
-                   xpath = None, xmlindex = None, resource = None):
+    def flushIndex(self, xmlindex = None, resource = None):
         """
-        Remove all indexed data for given index.
+        Remove all indexed data for given XMLIndex or Resource object.
         """
-        if not ((package_id and resourcetype_id and xpath) or xmlindex or resource):
-            raise TypeError("flushIndex: invalid number of arguments.")
         if resource:
             for element_cls in type_classes.values():
                 self.drop(element_cls, 
                           document = {'_id':resource.document._id})
             return
-        if not xmlindex:
-            xmlindex = self.getIndexes(package_id, resourcetype_id, xpath)[0]
         element_cls = xmlindex._getElementCls()
         self.drop(element_cls, index = xmlindex)

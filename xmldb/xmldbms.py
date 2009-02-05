@@ -6,12 +6,10 @@ from seishub.exceptions import SeisHubError, InvalidParameterError
 from seishub.exceptions import NotFoundError
 from seishub.exceptions import DuplicateObjectError
 from seishub.db.orm import DbStorage, DbError, DB_LIMIT
-from seishub.xmldb.interfaces import IResourceStorage
 from seishub.xmldb.resource import XmlDocument, Resource
 
 
 class XmlDbManager(DbStorage):
-    implements(IResourceStorage)
     
     def _raise_not_found(self, package_id, resourcetype_id, name, id):
         if id:
@@ -22,7 +20,6 @@ class XmlDbManager(DbStorage):
                                    resourcetype_id, 
                                    name))
     
-    # methods from IResourceStorage            
     def addResource(self, xml_resource = Resource()):
         """Add a new resource to the database."""
         if not xml_resource.document.data or xml_resource.document.data == "":

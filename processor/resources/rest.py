@@ -422,8 +422,8 @@ class RESTResourceTypeFolder(Folder):
                                                        self.resourcetype_id):
             temp[res.name] = RESTResource(res)
         # indexes
-        for id in request.env.catalog.listIndexes(self.package_id,
-                                                  self.resourcetype_id):
+        for id in request.env.catalog.getIndexes(self.package_id,
+                                                 self.resourcetype_id):
             temp[str(id)] = XMLIndex()
         return temp
 

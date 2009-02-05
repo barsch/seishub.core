@@ -5,7 +5,7 @@ Component related administrative panels.
 
 from seishub.core import Component, implements
 from seishub.packages.interfaces import IAdminPanel
-from seishub.xmldb.xmlcatalog import INDEX_TYPES
+from seishub.xmldb.index import INDEX_TYPES
 import os
 
 
@@ -182,31 +182,25 @@ class IndexesPanel(Component):
             elif 'reindex' in args.keys() and 'index[]' in args.keys():
                 data.update(self._reindex(args.get('index[]',[])))
         # fetch all indexes
-        data['indexes'] = self.catalog.listIndexes()
+        data['indexes'] = self.catalog.getIndexes()
         return data
     
     def _reindex(self, data=[]):
-        for part in data:
+        for id in data:
             try:
-                _, package_id, resourcetype_id, xpath = part.split('/', 3)
-                self.env.catalog.reindex(package_id=package_id, 
-                                         resourcetype_id=resourcetype_id, 
-                                         xpath = '/' + xpath)
+                self.env.catalog.reindex(index_id = id)
             except Exception, e:
-                self.log.error("Error reindexing index %s" % part, e)
-                return {'error': ("Error reindexing index %s" % part, e)}
+                self.log.error("Error reindexing index", e)
+                return {'error': ("Error reindexing index", e)}
         return {'info': "Index has been updated."}
     
     def _deleteIndexes(self, data=[]):
-        for part in data:
+        for id in data:
             try:
-                _, package_id, resourcetype_id, xpath = part.split('/', 3)
-                self.catalog.removeIndex(package_id=package_id, 
-                                         resourcetype_id=resourcetype_id, 
-                                         xpath = '/' + xpath)
+                self.catalog.deleteIndex(index_id = id)
             except Exception, e:
-                self.log.error("Error removing index %s" % part, e)
-                return {'error': ("Error removing index %s" % part, e)}
+                self.log.error("Error removing index", e)
+                return {'error': ("Error removing index", e)}
         return {'info': "Index has been removed."}
     
     def _addIndex(self, package_id, resourcetype_id, xpath, type_id, options):

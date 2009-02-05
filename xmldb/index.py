@@ -3,12 +3,12 @@
 from datetime import datetime
 from seishub.core import implements
 from seishub.db.orm import Serializable, Relation, db_property
-from seishub.registry.package import ResourceTypeWrapper
 from seishub.xmldb import defaults
 from seishub.xmldb.interfaces import IXmlDocument, IXmlIndex
 from seishub.xmldb.resource import XmlDocument
 from twisted.python import log
 import sys
+from seishub.registry.package import ResourceTypeWrapper
 
 
 TEXT_INDEX = 0
@@ -24,6 +24,16 @@ DATETIME_ISO_FORMAT = "%Y%m%d %H:%M:%S"
 DATE_ISO_FORMAT = "%Y%m%d"
 _FALSE_VALUES = ('no', 'false', 'off', '0', 'disabled')
 
+INDEX_TYPES = {
+    "text":     TEXT_INDEX,
+    "numeric":  NUMERIC_INDEX,
+    "float":    FLOAT_INDEX,
+    "datetime": DATETIME_INDEX,
+    "date":     DATE_INDEX,
+    "boolean":  BOOLEAN_INDEX,
+    #"nonetype": NONETYPE_INDEX
+}
+
 
 class XmlIndex(Serializable):
     """
@@ -33,7 +43,7 @@ class XmlIndex(Serializable):
     @param xpath: path to node in XML tree to be indexed, or any arbitrary 
     xpath expression, that returns a value of correct type
     @param type: TEXT_INDEX | NUMERIC_INDEX | DATETIME_INDEX | BOOLEAN_INDEX |
-                 NONETYPE_INDEX
+                 NONETYPE_INDEX | DATE_INDEX | FLOAT_INDEX
     @param options: additional options for an index
     
     notes:

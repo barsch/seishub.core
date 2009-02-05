@@ -79,12 +79,7 @@ class RestPropertyTests(SeisHubEnvironmentTestCase):
         self.env.tree = RESTFolder()
     
     def tearDown(self):
-        self.env.catalog.removeIndex('property-test', 'notvc', 
-                                     '/testml/blah1/blahblah1')
-        self.env.catalog.removeIndex('property-test', 'notvc2', 
-                                     '/testml/blah1/blahblah1')
-        self.env.catalog.removeIndex('property-test', 'vc', 
-                                     '/testml/blah1/blah2')
+        self.env.catalog.deleteAllIndexes('property-test')
         self.env.registry.db_deleteResourceType('property-test', 'notvc')
         self.env.registry.db_deleteResourceType('property-test', 'notvc2')
         self.env.registry.db_deleteResourceType('property-test', 'vc')

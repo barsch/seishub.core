@@ -110,7 +110,8 @@ class PackageInstaller(object):
         if hasattr(o, '_registry_indexes'):
             for entry in o._registry_indexes:
                 # check, if already there
-                if env.catalog.getIndex(package_id, resourcetype_id, **entry):
+                if env.catalog.getIndexes(package_id, resourcetype_id, 
+                                          **entry):
                     msg = "'%s': Skipping index '%s'."
                     env.log.info(msg % (package_id, entry))
                     continue

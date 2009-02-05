@@ -1,31 +1,18 @@
 # -*- coding: utf-8 -*-
 
 from seishub.core import implements
-
-from seishub.exceptions import NotFoundError, InvalidObjectError 
-from seishub.exceptions import InvalidParameterError
-from seishub.xmldb.interfaces import IXmlCatalog, IResource, IXmlDocument
+from seishub.exceptions import InvalidParameterError, NotFoundError, \
+    InvalidObjectError
+from seishub.util.xml import applyMacros
+from seishub.xmldb.index import XmlIndex, TEXT_INDEX, INDEX_TYPES
+from seishub.xmldb.interfaces import IResource, IXmlDocument
+from seishub.xmldb.resource import Resource, newXMLDocument
 from seishub.xmldb.xmldbms import XmlDbManager
 from seishub.xmldb.xmlindexcatalog import XmlIndexCatalog
-from seishub.xmldb.resource import Resource, newXMLDocument
-from seishub.xmldb.index import XmlIndex, TEXT_INDEX
-from seishub.xmldb import index
 from seishub.xmldb.xpath import XPathQuery
-from seishub.util.xml import applyMacros
-
-
-INDEX_TYPES = {"text":index.TEXT_INDEX,
-               "numeric":index.NUMERIC_INDEX,
-               "float":index.FLOAT_INDEX,
-               "datetime":index.DATETIME_INDEX,
-               "boolean":index.BOOLEAN_INDEX,
-               "date":index.DATE_INDEX,
-               #"nonetype":index.NONETYPE_INDEX
-               }
 
 
 class XmlCatalog(object):
-    implements(IXmlCatalog)
     
     def __init__(self, env):
         self.env = env
@@ -42,7 +29,6 @@ class XmlCatalog(object):
             return None
         return item
     
-    # methods from IXmlCatalog
     # xmldbms methods
     def addResource(self, package_id, resourcetype_id, xml_data, uid = None, 
                     name = None):
@@ -225,43 +211,87 @@ class XmlCatalog(object):
         type = INDEX_TYPES.get(type.lower())
         _, resourcetype = self.env.registry.objects_from_id(package_id, 
                                                             resourcetype_id)
-        # generate index
-        index = XmlIndex(resourcetype, xpath, type, options, group_path)
-        index = self.index_catalog.registerIndex(index)
-        # reindex
-        self.reindex(package_id, resourcetype_id, xpath)
+        # generate index + reindex
+        xmlindex = XmlIndex(resourcetype = resourcetype, xpath = xpath, 
+                            type = type, options = options, 
+                            group_path = group_path)
+        xmlindex = self.index_catalog.registerIndex(xmlindex)
+        self.reindex(xmlindex)
+#XXX: disabled
         # create or update view:
-        self.index_catalog.createView(package_id, resourcetype_id)
-        return index
+        #self.index_catalog.createView(package_id, resourcetype_id)
+        return xmlindex
     
-    def removeIndex(self, package_id = None, resourcetype_id = None, 
-                    xpath = None):
+    def deleteIndex(self, xmlindex = None, index_id = None):
         """
-        Remove an index.
+        Remove an index using either a XMLIndex object or a index id.
         """
-        res = self.index_catalog.removeIndex(package_id, resourcetype_id, 
-                                             xpath)
+        if index_id:
+            xmlindex = self.getIndexes(index_id = index_id)[0]
+        res = self.index_catalog.deleteIndex(xmlindex)
+#XXX: disabled
         # create or update view:
-        self.index_catalog.createView(package_id, resourcetype_id)
+        #self.index_catalog.createView(package_id, resourcetype_id)
         return res 
     
-    def getIndex(self, package_id = None, resourcetype_id = None, 
-                 xpath = None, group_path = None, type = "text", 
-                 options = None):
+    def deleteAllIndexes(self, package_id, resourcetype_id = None):
         """
-        @see: L{seishub.xmldb.interfaces.IXmlCatalog}
+        Removes all indexes related to a given package_id and resourcetype_id.
+        """
+        xmlindex_list = self.getIndexes(package_id = package_id,
+                                        resourcetype_id = resourcetype_id)
+        for xmlindex in xmlindex_list:
+            self.index_catalog.deleteIndex(xmlindex)
+    
+    def getIndexes(self, package_id = None, resourcetype_id = None, 
+                   xpath = None, group_path = None, type = "text", 
+                   options = None, index_id = None):
+        """
+        Return a list of all applicable XMLIndex objects.
         """
         # check for grouping indexes
-        if '#' in xpath:
+        if xpath and '#' in xpath:
             group_path, temp = xpath.split('#', 1)
             xpath = '/'.join([group_path, temp])
         type = INDEX_TYPES.get(type.lower(), TEXT_INDEX)
-        return self.index_catalog.getIndexes(package_id, resourcetype_id, 
-                                             xpath, group_path, type, options)
+        return self.index_catalog.getIndexes(package_id = package_id, 
+                                             resourcetype_id = resourcetype_id,
+                                             xpath = xpath, 
+                                             group_path = group_path, 
+                                             type = type, 
+                                             options = options,
+                                             index_id = index_id)
+    
+    def flushIndex(self, xmlindex = None, index_id = None):
+        """
+        Remove all indexed data using either a XMLIndex object or a index id.
+        """
+        if index_id:
+            xmlindex = self.getIndexes(index_id = index_id)[0]
+        return self.index_catalog.flushIndex(xmlindex)
+    
+    def reindex(self, xmlindex = None, index_id = None):
+        """
+        Reindex all resources by a given XMLIndex object.
+        
+        See getIndexes() method for all possible input parameters.
+        """
+        if index_id:
+            xmlindex = self.getIndexes(index_id = index_id)[0]
+        self.index_catalog.flushIndex(xmlindex)
+        # get resource list
+        package_id = xmlindex.resourcetype.package.package_id
+        resourcetype_id = xmlindex.resourcetype.resourcetype_id
+        res_list = self.getResourceList(package_id = package_id,
+                                        resourcetype_id = resourcetype_id)
+        # reindex
+        for res in res_list:
+            self.index_catalog.indexResource(res, xmlindex)
+        return True
     
     def getIndexData(self, resource):
         """
-        Return all indexed data for the given resource as a dictionary.
+        Return indexed data for a given Resource or XMLDocument as dictionary.
         
         @param resource: resource or document
         @type resource: L{seishub.xmldb.interfaces.IResource} or
@@ -282,23 +312,6 @@ class XmlCatalog(object):
             values[el.index.xpath] = el.key
         return values
     
-    def flushIndex(self, package_id = None, resourcetype_id = None, 
-                   xpath = None):
-        """
-        @see: L{seishub.xmldb.interfaces.IXmlCatalog}
-        """
-        return self.index_catalog.flushIndex(package_id, resourcetype_id, 
-                                             xpath)
-    
-    def listIndexes(self, package_id = None, resourcetype_id = None, 
-                    type = "text"):
-        """
-        @see: L{seishub.xmldb.interfaces.IXmlCatalog}
-        """
-        type = INDEX_TYPES.get(type.lower(), TEXT_INDEX)
-        return self.index_catalog.getIndexes(package_id, resourcetype_id, 
-                                             type = type)
-    
     def indexResource(self, package_id = None, resourcetype_id = None, 
                       name = None, revision = None, resource = None):
         if package_id and resourcetype_id and name:
@@ -307,17 +320,6 @@ class XmlCatalog(object):
         elif not resource:
             raise TypeError("indexResource: Invalid number of arguments.")
         return self.index_catalog.indexResource(resource)
-    
-    def reindex(self, package_id = None, resourcetype_id = None, xpath = None):
-        """
-        @see: L{seishub.xmldb.interfaces.IXmlCatalog}
-        """
-        self.flushIndex(package_id, resourcetype_id, xpath)
-        reslist = self.getResourceList(package_id, resourcetype_id)
-        # reindex
-        for res in reslist:
-            self.index_catalog.indexResource(res, xpath)
-        return True
     
     def query(self, query, full = False):
         """

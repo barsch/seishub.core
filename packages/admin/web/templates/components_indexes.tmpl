@@ -31,7 +31,7 @@
     <input type="text" size="40" name="options" value="$options" />
   </div>
   <div class="field">
-    <label>XPath expression</label><br />
+    <label>XPath expression (use # for grouping)</label><br />
     <input type="text" size="80" name="xpath" value="$xpath" />
   </div>
   <div class="button">
@@ -58,7 +58,7 @@
     <tr> 
       <td>
         <input type="checkbox" name="index[]" 
-               value="$index.__str__()" />
+               value="$index._id" />
       </td>
       <td>$index.resourcetype.package.package_id</td>
       <td>$index.resourcetype.resourcetype_id</td>
