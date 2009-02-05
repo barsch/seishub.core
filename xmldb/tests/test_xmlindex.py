@@ -157,6 +157,23 @@ class XmlIndexTest(SeisHubEnvironmentTestCase):
         res = idx.eval(doc, self.env)[0]
         self.assertEqual(res.key, dt.replace(microsecond = 0))
     
+    def test_DateIndex(self):
+        dt = datetime(2008, 10, 10, 11, 53, 0, 54000)
+        # ISO 8601
+        idx = XmlIndex(self.rt1, "/station/creation_date", 
+                       index.DATE_INDEX)
+        timestr = dt.strftime("%Y%m%d")
+        doc = newXMLDocument(RAW_XML1 % (timestr, ""))
+        res = idx.eval(doc, self.env)[0]
+        self.assertEqual(res.key, dt.date())
+        # custom format
+        idx = XmlIndex(self.rt1, "/station/creation_date", 
+                       index.DATE_INDEX, "%d.%m.%Y")
+        timestr = dt.strftime("%d.%m.%Y")
+        doc = newXMLDocument(RAW_XML1 % (timestr, ""))
+        res = idx.eval(doc, self.env)[0]
+        self.assertEqual(res.key, dt.date())
+    
     def testBooleanIndex(self):
         idx = XmlIndex(self.rt1, "/station/bool", index.BOOLEAN_INDEX)
         doc = newXMLDocument(RAW_XML1 % ("", "True"))

@@ -3,8 +3,8 @@
 from datetime import datetime
 from seishub.db import DEFAULT_PREFIX
 from seishub.db.manager import meta as metadata
-from sqlalchemy import Integer, String, Text, Unicode, DateTime, Boolean, Float, \
-    Numeric, Table, Column, UniqueConstraint
+from sqlalchemy import Integer, String, Text, Unicode, DateTime, Date, Float, \
+    Numeric, Table, Column, UniqueConstraint, Boolean
 from sqlalchemy.sql import text
 
 
@@ -140,6 +140,16 @@ index_datetime_tab = Table(DEFAULT_PREFIX + 'datetime_'+ INDEX_TABLE, metadata,
     Column('id', Integer, primary_key = True, autoincrement = True),
     Column('index_id', Integer),
     Column('keyval', DateTime),
+    Column('group_pos', Integer),
+    Column('document_id', Integer),
+    UniqueConstraint('index_id','keyval','document_id'),
+    useexisting=True
+)
+
+index_date_tab = Table(DEFAULT_PREFIX + 'date_'+ INDEX_TABLE, metadata,
+    Column('id', Integer, primary_key = True, autoincrement = True),
+    Column('index_id', Integer),
+    Column('keyval', Date),
     Column('group_pos', Integer),
     Column('document_id', Integer),
     UniqueConstraint('index_id','keyval','document_id'),

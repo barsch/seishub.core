@@ -316,7 +316,8 @@ class XmlIndexCatalog(DbStorage, _QueryProcessor, _IndexViewer):
                   xpath = xpath)
     
     def getIndexes(self, package_id = None, resourcetype_id = None, 
-                   xpath = None, type = None, options = None):
+                   xpath = None, group_path = None, type = None, 
+                   options = None):
         """
         Return a list of all applicable indexes.
         """
@@ -324,6 +325,7 @@ class XmlIndexCatalog(DbStorage, _QueryProcessor, _IndexViewer):
                           resourcetype = {'package':{'package_id':package_id}, 
                                           'resourcetype_id':resourcetype_id}, 
                           xpath = xpath,
+                          group_path = group_path,
                           type = type,
                           options = options)
         return res

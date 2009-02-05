@@ -19,6 +19,7 @@ INDEX_TYPES = {"text":index.TEXT_INDEX,
                "float":index.FLOAT_INDEX,
                "datetime":index.DATETIME_INDEX,
                "boolean":index.BOOLEAN_INDEX,
+               "date":index.DATE_INDEX,
                #"nonetype":index.NONETYPE_INDEX
                }
 
@@ -201,28 +202,33 @@ class XmlCatalog(object):
         """
         Register an index.
         
-        @param type: "text" | "numeric" | "float" | "datetime" | "boolean"
+        @param type: "text"|"numeric"|"float"|"datetime"|"boolean"|"date"
         """
+        # check for XPath expression
         if not xpath:
             msg = "registerIndex: Empty XPath expression!"
             raise InvalidParameterError(msg)
+        # check if valid index type
+        if type.lower() not in INDEX_TYPES:
+            msg = "registerIndex: Invalid index type '%s'."
+            raise InvalidParameterError(msg % type)
+        # check for grouping indexes
         xpath = xpath.strip()
         group_path = None
         if '#' in xpath:
             try:
                 group_path, temp = xpath.split('#')
             except ValueError, e:
-                msg = "Invalid index expression. %s"
+                msg = "registerIndex: Invalid index expression. %s"
                 raise InvalidParameterError(msg % str(e))
             xpath = '/'.join([group_path, temp])
-        type = INDEX_TYPES.get(type.lower(), None)
-        if type is None:
-            msg = "registerIndex: Invalid index type '%s'."
-            raise InvalidParameterError(msg % type)
+        type = INDEX_TYPES.get(type.lower())
         _, resourcetype = self.env.registry.objects_from_id(package_id, 
                                                             resourcetype_id)
+        # generate index
         index = XmlIndex(resourcetype, xpath, type, options, group_path)
         index = self.index_catalog.registerIndex(index)
+        # reindex
         self.reindex(package_id, resourcetype_id, xpath)
         # create or update view:
         self.index_catalog.createView(package_id, resourcetype_id)
@@ -240,13 +246,18 @@ class XmlCatalog(object):
         return res 
     
     def getIndex(self, package_id = None, resourcetype_id = None, 
-                 xpath = None, type = "text", options = None):
+                 xpath = None, group_path = None, type = "text", 
+                 options = None):
         """
         @see: L{seishub.xmldb.interfaces.IXmlCatalog}
         """
+        # check for grouping indexes
+        if '#' in xpath:
+            group_path, temp = xpath.split('#', 1)
+            xpath = '/'.join([group_path, temp])
         type = INDEX_TYPES.get(type.lower(), TEXT_INDEX)
         return self.index_catalog.getIndexes(package_id, resourcetype_id, 
-                                             xpath, type, options)
+                                             xpath, group_path, type, options)
     
     def getIndexData(self, resource):
         """
@@ -294,7 +305,7 @@ class XmlCatalog(object):
             resource = self.getResource(package_id, resourcetype_id, name, 
                                         revision)
         elif not resource:
-            raise TypeError("Invalid number of arguments.")
+            raise TypeError("indexResource: Invalid number of arguments.")
         return self.index_catalog.indexResource(resource)
     
     def reindex(self, package_id = None, resourcetype_id = None, xpath = None):

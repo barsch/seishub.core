@@ -18,8 +18,10 @@ DATETIME_INDEX = 3
 BOOLEAN_INDEX = 4
 # NONETYPE_INDEX = 5
 PROCESSOR_INDEX = 6
+DATE_INDEX = 7
 
-ISO_FORMAT = "%Y%m%d %H:%M:%S"
+DATETIME_ISO_FORMAT = "%Y%m%d %H:%M:%S"
+DATE_ISO_FORMAT = "%Y%m%d"
 _FALSE_VALUES = ('no', 'false', 'off', '0', 'disabled')
 
 
@@ -305,9 +307,22 @@ class DateTimeIndexElement(KeyIndexElement):
         if '.' in data:
             data, ms = data.split('.')
             ms = int(ms.ljust(6,'0')[:6])
-        dt = datetime.strptime(data, ISO_FORMAT)
+        dt = datetime.strptime(data, DATETIME_ISO_FORMAT)
         dt = dt.replace(microsecond = ms)
         return dt
+
+
+class DateIndexElement(KeyIndexElement):
+    db_table = defaults.index_date_tab
+    
+    def _filter_key(self, data):
+        data = data.strip()
+        if self.index.options:
+            return datetime.strptime(data, self.index.options).date()
+        return self._prepare_key(data)
+    
+    def _prepare_key(self, data):
+        return datetime.strptime(data, DATE_ISO_FORMAT).date()
 
 
 class BooleanIndexElement(KeyIndexElement):
@@ -330,5 +345,6 @@ type_classes = {
     FLOAT_INDEX:FloatIndexElement, 
     DATETIME_INDEX:DateTimeIndexElement, 
     BOOLEAN_INDEX:BooleanIndexElement, 
-    #NONETYPE_INDEX:NoneTypeIndexElement
+    #NONETYPE_INDEX:NoneTypeIndexElement,
+    DATE_INDEX:DateIndexElement
 }

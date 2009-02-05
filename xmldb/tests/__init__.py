@@ -13,7 +13,6 @@ def suite():
     suite.addTest(test_xmldbms.suite())
     suite.addTest(test_xmlindex.suite())
     suite.addTest(test_xmlindexcatalog.suite())
-    #suite.addTest(doctest.DocFileSuite('test_xmlindexcatalog.txt'))
     suite.addTest(test_xpath.suite())
     return suite
 

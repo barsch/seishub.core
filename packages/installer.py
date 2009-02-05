@@ -111,7 +111,6 @@ class PackageInstaller(object):
             for entry in o._registry_indexes:
                 # check, if already there
                 if env.catalog.getIndex(package_id, resourcetype_id, **entry):
-                    # idx_type = [typestr for typestr, id in INDEX_TYPES.iteritems() if id == entry['type']][0]
                     msg = "'%s': Skipping index '%s'."
                     env.log.info(msg % (package_id, entry))
                     continue
