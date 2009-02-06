@@ -16,24 +16,24 @@ NUMERIC_INDEX = 1
 FLOAT_INDEX = 2
 DATETIME_INDEX = 3
 BOOLEAN_INDEX = 4
-# NONETYPE_INDEX = 5
+TIMESTAMP_INDEX = 5
 PROCESSOR_INDEX = 6
 DATE_INDEX = 7
 INTEGER_INDEX = 8
 
-DATETIME_ISO_FORMAT = "%Y%m%d %H:%M:%S"
+DATETIME_ISO_FORMAT = "%Y%m%d %H%M%S"
 DATE_ISO_FORMAT = "%Y%m%d"
 _FALSE_VALUES = ('no', 'false', 'off', '0', 'disabled')
 
 INDEX_TYPES = {
-    "text":     TEXT_INDEX,
-    "integer":  INTEGER_INDEX,
-    "numeric":  NUMERIC_INDEX,
-    "float":    FLOAT_INDEX,
-    "datetime": DATETIME_INDEX,
-    "date":     DATE_INDEX,
-    "boolean":  BOOLEAN_INDEX,
-    #"nonetype": NONETYPE_INDEX
+    "text":      TEXT_INDEX,
+    "integer":   INTEGER_INDEX,
+    "numeric":   NUMERIC_INDEX,
+    "float":     FLOAT_INDEX,
+    "datetime":  DATETIME_INDEX,
+    "date":      DATE_INDEX,
+    "timestamp": TIMESTAMP_INDEX,
+    "boolean":   BOOLEAN_INDEX,
 }
 
 
@@ -45,15 +45,13 @@ class XmlIndex(Serializable):
     @param xpath: path to node in XML tree to be indexed, or any arbitrary 
     xpath expression, that returns a value of correct type
     @param type: TEXT_INDEX | NUMERIC_INDEX | DATETIME_INDEX | BOOLEAN_INDEX |
-                 DATE_INDEX | FLOAT_INDEX | INTEGER_INDEX
+                 DATE_INDEX | FLOAT_INDEX | INTEGER_INDEX | TIMESTAMP_INDEX
     @param options: additional options for an index
     
-    notes:
-     - DATETIME_INDEX:
-     options may be a format string (see time.strftime() documentation), but 
-     note that strftime / strptime does not support microseconds (!)
-     
-     without a format string, ISO 8601 strings and timestamps are autodetected.
+    Note:
+    DATETIME_INDEX: options may be a format string (see time.strftime() 
+    documentation), but note that strftime / strptime does not support 
+    microseconds! Without a format string we assume a ISO 8601 string.
     """
     
     implements(IXmlIndex)
@@ -216,7 +214,7 @@ class KeyIndexElement(Serializable):
     
     def _prepare_key(self, data):
         return str(data)
-        
+    
     def getIndex(self):
         return self._index
     
@@ -241,35 +239,6 @@ class KeyIndexElement(Serializable):
         self._key = data
     
     key = property(getKey, setKey, "Index key")
-
-
-#class QualifierIndexElement(Serializable):
-#    db_mapping = {'index':Relation(XmlIndex, 'index_id'),
-#                  'document':Relation(XmlDocument, 'document_id')
-#                  }
-#    
-#    def __init__(self, index = None, key = None, document = None):
-#        self.index = index
-#        # ignore key
-#        self.key = None
-#        self.document = document
-#        
-#    def getIndex(self):
-#        return self._index
-#     
-#    def setIndex(self, data):
-#        self._index = data
-#        
-#    index = db_property(getIndex, setIndex, "Index", attr = '_index')
-#    
-#    def getDocument(self):
-#        return self._document
-#     
-#    def setDocument(self, data):
-#        self._document = data
-#        
-#    document = db_property(getDocument, setDocument, "XmlDocument", 
-#                           attr = '_document')
 
 
 class TextIndexElement(KeyIndexElement):
@@ -309,18 +278,22 @@ class DateTimeIndexElement(KeyIndexElement):
         data = data.strip()
         if self.index.options:
             return datetime.strptime(data, self.index.options)
-        try:
-            # XXX: this might lead to problems with ISO strings that consist 
-            # of numbers only another solution would be to have a 
-            # special '%timestamp' option
-            return datetime.fromtimestamp(float(data))
-        except ValueError:
-            pass
         return self._prepare_key(data)
     
     def _prepare_key(self, data):
         data = data.replace("-", "")
         data = data.replace("T", " ")
+        data = data.replace(":", "")
+        data = data.strip()
+        # some time information missing?
+        if len(data)<15:
+            # defaulting some values
+            if len(data)==8:
+                data += ' 000000'
+            elif len(data)==11 and data[8]==' ':
+                data += '0000'
+            elif len(data)==13 and data[8]==' ':
+                data += '00'
         ms = 0
         if '.' in data:
             data, ms = data.split('.')
@@ -340,6 +313,7 @@ class DateIndexElement(KeyIndexElement):
         return self._prepare_key(data)
     
     def _prepare_key(self, data):
+        data = data.replace("-", "")
         return datetime.strptime(data, DATE_ISO_FORMAT).date()
 
 
@@ -360,17 +334,20 @@ class IntegerIndexElement(KeyIndexElement):
         return int(data)
 
 
-#class NoneTypeIndexElement(QualifierIndexElement):
-#    db_table = defaults.index_keyless_tab
+class TimestampIndexElement(KeyIndexElement):
+    db_table = defaults.index_datetime_tab
+    
+    def _filter_key(self, data):
+        return datetime.fromtimestamp(float(data))
 
 
 type_classes = {
-    TEXT_INDEX:TextIndexElement, 
-    NUMERIC_INDEX:NumericIndexElement, 
-    FLOAT_INDEX:FloatIndexElement, 
-    DATETIME_INDEX:DateTimeIndexElement, 
-    BOOLEAN_INDEX:BooleanIndexElement, 
-    #NONETYPE_INDEX:NoneTypeIndexElement,
-    DATE_INDEX:DateIndexElement,
-    INTEGER_INDEX:IntegerIndexElement,
+    TEXT_INDEX:      TextIndexElement, 
+    NUMERIC_INDEX:   NumericIndexElement, 
+    FLOAT_INDEX:     FloatIndexElement, 
+    DATETIME_INDEX:  DateTimeIndexElement, 
+    BOOLEAN_INDEX:   BooleanIndexElement, 
+    DATE_INDEX:      DateIndexElement,
+    INTEGER_INDEX:   IntegerIndexElement,
+    TIMESTAMP_INDEX: TimestampIndexElement
 }

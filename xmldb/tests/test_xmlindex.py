@@ -127,24 +127,72 @@ class XmlIndexTest(SeisHubEnvironmentTestCase):
         res = idx.eval(test_doc, self.env)
         self.assertEquals(len(res), 2)
     
-    def testDateTimeIndex(self):
-        dt = datetime(2008, 10, 10, 11, 53, 0, 54000)
-        #timestamp = float(str(time.mktime(res.timetuple())) + ".054")
+    def test_DateTimeIndex(self):
+        """
+        Tests indexing of datetimes.
+        """
+        # setup 
+        dt = datetime(2008, 10, 23, 11, 53, 12, 54000)
+        dt2 = datetime(2008, 10, 23, 11, 53, 12)
+        dt3 = datetime(2008, 10, 23)
+        dt4 = datetime(2008, 10, 23, 11)
+        dt5 = datetime(2008, 10, 23, 11 , 53)
         # ISO 8601
         idx = XmlIndex(self.rt1, "/station/creation_date", 
                        index.DATETIME_INDEX)
-        timestr = dt.strftime("%Y%m%dT%H:%M:%S") + ".0" + str(dt.microsecond)
+        timestr = dt.strftime("%Y%m%dT%H:%M:%S") + ".054000"
         doc = newXMLDocument(RAW_XML1 % (timestr, ""))
         res = idx.eval(doc, self.env)[0]
         self.assertEqual(res.key, dt)
-        
-        # with timestamp
+        # ISO 8601 w/ minus
         idx = XmlIndex(self.rt1, "/station/creation_date", 
                        index.DATETIME_INDEX)
-        timestr = "%10.3f" % (time.mktime(dt.timetuple()) + dt.microsecond/1e6)
+        timestr = dt.strftime("%Y-%m-%dT%H:%M:%S") + ".054000"
         doc = newXMLDocument(RAW_XML1 % (timestr, ""))
         res = idx.eval(doc, self.env)[0]
         self.assertEqual(res.key, dt)
+        # ISO 8601 w/ time zone
+        idx = XmlIndex(self.rt1, "/station/creation_date", 
+                       index.DATETIME_INDEX)
+        timestr = dt.strftime("%Y%m%dT%H:%M:%S") + ".054000Z"
+        doc = newXMLDocument(RAW_XML1 % (timestr, ""))
+        res = idx.eval(doc, self.env)[0]
+        self.assertEqual(res.key, dt)
+        # ISO 8601 w/o T
+        idx = XmlIndex(self.rt1, "/station/creation_date", 
+                       index.DATETIME_INDEX)
+        timestr = dt.strftime("%Y%m%d %H:%M:%S") + ".054000"
+        doc = newXMLDocument(RAW_XML1 % (timestr, ""))
+        res = idx.eval(doc, self.env)[0]
+        self.assertEqual(res.key, dt)
+        # ISO 8601 w/o milliseconds 
+        idx = XmlIndex(self.rt1, "/station/creation_date", 
+                       index.DATETIME_INDEX)
+        timestr = dt2.strftime("%Y%m%dT%H:%M:%S")
+        doc = newXMLDocument(RAW_XML1 % (timestr, ""))
+        res = idx.eval(doc, self.env)[0]
+        self.assertEqual(res.key, dt2)
+        # ISO 8601 w/o time - defaults to 00:00:00
+        idx = XmlIndex(self.rt1, "/station/creation_date", 
+                       index.DATETIME_INDEX)
+        timestr = dt3.strftime("%Y-%m-%d")
+        doc = newXMLDocument(RAW_XML1 % (timestr, ""))
+        res = idx.eval(doc, self.env)[0]
+        self.assertEqual(res.key, dt3)
+        # ISO 8601 w/o minutes - defaults to :00:00
+        idx = XmlIndex(self.rt1, "/station/creation_date", 
+                       index.DATETIME_INDEX)
+        timestr = dt4.strftime("%Y-%m-%d %H")
+        doc = newXMLDocument(RAW_XML1 % (timestr, ""))
+        res = idx.eval(doc, self.env)[0]
+        self.assertEqual(res.key, dt4)
+        # ISO 8601 w/o seconds - defaults to :00
+        idx = XmlIndex(self.rt1, "/station/creation_date", 
+                       index.DATETIME_INDEX)
+        timestr = dt5.strftime("%Y-%m-%d %H:%M")
+        doc = newXMLDocument(RAW_XML1 % (timestr, ""))
+        res = idx.eval(doc, self.env)[0]
+        self.assertEqual(res.key, dt5)
         # with custom format
         # microseconds are ignored since not supported by strftime()
         idx = XmlIndex(self.rt1, "/station/creation_date", 
@@ -154,18 +202,47 @@ class XmlIndexTest(SeisHubEnvironmentTestCase):
         res = idx.eval(doc, self.env)[0]
         self.assertEqual(res.key, dt.replace(microsecond = 0))
     
-    def test_DateIndex(self):
-        dt = datetime(2008, 10, 10, 11, 53, 0, 54000)
-        # ISO 8601
+    def test_TimestampIndex(self):
+        """
+        Tests indexing of timestamps.
+        """
+        # w/ microseconds
+        dt = datetime(2008, 10, 23, 11, 53, 12, 54000)
         idx = XmlIndex(self.rt1, "/station/creation_date", 
-                       index.DATE_INDEX)
+                       index.TIMESTAMP_INDEX)
+        timestr = "%10.6f" % (time.mktime(dt.timetuple()) + dt.microsecond/1e6)
+        doc = newXMLDocument(RAW_XML1 % (timestr, ""))
+        res = idx.eval(doc, self.env)[0]
+        self.assertEqual(res.key, dt)
+        # w/o microseconds
+        dt = datetime(2008, 10, 23, 11, 53, 12)
+        idx = XmlIndex(self.rt1, "/station/creation_date", 
+                       index.TIMESTAMP_INDEX)
+        timestr = "%d" % (time.mktime(dt.timetuple()))
+        doc = newXMLDocument(RAW_XML1 % (timestr, ""))
+        res = idx.eval(doc, self.env)[0]
+        self.assertEqual(res.key, dt)
+    
+    def test_DateIndex(self):
+        """
+        Tests indexing of dates.
+        """
+        dt = datetime(2008, 10, 10, 11, 53, 0, 54000)
+        # ISO 8601 w/o minus
+        idx = XmlIndex(self.rt1, "/station/creation_date", index.DATE_INDEX)
         timestr = dt.strftime("%Y%m%d")
         doc = newXMLDocument(RAW_XML1 % (timestr, ""))
         res = idx.eval(doc, self.env)[0]
         self.assertEqual(res.key, dt.date())
+        # ISO 8601 w/ minus
+        idx = XmlIndex(self.rt1, "/station/creation_date", index.DATE_INDEX)
+        timestr = dt.strftime("%Y-%m-%d")
+        doc = newXMLDocument(RAW_XML1 % (timestr, ""))
+        res = idx.eval(doc, self.env)[0]
+        self.assertEqual(res.key, dt.date())
         # custom format
-        idx = XmlIndex(self.rt1, "/station/creation_date", 
-                       index.DATE_INDEX, "%d.%m.%Y")
+        idx = XmlIndex(self.rt1, "/station/creation_date", index.DATE_INDEX, 
+                       options = "%d.%m.%Y")
         timestr = dt.strftime("%d.%m.%Y")
         doc = newXMLDocument(RAW_XML1 % (timestr, ""))
         res = idx.eval(doc, self.env)[0]
