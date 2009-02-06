@@ -1,11 +1,8 @@
 # -*- coding: utf-8 -*-
 
-from seishub.core import implements
-
-from seishub.exceptions import SeisHubError, InvalidParameterError
-from seishub.exceptions import NotFoundError
-from seishub.exceptions import DuplicateObjectError
 from seishub.db.orm import DbStorage, DbError, DB_LIMIT
+from seishub.exceptions import DuplicateObjectError, InvalidParameterError, \
+    NotFoundError
 from seishub.xmldb.resource import XmlDocument, Resource
 
 
@@ -20,14 +17,14 @@ class XmlDbManager(DbStorage):
                                    resourcetype_id, 
                                    name))
     
-    def addResource(self, xml_resource = Resource()):
-        """Add a new resource to the database."""
-        if not xml_resource.document.data or xml_resource.document.data == "":
+    def addResource(self, resource = Resource()):
+        """
+        Add a new resource to the database.
+        """
+        if not resource.document.data or resource.document.data == "":
             raise InvalidParameterError('Empty document!')
         try:
-            self.store(xml_resource,
-                       xml_resource.document.meta,
-                       xml_resource.document)
+            self.store(resource, resource.document.meta, resource.document)
         except DbError, e:
             msg = "Error adding a resource: A resource with the given " +\
                   "parameters already exists."
@@ -44,26 +41,14 @@ class XmlDbManager(DbStorage):
 #                # resource is already there and not version controlled
 #                raise DuplicateObjectError(msg, e)
     
-    def modifyResource(self, resource = Resource(), id = None):
-        """Modify an existing resource.
-        The resource is identified via it's id.
-        Parameters that are subject to change are:
-            - name
-            - document
-            - metadata
+    def modifyResource(self, old_resource, resource):
+        """
+        Modify an existing resource.
+        
         In case of a version controlled resource a new revision is created.
         XXX: new revisions are created always, whether or not the resource's 
         document has actually changed -> compare old/new document ?
         """
-        # try to use id of resource if no id was given explicitly
-        id = id or resource._id
-        if not id:
-            msg = "Error modifying a resource: No id was given."
-            raise InvalidParameterError(msg)
-        old_resource = self._getResource(id = id)
-                                #xml_resource.package, 
-                                #xml_resource.resourcetype, 
-                                #xml_resource.name)
         if not old_resource.resourcetype._id == resource.resourcetype._id:
             msg = "Error modifying a resource: Resourcetypes of old and " +\
                   "new resource do not match. %s != %s"
@@ -79,19 +64,18 @@ class XmlDbManager(DbStorage):
             resource.document._id = old_resource.document._id
             resource.document.meta._id = old_resource.document.meta._id
             self.update(resource, resource.document, resource.document.meta)
-        
-    def moveResource(self, package_id, resourcetype_id, old_name, new_name):
-        """Rename an existing resource."""
-        res = self._getResource(package_id, resourcetype_id, name = old_name)
-        res.name = new_name
+    
+    def renameResource(self, resource, new_name):
+        """
+        Rename an existing resource.
+        """
+        resource.name = new_name
         try:
-            self.update(res)
+            self.update(resource)
         except DbError, e:
             msg = "Error renaming a resource: A resource with the given " +\
-                  "parameters already exists. (%s/%s/%s)"
-            raise DuplicateObjectError(msg % (package_id, resourcetype_id, 
-                                              new_name), e)
-        
+                  "parameters already exists. (%s)"
+            raise DuplicateObjectError(msg % str(resource), e)
     
     def _getResource(self, package_id = None, resourcetype_id = None, 
                      name = None, revision = None, id = None):
@@ -144,64 +128,37 @@ class XmlDbManager(DbStorage):
                                 revision, id)
         return res
     
-    def _deleteResource(self, res):
-        try:
-            # delete resource and all of its documents (cascading_delete = True
-            # for Resource.document)
-            self.drop(Resource, _id = res._id, resourcetype = res.resourcetype,
-                      name = res.name)
-        except Exception, e:
-            msg = "Error deleting resource: '%s/%s/%s'"
-            raise SeisHubError(msg % (res.resourcetype.package.package_id,
-                                      res.resourcetype.resourcetype_id,
-                                      res.name), e)
-
-    def deleteResource(self, package_id = None, resourcetype_id = None, 
-                       name = None, document_id = None, id = None):
-        """Remove a resource from the storage, by either (package_id, 
-        resourcetype_id, name), by document_id or by id.
-        
-        Note: deleteResource() removes all revisions of a resource. To delete a
-        single revision use deleteRevision(...)
+    def deleteResource(self, resource=None, resource_id=None):
         """
-        # XXX: get resource really needed in any case?
-        if not ((package_id and resourcetype_id and name) or id or\
-                 document_id):
-            raise TypeError("deleteResource(): Invalid number of arguments.")
-        if document_id:
-            # this is needed because db.orm.drop doesn't support drop via
-            # a parameter of an 'one-to-many' related object
-            res = self.getResource(document_id = document_id)
-            id = res.id
-        if id:
-            return self.drop(Resource, _id = id)
-        return self.drop(Resource, resourcetype = 
-                         {'package':{'package_id':package_id}, 
-                          'resourcetype_id':resourcetype_id}, 
-                          name = str(name))
+        Remove a resource by a specified Resource.
+        
+        Note: This method removes all revisions of a resource. To delete a 
+        single revision use the deleteRevision method.
+        """
+        if resource:
+            resource_id = resource.id
+        return self.drop(Resource, _id = resource_id)
     
-    def deleteRevision(self, package_id = None, resourcetype_id = None, 
-                       name = None, id = None, revision = None):
-        """Delete a certain revision of the specified resource"""
-        if not (revision and\
-                ((package_id and resourcetype_id and name) or id)):
-            raise TypeError("deleteResource: Invalid number of arguments.")
-        try:
-            doc_id = self._getResource(package_id, resourcetype_id, name, 
-                                       revision, id).document._id
-        except IndexError:
-            self._raise_not_found(package_id, resourcetype_id, name, id)
-        self.drop(XmlDocument, _id = doc_id)
+    def deleteRevision(self, resource, revision):
+        """
+        Delete a certain revision for a given Resource object.
+        """
+        document = DB_LIMIT('revision', 'fixed', revision)
+        res = self.pickup(Resource,_id = resource._id, document = document)[0]
+        self.drop(XmlDocument, _id = res.document._id)
     
-    def deleteResources(self, package_id, resourcetype_id):
-        """delete all resources of specified package and resourcetype"""
-        self.drop(Resource, resourcetype = 
-                  {'package':{'package_id':package_id}, 
-                   'resourcetype_id':resourcetype_id})
+    def deleteAllResources(self, package_id, resourcetype_id = None):
+        """
+        Delete all resources of specified package_id and resourcetype_id.
+        """
+        self.drop(Resource, 
+                  resourcetype = {'package':{'package_id':package_id}, 
+                                  'resourcetype_id':resourcetype_id})
     
     def revertResource(self, package_id = None, resourcetype_id = None, 
                        name = None, revision = None, id = None):
-        """Reverts the specified revision for the given resource by removing 
+        """
+        Reverts the specified revision for the given resource by removing 
         all newer revisions than the specified one.
         """
         if not (revision and\
@@ -212,8 +169,10 @@ class XmlDbManager(DbStorage):
             if doc.revision > revision:
                 self.drop(XmlDocument, _id = doc._id)
     
-    def getResourceList(self, package_id, resourcetype_id = None):
-        """get a list of resources for specified package and resourcetype"""
+    def getAllResources(self, package_id, resourcetype_id = None):
+        """
+        Get a list of resources for specified package_id and resourcetype_id.
+        """
         res = self.pickup(Resource, 
                           resourcetype = {'package':{'package_id':package_id}, 
                                           'resourcetype_id':resourcetype_id},

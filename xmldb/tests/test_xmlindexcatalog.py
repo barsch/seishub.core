@@ -91,7 +91,7 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
     def setUp(self):
         self.catalog = self.env.catalog.index_catalog
         self.xmldb = self.env.catalog.xmldb
-        self.so_ids = list()
+        self.so_res = list()
         self.pkg1 = self.env.registry.db_registerPackage("testpackage")
         self.rt1 = self.env.registry.db_registerResourceType("testpackage",
                                                              "station")
@@ -147,9 +147,7 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
             fh.close()
             res = self.env.catalog.addResource('sortordertests', 'sotest', 
                                                data)
-            self.so_ids.append([res.package.package_id, 
-                                res.resourcetype.resourcetype_id, 
-                                res.id, res.document._id])
+            self.so_res.append(res)
         self.idx_so = []
         for i in so_indexes:
             idx = self.env.catalog.registerIndex('sortordertests', 'sotest', i)
@@ -161,19 +159,14 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         self.env.catalog.deleteIndex(self.idx2)
         self.env.catalog.deleteIndex(self.idx3)
         self.env.catalog.deleteIndex(self.idx4)
-        self.env.catalog.deleteResource(self.res1.package.package_id,
-                                        self.res1.resourcetype.resourcetype_id,
-                                        self.res1.id)
-        self.env.catalog.deleteResource(self.res2.package.package_id,
-                                        self.res2.resourcetype.resourcetype_id,
-                                        self.res2.id)
-        self.env.catalog.deleteResource(self.res3.package.package_id,
-                                        self.res3.resourcetype.resourcetype_id,
-                                        self.res3.id)
+        self.env.catalog.deleteIndex(self.idx5)
+        self.env.catalog.deleteResource(self.res1)
+        self.env.catalog.deleteResource(self.res2)
+        self.env.catalog.deleteResource(self.res3)
         for idx in self.idx_so:
             self.env.catalog.deleteIndex(idx)
-        for res in self.so_ids:
-            self.env.catalog.deleteResource(res[0],res[1],res[2])
+        for res in self.so_res:
+            self.env.catalog.deleteResource(res)
     
     def test_registerIndex(self):
         index = XmlIndex(self.rt1, "/station/XY/paramXY", DATETIME_INDEX, 
@@ -307,7 +300,7 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         # clean up
         self.catalog.deleteIndex(index1)
         self.catalog.deleteIndex(index2)
-        self.xmldb.deleteResource(id = res.id)
+        self.xmldb.deleteResource(res)
     
     def test_indexResourceWithGrouping(self):
         # set up
@@ -328,7 +321,7 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         self.assertEquals(el[1].document.data, res.document.data)
         # clean up
         self.catalog.deleteIndex(index)
-        self.xmldb.deleteResource(id = res.id)
+        self.xmldb.deleteResource(res)
     
     def test_flushIndex(self):
         # set up
@@ -360,7 +353,7 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         # clean up:
         self.catalog.deleteIndex(index1)
         self.catalog.deleteIndex(index2)
-        self.xmldb.deleteResource(id = res.id)
+        self.xmldb.deleteResource(res)
     
     def test_runXPathQuery(self):
         # create test catalog
@@ -474,7 +467,7 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         # predicate query w/ order_by
         q = "/sortordertests/sotest/sortorder[int1] order by int1 desc"
         res = self.catalog.query(XPathQuery(q))
-        res_ids = [id[3] for id in self.so_ids]
+        res_ids = [r.document._id for r in self.so_res]
         res_ids.reverse()
         self.assertEqual(res['ordered'], res_ids)
         
@@ -532,6 +525,8 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         self.env.catalog.reindex(float_idx)
         
         # print self.catalog.dumpIndex("testpackage", "station", "/station/station_code")
+        # clean up
+        self.env.catalog.deleteAllIndexes("testpackage")
     
 #    def testCreateView(self):
 #        """

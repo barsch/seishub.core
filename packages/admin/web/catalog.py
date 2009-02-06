@@ -150,10 +150,10 @@ class ResourcesPanel(Component):
                         data = self._addResource(data)
             elif 'delete' in args.keys() and 'resource[]' in args.keys():
                 data['resource[]'] = args['resource[]']
-                data = self._deleteResources(data)
+                data = self._deleteResource(data)
         # fetch all URIs
         # XXX: filter (limit) or remove that later!
-        temp = self.catalog.getResourceList()
+        temp = self.catalog.getAllResources()
         # remove all SeisHub resources
         temp = [t for t in temp if not str(t).startswith('/seishub/')]
         data['resources'] = temp 
@@ -171,13 +171,13 @@ class ResourcesPanel(Component):
         data['file']=''
         return data
     
-    def _deleteResources(self, data):
+    def _deleteResource(self, data):
         for id in data.get('resource[]',[None]):
             try:
-                self.catalog.deleteResource(document_id=id)
+                self.catalog.deleteResource(resource_id=id)
             except Exception, e:
-                self.log.info("Error deleting resource: %s" % id, e)
-                data['error'] = ("Error deleting resource: %s" % id, e)
+                self.log.info("Error deleting resource", e)
+                data['error'] = ("Error deleting resource", e)
                 return data
         return data
 

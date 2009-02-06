@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 
+from seishub.xmldb.tests import test_xmlcatalog, test_xmldbms, test_xmlindex, \
+    test_xmlindexcatalog, test_xpath
 import doctest
 import unittest
-
-from seishub.xmldb.tests import test_xmlcatalog, test_xmldbms, test_xmlindex, \
-                                test_xmlindexcatalog, test_xpath
 
 
 def suite():

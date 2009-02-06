@@ -115,10 +115,7 @@ class RESTResource(Resource):
             msg = "SeisHub resources may not be modified directly."
             raise ForbiddenError(msg)
         # modify resource
-        request.env.catalog.modifyResource(self.package_id,
-                                           self.resourcetype_id,
-                                           request.data,
-                                           self.name)
+        request.env.catalog.modifyResource(self.res, request.data)
         # resource successfully modified - set status code
         request.code = http.NO_CONTENT
         return ''
@@ -161,11 +158,8 @@ class RESTResource(Resource):
         if len(parts)<1 or parts[:-1]!=request.prepath[:-1]:
             msg = "Destination %s not allowed." % destination
             raise ForbiddenError(msg)
-        # moves or rename resource
-        request.env.catalog.moveResource(self.package_id,
-                                         self.resourcetype_id,
-                                         self.name, 
-                                         parts[-1])
+        # rename resource
+        request.env.catalog.renameResource(self.res, parts[-1])
         # on successful creation - set status code and location header
         request.code = http.CREATED
         url = request.env.getRestUrl() + destination
@@ -195,9 +189,7 @@ class RESTResource(Resource):
             msg = "SeisHub resources may not be deleted directly."
             raise ForbiddenError(msg)
         # delete resource
-        request.env.catalog.deleteResource(self.package_id,
-                                           self.resourcetype_id,
-                                           self.name)
+        request.env.catalog.deleteResource(self.res)
         # resource deleted - set status code
         request.code = http.NO_CONTENT
         return ''
@@ -420,8 +412,9 @@ class RESTResourceTypeFolder(Folder):
         """
         temp = {}
         # resources
-        for res in request.env.catalog.getResourceList(self.package_id,
-                                                       self.resourcetype_id):
+        res_list = request.env.catalog.getAllResources(self.package_id,
+                                                       self.resourcetype_id)
+        for res in res_list:
             temp[res.name] = RESTResource(res)
         # indexes
         for id in request.env.catalog.getIndexes(self.package_id,

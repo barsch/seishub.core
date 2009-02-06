@@ -260,7 +260,7 @@ class RegistryBase(DbStorage, list):
         else:
             raise SeisHubError("Invalid URL: %s" % uri)
         return package_id, resourcetype_id, type
-            
+    
     def register(self, package_id, resourcetype_id, type, xml_data, name=None):
         package, resourcetype = self.registry.objects_from_id(package_id, 
                                                               resourcetype_id)
@@ -272,9 +272,7 @@ class RegistryBase(DbStorage, list):
             o = self.cls(package, resourcetype, type, res.document._id)
             self.store(o)
         except:
-            self.catalog.deleteResource(self.package_id, 
-                                        self.resourcetype_id, 
-                                        res.document._id)
+            self.catalog.deleteResource(res)
             raise
         return True
     
@@ -313,7 +311,7 @@ class RegistryBase(DbStorage, list):
         if len(o) == 0:
             raise SeisHubError("Error deleting a schema or stylesheet: " +\
                                "No objects found with the given parameters.")
-        self.catalog.deleteResource(document_id = o[0].document_id)
+        self.catalog.deleteResource(resource_id = o[0]._id)
         self.drop(self.cls, document_id = o[0].document_id)
         return True
 

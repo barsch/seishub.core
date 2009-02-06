@@ -294,6 +294,12 @@ class XmlIndexCatalog(DbStorage, _QueryProcessor):
         self.flushIndex(xmlindex)
         self.drop(XmlIndex, _id = xmlindex._id)
     
+    def deleteAllIndexes(self, package_id=None, resourcetype_id=None):
+        """
+        Removes all indexes related to a given package_id and resourcetype_id.
+        """
+        pass
+    
     def getIndexes(self, package_id = None, resourcetype_id = None, 
                    xpath = None, group_path = None, type = None, 
                    options = None, index_id = None):
