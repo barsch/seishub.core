@@ -244,7 +244,6 @@ class RESTProperty(Resource):
                         value=unicode(value)
                     etree.SubElement(values, "value").text = value
             data = etree.tostring(root, pretty_print=True, encoding='utf-8')
-            #import pdb;pdb.set_trace()
             format_prefix = 'index'
         elif property=='.meta':
             res = request.env.catalog.getResource(self.package_id,

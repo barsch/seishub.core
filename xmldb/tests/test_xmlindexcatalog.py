@@ -123,16 +123,17 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
                                                  self.rt2.resourcetype_id, 
                                                  RAW_XML3)
         self.idx1 = self.env.catalog.registerIndex("testpackage", "station", 
-                                                   IDX1)
+                                                   "1", IDX1)
         self.idx2 = self.env.catalog.registerIndex("testpackage", "station", 
-                                                   IDX2)
+                                                   "2", IDX2)
         self.idx3 = self.env.catalog.registerIndex("testpackage", "testml", 
-                                                   IDX3)
+                                                   "3", IDX3)
         self.idx4 = self.env.catalog.registerIndex("testpackage", "station", 
-                                                   IDX4)
+                                                   "4", IDX4)
         # index rootnode, too
         self.idx5 = self.env.catalog.registerIndex("testpackage", "station", 
-                                                   "/station", type="boolean")
+                                                   "5", "/station", 
+                                                   type="boolean")
         
         self.env.catalog.reindex(self.idx1)
         self.env.catalog.reindex(self.idx2)
@@ -150,7 +151,8 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
             self.so_res.append(res)
         self.idx_so = []
         for i in so_indexes:
-            idx = self.env.catalog.registerIndex('sortordertests', 'sotest', i)
+            idx = self.env.catalog.registerIndex('sortordertests', 'sotest', 
+                                                 str(i), i)
             self.idx_so.append(idx)
             self.env.catalog.reindex(idx)
         
@@ -497,12 +499,8 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         self.assertEqual(len(res['ordered']), 2)
         self.assertTrue(self.res1.document._id in res)
         self.assertTrue(self.res2.document._id in res)
-        self.assertEqual(res[self.res1.document._id]
-                         ["/testpackage/station/station/XY/paramXY"],
-                         None)
-        self.assertEqual(res[self.res2.document._id]
-                         ["/testpackage/station/station/XY/paramXY"],
-                         ['0', '2.5', '99'])
+        self.assertEqual(res[self.res1.document._id]["4"], None)
+        self.assertEqual(res[self.res2.document._id]["4"], ['0', '2.5', '99'])
         # XXX: more testing!
         
         #======================================================================
@@ -517,10 +515,12 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
     
     def test_indexTypes(self):
         text_idx = self.env.catalog.registerIndex("testpackage", "station", 
+                                                  "idx1", 
                                                   "/station/station_code", 
                                                   "text")
         float_idx = self.env.catalog.registerIndex("testpackage", "station", 
-                                                   "/station/lon", "float")
+                                                   "idx2", "/station/lon", 
+                                                   "float")
         self.env.catalog.reindex(text_idx)
         self.env.catalog.reindex(float_idx)
         

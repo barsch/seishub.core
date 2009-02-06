@@ -1,10 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from datetime import datetime
-from seishub.core import Component, implements
 from seishub.exceptions import SeisHubError
-from seishub.packages.interfaces import IProcessorIndex, IPackage, \
-    IResourceType
 from seishub.test import SeisHubEnvironmentTestCase
 from seishub.xmldb import index
 from seishub.xmldb.index import NumericIndexElement, XmlIndex
@@ -253,65 +250,9 @@ class XmlIndexTest(SeisHubEnvironmentTestCase):
 #        self.assertEquals(res[0].key, None)
 
 
-class ProcessorIndexTestPackage(Component):
-    implements(IPackage)
-    package_id = 'processorindextest'
-
-
-class ProcessorIndexTestResourcetype(Component):
-    implements(IResourceType)
-    package_id = 'processorindextest'
-    resourcetype_id = 'testtype'
-
-
-class TestIndex(Component):
-    implements(IProcessorIndex)
-    
-    package_id = 'processorindextest'
-    resourcetype_id = 'testtype'
-    type = index.FLOAT_INDEX
-    
-    def eval(self, document):
-        return [1,2,3]
-
-
-class ProcessorIndexTest(SeisHubEnvironmentTestCase):
-    def setUp(self):
-        self.env.enableComponent(ProcessorIndexTestPackage)
-        self.env.enableComponent(ProcessorIndexTestResourcetype)
-    
-    def tearDown(self):
-        self.env.disableComponent(ProcessorIndexTestPackage)
-        self.env.disableComponent(ProcessorIndexTestResourcetype)
-    
-    def testProcessorIndexRegistration(self):
-        self.env.enableComponent(TestIndex)
-        res = self.env.catalog.index_catalog.getIndexes('processorindextest', 
-                                                        'testtype')
-        self.assertEqual(len(res), 1)
-        idx = res[0]
-        self.assertEqual(idx.resourcetype.package.package_id, 
-                         'processorindextest')
-        self.assertEqual(idx.resourcetype.resourcetype_id, 'testtype')
-        self.assertEqual(idx.type, index.PROCESSOR_INDEX)
-        self.assertEqual(idx.options, TestIndex.__module__ + '.' +\
-                         TestIndex.__name__)
-        
-        test_doc = newXMLDocument(RAW_XML1)
-        res = idx.eval(test_doc, self.env)
-        self.assertEqual(len(res), 3)
-        self.assertEqual(type(res[0]), index.FloatIndexElement)
-        self.assertEqual(type(res[1]), index.FloatIndexElement)
-        self.assertEqual(type(res[2]), index.FloatIndexElement)
-        self.assertEqual(res[0].key, 1)
-        self.assertEqual(res[1].key, 2)
-        self.assertEqual(res[2].key, 3)
-
-
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(XmlIndexTest, 'test'))
-    suite.addTest(unittest.makeSuite(ProcessorIndexTest, 'test'))
     return suite
 
 

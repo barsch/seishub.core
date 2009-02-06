@@ -41,7 +41,7 @@ class AResourceType(Component):
     package_id = 'property-test'
     resourcetype_id = 'notvc'
     version_control = False
-    registerIndex('/testml/blah1/blahblah1', 'text')
+    registerIndex('label', '/testml/blah1/blahblah1', 'text')
 
 
 class AResourceType2(Component):
@@ -53,7 +53,7 @@ class AResourceType2(Component):
     package_id = 'property-test'
     resourcetype_id = 'notvc2'
     version_control = False
-    registerIndex('/testml/blah1/blahblah1', 'datetime')
+    registerIndex('label', '/testml/blah1/blahblah1', 'datetime')
 
 
 class AResourceType3(Component):
@@ -65,7 +65,7 @@ class AResourceType3(Component):
     package_id = 'property-test'
     resourcetype_id = 'notvc3'
     version_control = False
-    registerIndex('/testml/blah1/blahblah1#v', 'numeric')
+    registerIndex('label', '/testml/blah1/blahblah1#v', 'numeric')
 
 
 class AVersionControlledResourceType(Component):
@@ -77,7 +77,7 @@ class AVersionControlledResourceType(Component):
     package_id = 'property-test'
     resourcetype_id = 'vc'
     version_control = True
-    registerIndex('/testml/blah1/blah2', 'text')
+    registerIndex('label', '/testml/blah1/blah2', 'text')
 
 
 class RestPropertyTests(SeisHubEnvironmentTestCase):

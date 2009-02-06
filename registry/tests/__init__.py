@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
 
+from seishub.registry.tests import test_registry, test_processorindex, \
+    test_registry_fromfilesystem
 import doctest
 import unittest
-
-from seishub.registry.tests import test_registry
-from seishub.registry.tests import test_registry_fromfilesystem
 
 
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(test_registry.suite())
     suite.addTest(test_registry_fromfilesystem.suite())
+    suite.addTest(test_processorindex.suite())
     return suite
 
 

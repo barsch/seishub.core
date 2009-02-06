@@ -521,7 +521,6 @@ class DbStorage(DbEnabled):
             r.close()
         # create objects from results
         objs = {cls:list()}
-        #import pdb;pdb.set_trace()
         for res in results:
             objs = self._generate_objs(cls, res, objs)
         if hasattr(self,'debug') and self.debug:

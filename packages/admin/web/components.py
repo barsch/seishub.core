@@ -160,6 +160,7 @@ class IndexesPanel(Component):
             'indexes': [],
             'error': '',
             'xpath': '',
+            'label': '',
             'options': '',
             'packages': packages,
             'resourcetypes': resourcetypes,
@@ -168,6 +169,7 @@ class IndexesPanel(Component):
         if request.method=='POST':
             args = request.args
             if 'add' in args.keys() and 'xpath' in args.keys():
+                label = args.get('label',[''])[0]
                 xpath = args.get('xpath',[''])[0]
                 package_id = args.get('package_id',[''])[0]
                 resourcetype_id = args.get('resourcetype_id',[''])[0]
@@ -176,7 +178,8 @@ class IndexesPanel(Component):
                 if package_id in packages:
                     if resourcetype_id in resourcetypes.get(package_id, []):
                         data.update(self._addIndex(package_id, resourcetype_id,
-                                                   xpath, type_id, options))
+                                                   label, xpath, type_id, 
+                                                   options))
             elif 'delete' in args.keys() and 'index[]' in args.keys():
                 data.update(self._deleteIndexes(args.get('index[]',[])))
             elif 'reindex' in args.keys() and 'index[]' in args.keys():
@@ -203,10 +206,12 @@ class IndexesPanel(Component):
                 return {'error': ("Error removing index", e)}
         return {'info': "Index has been removed."}
     
-    def _addIndex(self, package_id, resourcetype_id, xpath, type_id, options):
+    def _addIndex(self, package_id, resourcetype_id, label, xpath, type_id, 
+                  options):
         try:
             self.catalog.registerIndex(package_id, 
                                        resourcetype_id, 
+                                       label, 
                                        xpath, 
                                        type_id,
                                        options = options)

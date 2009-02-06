@@ -66,9 +66,7 @@ def parseXMLDeclaration(data, remove_decl = False):
     
 #    # utf-8 encode
 #    if isinstance(data, unicode):
-#        #import pdb;pdb.set_trace()
 #        data = data.encode("utf-8")
-    # import pdb;pdb.set_trace()
     ## search and extract encoding string
     match = xmlDeclRE.search(data)
     # @see: http://www.w3.org/TR/2006/REC-xml11-20060816/#charencoding

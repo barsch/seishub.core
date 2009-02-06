@@ -622,7 +622,7 @@ class ProcessorIndexRegistry(object):
                 self._enableProcessorIndex(cls)
             else:
                 self._disableProcessorIndex(cls)
-                
+    
     def register(self, cls):
         """
         Register an IProcessorIndex.
@@ -639,9 +639,10 @@ class ProcessorIndexRegistry(object):
         clsname = cls.__module__ + '.' + cls.__name__
         idx = index.XmlIndex(resourcetype = rt, xpath = "", 
                              type = index.PROCESSOR_INDEX,
-                             options = clsname)
+                             options = clsname,
+                             label = clsname)
         self.env.catalog.index_catalog.registerIndex(idx)
-        
+    
     def _enableProcessorIndex(self, cls):
         try:
             self.register(cls)
@@ -649,8 +650,6 @@ class ProcessorIndexRegistry(object):
             msg = "Skipping processor index %s: Index already exists.\n%s"
             self.env.log.info(msg % (cls, e))
             return
-        
+    
     def _disableProcessorIndex(self, cls):
         pass
-    
-    

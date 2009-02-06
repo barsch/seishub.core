@@ -19,6 +19,10 @@
     </select>
   </div>
   <div class="field">
+    <label>Label</label><br />
+    <input type="text" size="30" name="label" value="$label" />
+  </div>
+  <div class="field">
     <label>Type</label><br />
     <select name="type_id" id="type_id">
       #for $i in $index_types:
@@ -49,6 +53,7 @@
       <th></th>
       <th>Package</th>
       <th>Resourcetype</th>
+      <th>Label</th>
       <th>Type</th>
       <th>Options</th>
       <th>XPath</th>
@@ -62,6 +67,7 @@
       </td>
       <td>$index.resourcetype.package.package_id</td>
       <td>$index.resourcetype.resourcetype_id</td>
+      <td>$index.label</td>
       <td>$index_types_dict[$index.type]</td>
       <td>$index.options</td>
       <td>$index.xpath</td>

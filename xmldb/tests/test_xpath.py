@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from seishub.exceptions import InvalidParameterError, InvalidObjectError
+from seishub.exceptions import InvalidParameterError
 from seishub.test import SeisHubEnvironmentTestCase
 from seishub.xmldb.xpath import XPathQuery, RestrictedXPathQueryParser
 import unittest

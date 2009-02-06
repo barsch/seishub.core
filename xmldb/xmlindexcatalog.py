@@ -12,29 +12,29 @@ from sqlalchemy import select, sql
 from zope.interface.exceptions import DoesNotImplement
 
 
-#class _IndexViewer(object):
-#    """
-#    Mixin for XMLIndexCatalog providing "horizontal" views on the indexed data
-#    per resourcetype.
-#    """
-#    
-#    def createView(self, package, resourcetype, name = None):
-#        """
-#        Create a view for the given package and resourcetype.
-#        """
-#        name = name or '/%s/%s' % (package, resourcetype)
-#        q = select([document_tab.c['id'].label("document_id")])
-#        location_path = [package, resourcetype, None]
-#        q, joins = self._process_location_path(location_path, q)
-#        q = q.select_from(joins)
-#        self._db_manager.createView(name, q)
-#    
-#    def dropView(self, package, resourcetype, name = None):
-#        """
-#        Remove specified view.
-#        """
-#        name = name or '/%s/%s' % (package, resourcetype)
-#        self._db_manager.dropView(name)
+class _IndexViewer(object):
+    """
+    Mixin for XMLIndexCatalog providing "horizontal" views on the indexed data
+    per resourcetype.
+    """
+    
+    def createView(self, package, resourcetype, name = None):
+        """
+        Create a view for the given package and resourcetype.
+        """
+        name = name or '/%s/%s' % (package, resourcetype)
+        q = select([document_tab.c['id'].label("document_id")])
+        location_path = [package, resourcetype, None]
+        q, joins = self._process_location_path(location_path, q)
+        q = q.select_from(joins)
+        self._db_manager.createView(name, q)
+    
+    def dropView(self, package, resourcetype, name = None):
+        """
+        Remove specified view.
+        """
+        name = name or '/%s/%s' % (package, resourcetype)
+        self._db_manager.dropView(name)
 
 
 class _QueryProcessor(object):
@@ -127,25 +127,26 @@ class _QueryProcessor(object):
         /package/resourcetype/* is given, select all indexes for the given
         resourcetype.
         
-        The column names in the selection correspond to the xpath expressions
-        of the indexes.
+        The column names in the selection correspond to the id of the XMLIndex.
         """
         pkg, rt = location_path[0:2]
         joins = self._join_on_resourcetype(pkg, rt)
-        if len(location_path) == 3: # and location_path[2] is None:
-            # location path is on resource level => select _all_ known indexes 
-            # for that resourcetype
+        if len(location_path) == 3:
+            # location path is on resource level
+            # select *all* known indexes for that resourcetype
             indexes = self.getIndexes(pkg, rt)
         else:
+            # find all indexes which fit to query
             xpath = '/'.join(location_path[2:])
             indexes = [self.findIndex([pkg, rt], xpath, False)]
+        # join indexes
         for idx in indexes:
             joins, idx_tab = self._join_on_index(idx, joins)
-            # also add the index keyval and group_pos column to selected columns
-            keyval_label = str(idx)
+            # also add the index keyval and group_pos to selected columns
+            keyval_label = idx.label
             q.append_column(idx_tab.c['keyval'].label(keyval_label))
             if idx.group_path:
-                group_pos_label = "#(%s)" % keyval_label
+                group_pos_label = "#%s" % keyval_label
                 q.append_column(idx_tab.c['group_pos'].label(group_pos_label))
         return q, joins
     
@@ -237,7 +238,6 @@ class _QueryProcessor(object):
         order_by = query.getOrderBy() or list()
         limit = query.getLimit()
         offset = query.getOffset()
-        
         q = select([document_tab.c['id'].label("document_id")], 
                    use_labels = True).distinct()
         q, joins = self._process_location_path(location_path, q)
@@ -258,8 +258,7 @@ class _QueryProcessor(object):
         return results
 
 
-#class XmlIndexCatalog(DbStorage, _QueryProcessor, _IndexViewer):
-class XmlIndexCatalog(DbStorage, _QueryProcessor):
+class XmlIndexCatalog(DbStorage, _QueryProcessor, _IndexViewer):
     """
     A catalog of indexes.
     
@@ -301,14 +300,15 @@ class XmlIndexCatalog(DbStorage, _QueryProcessor):
         pass
     
     def getIndexes(self, package_id = None, resourcetype_id = None, 
-                   xpath = None, group_path = None, type = None, 
-                   options = None, index_id = None):
+                  xpath = None, group_path = None, type = None, 
+                   options = None, index_id = None, label = None):
         """
         Return a list of all applicable XMLIndex objects.
         """
         res = self.pickup(XmlIndex, 
                           resourcetype = {'package':{'package_id':package_id}, 
                                           'resourcetype_id':resourcetype_id}, 
+                          label = label,
                           xpath = xpath,
                           group_path = group_path,
                           type = type,

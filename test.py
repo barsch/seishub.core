@@ -19,7 +19,7 @@ USE_TEST_DB = 'sqlite://'
 #USE_TEST_DB = 'postgres://seishub:seishub@localhost:5432/postgis'
 
 # use this options below only for debugging test cases
-CHECK_DATABASE = False
+CHECK_DATABASE = True
 CLEAN_DATABASE = True
 DISPOSE_CONNECTION = False
 

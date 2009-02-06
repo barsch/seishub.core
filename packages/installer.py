@@ -241,8 +241,9 @@ registerAlias = lambda name, expr, limit = None, order_by = None: \
                                                    expr = expr,
                                                    limit = limit,
                                                    order_by = order_by)
-registerIndex = lambda xpath, type = 'text', options = None: \
+registerIndex = lambda label, xpath, type = 'text', options = None: \
                     PackageInstaller._pre_register('_indexes',
+                                                   label = label,
                                                    xpath = xpath,
                                                    type = type,
                                                    options = options)

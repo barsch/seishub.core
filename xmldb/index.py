@@ -19,6 +19,7 @@ BOOLEAN_INDEX = 4
 # NONETYPE_INDEX = 5
 PROCESSOR_INDEX = 6
 DATE_INDEX = 7
+INTEGER_INDEX = 8
 
 DATETIME_ISO_FORMAT = "%Y%m%d %H:%M:%S"
 DATE_ISO_FORMAT = "%Y%m%d"
@@ -26,6 +27,7 @@ _FALSE_VALUES = ('no', 'false', 'off', '0', 'disabled')
 
 INDEX_TYPES = {
     "text":     TEXT_INDEX,
+    "integer":  INTEGER_INDEX,
     "numeric":  NUMERIC_INDEX,
     "float":    FLOAT_INDEX,
     "datetime": DATETIME_INDEX,
@@ -37,13 +39,13 @@ INDEX_TYPES = {
 
 class XmlIndex(Serializable):
     """
-    A XML index definition.
+    A XML index.
     
     @param resourcetype: ResourcetypeWrapper instance
     @param xpath: path to node in XML tree to be indexed, or any arbitrary 
     xpath expression, that returns a value of correct type
     @param type: TEXT_INDEX | NUMERIC_INDEX | DATETIME_INDEX | BOOLEAN_INDEX |
-                 NONETYPE_INDEX | DATE_INDEX | FLOAT_INDEX
+                 DATE_INDEX | FLOAT_INDEX | INTEGER_INDEX
     @param options: additional options for an index
     
     notes:
@@ -57,21 +59,24 @@ class XmlIndex(Serializable):
     implements(IXmlIndex)
     
     db_table = defaults.index_def_tab
-    db_mapping = {'resourcetype':Relation(ResourceTypeWrapper, 
-                                          'resourcetype_id'),
-                  'xpath':'xpath',
-                  'group_path':'group_path',
-                  'type':'type',
-                  'options':'options'}
+    db_mapping = {
+        'resourcetype':Relation(ResourceTypeWrapper, 'resourcetype_id'),
+        'xpath':'xpath',
+        'group_path':'group_path',
+        'type':'type',
+        'options':'options',
+        'label':'label'
+    }
     
     def __init__(self, resourcetype = None, xpath = None, type = TEXT_INDEX, 
-                 options = None, group_path = None):
+                 options = None, group_path = None, label = None):
         self.resourcetype = resourcetype
         self.xpath = xpath
         self.type = type
         self.options = options
         self.group_path = group_path
-        self.relative_xpath = None 
+        self.relative_xpath = None
+        self.label = label
     
     def __str__(self):
         return '/' + self.resourcetype.package.package_id + '/' + \
@@ -152,7 +157,6 @@ class XmlIndex(Serializable):
         except Exception, e:
             log.err(e)
             return list()
-        #return [r.getStrContent() for r in res]
     
     def eval(self, xml_doc, env = None):
         if self.type == PROCESSOR_INDEX:
@@ -186,11 +190,15 @@ class XmlIndex(Serializable):
 
 
 class KeyIndexElement(Serializable):
-    db_mapping = {'index':Relation(XmlIndex, 'index_id'),
-                  'key':'keyval',
-                  'group_pos':'group_pos',
-                  'document':Relation(XmlDocument, 'document_id')
-                  }
+    """
+    Base class for all indexes.
+    """
+    db_mapping = {
+        'index':Relation(XmlIndex, 'index_id'),
+        'key':'keyval',
+        'group_pos':'group_pos',
+        'document':Relation(XmlDocument, 'document_id')
+    }
     
     def __init__(self, index = None, key = None, document = None,
                  group_pos = None):
@@ -345,6 +353,13 @@ class BooleanIndexElement(KeyIndexElement):
         return bool(data)
 
 
+class IntegerIndexElement(KeyIndexElement):
+    db_table = defaults.index_integer_tab
+    
+    def _filter_key(self, data):
+        return int(data)
+
+
 #class NoneTypeIndexElement(QualifierIndexElement):
 #    db_table = defaults.index_keyless_tab
 
@@ -356,5 +371,6 @@ type_classes = {
     DATETIME_INDEX:DateTimeIndexElement, 
     BOOLEAN_INDEX:BooleanIndexElement, 
     #NONETYPE_INDEX:NoneTypeIndexElement,
-    DATE_INDEX:DateIndexElement
+    DATE_INDEX:DateIndexElement,
+    INTEGER_INDEX:IntegerIndexElement,
 }

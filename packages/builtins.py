@@ -33,7 +33,8 @@ class StylesheetResource(Component):
                        'resourcelist.json')
     registerStylesheet('xslt' + os.sep + 'resourcelist_admin.xslt',
                        'resourcelist.admin')
-    registerIndex('/xsl:stylesheet/xsl:output/@media-type', 'text')
+    registerIndex('media-type', '/xsl:stylesheet/xsl:output/@media-type', 
+                  'text')
 
 
 class SchemaResource(Component):

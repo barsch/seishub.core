@@ -154,12 +154,17 @@ class XmlCatalog(object):
                                                 e.message))
     
     def registerIndex(self, package_id = None, resourcetype_id = None, 
-                      xpath = None, type = "text", options = None):
+                      label = None, xpath = None, type = "text", 
+                      options = None):
         """
         Register an index.
         
         @param type: "text"|"numeric"|"float"|"datetime"|"boolean"|"date"
         """
+        # check for label
+        if not label:
+            msg = "registerIndex: No index label defined!"
+            raise InvalidParameterError(msg)
         # check for XPath expression
         if not xpath:
             msg = "registerIndex: Empty XPath expression!"
@@ -182,14 +187,13 @@ class XmlCatalog(object):
         _, resourcetype = self.env.registry.objects_from_id(package_id, 
                                                             resourcetype_id)
         # generate index + reindex
-        xmlindex = XmlIndex(resourcetype = resourcetype, xpath = xpath, 
-                            type = type, options = options, 
+        xmlindex = XmlIndex(resourcetype = resourcetype, label = label,
+                            xpath = xpath, type = type, options = options, 
                             group_path = group_path)
         xmlindex = self.index_catalog.registerIndex(xmlindex)
         self.reindex(xmlindex)
-#XXX: disabled
         # create or update view:
-        #self.index_catalog.createView(package_id, resourcetype_id)
+        self.index_catalog.createView(package_id, resourcetype_id)
         return xmlindex
     
     def deleteIndex(self, xmlindex = None, index_id = None):
@@ -199,9 +203,10 @@ class XmlCatalog(object):
         if index_id:
             xmlindex = self.getIndexes(index_id = index_id)[0]
         res = self.index_catalog.deleteIndex(xmlindex)
-#XXX: disabled
         # create or update view:
-        #self.index_catalog.createView(package_id, resourcetype_id)
+        package_id = xmlindex.resourcetype.package.package_id
+        resourcetype_id = xmlindex.resourcetype.resourcetype_id 
+        self.index_catalog.createView(package_id, resourcetype_id)
         return res 
     
     def deleteAllIndexes(self, package_id, resourcetype_id = None):
@@ -215,7 +220,7 @@ class XmlCatalog(object):
     
     def getIndexes(self, package_id = None, resourcetype_id = None, 
                    xpath = None, group_path = None, type = "text", 
-                   options = None, index_id = None):
+                   options = None, index_id = None, label = None):
         """
         Return a list of all applicable XMLIndex objects.
         """
@@ -230,7 +235,8 @@ class XmlCatalog(object):
                                              group_path = group_path, 
                                              type = type, 
                                              options = options,
-                                             index_id = index_id)
+                                             index_id = index_id,
+                                             label = label)
     
     def reindex(self, xmlindex = None, index_id = None):
         """
@@ -269,8 +275,8 @@ class XmlCatalog(object):
         elements = self.index_catalog.dumpIndexByDocument(doc._id)
         values = {}
         for element in elements:
-            values.setdefault(element.index.xpath, {})
-            values[element.index.xpath][element.group_pos]=element.key
+            values.setdefault(element.index.label, {})
+            values[element.index.label][element.group_pos]=element.key
         return values
     
     def query(self, query, full = False):
