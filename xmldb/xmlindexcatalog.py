@@ -152,22 +152,12 @@ class _QueryProcessor(object):
                 oncl = sql.and_(idx_tab.c['document_id'] == document_tab.c['id'],
                                 idx_tab.c['index_id'] == idx_id)
                 group_paths[idx_gp]=idx_tab
-#                group_paths[idx_gp][0]=idx_tab
-#                group_paths[idx_gp][1]=0
             else:
                 # here we know the grouping element
                 oncl = sql.and_(idx_tab.c['document_id'] == document_tab.c['id'],
                                 idx_tab.c['index_id'] == idx_id,
                                 idx_tab.c['group_pos'] == group_paths[idx_gp].c['group_pos'])
-#                group_paths[idx_gp][1]+=1
             joins = join(idx_tab, onclause = oncl)
-#        # add group pos to selected columns for grouping elements
-#        for gp, idx_gp in group_paths.iteritems():
-#            if idx_gp[1]==0:
-#                continue
-#            idx_tab = idx_gp[0]
-#            group_pos_label = "#%s" % (gp or '/')
-#            q.append_column(idx_tab.c['group_pos'].label(group_pos_label))
         return q, joins
     
     def _process_predicates(self, p, q, joins = None):

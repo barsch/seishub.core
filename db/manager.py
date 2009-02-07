@@ -94,6 +94,9 @@ class DatabaseManager(object):
                                 encoding = 'utf-8', 
                                 convert_unicode = True)
     
+    def query(self, sql):
+        return self.engine.execute(sql)
+    
     def createView(self, name, query):
         try:
             self.dropView(name)

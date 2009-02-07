@@ -210,3 +210,39 @@ class CatalogQueryPanel(Component):
                     self.env.log.info('Catalog query error', e)
                     data['error'] = ('Catalog query error', e)
         return data
+
+
+class DatabaseStatusPanel(Component):
+    """
+    Shows some statistics of the database.
+    """
+    implements(IAdminPanel)
+    
+    template = 'templates' + os.sep + 'catalog_status.tmpl'
+    panel_ids = ('catalog', 'Catalog', 'status', 'Status')
+    has_roles = ['CATALOG_ADMIN']
+    
+    def render(self, request):
+        db = self.env.db.engine
+        tables = {}
+        views = {}
+        for table in sorted(db.table_names()):
+            if not table.startswith(DEFAULT_PREFIX):
+                continue
+            query = 'SELECT count(*) FROM ' + table
+            try:
+                query = db.execute(query)
+                tables[table] = query.fetchall()[0][0]
+            except:
+                pass
+        for view in self.env.db.getViews():
+            query = 'SELECT count(*) FROM ' + view
+            try:
+                query = db.execute(query)
+                views[view] = query.fetchall()[0][0]
+            except:
+                pass
+        return {
+            'tables': tables,
+            'views': views,
+        }

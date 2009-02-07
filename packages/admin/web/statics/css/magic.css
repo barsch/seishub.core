@@ -1,37 +1,32 @@
 body {
     color: #333333;
-    background: url(../images/bg.png) repeat-x;;
+    background: url(../images/bg.png) repeat-x;
+;
     font-family: Arial, Helvetica, sans-serif;
     font-size: 12px;
     margin: 0;
     padding: 0;
 }
-
 input,option,select,textarea {
     color: #333333;
     font-family: Arial, Helvetica, sans-serif;
     font-size: 12px;
 }
-
 textarea {
-    min-width: 500px;
+    width: 100%
 }
-
 a {
     color: #0066cc;
     text-decoration: none;
 }
-
 a:hover {
     text-decoration: underline;
 }
-
 table.list {
     border: 1px solid #dedede;
     margin-bottom: 1em;
     border-collapse: collapse
 }
-
 table.list td,table.list th {
     border: 1px solid #dedede;
     padding-left: 10px;
@@ -39,8 +34,7 @@ table.list td,table.list th {
     padding-bottom: 3px;
     padding-top: 3px;
 }
-
-/* header*/
+/* header */
 #header {
     height: 115px;
     margin: 0;
@@ -48,7 +42,6 @@ table.list td,table.list th {
     border: none;
     font-family: Arial, Helvetica, sans-serif;
 }
-
 /* logo */
 #logo {
     position: absolute;
@@ -61,7 +54,6 @@ table.list td,table.list th {
     height: 80px;
     width: 300px;
 }
-
 /* caption */
 #caption {
     position: absolute;
@@ -73,14 +65,12 @@ table.list td,table.list th {
     width: 400px;
     text-align: right;
 }
-
 /* version string */
 #version {
     position: absolute;
     right: 10px;
     top: 50px;
 }
-
 /* Navigation bar */
 #navigation {
     font-family: "Lucida Grande", "Lucida Sans Unicode", Verdana;
@@ -90,7 +80,6 @@ table.list td,table.list th {
     position: absolute;
     width: 800px;
 }
-
 #login {
     font-family: "Lucida Grande", "Lucida Sans Unicode", Verdana;
     top: 80px;
@@ -98,18 +87,15 @@ table.list td,table.list th {
     height: 36px;
     position: absolute;
 }
-
 #menu {
     list-style-type: none;
     list-style-position: outside;
     padding: 0;
     margin: 0;
 }
-
 #menu li {
     float: left;
 }
-
 #menu a, #login a {
     color: #A9A9A9;
     height: 36px;
@@ -123,33 +109,27 @@ table.list td,table.list th {
     text-transform: uppercase;
     text-decoration: none;
 }
-
 #menu a:hover, #login a:hover {
     color: orange;
 }
-
 #menu a.selected, #login a.selected {
     color: white;
     cursor: default;
     text-decoration: none;
 }
-
 /* Content */
 #content {
     text-align: justify;
     padding: 30px;
     margin-left: 200px;
 }
-
 #content p {
     margin: 0 0 1.5em 0;
     padding: 0;
 }
-
 #content ul {
     padding-left: 0;
 }
-
 #content h1 {
     font-family: Arial, Helvetica, sans-serif;
     font-size: 24px;
@@ -158,7 +138,6 @@ table.list td,table.list th {
     padding: 0;
     color: #333333;
 }
-
 #content h2 {
     font-family: Arial, Helvetica, sans-serif;
     font-size: 18px;
@@ -167,7 +146,6 @@ table.list td,table.list th {
     padding: 0;
     color: #444444;
 }
-
 #content h3 {
     font-family: Arial, Helvetica, sans-serif;
     font-size: 14px;
@@ -175,7 +153,6 @@ table.list td,table.list th {
     margin: 3px 0px;
     padding: 0;
 }
-
 #content textarea.log {
     width: 100%;
     margin-bottom: 2em;
@@ -183,7 +160,6 @@ table.list td,table.list th {
     border: 1px solid #C0C0C0;
     font-family: monospace;
 }
-
 /* Submenu */
 #submenu {
     position: absolute;
@@ -193,7 +169,6 @@ table.list td,table.list th {
     padding: 20px;
     margin: 0;
 }
-
 #submenu li {
     font-family: Arial, Helvetica, sans-serif;
     border-bottom-width: 1px;
@@ -206,27 +181,22 @@ table.list td,table.list th {
     padding-left: 0pt;
     list-style: none;
 }
-
 #submenu a {
     color: #AAA;
     text-decoration: none;
 }
-
 #submenu a:hover {
     color: #0066cc;
 }
-
 #submenu a.selected {
     color: black;
     cursor: default;
     text-decoration: none;
 }
-
 /* Forms */
 div.field {
     margin-bottom: 1em;
 }
-
 /* Messagebox */
 dl.messagebox {
     font-family: Arial, Helvetica, sans-serif;
@@ -236,7 +206,6 @@ dl.messagebox {
     background-color: rffffe3;
     border: 1px solid #996;
 }
-
 dl.messagebox dt {
     background-color: #996;
     font-weight: bold;
@@ -245,34 +214,28 @@ dl.messagebox dt {
     padding: 0.5em 0.75em;
     color: white;
 }
-
 dl.messagebox dd {
     padding: 0.5em 0.5em;
     margin: 0;
 }
-
 /* Info */
 dl.info {
     background-color: #ffffe3;
     border: 1px solid #996;
 }
-
 dl.info dt {
     background-color: #996;
     color: white;
 }
-
 /* Error */
 dl.error {
     background-color: #fd7;
     border: 1px solid #d80;
 }
-
 dl.error dt {
     background-color: #d00;
     color: white;
 }
-
 /* Infobox */
 #infobox {
     float: right;
@@ -281,11 +244,9 @@ dl.error dt {
     width: 200px;
     padding: 10px;
 }
-
 .icon {
     margin: 2px;
 }
-
 /* Accordion */
 .accordion dt:hover,.accordion dt.over {
     color: #0066cc !important;

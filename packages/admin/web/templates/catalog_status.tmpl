@@ -1,0 +1,15 @@
+<h1>Status</h1>
+
+<h2>Tables</h2>
+<table class="list">
+  <tr>
+    <th>Name</th>
+    <th>Entries</th>
+  </tr> 
+#for $name, $count  in $tables.iteritems()
+  <tr>
+    <td>$name</td>
+    <td>$count</td>
+  </tr>
+#end for
+</table>
