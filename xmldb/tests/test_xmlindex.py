@@ -307,24 +307,6 @@ class XmlIndexTest(SeisHubEnvironmentTestCase):
         self.assertEqual(res[0].group_pos, 0)
         self.assertEqual(res[1].key, '6')
         self.assertEqual(res[1].group_pos, 1)
-    
-#    def testNoneTypeIndex(self):
-#        doc = newXMLDocument(RAW_XML1)
-#        idx = XmlIndex(self.rt1, "/station/stat_type", index.NONETYPE_INDEX)
-#        res = idx.eval(doc, self.env)
-#        self.assertEquals(type(res[0]), index.NoneTypeIndexElement)
-#        self.assertEquals(res[0].key, None)
-#        
-#        idx = XmlIndex(self.rt1, "/station/not_there", index.NONETYPE_INDEX)
-#        res = idx.eval(doc, self.env)
-#        self.assertEquals(len(res), 0)
-#        
-#        idx = XmlIndex(self.rt1, "/station/XY/paramXY[. = 20.5]", 
-#                       index.NONETYPE_INDEX)
-#        res = idx.eval(doc, self.env)
-#        self.assertEquals(len(res), 1)
-#        self.assertEquals(type(res[0]), index.NoneTypeIndexElement)
-#        self.assertEquals(res[0].key, None)
 
 
 def suite():

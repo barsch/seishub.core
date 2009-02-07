@@ -18,23 +18,21 @@ class _IndexViewer(object):
     per resourcetype.
     """
     
-    def createView(self, package, resourcetype, name = None):
+    def createIndexView(self, xmlindex):
         """
-        Create a view for the given package and resourcetype.
+        Create a view for the given XMLIndex.
         """
-        name = name or '/%s/%s' % (package, resourcetype)
-        q = select([document_tab.c['id'].label("document_id")])
-        location_path = [package, resourcetype, None]
+        package_id = xmlindex.resourcetype.package.package_id
+        resourcetype_id = xmlindex.resourcetype.resourcetype_id 
+        name = '/%s/%s' % (package_id, resourcetype_id)
+        q = select([packages_tab.c['name'].label("package_id"),
+                    resourcetypes_tab.c['name'].label("resourcetype_id"),
+                    resource_tab.c['name'].label("resource_name"),
+                    document_tab.c['id'].label("document_id")])
+        location_path = [package_id, resourcetype_id, None]
         q, joins = self._process_location_path(location_path, q)
         q = q.select_from(joins)
         self._db_manager.createView(name, q)
-    
-    def dropView(self, package, resourcetype, name = None):
-        """
-        Remove specified view.
-        """
-        name = name or '/%s/%s' % (package, resourcetype)
-        self._db_manager.dropView(name)
 
 
 class _QueryProcessor(object):
@@ -140,14 +138,36 @@ class _QueryProcessor(object):
             xpath = '/'.join(location_path[2:])
             indexes = [self.findIndex([pkg, rt], xpath, False)]
         # join indexes
+        group_paths = {}
         for idx in indexes:
-            joins, idx_tab = self._join_on_index(idx, joins)
-            # also add the index keyval and group_pos to selected columns
+            idx_tab = idx._getElementCls().db_table.alias()
+            idx_gp = idx.group_path
+            idx_id = idx._id
+            # add keyval to selected columns
             keyval_label = idx.label
             q.append_column(idx_tab.c['keyval'].label(keyval_label))
-            if idx.group_path:
-                group_pos_label = "#%s" % keyval_label
-                q.append_column(idx_tab.c['group_pos'].label(group_pos_label))
+            join = getattr(joins or document_tab, "outerjoin")
+            if idx_gp not in group_paths:
+                # first time we meet a grouping element
+                oncl = sql.and_(idx_tab.c['document_id'] == document_tab.c['id'],
+                                idx_tab.c['index_id'] == idx_id)
+                group_paths[idx_gp]=idx_tab
+#                group_paths[idx_gp][0]=idx_tab
+#                group_paths[idx_gp][1]=0
+            else:
+                # here we know the grouping element
+                oncl = sql.and_(idx_tab.c['document_id'] == document_tab.c['id'],
+                                idx_tab.c['index_id'] == idx_id,
+                                idx_tab.c['group_pos'] == group_paths[idx_gp].c['group_pos'])
+#                group_paths[idx_gp][1]+=1
+            joins = join(idx_tab, onclause = oncl)
+#        # add group pos to selected columns for grouping elements
+#        for gp, idx_gp in group_paths.iteritems():
+#            if idx_gp[1]==0:
+#                continue
+#            idx_tab = idx_gp[0]
+#            group_pos_label = "#%s" % (gp or '/')
+#            q.append_column(idx_tab.c['group_pos'].label(group_pos_label))
         return q, joins
     
     def _process_predicates(self, p, q, joins = None):
@@ -238,7 +258,10 @@ class _QueryProcessor(object):
         order_by = query.getOrderBy() or list()
         limit = query.getLimit()
         offset = query.getOffset()
-        q = select([document_tab.c['id'].label("document_id")], 
+        q = select([packages_tab.c['name'].label("package_id"),
+                    resourcetypes_tab.c['name'].label("resourcetype_id"),
+                    resource_tab.c['name'].label("resource_name"),
+                    document_tab.c['id'].label("document_id")], 
                    use_labels = True).distinct()
         q, joins = self._process_location_path(location_path, q)
         if predicates:

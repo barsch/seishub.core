@@ -193,7 +193,7 @@ class XmlCatalog(object):
         xmlindex = self.index_catalog.registerIndex(xmlindex)
         self.reindex(xmlindex)
         # create or update view:
-        self.index_catalog.createView(package_id, resourcetype_id)
+        self.index_catalog.createIndexView(xmlindex)
         return xmlindex
     
     def deleteIndex(self, xmlindex = None, index_id = None):
@@ -204,9 +204,7 @@ class XmlCatalog(object):
             xmlindex = self.getIndexes(index_id = index_id)[0]
         res = self.index_catalog.deleteIndex(xmlindex)
         # create or update view:
-        package_id = xmlindex.resourcetype.package.package_id
-        resourcetype_id = xmlindex.resourcetype.resourcetype_id 
-        self.index_catalog.createView(package_id, resourcetype_id)
+        self.index_catalog.createIndexView(xmlindex)
         return res 
     
     def deleteAllIndexes(self, package_id, resourcetype_id = None):

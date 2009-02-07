@@ -422,19 +422,21 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         # query 1
         sql = 'SELECT * FROM "/testpackage/station"'
         result = self.env.db.engine.execute(sql).fetchall()
-        self.assertTrue((6, '11.5', 1) in result) 
-        self.assertTrue((6, '20.5', 1) in result) 
-        self.assertTrue((6, 'blah', 1) in result) 
-        self.assertTrue((7, '0', 1) in result)  
-        self.assertTrue((7, '111.5', 1) in result)  
-        self.assertTrue((7, '2.5', 1) in result)  
-        self.assertTrue((7, '2110.5', 1) in result)  
-        self.assertTrue((7, '99', 1) in result)  
-        self.assertTrue((7, 'cblah', 1) in result)
+        self.assertEquals([ 
+            (u'testpackage', u'station', u'6', 6, u'11.5', 1), 
+            (u'testpackage', u'station', u'6', 6, u'20.5', 1), 
+            (u'testpackage', u'station', u'6', 6, u'blah', 1), 
+            (u'testpackage', u'station', u'7', 7, u'0', 1), 
+            (u'testpackage', u'station', u'7', 7, u'111.5', 1), 
+            (u'testpackage', u'station', u'7', 7, u'2.5', 1), 
+            (u'testpackage', u'station', u'7', 7, u'2110.5', 1), 
+            (u'testpackage', u'station', u'7', 7, u'99', 1), 
+            (u'testpackage', u'station', u'7', 7, u'cblah', 1)], result)
         # query 2
         sql = 'SELECT * FROM "/testpackage/testml"'
         result = self.env.db.engine.execute(sql).fetchall()
-        self.assertEqual(result, [(8, u'3', 1)])
+        self.assertEqual(result, 
+            [(u'testpackage', u'testml', u'8', 8, u'3', 1)])
         # add a second resource and a new index
         res = self.env.catalog.addResource(PID1, RID2, RAW_XML4)
         idx6 = self.env.catalog.registerIndex(PID1, RID2, "muh", 
@@ -442,8 +444,9 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         # query 3
         sql = 'SELECT * FROM "/testpackage/testml"'
         result = self.env.db.engine.execute(sql).fetchall()
-        self.assertEqual(result, [(8, '3', 1, 'blahblahblah'), 
-                                 (9, '4', 1, 'moep')])
+        self.assertEqual(result, [
+            (u'testpackage', u'testml', u'8', 8, u'3', 1, u'blahblahblah'), 
+            (u'testpackage', u'testml', u'9', 9, u'4', 1, u'moep')])
         # clean up
         self.env.catalog.deleteIndex(idx4)
         self.env.catalog.deleteIndex(idx5)
