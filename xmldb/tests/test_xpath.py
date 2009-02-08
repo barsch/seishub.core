@@ -174,7 +174,6 @@ class XPathQueryParserTest(SeisHubEnvironmentTestCase):
                    '/pid/rid/rn[not(XY/paramXY = 2.5) and not(missing)]'
                    ]
         res = [self.parser.parse(q) for q in queries]
-        import pdb;pdb.set_trace()
         for r in res:
             self.assertTrue(len(r.predicates) <= 3)
 
