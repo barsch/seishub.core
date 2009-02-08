@@ -51,26 +51,30 @@ class _QueryProcessor(object):
         """
         return expr.replace('*', '%')
     
-    def findIndex(self, query_base, expr = None, tolerant = True):
+    def findIndex(self, query_base, expr = None):
         """
-        Tries to find the index fitting best for [package, resourcetype], expr.
+        Tries to find a fitting index for [package, resourcetype] and
+        the given xpath expr or label.
         """
-        # XXX: caching!
+        # XXX: use index cache!
         if expr:
             expr = '/' + expr
             if '*' in expr:
-                expr = DB_LIKE(self._replace_wildcards(expr))
-        idx = self.pickup(XmlIndex, 
-                          resourcetype = {'package':
-                                          {'package_id':query_base[0]}, 
-                                          'resourcetype_id':query_base[1]}, 
-                          xpath = expr)
-        # idx = self.getIndexes(query_base[0], , expr)
-        if idx:
-            return idx[0]
-        if not tolerant:
-            raise self._raiseIndexNotFound(query_base, expr)
-        return None
+                db_expr = DB_LIKE(self._replace_wildcards(expr))
+        kwargs = {'resourcetype':{'package': {'package_id':query_base[0]}, 
+                                              'resourcetype_id':query_base[1]}}
+        # try via label first:
+        # XXX: rootnode should move from location path to predicates...
+        kwargs['label'] = expr[expr.find('/',1)+1:]
+        idx = self.pickup(XmlIndex, **kwargs)
+        if not idx:
+            kwargs['label'] = None
+            kwargs['xpath'] = expr or db_expr
+            idx = self.pickup(XmlIndex, **kwargs)
+        # still not found: raise exception
+        if not idx:
+            raise self._raiseIndexNotFound(query_base, expr or db_expr.value)
+        return idx[0]
     
     def _isLogOp(self, p):
         return p[1] in XPathQuery._logical_ops
@@ -78,7 +82,7 @@ class _QueryProcessor(object):
     def _isRelOp(self, p):
         return p[1] in XPathQuery._relational_ops
     
-    def _applyOp(self, op, left, right):
+    def _applyOp(self, op, left, right, complement = False):
         # create sqlalchemy clauses from string operators
         if op == '==' or op == '=':
             return left == right
@@ -93,16 +97,33 @@ class _QueryProcessor(object):
         elif op == '>=':
             return left >= right
         elif op == 'and':
+            if complement:
+                return sql.or_(left, right)
             return sql.and_(left, right)
         elif op == 'or':
+            if complement:
+                return sql.and_(left, right)
             return sql.or_(left, right)
-        raise InvalidParameterError("Operator '%s' not specified." % self._op)
+        raise InvalidParameterError("Operator '%s' not specified." % op)
     
-    def _join_on_index(self, idx, joins = None, method = "outerjoin"):
+    def _applyFunc(self, func, expr, q, joins):
+        if func == 'not':
+            # select the complementary result set
+            return self._process_predicates(expr, q, joins, complement = True)
+        raise InvalidParameterError("Function '%s' not specified." % func)
+    
+    def _join_on_index(self, idx, joins = None, method = "outerjoin", 
+                       complement = False):
         join = getattr(joins or document_tab, method)
         idx_tab = idx._getElementCls().db_table.alias()
-        oncl = sql.and_(idx_tab.c['document_id'] == document_tab.c['id'],
-                        idx_tab.c['index_id'] == idx._id)
+        if complement:
+            # if complement is set, return all rows NOT corresponding to the
+            # selected rows via where clause! 
+            doc_clause = idx_tab.c['document_id'] != document_tab.c['id']
+        else:
+            # select all rows of a document, if one row fits the where clause
+            doc_clause = idx_tab.c['document_id'] == document_tab.c['id']
+        oncl = sql.and_(doc_clause, idx_tab.c['index_id'] == idx._id)
         joins = join(idx_tab, onclause = oncl)
         return joins, idx_tab
     
@@ -136,7 +157,7 @@ class _QueryProcessor(object):
         else:
             # find all indexes which fit to query
             xpath = '/'.join(location_path[2:])
-            indexes = [self.findIndex([pkg, rt], xpath, False)]
+            indexes = [self.findIndex([pkg, rt], xpath)]
         # join indexes
         group_paths = {}
         for idx in indexes:
@@ -160,7 +181,7 @@ class _QueryProcessor(object):
             joins = join(idx_tab, onclause = oncl)
         return q, joins
     
-    def _process_predicates(self, p, q, joins = None):
+    def _process_predicates(self, p, q, joins = None, complement = False):
         w = None
         if len(p) == 3:
             # binary expression
@@ -169,24 +190,33 @@ class _QueryProcessor(object):
             r = p[2]
             if op in XPathQuery._relational_ops:
                 # relational operator, l is a path expression => find an index
-                lidx = self.findIndex([l[0], l[1]], l[2], False)
-                joins, ltab = self._join_on_index(lidx, joins)
+                lidx = self.findIndex([l[0], l[1]], l[2])
+                joins, ltab = self._join_on_index(lidx, joins, 
+                                                  complement = complement)
                 if isinstance(r, list): # joined path query
-                    ridx = self.findIndex([r[0], r[1]], r[2], False)
-                    joins, rtab = self._join_on_index(ridx, joins)
+                    ridx = self.findIndex([r[0], r[1]], r[2])
+                    joins, rtab = self._join_on_index(ridx, joins, 
+                                                      complement = complement)
                     w = ltab.c['keyval'] == rtab.c['keyval']
                 else: # key / value query
                     w = self._applyOp(op, ltab.c['keyval'], lidx.prepareKey(r))
             else:
                 # logical operator
-                q, joins, lw = self._process_predicates(l, q, joins)
-                q, joins, rw = self._process_predicates(r, q, joins)
-                w = self._applyOp(op, lw, rw)
-                #q = q.where(self._applyOp(op, lw, rw))
+                q, joins, lw = self._process_predicates(l, q, joins, 
+                                                       complement = complement)
+                q, joins, rw = self._process_predicates(r, q, joins, 
+                                                       complement = complement)
+                w = self._applyOp(op, lw, rw, complement)
+        elif len(p) == 2:
+            # function
+            func = p[0]
+            expr = p[1]
+            q, joins, w = self._applyFunc(func, expr, q, joins)
         else:
             # unary expression => require node existence
-            idx = self.findIndex([p[0][0], p[0][1]], p[0][2], False)
-            joins, idx_tab = self._join_on_index(idx, joins)
+            idx = self.findIndex([p[0][0], p[0][1]], p[0][2])
+            joins, idx_tab = self._join_on_index(idx, joins, 
+                                                 complement = complement)
             w = (idx_tab.c['keyval'] != None)
         return q, joins, w
     
@@ -194,7 +224,7 @@ class _QueryProcessor(object):
         for ob in order_by:
             # an order_by element is of the form: 
             # [[package, resourcetype, xpath], direction]
-            idx = self.findIndex([ob[0][0], ob[0][1]], ob[0][2], False)
+            idx = self.findIndex([ob[0][0], ob[0][1]], ob[0][2])
             idx_name = str(idx)
             # if idx is already in selected columns, no need to join
             if not idx_name in q.columns:
@@ -265,6 +295,8 @@ class _QueryProcessor(object):
         if joins:
             q = q.select_from(joins)
         q = q.limit(limit).offset(offset)
+#        from seishub.db.util import compileStatement
+#        print compileStatement(q)
         res = self._db.execute(q)
         results = self._process_results(res)
         res.close()
@@ -282,6 +314,7 @@ class XmlIndexCatalog(DbStorage, _QueryProcessor, _IndexViewer):
         DbStorage.__init__(self, db)
         self._db_manager = db
         self._storage = resource_storage
+        self._index_cache = dict()
     
     def registerIndex(self, xmlindex):
         """

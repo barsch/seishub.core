@@ -115,21 +115,21 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         # create us a small test catalog
         self.res1 = self.env.catalog.addResource(self.pkg1.package_id, 
                                                  self.rt1.resourcetype_id, 
-                                                 RAW_XML1)
+                                                 RAW_XML1, name = 'RAW_XML1')
         self.res2 = self.env.catalog.addResource(self.pkg1.package_id, 
                                                  self.rt1.resourcetype_id, 
-                                                 RAW_XML2)
+                                                 RAW_XML2, name = 'RAW_XML2')
         self.res3 = self.env.catalog.addResource(self.pkg1.package_id, 
                                                  self.rt2.resourcetype_id, 
-                                                 RAW_XML3)
+                                                 RAW_XML3, name = 'RAW_XML3')
         self.idx1 = self.env.catalog.registerIndex("testpackage", "station", 
-                                                   "1", IDX1)
+                                                   "longitude", IDX1)
         self.idx2 = self.env.catalog.registerIndex("testpackage", "station", 
-                                                   "2", IDX2)
+                                                   "latitude", IDX2)
         self.idx3 = self.env.catalog.registerIndex("testpackage", "testml", 
-                                                   "3", IDX3)
+                                                   "blah_id", IDX3)
         self.idx4 = self.env.catalog.registerIndex("testpackage", "station", 
-                                                   "4", IDX4)
+                                                   "paramXY", IDX4)
         # index rootnode, too
         self.idx5 = self.env.catalog.registerIndex("testpackage", "station", 
                                                    "5", "/station", 
@@ -327,8 +327,8 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
     
     def test_flushIndex(self):
         # set up
-        index1 = XmlIndex(self.rt1, "/station/station_code")
-        index2 = XmlIndex(self.rt1, "/station/XY/paramXY")
+        index1 = XmlIndex(self.rt1, "/station/station_code", label = "code")
+        index2 = XmlIndex(self.rt1, "/station/XY/paramXY", label = "paramXY")
         self.catalog.registerIndex(index1)
         self.catalog.registerIndex(index2)
         res = Resource(self.rt1, document = newXMLDocument(RAW_XML2))
@@ -360,7 +360,7 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
     def test_runXPathQuery(self):
         # create test catalog
         self._setup_testdata()
-        
+        import time; start = time.time()
         #======================================================================
         # location path queries
         #======================================================================
@@ -499,9 +499,47 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         self.assertEqual(len(res['ordered']), 2)
         self.assertTrue(self.res1.document._id in res)
         self.assertTrue(self.res2.document._id in res)
-        self.assertEqual(res[self.res1.document._id]["4"], None)
-        self.assertEqual(res[self.res2.document._id]["4"], ['0', '2.5', '99'])
+        self.assertEqual(res[self.res1.document._id]["paramXY"], None)
+        self.assertEqual(res[self.res2.document._id]["paramXY"], ['0', '2.5', '99'])
         # XXX: more testing!
+        
+        #======================================================================
+        # queries w/ not(...)
+        #======================================================================
+        q = "/testpackage/station/station[not(XY/paramXY)]"
+        res = self.catalog.query(XPathQuery(q))
+        self.assertEqual(len(res['ordered']), 1)
+        self.assertEqual(res['ordered'], [self.res1.document._id])
+        q = "/testpackage/station/station[XY/paramXY != '2.5']"
+        res = self.catalog.query(XPathQuery(q))
+        self.assertEqual(res['ordered'], [self.res2.document._id])
+        q = "/testpackage/station/station[not(XY/paramXY = '2.5')]"
+        res = self.catalog.query(XPathQuery(q))
+        self.assertEqual(res['ordered'], [self.res1.document._id])
+        q = "/testpackage/station/station[not(XY/paramXY = '2.5' and XY/paramXY = '0' and XY/paramXY = '99')]"
+        res = self.catalog.query(XPathQuery(q))
+        self.assertEqual(res['ordered'], [self.res1.document._id])
+        q = "/testpackage/station/station[not(XY/paramXY = '2.5')]"
+        res = self.catalog.query(XPathQuery(q))
+        self.assertEqual(res['ordered'], [self.res1.document._id])
+        
+        
+        #======================================================================
+        # queries w/ labels
+        #======================================================================
+        # q = "/testpackage/station/station[lat]"
+        q = "/testpackage/station/*[longitude]"
+        res = self.catalog.query(XPathQuery(q))
+        self.assertEqual(len(res['ordered']), 2)
+        q = "/testpackage/station/station[longitude = 22.51200 and XY/paramXY]"
+        res = self.catalog.query(XPathQuery(q))
+        self.assertEqual(res['ordered'], [self.res2.document._id])
+        q = "/testpackage/station/station[longitude=22.51200 and paramXY=5]"
+        res = self.catalog.query(XPathQuery(q))
+        self.assertEqual(res['ordered'], [])
+        q = "/testpackage/station/station[longitude=22.51200 and paramXY=2.5]"
+        res = self.catalog.query(XPathQuery(q))
+        self.assertEqual(res['ordered'], [self.res2.document._id])
         
         #======================================================================
         # invalid queries
@@ -510,6 +548,8 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         q = "/testpackage/station/station[XY]"
         self.assertRaises(NotFoundError, self.catalog.query, XPathQuery(q))
         
+        end = time.time()
+        #print "\nRan test_runXPathQueries in %s s." % (end-start)
         # remove test catalog
         self._cleanup_testdata()
     

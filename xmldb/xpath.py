@@ -7,7 +7,8 @@ from seishub.xmldb.interfaces import IXPathQuery
 
 
 class RestrictedXPathQueryParser(object):
-    """This class provides a parser for the restricted XPath query grammar.
+    """
+    This class provides a parser for the restricted XPath query grammar.
     
     NameStartChar ::= ":" | [A-Z] | "_" | [a-z] | [#xC0-#xD6] | [#xD8-#xF6] | 
                       [#xF8-#x2FF] | [#x370-#x37D] | [#x37F-#x1FFF] | 
@@ -28,6 +29,7 @@ class RestrictedXPathQueryParser(object):
     pstart       ::= '['
     pend         ::= ']'
     nodename     ::= [@][NameStartChar[NameChar]*][:]NameStartChar[NameChar]*
+    label        ::= NameStartChar[NameChar]
     node         ::= wildcard | parentNd | selfNd | nodename
     literalValue ::= '"'[^"]*'"' | '''[^']*'''
     numericValue ::= [-][0-9]*[.][0-9]*
@@ -40,11 +42,8 @@ class RestrictedXPathQueryParser(object):
     ineqOp       ::= '!='
     orOp         ::= 'or'
     andOp        ::= 'and'
-    notOp        ::= 'not'
     relOp        ::= eqOp | ineqOp | leOp | geOp | ltOp | gtOp
     logOp        ::= orOp | andOp
-    
-    tinyFlag     ::= 't'
     
     package_id       ::= [A-Za-z0-9]* | wildcard
     resourcetype_id  ::= [A-Za-z0-9]* | wildcard
@@ -56,7 +55,11 @@ class RestrictedXPathQueryParser(object):
     valueExpr        ::= literalValue | numericValue
     relExpr          ::= pathExpr [relOp valueExpr | pathExpr]
     parExpr          ::= lpar pexpr rpar
-    pexpr            ::= [notOp] (relExpr | parExpr) [logOp (pexpr | parExpr)]*
+    
+    notFunc          ::= not(pexpr)
+    func             ::= notFunc
+    
+    pexpr            ::= (func | relExpr | parExpr) [logOp (pexpr | parExpr)]*
     predicates       ::= pstart pexpr pend
     query = [tinyFlag] location [predicates]
     """
@@ -94,9 +97,15 @@ class RestrictedXPathQueryParser(object):
         self.rootnode = tokens[0]
         return tokens
     
+    def remove_list(self, s, loc, tokens):
+        if len(tokens) == 1:
+            return tokens[0]
+    
     def evalPath(self, s, loc, tokens):
-        """add location path as a prefix to path tokens and join the rest
-        of the path with again."""
+        """
+        add location path as a prefix to path tokens and join the rest
+        of the path again.
+        """
         if tokens[0] == self.SEP:
             # path is relative to root (package level)
             return [tokens[1], tokens[2], self.SEP.join(tokens[3:])]
@@ -150,12 +159,10 @@ class RestrictedXPathQueryParser(object):
         pstart = pp.Literal('[').suppress()         # beginning of predicates 
         pend = pp.Literal(']').suppress()           # end of predicates
         ncPrefix = pp.Word(xmlNameStartChar, xmlNameChar) + ':' # namespace prefix
+        # node name, may contain a namespace prefix and may start with '@' for 
+        # attribute nodes
         ndName = pp.Combine(pp.Optional('@') + pp.Optional(ncPrefix) +\
                  pp.Word(xmlNameStartChar, xmlNameChar))
-                                                    # node name, may contain a
-                                                    # namespace prefix and may 
-                                                    # start with '@' for 
-                                                    # attribute nodes
         node = wildcard | parentNd | selfNd | ndName # node
         literalValue = pp.Literal('"').suppress() +\
                            pp.CharsNotIn('"') +\
@@ -188,9 +195,11 @@ class RestrictedXPathQueryParser(object):
         ineqOp = pp.Literal('!=')
         orOp = pp.CaselessKeyword('or')
         andOp = pp.CaselessKeyword('and')
-        notOp = pp.NoMatch() # pp.CaselessKeyword('not')
         relOp = eqOp | ineqOp | leOp | geOp | ltOp | gtOp
         logOp = orOp | andOp
+        
+        # functions
+        notFunc = pp.CaselessKeyword('not')
         
         # location step
         package_id = (pp.Word(pp.alphanums) | wildcard).\
@@ -211,25 +220,16 @@ class RestrictedXPathQueryParser(object):
                    pp.ZeroOrMore(locationStep)
         
         # predicate expression
-        def blah(s, loc, tokens):
-            if len(tokens) == 1:
-                return tokens[0]
-        
-        pexpr = pp.Forward().setParseAction(blah)
+        pexpr = pp.Forward().setParseAction(self.remove_list)
         pathExpr = (pp.Optional(sep) + node +\
                     pp.ZeroOrMore(sep.suppress() + node)).\
                     setParseAction(self.evalPath)
         valueExpr = literalValue | numericValue
         relExpr = pathExpr + pp.Optional(relOp + (valueExpr | pathExpr))
-        # with grouping of parenthesized expressions
         parExpr = pp.Group(lpar + pexpr + rpar)
-#        logExpr = pp.Group((relExpr | parExpr) + pp.ZeroOrMore(logOp + (pexpr | parExpr)))
-#        pexpr << pp.Optional(notOp) + logExpr
-        pexpr << (pp.Group(relExpr) | parExpr) + pp.Optional(logOp + (pp.Group(pexpr) | parExpr))
-#        #without grouping:
-#        pexpr << pp.Optional(lpar) + pp.Optional(notOp) + (relExpr) +\
-#                 pp.ZeroOrMore(logOp + pexpr) + pp.Optional(rpar)
-
+        notExpr = pp.Group(notFunc + parExpr)
+        pexpr << (notExpr | pp.Group(relExpr) | parExpr) +\
+                 pp.Optional(logOp + (pp.Group(pexpr) | parExpr))
         # order by clause
         limitExpr = limit + pp.Word(pp.nums).setResultsName('limit') +\
                     pp.Optional(',' + pp.Word(pp.nums).\

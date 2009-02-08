@@ -462,8 +462,12 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         self.env.registry.db_registerPackage("package")
         self.env.registry.db_registerResourceType("package", "rt")
         # add indexes
-        catalog.registerIndex("package", "rt", "lat", "/station/lat")
-        catalog.registerIndex("package", "rt", "lon", "/station/lon")
+        catalog.registerIndex("package", "rt", "lat", "/station/lat", 
+                              type = 'numeric')
+        catalog.registerIndex("package", "rt", "lon", "/station/lon",
+                              type = 'numeric')
+        catalog.registerIndex("package", "rt", "paramXY", 
+                              "/station/XY/paramXY")
         catalog.registerIndex("package", "rt", "missing", "/station/missing")
         # add resources
         catalog.addResource("package", "rt", RAW_XML, name='1')
@@ -573,14 +577,32 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         query = '/package/rt/station[not(missing)]'
         result = catalog.query(query, full=True)
         self.assertEqual(len(result), 2)
-        # missing does not exist
-        query = '/package/rt/station[missing==""]'
-        result = catalog.query(query, full=True)
-        self.assertEqual(len(result), 2)
         # lat > 0 and lat < 156 and not(missing)
         query = '/package/rt/station[lat > 0 and lat < 156 and not(missing)]'
         result = catalog.query(query, full=True)
         self.assertEqual(len(result), 2)
+        # note the difference between a!=b and not(a=b)
+        # all resources have a XY/paramXY element with values other than 2.5
+        query = '/package/rt/station[XY/paramXY != 2.5]'
+        result = catalog.query(query, full=True)
+        self.assertEqual(len(result), 3)
+        # two resources do NOT have an XY/paramXY element with value 2.5
+        query = '/package/rt/station[not(XY/paramXY = 2.5)]'
+        result = catalog.query(query, full=True)
+        self.assertEqual(len(result), 2)
+        # no XY/paramXY element with value 2.5 and no 'missing' element
+        query = '/package/rt/station[not(XY/paramXY = 2.5) and not(missing)]'
+        result = catalog.query(query, full=True)
+        self.assertEqual(len(result), 1)
+        # not(XY/paramXY = 2.5 or missing)
+        query = '/package/rt/station[not(XY/paramXY = 2.5 or missing)]'
+        result = catalog.query(query, full=True)
+        self.assertEqual(len(result), 1)
+        # not(XY/paramXY = 2.5 and missing)
+        query = '/package/rt/station[not(XY/paramXY = 2.5 and missing)]'
+        result = catalog.query(query, full=True)
+        self.assertEqual(len(result), 3)
+        
         # remove everything
         catalog.deleteAllResources("package")
         catalog.deleteAllIndexes("package")
