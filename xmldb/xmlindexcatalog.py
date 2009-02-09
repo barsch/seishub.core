@@ -56,25 +56,24 @@ class _QueryProcessor(object):
         Tries to find a fitting index for [package, resourcetype] and
         the given xpath expr or label.
         """
-        # XXX: use index cache!
+        idx = None
+        # try via label if only one single node is given:
+        if not '/' in expr:
+            idx = self.getIndexes(query_base[0], query_base[1], label = expr)
+            if idx:
+                return idx[0]
+        # still there: multiple nodes or no label found
         if expr:
             expr = '/' + expr
-            if '*' in expr:
-                db_expr = DB_LIKE(self._replace_wildcards(expr))
-        kwargs = {'resourcetype':{'package': {'package_id':query_base[0]}, 
-                                              'resourcetype_id':query_base[1]}}
-        # try via label first:
-        # XXX: rootnode should move from location path to predicates...
-        kwargs['label'] = expr[expr.find('/',1)+1:]
-        idx = self.pickup(XmlIndex, **kwargs)
-        if not idx:
-            kwargs['label'] = None
-            kwargs['xpath'] = expr or db_expr
-            idx = self.pickup(XmlIndex, **kwargs)
-        # still not found: raise exception
-        if not idx:
-            raise self._raiseIndexNotFound(query_base, expr or db_expr.value)
-        return idx[0]
+        if '*' in expr:
+            expr = DB_LIKE(self._replace_wildcards(expr))
+        idx = self.getIndexes(query_base[0], query_base[1], xpath = expr)
+        if idx:
+            return idx[0]
+        # still there: no index found
+        if hasattr(expr, 'value'):
+            expr = expr.value
+        raise self._raiseIndexNotFound(query_base, expr)
     
     def _isLogOp(self, p):
         return p[1] in XPathQuery._logical_ops
@@ -314,7 +313,28 @@ class XmlIndexCatalog(DbStorage, _QueryProcessor, _IndexViewer):
         DbStorage.__init__(self, db)
         self._db_manager = db
         self._storage = resource_storage
-        self._index_cache = dict()
+        # self.refreshIndexCache()
+        
+    def refreshIndexCache(self):
+        """
+        Refresh the index cache.
+        """
+        self._cache = {'package_id':{}, 'resourcetype_id':{}, 'xpath':{},
+                       'group_path':{}, 'type':{}, 'options':{}, '_id':{},
+                       'label':{}
+                       }
+        # get all indexes
+        indexes = self.pickup(XmlIndex)
+        for idx in indexes:
+            self._addToCache(idx)
+    
+    def _addToCache(self, xmlindex):
+        for attr in self._cache:
+            key = getattr(xmlindex, attr)
+            if not key in self._cache[attr]:
+                self._cache[attr][key] = set([xmlindex])
+            else:
+                self._cache[attr][key].add(xmlindex)
     
     def registerIndex(self, xmlindex):
         """
@@ -330,6 +350,7 @@ class XmlIndexCatalog(DbStorage, _QueryProcessor, _IndexViewer):
         except Exception, e:
             msg = "Error registering an index: %s"
             raise SeisHubError(msg % str(xmlindex), e)
+        # self._addToCache(xmlindex)
         return xmlindex
     
     def deleteIndex(self, xmlindex):
@@ -346,7 +367,7 @@ class XmlIndexCatalog(DbStorage, _QueryProcessor, _IndexViewer):
         pass
     
     def getIndexes(self, package_id = None, resourcetype_id = None, 
-                  xpath = None, group_path = None, type = None, 
+                   xpath = None, group_path = None, type = None, 
                    options = None, index_id = None, label = None):
         """
         Return a list of all applicable XMLIndex objects.
@@ -360,6 +381,7 @@ class XmlIndexCatalog(DbStorage, _QueryProcessor, _IndexViewer):
                           type = type,
                           options = options,
                           _id = index_id)
+        
         return res
     
     def indexResource(self, resource, xmlindex = None, index_id = None):

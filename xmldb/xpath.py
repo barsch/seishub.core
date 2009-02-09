@@ -47,10 +47,9 @@ class RestrictedXPathQueryParser(object):
     
     package_id       ::= [A-Za-z0-9]* | wildcard
     resourcetype_id  ::= [A-Za-z0-9]* | wildcard
-    rootnode         ::= [A-Za-z0-9]* | wildcard
-    locationStep     ::= sep nodename
-    location         ::= sep package_id sep resourcetype_id sep rootnode 
-                         [loactionStep]*
+    # rootnode         ::= [A-Za-z0-9]* | wildcard
+    locationStep     ::= sep (nodename | wildcard) 
+    location         ::= sep package_id sep resourcetype_id [loactionStep]*
     pathExpr         ::= [sep] node [sep node]*
     valueExpr        ::= literalValue | numericValue
     relExpr          ::= pathExpr [relOp valueExpr | pathExpr]
@@ -75,9 +74,11 @@ class RestrictedXPathQueryParser(object):
     
     def __init__(self):
         self.parser = self.createParser()
+        self._init_parser()
+        
+    def _init_parser(self):
         self.package_id = None
         self.resourcetype_id = None
-        self.rootnode = None
         self.location_steps = None
         self.predicates = None
         self.order_by = None
@@ -92,9 +93,9 @@ class RestrictedXPathQueryParser(object):
     def evalResourcetype_id(self, s, loc, tokens):
         self.resourcetype_id = tokens[0]
         return tokens
-        
-    def evalRootnode(self, s, loc, tokens):
-        self.rootnode = tokens[0]
+    
+    def evalLocationSteps(self, s, loc, tokens):
+        self.location_steps = tokens.asList()
         return tokens
     
     def remove_list(self, s, loc, tokens):
@@ -108,14 +109,18 @@ class RestrictedXPathQueryParser(object):
         """
         if tokens[0] == self.SEP:
             # path is relative to root (package level)
-            return [tokens[1], tokens[2], self.SEP.join(tokens[3:])]
-        # path starts with ... 
-        # steps = 3, '../../..' => package level
-        # steps = 2, '../..'    => resourcetype level
-        # steps = 1, '..'       => root node level
-        steps = len(filter(lambda t: t == self.PARENT, tokens[0:3]))
-        ptokens = [self.package_id, self.resourcetype_id, self.rootnode]
-        ptokens = ptokens[:3-steps]
+            return [[tokens[1], tokens[2], self.SEP.join(tokens[3:])]]
+        # count the number of '..' nodes at the beginning of the path and move 
+        # the appropriate number of steps in path to the left
+        steps = 0
+        for t in tokens:
+            if not t == self.PARENT:
+                break
+            steps += 1
+        # steps = len(filter(lambda t: t == self.PARENT, tokens))
+        ptokens = [self.package_id, self.resourcetype_id]
+        ptokens.extend(self.location_steps)
+        ptokens = ptokens[:len(ptokens)-steps]
         ptokens.extend(tokens[steps:])
         return [[ptokens[0], ptokens[1], self.SEP.join(ptokens[2:])]]
     
@@ -208,16 +213,17 @@ class RestrictedXPathQueryParser(object):
         resourcetype_id = (pp.Word(pp.alphanums) | wildcard).\
                           setResultsName('resourcetype_id').\
                           setParseAction(self.evalResourcetype_id).suppress()
-        rootnode = (ndName | wildcard).\
-                   setResultsName('rootnode').\
-                   setParseAction(self.evalRootnode).suppress()
+#        rootnode = (ndName | wildcard).\
+#                   setResultsName('rootnode').\
+#                   setParseAction(self.evalRootnode).suppress()
         
-        locationStep = (sep.suppress() + ndName).\
+        locationStep = (sep.suppress() + (ndName | wildcard)).\
                        setResultsName('locationStep', True)
-        location = sep.suppress() + package_id +\
+        location = (sep.suppress() + package_id +\
                    sep.suppress() + resourcetype_id +\
-                   sep.suppress() + rootnode +\
-                   pp.ZeroOrMore(locationStep)
+                   pp.ZeroOrMore(locationStep)).\
+                   setParseAction(self.evalLocationSteps)
+        # sep.suppress() + rootnode +\
         
         # predicate expression
         pexpr = pp.Forward().setParseAction(self.remove_list)
@@ -251,9 +257,9 @@ class RestrictedXPathQueryParser(object):
         return query.parseString
     
     def setAttributes(self, parsed):
-        location_steps = parsed.get('locationStep')
-        if isinstance(location_steps, pp.ParseResults):
-            self.location_steps = [ls[0] for ls in location_steps.asList()]
+#        location_steps = parsed.get('locationStep')
+#        if isinstance(location_steps, pp.ParseResults):
+#            self.location_steps = [ls[0] for ls in location_steps.asList()]
         predicates = parsed.get('predicates')
         if isinstance(predicates, pp.ParseResults):
             self.predicates = predicates.asList()
@@ -270,6 +276,7 @@ class RestrictedXPathQueryParser(object):
         return parsed
     
     def parse(self, expr):
+        self._init_parser()
         try:
             return self.setAttributes(self.parser(expr))
         except pp.ParseException, e:
@@ -297,10 +304,7 @@ class XPathQuery(RestrictedXPathQueryParser):
         rt = self.resourcetype_id
         if rt == self.WILDCARD:
             rt = None
-        rn = self.rootnode
-        if rn == self.WILDCARD:
-            rn = None
-        location_path = [pkg, rt, rn]
+        location_path = [pkg, rt]
         if self.location_steps:
             location_path.extend(self.location_steps)
         return location_path
