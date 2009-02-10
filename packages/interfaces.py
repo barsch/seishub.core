@@ -182,13 +182,12 @@ class IPostgreSQLView(Interface):
     
     def createView():
         """
-        Return a SQL string creating a view.
+        Return a SQL SELECT statement for creating a SQL view.
         
-        e.g. CREATE OR ALTER VIEW v_baeume (name, geom) AS 
-             SELECT name, GeomFromText('POINT(' || x || ' ' || y || ')', 4326)
+        e.g. SELECT name, GeomFromText('POINT(' || x || ' ' || y || ')', 4326)
              FROM baeume;
         """
-        
+
 
 class IProcessorIndex(Interface):
     """

@@ -159,12 +159,3 @@ index_integer_tab = Table(DEFAULT_PREFIX + 'integer_'+ INDEX_TABLE, metadata,
     UniqueConstraint('index_id','keyval','document_id'),
     useexisting=True
 )
-
-#index_keyless_tab = Table(DEFAULT_PREFIX + 'keyless_'+ INDEX_TABLE, metadata,
-#    Column('id', Integer, primary_key = True, autoincrement = True),
-#    Column('index_id', Integer),
-#    Column('group_pos', Integer),
-#    Column('document_id', Integer),
-#    UniqueConstraint('index_id','document_id'),
-#    useexisting=True
-#)

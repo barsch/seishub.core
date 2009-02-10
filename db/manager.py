@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
+"""
+The database manager.
+"""
 
 from seishub.config import Option, IntOption
-from seishub.db import DEFAULT_MAX_OVERFLOW, DEFAULT_POOL_SIZE, DEFAULT_DB_URI, \
-    util
+from seishub.db import DEFAULT_MAX_OVERFLOW, DEFAULT_POOL_SIZE, DEFAULT_DB_URI
 from seishub.exceptions import NotFoundError
 import os
 import sqlalchemy as sa
@@ -13,7 +15,7 @@ meta = sa.MetaData()
 
 class DatabaseManager(object):
     """
-    A wrapper around SQLAlchemy connection pool.
+    A wrapper around the SQLAlchemy connection pool.
     """
     Option('db', 'uri', DEFAULT_DB_URI, "Database URI.")
     Option('db', 'verbose', False, "Enables database verbosity.")
@@ -95,9 +97,15 @@ class DatabaseManager(object):
                                 convert_unicode = True)
     
     def query(self, sql):
+        """
+        Shortcut for querying the database.
+        """
         return self.engine.execute(sql)
     
     def createView(self, name, sql):
+        """
+        Create a SQL view from a SQL string and a name.
+        """
         try:
             self.dropView(name)
         except NotFoundError:
@@ -106,6 +114,9 @@ class DatabaseManager(object):
         self.engine.execute(sql)
     
     def dropView(self, name):
+        """
+        Drop a SQL view by its name.
+        """
         sql = 'DROP VIEW "%s"' % name
         if self.engine.name == 'postgres':
             sql += ' CASCADE';
@@ -116,6 +127,9 @@ class DatabaseManager(object):
             raise NotFoundError(msg % name)
     
     def getViews(self):
+        """
+        Get all SQL Views from database.
+        """
         if self.engine.name == 'sqlite':
             sql = "SELECT name from sqlite_master WHERE type='view';"
             temp = self.engine.execute(sql).fetchall()

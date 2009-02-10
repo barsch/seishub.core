@@ -13,10 +13,10 @@ from sqlalchemy import select, sql
 from zope.interface.exceptions import DoesNotImplement
 
 
-class _IndexViewer(object):
+class _IndexView(object):
     """
-    Mixin for XMLIndexCatalog providing "horizontal" views on the indexed data
-    per resourcetype.
+    Mixin for XMLIndexCatalog providing "horizontal" SQL views on the indexed 
+    data per resource type.
     """
     
     def createIndexView(self, xmlindex):
@@ -307,7 +307,7 @@ class _QueryProcessor(object):
         return results
 
 
-class XmlIndexCatalog(DbStorage, _QueryProcessor, _IndexViewer):
+class XmlIndexCatalog(DbStorage, _QueryProcessor, _IndexView):
     """
     A catalog of indexes.
     
@@ -319,10 +319,10 @@ class XmlIndexCatalog(DbStorage, _QueryProcessor, _IndexViewer):
         self._db_manager = db
         self._storage = resource_storage
         self.refreshIndexCache()
-        
+    
     def refreshIndexCache(self):
         """
-        Refresh the index cache.
+        Refreshs the index cache.
         """
         self._cache = {'package_id':{}, 'resourcetype_id':{}, 'xpath':{},
                        'group_path':{}, 'type':{}, 'options':{}, '_id':{},
@@ -334,6 +334,9 @@ class XmlIndexCatalog(DbStorage, _QueryProcessor, _IndexViewer):
             self._addToCache(idx)
     
     def _addToCache(self, xmlindex):
+        """
+        Adds a given XMLIndex to the index cache.
+        """
         for attr in self._cache:
             key = getattr(xmlindex, attr)
             if not key:
@@ -342,8 +345,11 @@ class XmlIndexCatalog(DbStorage, _QueryProcessor, _IndexViewer):
                 self._cache[attr][key] = set([xmlindex])
             else:
                 self._cache[attr][key].add(xmlindex)
-                
+    
     def _deleteFromCache(self, xmlindex):
+        """
+        Deletes a given XMLIndex from the index cache.
+        """
         for attr in self._cache:
             key = getattr(xmlindex, attr)
             if key in self._cache[attr]:
@@ -377,12 +383,6 @@ class XmlIndexCatalog(DbStorage, _QueryProcessor, _IndexViewer):
         self.drop(XmlIndex, _id = xmlindex._id)
         self._deleteFromCache(xmlindex)
     
-    def deleteAllIndexes(self, package_id=None, resourcetype_id=None):
-        """
-        Removes all indexes related to a given package_id and resourcetype_id.
-        """
-        pass
-    
     def getIndexes(self, package_id = None, resourcetype_id = None, 
                    xpath = None, group_path = None, type = None, 
                    options = None, index_id = None, label = None):
@@ -409,7 +409,7 @@ class XmlIndexCatalog(DbStorage, _QueryProcessor, _IndexViewer):
             indexes.intersection_update(idxs)
         return list(indexes)
     
-    def indexResource(self, resource, xmlindex = None, index_id = None):
+    def indexResource(self, resource, xmlindex = None):
         """
         Index the given resource using either all or a given XMLIndex.
         """
@@ -417,11 +417,10 @@ class XmlIndexCatalog(DbStorage, _QueryProcessor, _IndexViewer):
             raise TypeError("%s is not an IResource." % str(resource))
         package_id = resource.package.package_id
         resourcetype_id = resource.resourcetype.resourcetype_id
-        index_id = (xmlindex and xmlindex._id) or index_id or None
+        index_id = (xmlindex and xmlindex._id) or None
         xmlindex_list = self.getIndexes(package_id = package_id, 
                                         resourcetype_id = resourcetype_id,
                                         index_id = index_id)
-        
         elements = []
         for xmlindex in xmlindex_list:
             elements.extend(xmlindex.eval(resource.document))
@@ -450,14 +449,18 @@ class XmlIndexCatalog(DbStorage, _QueryProcessor, _IndexViewer):
             elements.extend(el)
         return elements
     
-    def flushIndex(self, xmlindex = None, resource = None):
+    def flushIndex(self, xmlindex):
         """
-        Remove all indexed data for given XMLIndex or Resource object.
+        Remove all indexed data for given XMLIndex.
         """
-        if resource:
-            for element_cls in type_classes.values():
-                self.drop(element_cls, 
-                          document = {'_id':resource.document._id})
-            return
         element_cls = xmlindex._getElementCls()
         self.drop(element_cls, index = xmlindex)
+    
+    def flushIndexByResource(self, resource):
+        """
+        Remove all indexed data for given Resource object.
+        """
+        for element_cls in type_classes.values():
+            self.drop(element_cls, 
+                      document = {'_id':resource.document._id})
+        return

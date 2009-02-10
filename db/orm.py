@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+"""
+The database object-relational mapping (ORM) class.
+"""
 
 import time
 from zope.interface import implements, Interface, directlyProvides, \

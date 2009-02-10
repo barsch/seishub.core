@@ -41,7 +41,7 @@ class XmlCatalog(object):
                        name = name)
         # get xml_doc to ensure the document is parsed
         res.document.xml_doc
-        self.schemaValidate(res)
+        self.validateResource(res)
         self.xmldb.addResource(res)
         self.index_catalog.indexResource(res)
         return res
@@ -61,23 +61,20 @@ class XmlCatalog(object):
         new_resource = Resource(resourcetype = resource.resourcetype,
                                 document = newXMLDocument(xml_data),
                                 name = resource.name)
-        self.schemaValidate(new_resource)
+        self.validateResource(new_resource)
         self.xmldb.modifyResource(resource, new_resource)
         # we only keep indexes for the newest revision
-        self.index_catalog.flushIndex(resource = resource)
+        self.index_catalog.flushIndexByResource(resource)
         self.index_catalog.indexResource(new_resource)
     
     def deleteResource(self, resource=None, resource_id=None):
         """
         Remove a resource from the database.
-        
-        If a document_id is specified the resource having that document is 
-        deleted, together with all other documents linked to that resource!
         """
         if resource_id:
             resource = self.xmldb.getResource(id = resource_id)
         # remove indexed data:
-        self.index_catalog.flushIndex(resource = resource)
+        self.index_catalog.flushIndexByResource(resource)
         res = self.xmldb.deleteResource(resource)
         if not res:
             msg = "Error deleting a resource: No resource was found with " + \
@@ -85,7 +82,7 @@ class XmlCatalog(object):
             raise NotFoundError(msg)
         return res
     
-    def deleteAllResources(self, package_id, resourcetype_id=None):
+    def deleteAllResources(self, package_id, resourcetype_id = None):
         """
         Remove all resources of specified package_id and resourcetype_id.
         """
@@ -120,7 +117,7 @@ class XmlCatalog(object):
         @return: Resource object
         """
         return self.xmldb.getResourceHistory(package_id, resourcetype_id, name)
-        
+    
     def getAllResources(self, package_id = None, resourcetype_id = None):
         """
         Get a list of resources for specified package and resourcetype.
@@ -136,7 +133,7 @@ class XmlCatalog(object):
 #        return self.xmldb.revertResource(package_id, resourcetype_id, name, 
 #                                         revision)
     
-    def schemaValidate(self, resource):
+    def validateResource(self, resource):
         """
         Do a schema validation of a given resource.
         
@@ -159,7 +156,8 @@ class XmlCatalog(object):
         """
         Register an index.
         
-        @param type: "text"|"numeric"|"float"|"datetime"|"boolean"|"date"
+        @param type: "text" | "numeric" | "float" | "datetime" | "boolean" |
+                     "date" | "integer" | "timestamp"
         """
         # check for label
         if not label:
@@ -242,6 +240,7 @@ class XmlCatalog(object):
                                              index_id = index_id,
                                              label = label)
     
+# XXX: what about reindexing for a certain resourcetype
     def reindex(self, xmlindex = None, index_id = None):
         """
         Reindex all resources by a given XMLIndex object.
@@ -257,6 +256,19 @@ class XmlCatalog(object):
         # reindex
         for res in res_list:
             self.index_catalog.indexResource(res, xmlindex)
+        return True
+    
+    def reindexAllIndexes(self, package_id = None, resourcetype_id = None):
+        """
+        Reindex all indexes related to a given package_id and resourcetype_id.
+        """
+        # get resource list
+        res_list = self.getAllResources(package_id = package_id,
+                                        resourcetype_id = resourcetype_id)
+        # flush + reindex each resource
+        for res in res_list:
+            self.index_catalog.flushIndexByResource(res)
+            self.index_catalog.indexResource(res)
         return True
     
     def getIndexData(self, resource):

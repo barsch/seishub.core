@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+"""
+Database related utilities.
+"""
 
 def compileStatement(stmt, bind=None, params={}, **kwargs):
     """

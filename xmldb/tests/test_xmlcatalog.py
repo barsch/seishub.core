@@ -252,7 +252,7 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         l = self.env.catalog.getIndexes(resourcetype_id = 'testml')
         self.assertEqual(len(l), 1)
         self.assertEqual(str(l[0]), "/testpackage/testml" + IDX2)
-        #by package and resourcetype
+        # by package and resourcetype
         l = self.env.catalog.getIndexes(package_id = 'testpackage',
                                          resourcetype_id = 'station')
         self.assertEqual(len(l), 1)
@@ -718,9 +718,9 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         self.env.registry.db_deleteResourceType("package", "rt")
         self.env.registry.db_deletePackage("package")
     
-    def test_queryCatalogWithEqualsOperator(self):
+    def test_queryCatalogWithEqualOperator(self):
         """
-        Tests the equals operator (== and !=) at the catalog query interface.
+        Tests the equal operators (== and !=) at the catalog query interface.
         """
         catalog = self.env.catalog
         # create a resourcetype
