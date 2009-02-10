@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from seishub.db import util
 from seishub.db.orm import DbStorage, DbError, DB_LIKE
 from seishub.exceptions import DuplicateObjectError, InvalidParameterError, \
     SeisHubError, NotFoundError
@@ -32,7 +33,7 @@ class _IndexViewer(object):
         location_path = [package_id, resourcetype_id, None]
         q, joins = self._process_location_path(location_path, q)
         q = q.select_from(joins)
-        self._db_manager.createView(name, q)
+        self._db_manager.createView(name, util.compileStatement(q))
 
 
 class _QueryProcessor(object):

@@ -97,12 +97,12 @@ class DatabaseManager(object):
     def query(self, sql):
         return self.engine.execute(sql)
     
-    def createView(self, name, query):
+    def createView(self, name, sql):
         try:
             self.dropView(name)
         except NotFoundError:
             pass
-        sql = 'CREATE VIEW "%s" AS %s' % (name, util.compileStatement(query))
+        sql = 'CREATE VIEW "%s" AS %s' % (name, sql)
         self.engine.execute(sql)
     
     def dropView(self, name):

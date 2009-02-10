@@ -10,6 +10,7 @@ from seishub.registry.package import Alias, Schema, Stylesheet, PackageWrapper, 
 from seishub.registry.util import RegistryListProxy
 from seishub.util.text import from_uri
 from seishub.xmldb import index
+from sqlalchemy import sql
 from zope.interface.verify import verifyClass
 
 
@@ -578,8 +579,9 @@ class SQLViewRegistry(object):
             return
         # create view
         sql = cls(self.env).createView()
+        name = cls.view_id
         try:
-            self.env.db.engine.execute(sql)
+            self.env.db.createView(name, sql)
         except Exception, e:
             msg = "Could not create a SQL view defined by class %s.\n%s"
             self.env.log.error(msg % (cls, e.message))
@@ -588,9 +590,8 @@ class SQLViewRegistry(object):
         self._view_objs[cls.view_id] = cls
     
     def _disableView(self, cls):
-        sql = "DROP VIEW %s;" % cls.view_id
         try:
-            self.env.db.engine.execute(sql)
+            self.env.db.dropView(cls.view_id)
         except Exception, e:
             msg = "Could not delete a SQL view defined by class %s.\n%s"
             self.env.log.error(msg % (cls, e.message))
