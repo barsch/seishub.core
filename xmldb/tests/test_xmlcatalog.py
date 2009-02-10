@@ -482,11 +482,20 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         query = '/package/rt/station[lat!=55.23200]'
         result = catalog.query(query, full=True)
         self.assertEqual(len(result), 2)
+        query = '/package/rt[station/lat!=55.23200]'
+        result = catalog.query(query, full=True)
+        self.assertEqual(len(result), 2)
         # lat < 51
         query = '/package/rt/station[lat<51]'
         result = catalog.query(query, full=True)
         self.assertEqual(len(result), 2)
         query =  '/package/rt/*[lat<51]'
+        result = catalog.query(query, full=True)
+        self.assertEqual(len(result), 2)
+        query = '/package/rt[station/lat<51]'
+        result = catalog.query(query, full=True)
+        self.assertEqual(len(result), 2)
+        query =  '/package/rt[*/lat<51]'
         result = catalog.query(query, full=True)
         self.assertEqual(len(result), 2)
         # lat > 51
@@ -496,6 +505,12 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         query = '/package/rt/*[lat>51]'
         result = catalog.query(query, full=True)
         self.assertEqual(len(result), 1)
+        query = '/package/rt[station/lat>51]'
+        result = catalog.query(query, full=True)
+        self.assertEqual(len(result), 1)
+        query = '/package/rt[*/lat>51]'
+        result = catalog.query(query, full=True)
+        self.assertEqual(len(result), 1)
         # lat = 50.232001
         query =  '/package/rt/station[lat=50.232001]'
         result = catalog.query(query, full=True)
@@ -503,11 +518,23 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         query = '/package/rt/station[lat==50.232001]'
         result = catalog.query(query, full=True)
         self.assertFalse(result)
+        query =  '/package/rt[station/lat=50.232001]'
+        result = catalog.query(query, full=True)
+        self.assertFalse(result)
+        query = '/package/rt[station/lat==50.232001]'
+        result = catalog.query(query, full=True)
+        self.assertFalse(result)
         # lat = 50.23200
         query = '/package/rt/station[lat=50.23200]'
         result = catalog.query(query, full=True)
         self.assertEqual(len(result), 2)
         query = '/package/rt/station[lat==50.23200]'
+        result = catalog.query(query, full=True)
+        self.assertEqual(len(result), 2)
+        query = '/package/rt[station/lat=50.23200]'
+        result = catalog.query(query, full=True)
+        self.assertEqual(len(result), 2)
+        query = '/package/rt[station/lat==50.23200]'
         result = catalog.query(query, full=True)
         self.assertEqual(len(result), 2)
         # lat > 49 and lat < 51 
@@ -529,56 +556,122 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         query = '/package/rt/*[(lat<51 and lat>49)]'
         result = catalog.query(query, full=True)
         self.assertEqual(len(result), 2)
+        query = '/package/rt[station/lat>49 and station/lat<51]'
+        result = catalog.query(query, full=True)
+        self.assertEqual(len(result), 2)
+        query = '/package/rt[station/lat<51 and station/lat>49]'
+        result = catalog.query(query, full=True)
+        self.assertEqual(len(result), 2)
+        query = '/package/rt[(station/lat<51 and station/lat>49)]'
+        result = catalog.query(query, full=True)
+        self.assertEqual(len(result), 2)
+        query = '/package/rt[*/lat>49 and */lat<51]'
+        result = catalog.query(query, full=True)
+        self.assertEqual(len(result), 2)
+        query = '/package/rt[*/lat<51 and */lat>49]'
+        result = catalog.query(query, full=True)
+        self.assertEqual(len(result), 2)
+        query = '/package/rt[(station/lat<51 and */lat>49)]'
+        result = catalog.query(query, full=True)
+        self.assertEqual(len(result), 2)
         # lat > 49 and lon == 22.51200
         query = '/package/rt/station[lat>49 and lon=22.51200]'
+        result = catalog.query(query, full=True)
+        self.assertEqual(len(result), 1)
+        query = '/package/rt[station/lat>49 and station/lon=22.51200]'
         result = catalog.query(query, full=True)
         self.assertEqual(len(result), 1)
         # (lat > 49 and lat < 56) and lon == 22.51200
         query = '/package/rt/station[(lat>49 and lat<56) and lon=22.51200]'
         result = catalog.query(query, full=True)
         self.assertEqual(len(result), 1)
-        # lat > 49 and (lat < 56 and lon == 22.51200)
-        query = '/package/rt/station[lat>49 and (lat<56 and lon=22.51200)]'
+        query = '/package/rt[(*/lat>49 and */lat<56) and station/lon=22.51200]'
         result = catalog.query(query, full=True)
         self.assertEqual(len(result), 1)
         # lat > 49 and (lat < 56 and lon == 22.51200)
         query = '/package/rt/station[lat>49 and (lat<56 and lon=22.51200)]'
+        result = catalog.query(query, full=True)
+        self.assertEqual(len(result), 1)
+        query = '/package/rt[*/lat>49 and (*/lat<56 and */lon=22.51200)]'
+        result = catalog.query(query, full=True)
+        self.assertEqual(len(result), 1)
+        # lat > 49 and (lat < 56 and lon == 22.51200)
+        query = '/package/rt/station[lat>49 and (lat<56 and lon=22.51200)]'
+        result = catalog.query(query, full=True)
+        self.assertEqual(len(result), 1)
+        query = '/package/rt[*/lat>49 and (*/lat<56 and */lon=22.51200)]'
         result = catalog.query(query, full=True)
         self.assertEqual(len(result), 1)
         # lat > 49 and lat < 56 and lon == 22.51200
         query = '/package/rt/station[lat>49 and lat<56 and lon=22.51200]'
         result = catalog.query(query, full=True)
         self.assertEqual(len(result), 1)
+        query = '/package/rt[*/lat>49 and */lat<56 and */lon=22.51200]'
+        result = catalog.query(query, full=True)
+        self.assertEqual(len(result), 1)
         # lat > 49 and lat < 56 or lon == 22.51200
         query = '/package/rt/station[(lat>52 and lat<56) or lon=12.51200]'
         result = catalog.query(query, full=True)
         self.assertEqual(len(result), 3)
-        # lat > 49 or lat < 56 or lon == 22.51200
-        query = '/package/rt/station[lat>49 or lat<56 or lon=22.51200]'
+        query = '/package/rt[(*/lat>52 and */lat<56) or */lon=12.51200]'
         result = catalog.query(query, full=True)
         self.assertEqual(len(result), 3)
         # lat > 49 or lat < 56 or lon == 22.51200
         query = '/package/rt/station[lat>49 or lat<56 or lon=22.51200]'
+        result = catalog.query(query, full=True)
+        self.assertEqual(len(result), 3)
+        query = '/package/rt[*/lat>49 or */lat<56 or station/lon=22.51200]'
+        result = catalog.query(query, full=True)
+        self.assertEqual(len(result), 3)
+        # lat > 49 or lat < 56 or lon == 22.51200
+        query = '/package/rt/station[lat>49 or lat<56 or lon=22.51200]'
+        result = catalog.query(query, full=True)
+        self.assertEqual(len(result), 3)
+        query = '/package/rt[*/lat>49 or station/lat<56 or */lon=22.51200]'
         result = catalog.query(query, full=True)
         self.assertEqual(len(result), 3)
         # missing exists
         query = '/package/rt/station[missing]'
         result = catalog.query(query, full=True)
         self.assertEqual(len(result), 1)
+        query = '/package/rt[station/missing]'
+        result = catalog.query(query, full=True)
+        self.assertEqual(len(result), 1)
+        query = '/package/rt[*/missing]'
+        result = catalog.query(query, full=True)
+        self.assertEqual(len(result), 1)
         # lat > 49 and lat < 56 and missing
         query = '/package/rt/station[lat > 49 and lat < 56 and missing]'
+        result = catalog.query(query, full=True)
+        self.assertEqual(len(result), 1)
+        query = '/package/rt[*/lat > 49 and */lat < 56 and */missing]'
         result = catalog.query(query, full=True)
         self.assertEqual(len(result), 1)
         # same in other order
         query = '/package/rt/station[lat > 49 and missing and lat < 56]'
         result = catalog.query(query, full=True)
         self.assertEqual(len(result), 1)
+        query = '/package/rt[station/lat > 49 and */missing and */lat < 56]'
+        result = catalog.query(query, full=True)
+        self.assertEqual(len(result), 1)
         # not(missing)
         query = '/package/rt/station[not(missing)]'
         result = catalog.query(query, full=True)
         self.assertEqual(len(result), 2)
+        query = '/package/rt/*[not(missing)]'
+        result = catalog.query(query, full=True)
+        self.assertEqual(len(result), 2)
+        query = '/package/rt[not(station/missing)]'
+        result = catalog.query(query, full=True)
+        self.assertEqual(len(result), 2)
+        query = '/package/rt[not(*/missing)]'
+        result = catalog.query(query, full=True)
+        self.assertEqual(len(result), 2)
         # lat > 0 and lat < 156 and not(missing)
         query = '/package/rt/station[lat > 0 and lat < 156 and not(missing)]'
+        result = catalog.query(query, full=True)
+        self.assertEqual(len(result), 2)
+        query = '/package/rt[*/lat > 0 and */lat < 156 and not(*/missing)]'
         result = catalog.query(query, full=True)
         self.assertEqual(len(result), 2)
         # note the difference between a!=b and not(a=b)
@@ -586,22 +679,53 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         query = '/package/rt/station[XY/paramXY != 2.5]'
         result = catalog.query(query, full=True)
         self.assertEqual(len(result), 3)
+        query = '/package/rt[station/XY/paramXY != 2.5]'
+        result = catalog.query(query, full=True)
+        self.assertEqual(len(result), 3)
+        query = '/package/rt[*/XY/paramXY != 2.5]'
+        result = catalog.query(query, full=True)
+        self.assertEqual(len(result), 3)
+        query = '/package/rt[*/*/paramXY != 2.5]'
+        result = catalog.query(query, full=True)
+        self.assertEqual(len(result), 3)
+        query = '/package/rt[*/*/paramXY == 2.5]'
+        result = catalog.query(query, full=True)
+        self.assertEqual(len(result), 1)
         # two resources do NOT have an XY/paramXY element with value 2.5
         query = '/package/rt/station[not(XY/paramXY = 2.5)]'
+        result = catalog.query(query, full=True)
+        self.assertEqual(len(result), 2)
+        query = '/package/rt[not(station/XY/paramXY = 2.5)]'
+        result = catalog.query(query, full=True)
+        self.assertEqual(len(result), 2)
+        query = '/package/rt[not(station/*/paramXY = 2.5)]'
         result = catalog.query(query, full=True)
         self.assertEqual(len(result), 2)
         # no XY/paramXY element with value 2.5 and no 'missing' element
         query = '/package/rt/station[not(XY/paramXY = 2.5) and not(missing)]'
         result = catalog.query(query, full=True)
         self.assertEqual(len(result), 1)
+        query = '/package/rt[not(station/XY/paramXY = 2.5) and not(*/missing)]'
+        result = catalog.query(query, full=True)
+        self.assertEqual(len(result), 1)
         # not(XY/paramXY = 2.5 or missing)
         query = '/package/rt/station[not(XY/paramXY = 2.5 or missing)]'
+        result = catalog.query(query, full=True)
+        self.assertEqual(len(result), 1)
+        query = '/package/rt[not(station/XY/paramXY = 2.5 or station/missing)]'
         result = catalog.query(query, full=True)
         self.assertEqual(len(result), 1)
         # not(XY/paramXY = 2.5 and missing)
         query = '/package/rt/station[not(XY/paramXY = 2.5 and missing)]'
         result = catalog.query(query, full=True)
         self.assertEqual(len(result), 3)
+        query = '/package/rt[not(station/XY/paramXY = 2.5 and */missing)]'
+        result = catalog.query(query, full=True)
+        self.assertEqual(len(result), 3)
+        # not(not(missing))
+        #query = '/package/rt/station[not(not(missing))]'
+        #result = catalog.query(query, full=True)
+        #self.assertEqual(len(result), 2)
         
         # remove everything
         catalog.deleteAllResources("package")
