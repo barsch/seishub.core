@@ -156,7 +156,7 @@ class _QueryProcessor(object):
         """
         pkg, rt = location_path[0:2]
         joins = self._join_on_resourcetype(pkg, rt)
-        if len(location_path) == 3:
+        if len(location_path)<=3:
             # location path is on resource level
             # select *all* known indexes for that resourcetype
             indexes = self.getIndexes(pkg, rt)
@@ -301,8 +301,6 @@ class _QueryProcessor(object):
         if joins:
             q = q.select_from(joins)
         q = q.limit(limit).offset(offset)
-#        from seishub.db.util import compileStatement
-#        print compileStatement(q)
         res = self._db.execute(q)
         results = self._process_results(res)
         res.close()

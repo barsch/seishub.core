@@ -154,7 +154,7 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         self.idx_so = []
         for i in so_indexes:
             idx = self.env.catalog.registerIndex('sortordertests', 'sotest', 
-                                                 str(i), i)
+                                                 i[-4:], i)
             self.idx_so.append(idx)
             self.env.catalog.reindex(idx)
         
@@ -362,7 +362,6 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
     def test_runXPathQuery(self):
         # create test catalog
         self._setup_testdata()
-        import time; start = time.time()
         #======================================================================
         # location path queries
         #======================================================================
@@ -549,9 +548,6 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         # unknown index
         q = "/testpackage/station[station/XY]"
         self.assertRaises(NotFoundError, self.catalog.query, XPathQuery(q))
-        
-        end = time.time()
-        print "\nRan test_runXPathQueries in %s s." % (end-start)
         # remove test catalog
         self._cleanup_testdata()
     

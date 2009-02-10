@@ -305,7 +305,7 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         idx_data = res1[self.res1.document._id]['/testpackage/station' + IDX1]
         idx_data.sort()
         self.assertEqual(idx_data, ['11.5', '20.5', 'blah'])
-
+        
         res3 = self.env.catalog.query('/testpackage/*/*', full = True)
         self.assertEqual(len(res3), 3)
         self.assertEqual(res3[0]._id, self.res1._id)
@@ -314,11 +314,10 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         self.assertEqual(res3[1].document._id, self.res2.document._id)
         self.assertEqual(res3[2]._id, self.res3._id)
         self.assertEqual(res3[2].document._id, self.res3.document._id)
-        
         # XXX: not supported yet ?
         res4 = self.env.catalog.query('/testpackage/*/station')
-#        self.assertEqual(res4, [self.res1.document._id,
-#                                self.res2.document._id])
+        self.assertEqual(res4, [self.res1.document._id,
+                                self.res2.document._id])
         res5 = self.env.catalog.query('/testpackage/testml/testml', 
                                       full = True)
         self.assertEqual(len(res5), 1)
@@ -368,46 +367,126 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         self.env.registry.db_deleteResourceType("test-catalog", "index")
         self.env.registry.db_deletePackage("test-catalog")
     
-    def test_addInvalidIndex(self):
+    def test_registerInvalidIndex(self):
         """
-        SeisHub should not allow adding of an index with no XPath expression.
+        SeisHub should not allow adding of an index with invalid parameters.
         """
         # create a resourcetype
-        self.env.registry.db_registerPackage("test-catalog")
-        self.env.registry.db_registerResourceType("test-catalog", "index")
+        self.env.registry.db_registerPackage("package")
+        self.env.registry.db_registerResourceType("package", "rt")
         # invalid package
         self.assertRaises(SeisHubError, self.env.catalog.registerIndex, 
-                          "XXX", "index", '1', "/station/lat")
+                          "XXX", "rt", '1', "/station/lat")
         self.assertRaises(SeisHubError, self.env.catalog.registerIndex, 
-                          package_id="XXX", resourcetype_id="index", 
+                          package_id="XXX", resourcetype_id="rt", 
                           xpath="/station/lat", label='1')
         # invalid resourcetype
         self.assertRaises(SeisHubError, self.env.catalog.registerIndex, 
-                          "test-catalog", "XXX", '1', "/station/lat")
+                          "package", "XXX", '1', "/station/lat")
         self.assertRaises(SeisHubError, self.env.catalog.registerIndex, 
-                          package_id="test-catalog", resourcetype_id="XXX", 
+                          package_id="package", resourcetype_id="XXX", 
                           xpath="/station/lat", label='1')
-        # invalid index type
+        # invalid rt type
         self.assertRaises(SeisHubError, self.env.catalog.registerIndex, 
-                          "test-catalog", "index", '1', "/station/lat", "XXX")
+                          "package", "rt", '1', "/station/lat", "XXX")
         self.assertRaises(SeisHubError, self.env.catalog.registerIndex, 
-                          package_id="test-catalog", resourcetype_id="index", 
+                          package_id="package", resourcetype_id="rt", 
                           xpath="/station/lat", type="XXX", label='1')
         # empty XPath expression
         self.assertRaises(SeisHubError, self.env.catalog.registerIndex, 
-                          "test-catalog", "index", '1', "")
+                          "package", "rt", '1', "")
         self.assertRaises(SeisHubError, self.env.catalog.registerIndex, 
-                          package_id="test-catalog", resourcetype_id="index", 
+                          package_id="package", resourcetype_id="rt", 
                           xpath="", label='1')
         # empty label expression
         self.assertRaises(SeisHubError, self.env.catalog.registerIndex, 
-                          "test-catalog", "index", "", "/")
+                          "package", "rt", "", "/")
         self.assertRaises(SeisHubError, self.env.catalog.registerIndex, 
-                          package_id="test-catalog", resourcetype_id="index", 
+                          package_id="package", resourcetype_id="rt", 
                           xpath="/", label="")
         # remove everything
-        self.env.registry.db_deleteResourceType("test-catalog", "index")
-        self.env.registry.db_deletePackage("test-catalog")
+        self.env.registry.db_deleteResourceType("package", "rt")
+        self.env.registry.db_deletePackage("package")
+    
+    def test_registerIndexTwice(self):
+        """
+        Test for registering an index a second time.
+        """
+        # create a resourcetype
+        self.env.registry.db_registerPackage("package")
+        self.env.registry.db_registerResourceType("package", "rt")
+        # add index
+        self.env.catalog.registerIndex("package", "rt", "xy", "/station/XY")
+        # add index again
+        try:
+            self.env.catalog.registerIndex("package", "rt", "xy2", 
+                                           "/station/XY")
+            self.fail("Expected SeisHubError")
+        except SeisHubError, e:
+            self.assertEquals(e.code, http.CONFLICT)
+        # add index
+        self.env.catalog.registerIndex("package", "rt", "xy3", "/station#lon")
+        # add index again
+        try:
+            self.env.catalog.registerIndex("package", "rt", "xy4", 
+                                           "/station#lon")
+            self.fail("Expected SeisHubError")
+        except SeisHubError, e:
+            self.assertEquals(e.code, http.CONFLICT)
+        # add index again with different label
+        try:
+            self.env.catalog.registerIndex("package", "rt", "xy5", 
+                                           "/station#lon")
+            self.fail("Expected SeisHubError")
+        except SeisHubError, e:
+            self.assertEquals(e.code, http.CONFLICT)
+        # add index again with different label but no grouping (same xpath)
+        try:
+            self.env.catalog.registerIndex("package", "rt", "xy5", 
+                                           "/station/lon")
+            self.fail("Expected SeisHubError")
+        except SeisHubError, e:
+            self.assertEquals(e.code, http.CONFLICT)
+        # add index with already existing label 
+        try:
+            self.env.catalog.registerIndex("package", "rt", "xy", 
+                                           "/station/lat")
+            self.fail("Expected SeisHubError")
+        except SeisHubError, e:
+            self.assertEquals(e.code, http.CONFLICT)
+        # remove everything
+        self.env.catalog.deleteAllIndexes("package", "rt")
+        self.env.registry.db_deleteResourceType("package", "rt")
+        self.env.registry.db_deletePackage("package")
+    
+    def test_registerIndexWithInvalidLabel(self):
+        """
+        Test of registering indexes with invalid labels.
+        """
+        # create a resourcetype
+        self.env.registry.db_registerPackage("package")
+        self.env.registry.db_registerResourceType("package", "rt")
+        # index with 30 chars should work
+        self.env.catalog.registerIndex("package", "rt", "B"*30, "/station/XY")
+        # labels with more than 30 chars are to long
+        try:
+            self.env.catalog.registerIndex("package", "rt", "A"*31, 
+                                           "/station/XY")
+            self.fail("Expected SeisHubError")
+        except SeisHubError, e:
+            self.assertEquals(e.code, http.BAD_REQUEST)
+        # labels with an slash '/' are not allowed
+        try:
+            self.env.catalog.registerIndex("package", "rt", "x/y/4", 
+                                           "/station#lon")
+            self.fail("Expected SeisHubError")
+        except SeisHubError, e:
+            self.assertEquals(e.code, http.BAD_REQUEST)
+        # backslashes ain't a problem
+        self.env.catalog.registerIndex("package", "rt", "A\\B", "/station/lat")
+        # remove everything
+        self.env.registry.db_deleteResourceType("package", "rt")
+        self.env.registry.db_deletePackage("package")
     
     def test_generateViews(self):
         """
@@ -478,13 +557,18 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         query = '/package/rt/*'
         result = catalog.query(query, full=True)
         self.assertEqual(len(result), 3)
-        # lat != 51
-        query = '/package/rt/station[lat!=55.23200]'
+        query = '/package/*/*'
         result = catalog.query(query, full=True)
-        self.assertEqual(len(result), 2)
-        query = '/package/rt[station/lat!=55.23200]'
+        self.assertEqual(len(result), 3)
+        query = '/package/*/station'
         result = catalog.query(query, full=True)
-        self.assertEqual(len(result), 2)
+        self.assertEqual(len(result), 3)
+        query = '/package/rt'
+        result = catalog.query(query, full=True)
+        self.assertEqual(len(result), 3)
+        query = '/package/rt/station'
+        result = catalog.query(query, full=True)
+        self.assertEqual(len(result), 3)
         # lat < 51
         query = '/package/rt/station[lat<51]'
         result = catalog.query(query, full=True)
@@ -511,32 +595,6 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         query = '/package/rt[*/lat>51]'
         result = catalog.query(query, full=True)
         self.assertEqual(len(result), 1)
-        # lat = 50.232001
-        query =  '/package/rt/station[lat=50.232001]'
-        result = catalog.query(query, full=True)
-        self.assertFalse(result)
-        query = '/package/rt/station[lat==50.232001]'
-        result = catalog.query(query, full=True)
-        self.assertFalse(result)
-        query =  '/package/rt[station/lat=50.232001]'
-        result = catalog.query(query, full=True)
-        self.assertFalse(result)
-        query = '/package/rt[station/lat==50.232001]'
-        result = catalog.query(query, full=True)
-        self.assertFalse(result)
-        # lat = 50.23200
-        query = '/package/rt/station[lat=50.23200]'
-        result = catalog.query(query, full=True)
-        self.assertEqual(len(result), 2)
-        query = '/package/rt/station[lat==50.23200]'
-        result = catalog.query(query, full=True)
-        self.assertEqual(len(result), 2)
-        query = '/package/rt[station/lat=50.23200]'
-        result = catalog.query(query, full=True)
-        self.assertEqual(len(result), 2)
-        query = '/package/rt[station/lat==50.23200]'
-        result = catalog.query(query, full=True)
-        self.assertEqual(len(result), 2)
         # lat > 49 and lat < 51 
         query = '/package/rt/station[lat>49 and lat<51]'
         result = catalog.query(query, full=True)
@@ -654,6 +712,105 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         query = '/package/rt[station/lat > 49 and */missing and */lat < 56]'
         result = catalog.query(query, full=True)
         self.assertEqual(len(result), 1)
+        # remove everything
+        catalog.deleteAllResources("package")
+        catalog.deleteAllIndexes("package")
+        self.env.registry.db_deleteResourceType("package", "rt")
+        self.env.registry.db_deletePackage("package")
+    
+    def test_queryCatalogWithEqualsOperator(self):
+        """
+        Tests the equals operator (== and !=) at the catalog query interface.
+        """
+        catalog = self.env.catalog
+        # create a resourcetype
+        self.env.registry.db_registerPackage("package")
+        self.env.registry.db_registerResourceType("package", "rt")
+        # add indexes
+        catalog.registerIndex("package", "rt", "latitude", "/station/lat", 
+                              type = 'numeric')
+        catalog.registerIndex("package", "rt", "longitude", "/station/lon",
+                              type = 'numeric')
+        # add resources
+        catalog.addResource("package", "rt", RAW_XML, name='1')
+        catalog.addResource("package", "rt", RAW_XML1, name='2')
+        catalog.addResource("package", "rt", RAW_XML2, name='3')
+        # queries
+        # lat != 55.23200
+        query = '/package/rt/station[lat!=55.23200]'
+        result = catalog.query(query, full=True)
+        self.assertEqual(len(result), 2)
+        query = '/package/rt[station/lat!=55.23200]'
+        result = catalog.query(query, full=True)
+        self.assertEqual(len(result), 2)
+        query = '/package/rt[latitude!=55.23200]'
+        result = catalog.query(query, full=True)
+        self.assertEqual(len(result), 2)
+        # lat = 50.232001 (does not exists)
+        query = '/package/rt/station[lat=50.232001]'
+        result = catalog.query(query, full=True)
+        self.assertFalse(result)
+        query = '/package/rt[station/lat=50.232001]'
+        result = catalog.query(query, full=True)
+        self.assertFalse(result)
+        query = '/package/rt[latitude=50.232001]'
+        result = catalog.query(query, full=True)
+        self.assertFalse(result)
+        query = '/package/rt/station[lat==50.232001]'
+        result = catalog.query(query, full=True)
+        self.assertFalse(result)
+        query = '/package/rt[station/lat==50.232001]'
+        result = catalog.query(query, full=True)
+        self.assertFalse(result)
+        query = '/package/rt[latitude==50.232001]'
+        result = catalog.query(query, full=True)
+        self.assertFalse(result)
+        # lat = 50.23200
+        query = '/package/rt/station[lat=50.23200]'
+        result = catalog.query(query, full=True)
+        self.assertEqual(len(result), 2)
+        query = '/package/rt[station/lat=50.23200]'
+        result = catalog.query(query, full=True)
+        self.assertEqual(len(result), 2)
+        query = '/package/rt[latitude=50.23200]'
+        result = catalog.query(query, full=True)
+        self.assertEqual(len(result), 2)
+        query = '/package/rt/station[lat==50.23200]'
+        result = catalog.query(query, full=True)
+        self.assertEqual(len(result), 2)
+        query = '/package/rt[station/lat==50.23200]'
+        result = catalog.query(query, full=True)
+        self.assertEqual(len(result), 2)
+        query = '/package/rt[latitude==50.23200]'
+        result = catalog.query(query, full=True)
+        self.assertEqual(len(result), 2)
+        # remove everything
+        catalog.deleteAllResources("package")
+        catalog.deleteAllIndexes("package")
+        self.env.registry.db_deleteResourceType("package", "rt")
+        self.env.registry.db_deletePackage("package")
+    
+    def test_queryCatalogWithNotFunction(self):
+        """
+        Tests the not() function at the catalog query interface.
+        """
+        catalog = self.env.catalog
+        # create a resourcetype
+        self.env.registry.db_registerPackage("package")
+        self.env.registry.db_registerResourceType("package", "rt")
+        # add indexes
+        catalog.registerIndex("package", "rt", "latitude", "/station/lat", 
+                              type = 'numeric')
+        catalog.registerIndex("package", "rt", "longitude", "/station/lon",
+                              type = 'numeric')
+        catalog.registerIndex("package", "rt", "xy", 
+                              "/station/XY/paramXY")
+        catalog.registerIndex("package", "rt", "miss", "/station/missing")
+        # add resources
+        catalog.addResource("package", "rt", RAW_XML, name='1')
+        catalog.addResource("package", "rt", RAW_XML1, name='2')
+        catalog.addResource("package", "rt", RAW_XML2, name='3')
+        # queries
         # not(missing)
         query = '/package/rt/station[not(missing)]'
         result = catalog.query(query, full=True)
@@ -725,8 +882,7 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         # not(not(missing))
         #query = '/package/rt/station[not(not(missing))]'
         #result = catalog.query(query, full=True)
-        #self.assertEqual(len(result), 2)
-        
+        #self.assertEqual(len(result), 1)
         # remove everything
         catalog.deleteAllResources("package")
         catalog.deleteAllIndexes("package")
@@ -779,39 +935,6 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         # remove everything
         self.env.catalog.deleteAllResources("package")
         self.env.catalog.deleteAllIndexes("package")
-        self.env.registry.db_deleteResourceType("package", "rt")
-        self.env.registry.db_deletePackage("package")
-    
-    def test_registeringIndexTwice(self):
-        """
-        Test for registering an index a second time.
-        """
-        # create a resourcetype
-        self.env.registry.db_registerPackage("package")
-        self.env.registry.db_registerResourceType("package", "rt")
-        # add index
-        index1 = self.env.catalog.registerIndex("package", "rt", "xy",
-                                                "/station/XY")
-        # add index again
-        try:
-            self.env.catalog.registerIndex("package", "rt", "xy2", 
-                                           "/station/XY")
-            self.fail("Expected SeisHubError")
-        except SeisHubError, e:
-            self.assertEquals(e.code, http.CONFLICT)
-        # add index
-        index2 = self.env.catalog.registerIndex("package", "rt", "xy3", 
-                                                "/station#lon")
-        # add index again
-        try:
-            self.env.catalog.registerIndex("package", "rt", "xy4", 
-                                           "/station#lon")
-            self.fail("Expected SeisHubError")
-        except SeisHubError, e:
-            self.assertEquals(e.code, http.CONFLICT)
-        # remove everything
-        self.env.catalog.deleteIndex(index1)
-        self.env.catalog.deleteIndex(index2)
         self.env.registry.db_deleteResourceType("package", "rt")
         self.env.registry.db_deletePackage("package")
 

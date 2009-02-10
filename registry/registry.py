@@ -2,7 +2,8 @@
 
 from seishub.core import PackageManager
 from seishub.db.orm import DbStorage, DB_NULL
-from seishub.exceptions import SeisHubError, DuplicateObjectError
+from seishub.exceptions import SeisHubError, DuplicateObjectError, \
+    InvalidParameterError
 from seishub.packages.interfaces import IPackage, IResourceType, IMapper, \
     IPostgreSQLView, IProcessorIndex
 from seishub.registry.package import Alias, Schema, Stylesheet, PackageWrapper, \
@@ -10,7 +11,6 @@ from seishub.registry.package import Alias, Schema, Stylesheet, PackageWrapper, 
 from seishub.registry.util import RegistryListProxy
 from seishub.util.text import from_uri
 from seishub.xmldb import index
-from sqlalchemy import sql
 from zope.interface.verify import verifyClass
 
 
@@ -123,14 +123,14 @@ class ComponentRegistry(DbStorage):
             return package, resourcetype
         package = self.db_getPackage(package_id)
         if not package:
-            raise SeisHubError('Package not present in database: %s' %\
-                               str(package_id))
+            msg = 'Package not present in database: %s' % str(package_id)
+            raise InvalidParameterError(msg)
         if not resourcetype_id:
             return package, resourcetype
         resourcetype = self.db_getResourceType(package_id, resourcetype_id)
         if not resourcetype:
-            raise SeisHubError('Resourcetype not present in database: %s' % 
-                               str(resourcetype_id))
+            msg = "Resourcetype not present in database: %s"
+            raise InvalidParameterError(msg % str(resourcetype_id))
         return package, resourcetype
 
 

@@ -165,6 +165,12 @@ class XmlCatalog(object):
         if not label:
             msg = "registerIndex: No index label defined!"
             raise InvalidParameterError(msg)
+        if '/' in label:
+            msg = "registerIndex: Label may not include an slash!"
+            raise InvalidParameterError(msg)
+        if len(label)>30:
+            msg = "registerIndex: Label may not exceed 30 chars!"
+            raise InvalidParameterError(msg)
         # check for XPath expression
         if not xpath:
             msg = "registerIndex: Empty XPath expression!"

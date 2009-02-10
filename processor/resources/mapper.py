@@ -12,7 +12,7 @@ class MapperResource(Resource):
     """
     Processor handler of a mapping resource.
     """
-    def __init__(self, mapper, folderish=True):
+    def __init__(self, mapper, folderish=False):
         Resource.__init__(self)
         self.is_leaf = True
         self.mapper = mapper
