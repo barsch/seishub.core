@@ -3,7 +3,7 @@
 from seishub.db import util
 from seishub.db.orm import DbStorage, DbError, DB_LIKE
 from seishub.exceptions import DuplicateObjectError, InvalidParameterError, \
-    SeisHubError, NotFoundError
+    SeisHubError, NotFoundError, InvalidObjectError
 from seishub.registry.defaults import resourcetypes_tab, packages_tab
 from seishub.xmldb.defaults import document_tab, resource_tab
 from seishub.xmldb.index import XmlIndex, type_classes
@@ -67,7 +67,13 @@ class _QueryProcessor(object):
         if expr:
             expr = '/' + expr
         if '*' in expr:
-            expr = DB_LIKE(self._replace_wildcards(expr))
+            # XXX: workaround until the cache supports wildcard expressions
+            idx = self.pickup(XmlIndex, 
+                        resourcetype = {'package':{'package_id':query_base[0]}, 
+                                        'resourcetype_id':query_base[1]}, 
+                        xpath = DB_LIKE(self._replace_wildcards(expr)))
+            if idx:
+                return idx[0]
         idx = self.getIndexes(query_base[0], query_base[1], xpath = expr)
         if idx:
             return idx[0]
@@ -163,7 +169,7 @@ class _QueryProcessor(object):
         for idx in indexes:
             idx_tab = idx._getElementCls().db_table.alias()
             idx_gp = idx.group_path
-            idx_id = idx._id
+            idx_id = int(idx._id)
             # add keyval to selected columns
             keyval_label = idx.label
             q.append_column(idx_tab.c['keyval'].label(keyval_label))
@@ -314,7 +320,7 @@ class XmlIndexCatalog(DbStorage, _QueryProcessor, _IndexViewer):
         DbStorage.__init__(self, db)
         self._db_manager = db
         self._storage = resource_storage
-        # self.refreshIndexCache()
+        self.refreshIndexCache()
         
     def refreshIndexCache(self):
         """
@@ -332,10 +338,18 @@ class XmlIndexCatalog(DbStorage, _QueryProcessor, _IndexViewer):
     def _addToCache(self, xmlindex):
         for attr in self._cache:
             key = getattr(xmlindex, attr)
+            if not key:
+                continue
             if not key in self._cache[attr]:
                 self._cache[attr][key] = set([xmlindex])
             else:
                 self._cache[attr][key].add(xmlindex)
+                
+    def _deleteFromCache(self, xmlindex):
+        for attr in self._cache:
+            key = getattr(xmlindex, attr)
+            if key in self._cache[attr]:
+                self._cache[attr][key].discard(xmlindex)
     
     def registerIndex(self, xmlindex):
         """
@@ -351,15 +365,19 @@ class XmlIndexCatalog(DbStorage, _QueryProcessor, _IndexViewer):
         except Exception, e:
             msg = "Error registering an index: %s"
             raise SeisHubError(msg % str(xmlindex), e)
-        # self._addToCache(xmlindex)
+        self._addToCache(xmlindex)
         return xmlindex
     
     def deleteIndex(self, xmlindex):
         """
         Delete an XMLIndex and all related indexed data from the catalog.
         """
+        if not xmlindex._id:
+            msg = "DeleteIndex: an XmlIndex has no id."
+            raise InvalidObjectError(msg)
         self.flushIndex(xmlindex)
         self.drop(XmlIndex, _id = xmlindex._id)
+        self._deleteFromCache(xmlindex)
     
     def deleteAllIndexes(self, package_id=None, resourcetype_id=None):
         """
@@ -373,17 +391,25 @@ class XmlIndexCatalog(DbStorage, _QueryProcessor, _IndexViewer):
         """
         Return a list of all applicable XMLIndex objects.
         """
-        res = self.pickup(XmlIndex, 
-                          resourcetype = {'package':{'package_id':package_id}, 
-                                          'resourcetype_id':resourcetype_id}, 
-                          label = label,
-                          xpath = xpath,
-                          group_path = group_path,
-                          type = type,
-                          options = options,
-                          _id = index_id)
-        
-        return res
+        index_sets = list()
+        arglist = {'package_id':package_id, 
+                   'resourcetype_id':resourcetype_id, 'xpath':xpath, 
+                   'group_path':group_path, 'type':type, 'options':options, 
+                   '_id':index_id, 'label':label}
+        for key, value in arglist.iteritems():
+            if not value:
+                continue
+            idx = self._cache[key].get(value, set())
+            if not idx:
+                return list()
+            index_sets.append(idx)
+        if not index_sets:
+            # return all
+            return [list(val)[0] for val in self._cache['_id'].values()]
+        indexes = index_sets.pop(0).copy()
+        for idxs in index_sets:
+            indexes.intersection_update(idxs)
+        return list(indexes)
     
     def indexResource(self, resource, xmlindex = None, index_id = None):
         """

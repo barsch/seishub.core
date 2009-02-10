@@ -87,6 +87,8 @@ so_indexes = [
 ]
 
 class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
+#    def _config(self):
+#        self.default_config.set('db', 'verbose', True)
     
     def setUp(self):
         self.catalog = self.env.catalog.index_catalog
@@ -569,10 +571,13 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         self.env.catalog.deleteAllIndexes("testpackage")
         
     def testIndexCache(self):
+        before = list(self.catalog._cache['package_id'].values()[0])
         self._setup_testdata()
-        # print self.catalog._cache
+        between = list(self.catalog._cache['package_id'].values()[0])
         self._cleanup_testdata()
-    
+        after = list(self.catalog._cache['package_id'].values()[0])
+        
+        
 #    def testCreateView(self):
 #        """
 #        """

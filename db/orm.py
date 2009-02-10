@@ -633,6 +633,7 @@ class DbObjectProxy(object):
     
     def __init__(self, db_storage, cls, **kwargs):
         self.db_storage = db_storage
+        cls.db_mapping.setdefault('_id', 'id')
         self.cls = cls
         self.kwargs = kwargs
         directlyProvides(self, list(implementedBy(cls)))
