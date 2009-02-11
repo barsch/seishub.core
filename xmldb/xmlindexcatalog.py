@@ -26,10 +26,10 @@ class _IndexView(object):
         package_id = xmlindex.resourcetype.package.package_id
         resourcetype_id = xmlindex.resourcetype.resourcetype_id 
         name = '/%s/%s' % (package_id, resourcetype_id)
-        q = select([packages_tab.c['name'].label("package_id"),
+        q = select([document_tab.c['id'].label("document_id"),
+                    packages_tab.c['name'].label("package_id"),
                     resourcetypes_tab.c['name'].label("resourcetype_id"),
-                    resource_tab.c['name'].label("resource_name"),
-                    document_tab.c['id'].label("document_id")])
+                    resource_tab.c['name'].label("resource_name")])
         location_path = [package_id, resourcetype_id, None]
         q, joins = self._process_location_path(location_path, q)
         q = q.select_from(joins)
@@ -284,10 +284,10 @@ class _QueryProcessor(object):
         order_by = query.getOrderBy() or list()
         limit = query.getLimit()
         offset = query.getOffset()
-        q = select([packages_tab.c['name'].label("package_id"),
+        q = select([document_tab.c['id'].label("document_id"),
+                    packages_tab.c['name'].label("package_id"),
                     resourcetypes_tab.c['name'].label("resourcetype_id"),
-                    resource_tab.c['name'].label("resource_name"),
-                    document_tab.c['id'].label("document_id")], 
+                    resource_tab.c['name'].label("resource_name")], 
                    use_labels = True).distinct()
         q, joins = self._process_location_path(location_path, q)
         if predicates:
@@ -369,7 +369,7 @@ class XmlIndexCatalog(DbStorage, _QueryProcessor, _IndexView):
         except Exception, e:
             msg = "Error registering an index: %s"
             raise SeisHubError(msg % str(xmlindex), e)
-        self._addToCache(xmlindex)
+        #self._addToCache(xmlindex)
         return xmlindex
     
     def deleteIndex(self, xmlindex):
@@ -381,7 +381,7 @@ class XmlIndexCatalog(DbStorage, _QueryProcessor, _IndexView):
             raise InvalidObjectError(msg)
         self.flushIndex(xmlindex)
         self.drop(XmlIndex, _id = xmlindex._id)
-        self._deleteFromCache(xmlindex)
+        #self._deleteFromCache(xmlindex)
     
     def getIndexes(self, package_id = None, resourcetype_id = None, 
                    xpath = None, group_path = None, type = None, 
@@ -389,25 +389,40 @@ class XmlIndexCatalog(DbStorage, _QueryProcessor, _IndexView):
         """
         Return a list of all applicable XMLIndex objects.
         """
-        index_sets = list()
-        arglist = {'package_id':package_id, 
-                   'resourcetype_id':resourcetype_id, 'xpath':xpath, 
-                   'group_path':group_path, 'type':type, 'options':options, 
-                   '_id':index_id, 'label':label}
-        for key, value in arglist.iteritems():
-            if not value:
-                continue
-            idx = self._cache[key].get(value, set())
-            if not idx:
-                return list()
-            index_sets.append(idx)
-        if not index_sets:
-            # return all
-            return [list(val)[0] for val in self._cache['_id'].values()]
-        indexes = index_sets.pop(0).copy()
-        for idxs in index_sets:
-            indexes.intersection_update(idxs)
-        return list(indexes)
+        res = self.pickup(XmlIndex,
+                          resourcetype = {'package':{'package_id':package_id},
+                                          'resourcetype_id':resourcetype_id},
+                          label = label,
+                          xpath = xpath,
+                          group_path = group_path,
+                          type = type,
+                          options = options,
+                          _id = index_id)
+        return res
+#        index_sets = list()
+#        arglist = {'package_id':package_id, 
+#                   'resourcetype_id':resourcetype_id, 'xpath':xpath, 
+#                   'group_path':group_path, 'type':type, 'options':options, 
+#                   '_id':index_id, 'label':label}
+#        for key, value in arglist.iteritems():
+#            if not value:
+#                continue
+#            idx = self._cache[key].get(value, set())
+#            if not idx:
+#                return list()
+#            index_sets.append(idx)
+#        if not index_sets:
+#            # return all
+#            try:
+#                return [list(val)[0] for val in self._cache['_id'].values()]
+#            except:
+#                b=1
+#                import pdb;pdb.set_trace()
+#                a=1
+#        indexes = index_sets.pop(0).copy()
+#        for idxs in index_sets:
+#            indexes.intersection_update(idxs)
+#        return list(indexes)
     
     def indexResource(self, resource, xmlindex = None):
         """

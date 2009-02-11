@@ -58,7 +58,7 @@ class SchemasPanel(Component):
     def _deleteSchema(self, ids=[]):
         for id in ids:
             try:
-                self.registry.schemas.delete(document_id=id)
+                self.registry.schemas.delete(document_id = int(id))
             except Exception, e:
                 self.log.info("Error deleting schemas", e)
                 return {'error': ("Error deleting schemas", e)}
@@ -113,7 +113,7 @@ class StylesheetsPanel(Component):
     def _deleteStylesheet(self, ids=[]):
         for id in ids:
             try:
-                self.registry.stylesheets.delete(document_id=id)
+                self.registry.stylesheets.delete(document_id = int(id))
             except Exception, e:
                 self.log.info("Error deleting stylesheet", e)
                 return {'error': ("Error deleting stylesheet", e)}
@@ -191,7 +191,7 @@ class IndexesPanel(Component):
     def _reindex(self, data=[]):
         for id in data:
             try:
-                self.env.catalog.reindex(index_id = id)
+                self.env.catalog.reindex(index_id = int(id))
             except Exception, e:
                 self.log.error("Error reindexing index", e)
                 return {'error': ("Error reindexing index", e)}
@@ -200,7 +200,7 @@ class IndexesPanel(Component):
     def _deleteIndexes(self, data=[]):
         for id in data:
             try:
-                self.catalog.deleteIndex(index_id = id)
+                self.catalog.deleteIndex(index_id = int(id))
             except Exception, e:
                 self.log.error("Error removing index", e)
                 return {'error': ("Error removing index", e)}

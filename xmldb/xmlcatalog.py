@@ -206,10 +206,9 @@ class XmlCatalog(object):
         """
         if index_id:
             xmlindex = self.getIndexes(index_id = index_id)[0]
-        res = self.index_catalog.deleteIndex(xmlindex)
+        self.index_catalog.deleteIndex(xmlindex)
         # create or update view:
         self.index_catalog.createIndexView(xmlindex)
-        return res 
     
     def deleteAllIndexes(self, package_id, resourcetype_id = None):
         """
@@ -240,7 +239,6 @@ class XmlCatalog(object):
                                              index_id = index_id,
                                              label = label)
     
-# XXX: what about reindexing for a certain resourcetype
     def reindex(self, xmlindex = None, index_id = None):
         """
         Reindex all resources by a given XMLIndex object.

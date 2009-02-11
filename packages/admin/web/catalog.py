@@ -9,6 +9,8 @@ from seishub.exceptions import SeisHubError, InvalidParameterError
 from seishub.packages.interfaces import IAdminPanel
 from sqlalchemy import create_engine #@UnresolvedImport
 import os
+import pprint
+import time
 
 
 class BasicPanel(Component):
@@ -80,11 +82,13 @@ class DatabaseQueryPanel(Component):
     
     def render(self, request):
         db = self.env.db.engine
-        tables = sorted(db.table_names())
+        tables = sorted([t for t in db.table_names() if DEFAULT_PREFIX in t])
         data = {
             'query': 'select 1 LIMIT 20;', 
             'result': '',
             'cols': '',
+            'rows': '',
+            'clock': '',
             'tables': tables,
             'views': self.env.db.getViews(),
             'prefix': DEFAULT_PREFIX,
@@ -103,9 +107,13 @@ class DatabaseQueryPanel(Component):
             if query:
                 data['query'] = query
                 try:
-                    query = db.execute(query)
-                    data['cols'] = query.keys
-                    data['result'] = query.fetchall()
+                    t1 = time.clock()
+                    result = db.execute(query)
+                    t2 = time.clock()
+                    data['clock'] = "%0.6f" % (t2-t1)
+                    data['cols'] = result.keys
+                    data['rows'] = result.rowcount
+                    data['result'] = result.fetchall()
                 except Exception, e:
                     self.env.log.error('Database query error', e)
                     data['error'] = ('Database query error', e)
@@ -174,7 +182,7 @@ class ResourcesPanel(Component):
     def _deleteResource(self, data):
         for id in data.get('resource[]',[None]):
             try:
-                self.catalog.deleteResource(resource_id=id)
+                self.catalog.deleteResource(resource_id = int(id))
             except Exception, e:
                 self.log.info("Error deleting resource", e)
                 data['error'] = ("Error deleting resource", e)
@@ -196,6 +204,8 @@ class CatalogQueryPanel(Component):
         data = {
             'query': '', 
             'result': '',
+            'rows': '',
+            'clock': ''
         }
         args = request.args
         if request.method=='POST':
@@ -205,7 +215,12 @@ class CatalogQueryPanel(Component):
             if query:
                 data['query'] = query
                 try:
-                    data['result'] = self.catalog.query(query)
+                    t1 = time.clock()
+                    result = self.catalog.query(query)
+                    t2 = time.clock()
+                    data['clock'] = "%0.6f" % (t2-t1)
+                    data['rows'] = len(result)-1
+                    data['result'] = pprint.pformat(result, 4)
                 except Exception, e:
                     self.env.log.info('Catalog query error', e)
                     data['error'] = ('Catalog query error', e)

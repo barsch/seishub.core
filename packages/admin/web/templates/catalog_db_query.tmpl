@@ -3,7 +3,8 @@
 <h2>Query</h2>
 <form method="post" action="">
   <div class="field">
-    <textarea name="query" rows="3" cols="80">$query</textarea>
+    <textarea class="monospace" 
+              name="query" rows="5" cols="80">$query</textarea>
   </div>
   
   <div class="button">
@@ -24,6 +25,10 @@
 
 <h2>Result</h2>
 #if $cols
+<p>
+  $rows rows<br />
+  $clock sec
+</p>
 <table class="list">
   <tr>
   #for $k in $cols 
