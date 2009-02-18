@@ -2,8 +2,8 @@
 
 from seishub.db import util
 from seishub.db.orm import DbStorage, DbError, DB_LIKE
-from seishub.exceptions import DuplicateObjectError, InvalidParameterError, \
-    SeisHubError, NotFoundError, InvalidObjectError
+from seishub.exceptions import InvalidParameterError, SeisHubError, \
+    NotFoundError, InvalidObjectError, DuplicateObjectError
 from seishub.registry.defaults import resourcetypes_tab, packages_tab
 from seishub.xmldb.defaults import document_tab, resource_tab
 from seishub.xmldb.index import XmlIndex, type_classes

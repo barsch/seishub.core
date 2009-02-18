@@ -55,7 +55,7 @@ class WebRequest(Processor, http.Request):
         try:
             result = getChildForRequest(self.env.tree, self)
         except SeisHubError, e:
-            self.setResponseCode(e.code)
+            self.setResponseCode(e.code, e.message)
             self.env.log.http(e.code, e.message)
             self.write('')
             self.finish()
@@ -124,7 +124,7 @@ class WebRequest(Processor, http.Request):
             self.setResponseCode(http.INTERNAL_SERVER_ERROR)
         else:
             # this is a SeisHubError
-            self.setResponseCode(failure.value.code)
+            self.setResponseCode(failure.value.code, failure.value.message)
             self.env.log.http(failure.value.code, failure.value.message)
         self.write('')
         self.finish()

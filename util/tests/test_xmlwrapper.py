@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 
+from seishub.exceptions import InvalidObjectError
 from seishub.util.xmlwrapper import XmlSchema, XmlTreeDoc, \
-    InvalidXPathExpression, InvalidXmlDataError
+    InvalidXPathExpression
 import unittest
 
 
@@ -32,7 +33,7 @@ class XmlSchemaTest(unittest.TestCase):
         schema=XmlSchema(self.test_schema)
         # if valid, no exception is raised
         schema.validate(validDoc)
-        self.assertRaises(InvalidXmlDataError, schema.validate, invalidDoc)
+        self.assertRaises(InvalidObjectError, schema.validate, invalidDoc)
         #print invalidDoc.getErrors()
 
 

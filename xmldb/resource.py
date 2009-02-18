@@ -2,9 +2,9 @@
 
 from seishub.core import implements
 
-from seishub.exceptions import InvalidObjectError, InvalidParameterError
+from seishub.exceptions import InvalidParameterError
 from seishub.db.orm import Serializable, Relation, db_property, LazyAttribute
-from seishub.util.xmlwrapper import IXmlDoc, XmlTreeDoc, InvalidXmlDataError
+from seishub.util.xmlwrapper import IXmlDoc, XmlTreeDoc
 from seishub.util.text import validate_id
 from seishub.util.xml import toUnicode, parseXMLDeclaration, addXMLDeclaration 
 from seishub.util.text import hash
@@ -154,10 +154,7 @@ class XmlDocument(Serializable):
     def _parseXml_data(self,xml_data):
         # encode before handing it to parser:
         # xml_data = xml_data.encode("utf-8")
-        try:
-            return XmlTreeDoc(xml_data=xml_data, blocking=True)
-        except InvalidXmlDataError, e:
-            raise InvalidObjectError("Invalid XML document.", e)
+        return XmlTreeDoc(xml_data=xml_data, blocking=True)
 
 
 class Resource(Serializable):

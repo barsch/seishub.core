@@ -322,7 +322,7 @@ class RestMOVETests(SeisHubEnvironmentTestCase):
                      received_headers = {'Destination': uri})
             self.fail("Expected SeisHubError")
         except SeisHubError, e:
-            self.assertEqual(e.code, http.CONFLICT)
+            self.assertEqual(e.code, http.FORBIDDEN)
         # delete resources
         proc.run(DELETE, '/move-test/notvc/test1.xml')
         proc.run(DELETE, '/move-test/notvc/test2.xml')

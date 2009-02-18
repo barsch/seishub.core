@@ -2,7 +2,7 @@
 
 from StringIO import StringIO
 from lxml import etree
-from seishub.exceptions import SeisHubError
+from seishub.exceptions import SeisHubError, InvalidObjectError
 from zope.interface import implements, Interface, Attribute
 from zope.interface.exceptions import DoesNotImplement
 
@@ -95,13 +95,6 @@ class IXmlSaxDoc(IXmlDoc):
     """
     Parses a document using an event based SAX parser.
     """
-
-
-class InvalidXmlDataError(SeisHubError):
-    """
-    Raised on xml parser errors in blocking mode.
-    """
-    pass
 
 
 class InvalidXPathExpression(SeisHubError):
@@ -209,7 +202,7 @@ class XmlSchema(object):
                 raise SeisHubError(msg)
         except etree.DocumentInvalid, e:
             msg = "Could not validate document. (%s)"
-            raise InvalidXmlDataError(msg % str(e))
+            raise InvalidObjectError(msg % str(e))
 
 
 class XmlDoc(object):
@@ -240,15 +233,14 @@ class XmlTreeDoc(XmlDoc):
     """ 
     implements(IXmlTreeDoc)
     
-    def __init__(self, xml_data=None, resource_name="", blocking=False):
+    def __init__(self, xml_data=None, blocking=False):
         XmlDoc.__init__(self)
         self.errors = list()
         self.options = {'blocking':blocking,}
         if isinstance(xml_data, basestring):
             self._xml_data = xml_data
         else:
-            raise InvalidXmlDataError("No xml data str was given: %s" % xml_data)
-        self._resource_name = resource_name
+            raise InvalidObjectError("No xml data str was given: %s" % xml_data)
         self._parse()
     
     def _parse(self):
@@ -257,10 +249,10 @@ class XmlTreeDoc(XmlDoc):
         try:
             self._xml_doc = etree.parse(data, parser)
         except Exception, e:
-            raise InvalidXmlDataError("Invalid XML data.", e)
+            raise InvalidObjectError("Invalid XML data. (%s)" % str(e))
         self.errors = parser.error_log
         if self.options['blocking'] and len(self.errors) > 0:
-            raise InvalidXmlDataError(self.errors)
+            raise InvalidObjectError(self.errors)
         return True
     
     def getErrors(self):

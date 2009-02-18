@@ -132,7 +132,7 @@ class RestPUTTests(SeisHubEnvironmentTestCase):
             proc.run(PUT, '/put-test/notvc/test.xml', StringIO(XML_DOC))
             self.fail("Expected SeisHubError")
         except SeisHubError, e:
-            self.assertEqual(e.code, http.CONFLICT)
+            self.assertEqual(e.code, http.FORBIDDEN)
         # delete resource
         proc.run(DELETE, '/put-test/notvc/test.xml')
     
@@ -149,7 +149,7 @@ class RestPUTTests(SeisHubEnvironmentTestCase):
             proc.run(PUT, '/put-test/vc/test.xml', StringIO(XML_DOC))
             self.fail("Expected SeisHubError")
         except SeisHubError, e:
-            self.assertEqual(e.code, http.CONFLICT)
+            self.assertEqual(e.code, http.FORBIDDEN)
         # delete resource
         proc.run(DELETE, '/put-test/vc/test.xml')
     

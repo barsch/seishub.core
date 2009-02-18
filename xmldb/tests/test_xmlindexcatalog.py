@@ -566,14 +566,14 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         # clean up
         self.env.catalog.deleteAllIndexes("testpackage")
         
-    def testIndexCache(self):
-        before = list(self.catalog._cache['package_id'].values()[0])
-        self._setup_testdata()
-        between = list(self.catalog._cache['package_id'].values()[0])
-        self._cleanup_testdata()
-        after = list(self.catalog._cache['package_id'].values()[0])
-        
-        
+#    def testIndexCache(self):
+#        before = list(self.catalog._cache['package_id'].values()[0])
+#        self._setup_testdata()
+#        between = list(self.catalog._cache['package_id'].values()[0])
+#        self._cleanup_testdata()
+#        after = list(self.catalog._cache['package_id'].values()[0])
+#        
+#        
 #    def testCreateView(self):
 #        """
 #        """

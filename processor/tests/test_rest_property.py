@@ -29,7 +29,7 @@ XML_DOC = XML_BASE_DOC % ("üöäß", "5")
 XML_DOC2 = XML_BASE_DOC % ("üöäß", "%d")
 XML_DOC3 = XML_BASE_DOC % (CDATA, "5")
 XML_DOC4 = XML_BASE_DOC % ("%s", "egal")
-XML_DOC5 = XML_BASE_DOC % ("<v>1</v><v>2</v><v>122</v>", "egal")
+XML_DOC5 = XML_BASE_DOC % ("<v>1</v><v>2</v><v>122</v><vv>-12</vv>", "egal")
 
 
 class AResourceType(Component):
@@ -41,7 +41,7 @@ class AResourceType(Component):
     package_id = 'property-test'
     resourcetype_id = 'notvc'
     version_control = False
-    registerIndex('label', '/testml/blah1/blahblah1', 'text')
+    registerIndex('label1', '/testml/blah1/blahblah1', 'text')
 
 
 class AResourceType2(Component):
@@ -53,7 +53,7 @@ class AResourceType2(Component):
     package_id = 'property-test'
     resourcetype_id = 'notvc2'
     version_control = False
-    registerIndex('label', '/testml/blah1/blahblah1', 'datetime')
+    registerIndex('label2', '/testml/blah1/blahblah1', 'datetime')
 
 
 class AResourceType3(Component):
@@ -65,7 +65,7 @@ class AResourceType3(Component):
     package_id = 'property-test'
     resourcetype_id = 'notvc3'
     version_control = False
-    registerIndex('label', '/testml/blah1/blahblah1#v', 'numeric')
+    registerIndex('label3', '/testml/blah1/blahblah1#v', 'numeric')
 
 
 class AVersionControlledResourceType(Component):
@@ -77,7 +77,7 @@ class AVersionControlledResourceType(Component):
     package_id = 'property-test'
     resourcetype_id = 'vc'
     version_control = True
-    registerIndex('label', '/testml/blah1/blah2', 'text')
+    registerIndex('label4', '/testml/blah1/blah2', 'text')
 
 
 class RestPropertyTests(SeisHubEnvironmentTestCase):
@@ -109,22 +109,22 @@ class RestPropertyTests(SeisHubEnvironmentTestCase):
         # get index XML w/o trailing slash
         res = proc.run(GET, '/property-test/notvc/test.xml/.index')
         data = res.render_GET(proc)
-        self.assertTrue("<xpath>/testml/blah1/blahblah1</xpath>" in data)
+        self.assertTrue("<label1>" in data)
         self.assertTrue("<value>üöäß</value>" in data)
         # get index XML w/ trailing slash
         res = proc.run(GET, '/property-test/notvc/test.xml/.index/')
         data = res.render_GET(proc)
-        self.assertTrue("<xpath>/testml/blah1/blahblah1</xpath>" in data)
+        self.assertTrue("<label1>" in data)
         self.assertTrue("<value>üöäß</value>" in data)
         # get index XML on revision 1 w/o trailing slash
         res = proc.run(GET, '/property-test/notvc/test.xml/1/.index/')
         data = res.render_GET(proc)
-        self.assertTrue("<xpath>/testml/blah1/blahblah1</xpath>" in data)
+        self.assertTrue("<label1>" in data)
         self.assertTrue("<value>üöäß</value>" in data)
         # get index XML on revision 1 w/ trailing slash
         res = proc.run(GET, '/property-test/notvc/test.xml/1/.index/')
         data = res.render_GET(proc)
-        self.assertTrue("<xpath>/testml/blah1/blahblah1</xpath>" in data)
+        self.assertTrue("<label1>" in data)
         self.assertTrue("<value>üöäß</value>" in data)
         # remove resource
         proc.run(DELETE, '/property-test/notvc/test.xml')
@@ -136,12 +136,17 @@ class RestPropertyTests(SeisHubEnvironmentTestCase):
         proc = Processor(self.env)
         # create resource
         proc.run(PUT, '/property-test/notvc3/test.xml', StringIO(XML_DOC5))
+        # get data
+        res = proc.run(GET, '/property-test/notvc3/test.xml')
+        res.render_GET(proc)
         # get index
         res = proc.run(GET, '/property-test/notvc3/test.xml/.index')
         data = res.render_GET(proc)
+        self.assertTrue("<label3>" in data)
         self.assertTrue("<value>1</value>" in data)
         self.assertTrue("<value>2</value>" in data)
         self.assertTrue("<value>122</value>" in data)
+        self.assertTrue("<value>-12</value>" not in data)
         # remove resource
         proc.run(DELETE, '/property-test/notvc3/test.xml')
     
@@ -157,22 +162,22 @@ class RestPropertyTests(SeisHubEnvironmentTestCase):
         # get index XML of latest revision w/o trailing slash
         res = proc.run(GET, '/property-test/vc/test.xml/.index')
         data = res.render_GET(proc)
-        self.assertTrue("<xpath>/testml/blah1/blah2</xpath>" in data)
+        self.assertTrue("<label4>" in data)
         self.assertTrue("<value>3456</value>" in data)
         # get index XML of revision 3 w/o trailing slash
         res = proc.run(GET, '/property-test/vc/test.xml/3/.index')
         data = res.render_GET(proc)
-        self.assertTrue("<xpath>/testml/blah1/blah2</xpath>" in data)
+        self.assertTrue("<label4>" in data)
         self.assertTrue("<value>3456</value>" in data)
         # get index XML of latest revision w/ trailing slash
         res = proc.run(GET, '/property-test/vc/test.xml/.index/')
         data = res.render_GET(proc)
-        self.assertTrue("<xpath>/testml/blah1/blah2</xpath>" in data)
+        self.assertTrue("<label4>" in data)
         self.assertTrue("<value>3456</value>" in data)
         # get index XML of revision 3 w/ trailing slash
         res = proc.run(GET, '/property-test/vc/test.xml/3/.index/')
         data = res.render_GET(proc)
-        self.assertTrue("<xpath>/testml/blah1/blah2</xpath>" in data)
+        self.assertTrue("<label4>" in data)
         self.assertTrue("<value>3456</value>" in data)
         # remove resource
         proc.run(DELETE, '/property-test/vc/test.xml')

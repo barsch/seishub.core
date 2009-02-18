@@ -190,7 +190,7 @@ class XmlIndex(Serializable):
                     if env:
                         env.log.info(e)
                     else:
-                        log.err(e)
+                        # skip logging for test cases
                         continue
         return res
     

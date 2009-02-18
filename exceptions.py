@@ -50,7 +50,7 @@ class DeletedObjectError(SeisHubError):
 
 
 class DuplicateObjectError(SeisHubError):
-    code = http.CONFLICT # 409
+    code = http.FORBIDDEN # 403
 
 
 class InvalidObjectError(SeisHubError):
