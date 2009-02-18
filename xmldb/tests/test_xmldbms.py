@@ -257,18 +257,6 @@ class XmlDbManagerTest(SeisHubEnvironmentTestCase):
         # delete test resource:
         self.xmldbm.deleteResource(res1)
         self.xmldbm.deleteResource(res2)
-       
-#    def testResourceExists(self):
-#        testres1 = XmlDocument(self.test_package, self.test_resourcetype,
-#                               data=self.test_data)
-#        self.xmldbm.addResource(testres1)
-#        self.assertEquals(self.xmldbm.resourceExists(self.test_package, self.test_resourcetype,
-#                                                     testres1.id), True)
-#        self.assertEquals(self.xmldbm.resourceExists('not', 'there',
-#                                                     testres1.id), False)
-#        self.xmldbm.deleteResource(testres1.package_id, 
-#                                   testres1.resourcetype_id, 
-#                                   testres1.id)
 
 
 def suite():

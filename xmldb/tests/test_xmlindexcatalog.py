@@ -565,33 +565,37 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         # print self.catalog.dumpIndex("testpackage", "station", "/station/station_code")
         # clean up
         self.env.catalog.deleteAllIndexes("testpackage")
-        
+    
 #    def testIndexCache(self):
 #        before = list(self.catalog._cache['package_id'].values()[0])
 #        self._setup_testdata()
 #        between = list(self.catalog._cache['package_id'].values()[0])
 #        self._cleanup_testdata()
 #        after = list(self.catalog._cache['package_id'].values()[0])
-#        
-#        
-#    def testCreateView(self):
-#        """
-#        """
-#        # create test catalog
-#        self._setup_testdata()
-#        
-#        self.catalog.createView("testpackage", "station")
-#        sql = 'SELECT * FROM "/testpackage/station"'
-#        res = self.env.db.engine.execute(sql).fetchall()
-#        self.assertEquals(res, [(6, u'12.51200', u'50.23200', None, 1), 
-#                                (7, u'22.51200', u'55.23200', u'0', 1), 
-#                                (7, u'22.51200', u'55.23200', u'2.5', 1), 
-#                                (7, u'22.51200', u'55.23200', u'99', 1)])
-#        self.catalog.dropView("testpackage", "station")
-#        sql = 'SELECT * FROM "/testpackage/station"'
-#        self.assertRaises(Exception, self.env.db.engine.execute, sql)
-#        # remove test catalog
-#        self._cleanup_testdata()
+    
+    def test_createIndexView(self):
+        """
+        Tests creation of an index view.
+        """
+        # create test catalog
+        self._setup_testdata()
+        
+        self.catalog.createIndexView(self.idx1)
+        sql = 'SELECT * FROM "/testpackage/station"'
+        res = self.env.db.engine.execute(sql).fetchall()
+        self.assertEquals(res, [(6, u'testpackage', u'station', u'RAW_XML1', 
+                                 u'12.51200', u'50.23200', None, 1), 
+                                (7, u'testpackage', u'station', u'RAW_XML2', 
+                                 u'22.51200', u'55.23200', u'0', 1), 
+                                (7, u'testpackage', u'station', u'RAW_XML2', 
+                                 u'22.51200', u'55.23200', u'2.5', 1), 
+                                (7, u'testpackage', u'station', u'RAW_XML2', 
+                                 u'22.51200', u'55.23200', u'99', 1)])
+        self.catalog.dropIndexView(self.idx1)
+        sql = 'SELECT * FROM "/testpackage/station"'
+        self.assertRaises(Exception, self.env.db.engine.execute, sql)
+        # remove test catalog
+        self._cleanup_testdata()
 
 
 def suite():

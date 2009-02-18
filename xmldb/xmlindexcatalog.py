@@ -21,7 +21,7 @@ class _IndexView(object):
     
     def createIndexView(self, xmlindex):
         """
-        Create a view for the given XMLIndex.
+        Create a index view using the given XMLIndex.
         """
         package_id = xmlindex.resourcetype.package.package_id
         resourcetype_id = xmlindex.resourcetype.resourcetype_id 
@@ -34,6 +34,15 @@ class _IndexView(object):
         q, joins = self._process_location_path(location_path, q)
         q = q.select_from(joins)
         self._db_manager.createView(name, util.compileStatement(q))
+    
+    def dropIndexView(self, xmlindex):
+        """
+        Removes a index view from the database using a given XMLIndex.
+        """
+        package_id = xmlindex.resourcetype.package.package_id
+        resourcetype_id = xmlindex.resourcetype.resourcetype_id 
+        name = '/%s/%s' % (package_id, resourcetype_id)
+        self._db_manager.dropView(name)
 
 
 class _QueryProcessor(object):
