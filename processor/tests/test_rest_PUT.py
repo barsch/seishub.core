@@ -176,7 +176,7 @@ class RestPUTTests(SeisHubEnvironmentTestCase):
         files = glob.glob(os.path.join(path, 'data', 'utf-8-tests', '*.xml'))
         for file in files:
             # create resource
-            data = open(file).read().strip()
+            data = open(file, 'rb').read().strip()
             proc.run(PUT, '/put-test/notvc/test.xml', StringIO(data))
             # check resource
             result = proc.run(GET, '/put-test/notvc/test.xml').render_GET(proc)
@@ -185,7 +185,7 @@ class RestPUTTests(SeisHubEnvironmentTestCase):
             proc.run(DELETE, '/put-test/notvc/test.xml')
     
     def test_putJapaneseDocuments(self):
-        """XXX: Fails yet!
+        """
         Part of the W3C XML conformance test suite.
         
         This covers tests with different encoding and byte orders, e.g. UTF-16 
@@ -199,7 +199,7 @@ class RestPUTTests(SeisHubEnvironmentTestCase):
         files = glob.glob(os.path.join(path, 'data', 'japanese', '*.xml'))
         for file in files:
             # create resource
-            data = open(file).read().strip()
+            data = open(file, 'rb').read()
             proc.run(PUT, '/put-test/notvc/test.xml', StringIO(data))
             # delete resource
             proc.run(DELETE, '/put-test/notvc/test.xml')

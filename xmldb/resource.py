@@ -240,22 +240,20 @@ class Resource(Serializable):
     name = property(getName, setName, "Alphanumeric name (optional)")
 
 
-def _prepare_xml_data(data):
-    """Prepare xml data for use with the database"""
-    # convert data to unicode and remove xml declaration
+def newXMLDocument(data, id = None, uid = None):
+    """
+    Returns a new XmlDocument object. 
+    
+    Data will be converted to unicode and a possible XML declaration will be 
+    removed. Use this method whenever you wish to create a XmlDocument 
+    manually!
+    """
+    # check for data
+    if len(data) == 0:
+        raise InvalidParameterError("XML document is empty.")
+    # convert data to unicode and remove XML declaration
     if isinstance(data, unicode):
         data, _ = parseXMLDeclaration(data, remove_decl = True)
     else:
         data, _ = toUnicode(data, remove_decl = True)
-    return data
-
-def newXMLDocument(data, id = None, uid = None):
-    """Return a new XmlDocument. 
-    Data will be converted to unicode and a possible XML declaration will be 
-    removed. 
-    Use this method whenever you wish to create a XmlDocument manually!
-    """
-    if len(data) == 0:
-        raise InvalidParameterError("Xml data is empty.")
-    data = _prepare_xml_data(data)
     return XmlDocument(data, id, uid)
