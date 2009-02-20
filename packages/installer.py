@@ -107,7 +107,7 @@ class PackageInstaller(object):
                     msg = "Registration of alias failed: %s/%s/@%s (%s)"
                     env.log.warn(msg % (package_id, resourcetype_id, 
                                         entry['name'], e))
-        if hasattr(o, '_registry_indexes'):
+        if hasattr(o, '_registry_indexes') and resourcetype_id:
             for entry in o._registry_indexes:
                 # check, if already there
                 if env.catalog.getIndexes(package_id, resourcetype_id, 
@@ -162,7 +162,10 @@ class PackageInstaller(object):
         if package_id:
             packages = [package_id]
         else:
+            # get all package IDs and make sure seishub is handled first
             packages = env.registry.getPackageIds()
+            packages.remove('seishub')
+            packages.insert(0, 'seishub')
         # install new packages
         for p in packages:
             fs_package = env.registry.getPackage(p)
@@ -177,7 +180,7 @@ class PackageInstaller(object):
                     continue
             # (re)install package specific objects
             PackageInstaller._install_pre_registered(env, fs_package)
-                
+            
             # install new resourcetypes for package p
             for rt in env.registry.getResourceTypes(p):
                 db_rt = env.registry.db_getResourceTypes(p, rt.resourcetype_id)
@@ -200,32 +203,25 @@ class PackageInstaller(object):
         """
         # XXX: see ticket #74
         return
-        db_rtypes = env.registry.db_getResourceTypes()
-        for rt in db_rtypes:
-            # XXX: check if referenced elsewhere!!!
-            if [rt.package.package_id, rt.resourcetype_id] not in \
-               [[o.package_id, o.resourcetype_id] for o in env.registry.getResourceTypes(rt.package.package_id)]:
-                try:
-                    env.registry.db_deleteResourceType(rt.package.package_id, 
-                                                       rt.resourcetype_id)
-                except SeisHubError:
-                    pass
-        db_packages = env.registry.db_getPackages()
-        fs_packages = env.registry.getPackageIds()
-        for p in db_packages:
-            if p.package_id not in fs_packages:
-                try:
-                    env.registry.db_deletePackage(p.package_id)
-                except SeisHubError:
-                    pass
-    
-    @staticmethod
-    def getUpdatedPackages():
-        pass
-    
-    @staticmethod
-    def getUpdatedResourcetypes(package_id = None):
-        pass
+#        db_rtypes = env.registry.db_getResourceTypes()
+#        for rt in db_rtypes:
+#            # XXX: check if referenced elsewhere!!!
+#            if [rt.package.package_id, rt.resourcetype_id] not in \
+#               [[o.package_id, o.resourcetype_id] for o in env.registry.getResourceTypes(rt.package.package_id)]:
+#                try:
+#                    env.registry.db_deleteResourceType(rt.package.package_id, 
+#                                                       rt.resourcetype_id)
+#                except SeisHubError:
+#                    pass
+#        db_packages = env.registry.db_getPackages()
+#        fs_packages = env.registry.getPackageIds()
+#        for p in db_packages:
+#            if p.package_id not in fs_packages:
+#                try:
+#                    env.registry.db_deletePackage(p.package_id)
+#                except SeisHubError:
+#                    pass
+
 
 registerSchema = lambda filename, type: \
                     PackageInstaller._pre_register('_schemas', 

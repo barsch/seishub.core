@@ -82,9 +82,6 @@ class Environment(ComponentManager):
         # provide registry objects
         self.registry = ComponentRegistry(self)
         # trigger auto installer
-        PackageInstaller.cleanup(self)
-        # make sure SeisHub packages are installed first
-        PackageInstaller.install(self, 'seishub')
         PackageInstaller.install(self)
         # initialize the resource tree
         self.tree = ResourceTree(self)
