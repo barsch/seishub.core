@@ -163,7 +163,9 @@ class ResourcesPanel(Component):
         data['resources'] = []
         # XXX: filter (limit) or remove that later!
         for package in packages:
-            data['resources'].extend(self.catalog.getAllResources(package))
+            for resourcetype in resourcetypes.get(package, []):
+                res = self.catalog.getAllResources(package, resourcetype)
+                data['resources'].extend(res)
         return data
     
     def _addResource(self, data):
