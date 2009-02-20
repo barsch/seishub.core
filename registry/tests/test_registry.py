@@ -266,10 +266,6 @@ class PackageRegistryTest(SeisHubEnvironmentTestCase):
         schemas = self.env.registry.schemas.get(uri =\
                                                 '/testpackage0/weapon/xsd')
         self.assertEqual(len(schemas), 1)
-#        # try to delete multiple schemas
-#        self.assertRaises(SeisHubError, self.env.registry.schemas.delete, 
-#                          uri = '/testpackage0')
-
         # get all
         schemas = self.env.registry.schemas
         self.assertEqual(len(schemas), 2)

@@ -284,18 +284,18 @@ class RegistryBase(DbStorage, list):
             document_id = None, uri = None):
         if uri:
             package_id, resourcetype_id, type = self._split_uri(uri)
-        keys = {'package':None,
-                'resourcetype':None,
-                'type':type
+        keys = {'package': None,
+                'resourcetype': None,
+                'type': type
                 }
         if document_id:
             keys['document_id'] = document_id
         if package_id:
-            keys['package'] = {'package_id' : package_id}
+            keys['package'] = {'package_id': package_id}
         if resourcetype_id == DB_NULL:
             keys['resourcetype'] = DB_NULL
         elif resourcetype_id:
-            keys['resourcetype'] = {'resourcetype_id' : resourcetype_id}
+            keys['resourcetype'] = {'resourcetype_id': resourcetype_id}
         objs = self.pickup(self.cls, **keys)
         # inject catalog into objs for lazy resource retrieval
         for o in objs:
@@ -312,7 +312,7 @@ class RegistryBase(DbStorage, list):
         if len(o) == 0:
             raise SeisHubError("Error deleting a schema or stylesheet: " +\
                                "No objects found with the given parameters.")
-        self.catalog.deleteResource(resource_id = o[0]._id)
+        self.catalog.deleteResource(resource_id = o[0].resource._id)
         self.drop(self.cls, document_id = o[0].document_id)
         return True
 

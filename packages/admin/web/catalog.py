@@ -160,11 +160,10 @@ class ResourcesPanel(Component):
                 data['resource[]'] = args['resource[]']
                 data = self._deleteResource(data)
         # fetch all URIs
+        data['resources'] = []
         # XXX: filter (limit) or remove that later!
-        temp = self.catalog.getAllResources()
-        # remove all SeisHub resources
-        temp = [t for t in temp if not str(t).startswith('/seishub/')]
-        data['resources'] = temp 
+        for package in packages:
+            data['resources'].extend(self.catalog.getAllResources(package))
         return data
     
     def _addResource(self, data):

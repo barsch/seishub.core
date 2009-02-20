@@ -118,7 +118,7 @@ class XmlCatalog(object):
         """
         return self.xmldb.getResourceHistory(package_id, resourcetype_id, name)
     
-    def getAllResources(self, package_id = None, resourcetype_id = None):
+    def getAllResources(self, package_id, resourcetype_id = None):
         """
         Get a list of resources for specified package and resourcetype.
         """
@@ -256,7 +256,7 @@ class XmlCatalog(object):
             self.index_catalog.indexResource(res, xmlindex)
         return True
     
-    def reindexAllIndexes(self, package_id = None, resourcetype_id = None):
+    def reindexAllIndexes(self, package_id, resourcetype_id = None):
         """
         Reindex all indexes related to a given package_id and resourcetype_id.
         """
