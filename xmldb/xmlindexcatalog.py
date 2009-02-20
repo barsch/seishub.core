@@ -143,8 +143,11 @@ class _QueryProcessor(object):
         return joins, idx_tab
     
     def _join_on_resourcetype(self, package, resourcetype, joins = None):
-        oncl = (resource_tab.c['id'] == document_tab.c['resource_id']) 
-        joins = document_tab.join(resource_tab, onclause = oncl)
+        oncl = (resource_tab.c['id'] == document_tab.c['resource_id'])
+        if not joins:
+            joins = document_tab.join(resource_tab, onclause = oncl)
+        else:
+            joins = joins.join(resource_tab, onclause = oncl)
         oncl = resourcetypes_tab.c['id'] == resource_tab.c['resourcetype_id']
         if resourcetype:
             oncl = sql.and_(oncl, resourcetypes_tab.c['name'] == resourcetype)
@@ -164,7 +167,6 @@ class _QueryProcessor(object):
         The column names in the selection correspond to the id of the XMLIndex.
         """
         pkg, rt = location_path[0:2]
-        joins = self._join_on_resourcetype(pkg, rt)
         if len(location_path)<=3:
             # location path is on resource level
             # select *all* known indexes for that resourcetype
@@ -194,6 +196,7 @@ class _QueryProcessor(object):
                                 idx_tab.c['index_id'] == idx_id,
                                 idx_tab.c['group_pos'] == group_paths[idx_gp].c['group_pos'])
             joins = join(idx_tab, onclause = oncl)
+        joins = self._join_on_resourcetype(pkg, rt, joins)
         return q, joins
     
     def _process_predicates(self, p, q, joins = None, complement = False):
