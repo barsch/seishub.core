@@ -22,6 +22,15 @@ XML_BASE_DOC = """<?xml version="1.0" encoding="utf-8"?>
   </blah1>
 </testml>"""
 
+XML_BASE_DOC2 = """<?xml version="1.0" encoding="utf-8"?>
+
+<testml>
+  <blah1 id="3">
+    <blahblah1>%s</blahblah1>
+    <blah2>%s</blah2>
+  </blah1>
+</testml>"""
+
 CDATA = """<![CDATA[ &<
 >&]]>"""
 
@@ -29,7 +38,7 @@ XML_DOC = XML_BASE_DOC % ("üöäß", "5")
 XML_DOC2 = XML_BASE_DOC % ("üöäß", "%d")
 XML_DOC3 = XML_BASE_DOC % (CDATA, "5")
 XML_DOC4 = XML_BASE_DOC % ("%s", "egal")
-XML_DOC5 = XML_BASE_DOC % ("<v>1</v><v>2</v><v>122</v><vv>-12</vv>", "egal")
+XML_DOC5 = XML_BASE_DOC % ("<v>1</v><v>2</v><v>2</v><v>122</v><vv>-12</vv>", "egal")
 
 
 class AResourceType(Component):

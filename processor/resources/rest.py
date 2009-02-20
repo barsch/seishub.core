@@ -237,10 +237,11 @@ class RESTProperty(Resource):
             root = etree.Element("seishub")
             for label, values_dict in index_dict.iteritems():
                 sub = etree.SubElement(root, label)
-                for _pos, value in values_dict.iteritems():
-                    if not isinstance(value, basestring):
-                        value=unicode(value)
-                    etree.SubElement(sub, "value").text = value
+                for _pos, values in values_dict.iteritems():
+                    for value in values:
+                        if not isinstance(value, basestring):
+                            value=unicode(value)
+                        etree.SubElement(sub, "value").text = value
             data = etree.tostring(root, pretty_print=True, encoding='utf-8')
             format_prefix = 'index'
         elif property=='.meta':

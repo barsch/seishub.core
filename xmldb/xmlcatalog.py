@@ -290,7 +290,9 @@ class XmlCatalog(object):
         values = {}
         for element in elements:
             values.setdefault(element.index.label, {})
-            values[element.index.label][element.group_pos]=element.key
+            if element.group_pos not in values[element.index.label]:
+                values[element.index.label][element.group_pos]=list()
+            values[element.index.label][element.group_pos].append(element.key)
         return values
     
     def query(self, query, full = False):

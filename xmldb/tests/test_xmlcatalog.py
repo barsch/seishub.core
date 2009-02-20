@@ -350,17 +350,17 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         # get index directly from catalog for latest revision
         res=self.env.catalog.getResource("test-catalog", "index", "muh.xml")
         index_dict=self.env.catalog.getIndexData(res)
-        self.assertEqual(index_dict, {u'lat': {0: u'50.23200'}})
+        self.assertEqual(index_dict, {u'lat': {0: [u'50.23200']}})
         # get index directly from catalog for revision 3 (==latest)
         res=self.env.catalog.getResource("test-catalog", "index", "muh.xml", 3)
         index_dict=self.env.catalog.getIndexData(res)
-        self.assertEqual(index_dict, {u'lat': {0: u'50.23200'}})
+        self.assertEqual(index_dict, {u'lat': {0: [u'50.23200']}})
         # get index directly from catalog for revision 2
         # XXX: older revison do not have any indexed values
         # this behaviour may change later
         res=self.env.catalog.getResource("test-catalog", "index", "muh.xml", 2)
         index_dict=self.env.catalog.getIndexData(res)
-        self.assertEqual(index_dict, {u'lat': {0: u'50.23200'}})
+        self.assertEqual(index_dict, {u'lat': {0: [u'50.23200']}})
         # clean up
         self.env.catalog.deleteAllResources("test-catalog")
         self.env.catalog.deleteAllIndexes("test-catalog")
@@ -417,37 +417,36 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         self.env.registry.db_registerResourceType("package", "rt")
         # add index
         self.env.catalog.registerIndex("package", "rt", "xy", "/station/XY")
-        # add index again
+        self.env.catalog.registerIndex("package", "rt", "lon", "/station#lon")
+        # add same index again
         try:
-            self.env.catalog.registerIndex("package", "rt", "xy2", 
+            self.env.catalog.registerIndex("package", "rt", "xy", 
                                            "/station/XY")
             self.fail("Expected SeisHubError")
         except SeisHubError, e:
             self.assertEquals(e.code, http.FORBIDDEN)
-        # add index
-        self.env.catalog.registerIndex("package", "rt", "xy3", "/station#lon")
-        # add index again
+        # add same index again w/ grouping element
         try:
-            self.env.catalog.registerIndex("package", "rt", "xy4", 
+            self.env.catalog.registerIndex("package", "rt", "lon", 
                                            "/station#lon")
             self.fail("Expected SeisHubError")
         except SeisHubError, e:
             self.assertEquals(e.code, http.FORBIDDEN)
         # add index again with different label
         try:
-            self.env.catalog.registerIndex("package", "rt", "xy5", 
+            self.env.catalog.registerIndex("package", "rt", "otherlabel", 
                                            "/station#lon")
             self.fail("Expected SeisHubError")
         except SeisHubError, e:
             self.assertEquals(e.code, http.FORBIDDEN)
-        # add index again with different label but no grouping (same xpath)
+        # add index again with different label and no grouping (same xpath)
         try:
-            self.env.catalog.registerIndex("package", "rt", "xy5", 
+            self.env.catalog.registerIndex("package", "rt", "otherlabel", 
                                            "/station/lon")
             self.fail("Expected SeisHubError")
         except SeisHubError, e:
             self.assertEquals(e.code, http.FORBIDDEN)
-        # add index with already existing label 
+        # add index with already existing label but other xpath
         try:
             self.env.catalog.registerIndex("package", "rt", "xy", 
                                            "/station/lat")
