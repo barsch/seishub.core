@@ -177,26 +177,15 @@ class RestDELETETests(SeisHubEnvironmentTestCase):
         proc = Processor(self.env)
         # fetch a seishub stylesheet
         data = proc.run(GET, '/seishub/stylesheet')
-        id = data.keys()[0]
-        try:
-            proc.run(DELETE, '/seishub/stylesheet/' + id)
-            self.fail("Expected SeisHubError")
-        except SeisHubError, e:
-            self.assertEqual(e.code, http.FORBIDDEN)
-    
-    def test_deleteVersionControlledBuiltinResource(self):
-        """
-        SeisHub controlled built-in resources can't be deleted.
-        """
-        proc = Processor(self.env)
-        # fetch a seishub stylesheet
-        data = proc.run(GET, '/seishub/stylesheet')
-        id = data.keys()[0]
-        try:
-            proc.run(DELETE, '/seishub/stylesheet/' + id + '/1')
-            self.fail("Expected SeisHubError")
-        except SeisHubError, e:
-            self.assertEqual(e.code, http.NOT_ALLOWED)
+        for id in data:
+            # skip indexes
+            if id.startswith('/'):
+                continue
+            try:
+                proc.run(DELETE, '/seishub/stylesheet/' + id)
+                self.fail("Expected SeisHubError")
+            except SeisHubError, e:
+                self.assertEqual(e.code, http.FORBIDDEN)
     
     def test_deleteRevision(self):
         """
