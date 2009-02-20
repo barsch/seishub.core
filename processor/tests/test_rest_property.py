@@ -27,7 +27,7 @@ XML_BASE_DOC2 = """<?xml version="1.0" encoding="utf-8"?>
 <testml>
   <blah1 id="3">
     <blahblah1>%s</blahblah1>
-    <blah2>%s</blah2>
+    <blahblah1>%s</blahblah1>
   </blah1>
 </testml>"""
 
@@ -38,8 +38,11 @@ XML_DOC = XML_BASE_DOC % ("üöäß", "5")
 XML_DOC2 = XML_BASE_DOC % ("üöäß", "%d")
 XML_DOC3 = XML_BASE_DOC % (CDATA, "5")
 XML_DOC4 = XML_BASE_DOC % ("%s", "egal")
-XML_DOC5 = XML_BASE_DOC % ("<v>1</v><v>2</v><v>2</v><v>122</v><vv>-12</vv>", "egal")
-
+XML_DOC5 = XML_BASE_DOC % ("<v>1</v><v>2</v><v>2</v><v>122</v><vv>-12</vv>", 
+                           "egal")
+XML_DOC6 = XML_BASE_DOC2 % ("<v>1</v><v>2</v><v>3</v><u>-1</u><u>-2</u>",
+                            "<v>10</v><v>20</v><v>30</v>" +\
+                            "<u>-10</u><u>-20</u>")
 
 class AResourceType(Component):
     """
@@ -74,7 +77,20 @@ class AResourceType3(Component):
     package_id = 'property-test'
     resourcetype_id = 'notvc3'
     version_control = False
-    registerIndex('label3', '/testml/blah1/blahblah1#v', 'numeric')
+    registerIndex('label3', '/testml/blah1/blahblah1#v', 'integer')
+    
+
+class AResourceType4(Component):
+    """
+    A non versioned test resource type.
+    """
+    implements(IResourceType, IPackage)
+    
+    package_id = 'property-test'
+    resourcetype_id = 'notvc4'
+    version_control = False
+    registerIndex('label4', '/testml/blah1/blahblah1#v', 'integer')
+    registerIndex('label5', '/testml/blah1/blahblah1#u', 'integer')
 
 
 class AVersionControlledResourceType(Component):
@@ -98,6 +114,7 @@ class RestPropertyTests(SeisHubEnvironmentTestCase):
         self.env.enableComponent(AResourceType)
         self.env.enableComponent(AResourceType2)
         self.env.enableComponent(AResourceType3)
+        self.env.enableComponent(AResourceType4)
         self.env.tree = RESTFolder()
     
     def tearDown(self):
@@ -105,6 +122,7 @@ class RestPropertyTests(SeisHubEnvironmentTestCase):
         self.env.registry.db_deleteResourceType('property-test', 'notvc')
         self.env.registry.db_deleteResourceType('property-test', 'notvc2')
         self.env.registry.db_deleteResourceType('property-test', 'notvc3')
+        self.env.registry.db_deleteResourceType('property-test', 'notvc4')
         self.env.registry.db_deleteResourceType('property-test', 'vc')
         self.env.registry.db_deletePackage('property-test')
     
@@ -158,6 +176,29 @@ class RestPropertyTests(SeisHubEnvironmentTestCase):
         self.assertTrue("<value>-12</value>" not in data)
         # remove resource
         proc.run(DELETE, '/property-test/notvc3/test.xml')
+        
+    def test_getResourceIndexWithMultipleValuesAndGroupElement(self):
+        """
+        Tests resource index property.
+        """
+        proc = Processor(self.env)
+        # create resource
+        proc.run(PUT, '/property-test/notvc4/test.xml', StringIO(XML_DOC6))
+        # get data
+        res = proc.run(GET, '/property-test/notvc4/test.xml')
+        res.render_GET(proc)
+        # get index
+        res = proc.run(GET, '/property-test/notvc4/test.xml/.index')
+        data = res.render_GET(proc)
+        self.assertTrue("<label4>" in data)
+        self.assertTrue("<value>1</value>" in data)
+        self.assertTrue("<value>2</value>" in data)
+        self.assertTrue("<value>3</value>" in data)
+        self.assertTrue("<value>10</value>" in data)
+        self.assertTrue("<value>20</value>" in data)
+        self.assertTrue("<value>30</value>" in data)
+        # remove resource
+        proc.run(DELETE, '/property-test/notvc4/test.xml')
     
     def test_getRevisionIndex(self):
         """
