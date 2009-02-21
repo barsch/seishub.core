@@ -118,7 +118,7 @@ class XmlCatalog(object):
         """
         return self.xmldb.getResourceHistory(package_id, resourcetype_id, name)
     
-    def getAllResources(self, package_id, resourcetype_id = None):
+    def getAllResources(self, package_id = None, resourcetype_id = None):
         """
         Get a list of resources for specified package and resourcetype.
         """

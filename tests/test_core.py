@@ -18,7 +18,7 @@
 # Author: Christopher Lenz <cmlenz@gmx.de>
 
 from seishub.exceptions import SeisHubError
-from seishub.core import Interface, Component, ExtensionPoint, implements
+from seishub.core import Interface, Component, implements
 
 import unittest
 
@@ -166,81 +166,6 @@ class ComponentTestCase(unittest.TestCase):
         except AttributeError:
             pass
 
-    def test_nonconforming_extender(self):
-        """
-        Verify that accessing a method of a declared extension point interface 
-        raises a normal `AttributeError` if the component does not implement
-        the method.
-        """
-        class ComponentA(Component):
-            tests = ExtensionPoint(ITest)
-        class ComponentB(Component):
-            implements(ITest)
-        tests = iter(ComponentA(self.compmgr).tests)
-        try:
-            tests.next().test()
-            self.fail('Expected AttributeError')
-        except AttributeError:
-            pass
-
-    def test_extension_point_with_no_extension(self):
-        """
-        Verify that accessing an extension point with no extenders returns an
-        empty list.
-        """
-        class ComponentA(Component):
-            tests = ExtensionPoint(ITest)
-        tests = iter(ComponentA(self.compmgr).tests)
-        self.assertRaises(StopIteration, tests.next)
-
-    def test_extension_point_with_one_extension(self):
-        """
-        Verify that a single component extending an extension point can be
-        accessed through the extension point attribute of the declaring
-        component.
-        """
-        class ComponentA(Component):
-            tests = ExtensionPoint(ITest)
-        class ComponentB(Component):
-            implements(ITest)
-            def test(self): return 'x'
-        tests = iter(ComponentA(self.compmgr).tests)
-        self.assertEquals('x', tests.next().test())
-        self.assertRaises(StopIteration, tests.next)
-
-    def test_extension_point_with_two_extensions(self):
-        """
-        Verify that two components extending an extension point can be accessed
-        through the extension point attribute of the declaring component.
-        """
-        class ComponentA(Component):
-            tests = ExtensionPoint(ITest)
-        class ComponentB(Component):
-            implements(ITest)
-            def test(self): return 'x'
-        class ComponentC(Component):
-            implements(ITest)
-            def test(self): return 'y'
-        tests = iter(ComponentA(self.compmgr).tests)
-        self.assertEquals('x', tests.next().test())
-        self.assertEquals('y', tests.next().test())
-        self.assertRaises(StopIteration, tests.next)
-
-    def test_inherited_extension_point(self):
-        """
-        Verify that extension points are inherited to sub-classes.
-        """
-        class BaseComponent(Component):
-            tests = ExtensionPoint(ITest)
-        class ConcreteComponent(BaseComponent):
-            pass
-        class ExtendingComponent(Component):
-            implements(ITest)
-            def test(self): return 'x'
-        tests = iter(ConcreteComponent(self.compmgr).tests)
-        self.assertEquals('x', tests.next().test())
-        self.assertRaises(StopIteration, tests.next)
-
     def test_inherited_implements(self):
         """
         Verify that a component with a super-class implementing an extension
@@ -253,26 +178,6 @@ class ComponentTestCase(unittest.TestCase):
             pass
         from seishub.core import ComponentMeta
         assert ConcreteComponent in ComponentMeta._registry[ITest]
-
-    def test_component_manager_component(self):
-        """
-        Verify that a component manager can itself be a component with its own
-        extension points.
-        """
-        from seishub.core import ComponentManager
-        class ManagerComponent(ComponentManager, Component):
-            tests = ExtensionPoint(ITest)
-            def __init__(self, foo, bar):
-                ComponentManager.__init__(self)
-                self.foo, self.bar = foo, bar
-        class Extender(Component):
-            implements(ITest)
-            def test(self): return 'x'
-        mgr = ManagerComponent('Test', 42)
-        assert id(mgr) == id(mgr[ManagerComponent])
-        tests = iter(mgr.tests)
-        self.assertEquals('x', tests.next().test())
-        self.assertRaises(StopIteration, tests.next)
 
     def test_instantiation_doesnt_enable(self):
         """

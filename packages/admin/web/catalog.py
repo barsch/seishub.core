@@ -46,8 +46,8 @@ class BasicPanel(Component):
                                             [DEFAULT_MAX_OVERFLOW])[0]
             verbose = request.args.get('verbose',[False])[0]
             self.config.set('db', 'verbose', verbose)
-            self.config.set('pool_size', 'pool_size', pool_size)
-            self.config.set('max_overflow', 'max_overflow', max_overflow)
+            self.config.set('db', 'pool_size', pool_size)
+            self.config.set('db', 'max_overflow', max_overflow)
             data['uri'] = uri
             try:
                 engine = create_engine(uri)
@@ -64,9 +64,8 @@ class BasicPanel(Component):
                                 "see any changes at the database settings.")
             self.config.save()
         data['verbose'] = self.config.getbool('db', 'verbose')
-        data['pool_size'] = self.config.getint('pool_size', 'pool_size')
-        data['max_overflow'] = self.config.getint('max_overflow', 
-                                                  'max_overflow')
+        data['pool_size'] = self.config.getint('db', 'pool_size')
+        data['max_overflow'] = self.config.getint('db', 'max_overflow')
         return data
 
 
@@ -90,7 +89,7 @@ class DatabaseQueryPanel(Component):
             'rows': '',
             'clock': '',
             'tables': tables,
-            'views': self.env.db.getViews(),
+            'views': sorted(self.env.db.getViews()),
             'prefix': DEFAULT_PREFIX,
         }
         args = request.args

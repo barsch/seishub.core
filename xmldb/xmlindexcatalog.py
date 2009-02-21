@@ -444,10 +444,11 @@ class XmlIndexCatalog(DbStorage, _QueryProcessor, _IndexView):
             raise TypeError("%s is not an IResource." % str(resource))
         package_id = resource.package.package_id
         resourcetype_id = resource.resourcetype.resourcetype_id
-        index_id = (xmlindex and xmlindex._id) or None
-        xmlindex_list = self.getIndexes(package_id = package_id, 
-                                        resourcetype_id = resourcetype_id,
-                                        index_id = index_id)
+        if xmlindex:
+            xmlindex_list = [xmlindex]
+        else:
+            xmlindex_list = self.getIndexes(package_id = package_id, 
+                                            resourcetype_id = resourcetype_id)
         elements = []
         for xmlindex in xmlindex_list:
             elements.extend(xmlindex.eval(resource.document))

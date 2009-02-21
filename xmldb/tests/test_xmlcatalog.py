@@ -484,6 +484,7 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         # backslashes ain't a problem
         self.env.catalog.registerIndex("package", "rt", "A\\B", "/station/lat")
         # remove everything
+        self.env.catalog.deleteAllIndexes("package")
         self.env.registry.db_deleteResourceType("package", "rt")
         self.env.registry.db_deletePackage("package")
     

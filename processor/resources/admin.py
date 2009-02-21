@@ -6,7 +6,7 @@ Administrative resources.
 from Cheetah.Template import Template
 from pkg_resources import resource_filename #@UnresolvedImport
 from seishub import __version__ as SEISHUB_VERSION
-from seishub.core import ExtensionPoint
+from seishub.core import PackageManager
 from seishub.packages.interfaces import IAdminPanel, IAdminTheme, \
     IAdminStaticContent
 from seishub.processor.interfaces import IAdminResource
@@ -177,7 +177,8 @@ class AdminRootFolder(StaticFolder):
         Register all administrative themes.
         """
         self.themes={}
-        for theme in ExtensionPoint(IAdminTheme).extensions(self.env):
+        themes = PackageManager.getComponents(IAdminTheme, None, self.env)
+        for theme in themes:
             # sanity checks
             if not hasattr(theme, 'theme_id'):
                 msg = 'Attribute theme_id missing in %s' % theme
@@ -196,7 +197,8 @@ class AdminRootFolder(StaticFolder):
         temp = {}
         self.mainmenu={}
         self.submenu={}
-        for panel in ExtensionPoint(IAdminPanel).extensions(self.env):
+        panels = PackageManager.getComponents(IAdminPanel, None, self.env)
+        for panel in panels:
             # sanity checks
             if not hasattr(panel, 'panel_ids'):
                 msg = 'Attribute panel_ids missing in %s' % panel
@@ -239,7 +241,9 @@ class AdminRootFolder(StaticFolder):
         self.putChild('favicon.ico', 
                       FileSystemResource(favicon, "image/x-icon"))
         # register additional static content defined by plug-ins
-        for res in ExtensionPoint(IAdminStaticContent).extensions(self.env):
+        static_contents = PackageManager.getComponents(IAdminStaticContent, 
+                                                       None, self.env)
+        for res in static_contents:
             # sanity checks
             if not hasattr(res, 'getStaticContent'):
                 msg = 'Method getStaticContent() missing in %s' % res

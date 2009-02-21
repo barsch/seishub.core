@@ -22,47 +22,13 @@ from zope.interface.declarations import _implements, classImplements
 import sys
 
 
-__all__ = ['Component', 'ExtensionPoint', 'implements', 'Interface',
-           'ERROR', 'WARN', 'INFO', 'DEBUG', 'ComponentMeta',
-           'ComponentManager', 'PackageManager']
+__all__ = ['Component', 'implements', 'Interface', 'ERROR', 'WARN', 'INFO', 
+           'DEBUG', 'ComponentMeta', 'ComponentManager', 'PackageManager']
 
 ERROR = 0
 WARN = 5
 INFO = 10
 DEBUG = 20
-
-
-class ExtensionPoint(property):
-    """
-    Marker class for extension points in components.
-    """
-    
-    def __init__(self, interface):
-        """
-        Creates the extension point.
-        
-        @param interface: the `Interface` subclass that defines the protocol
-            for the extension point
-        """
-        property.__init__(self, self.extensions)
-        self.interface = interface
-        self.__doc__ = 'List of components that implement `%s`' % \
-                       self.interface.__name__
-    
-    def extensions(self, component):
-        """
-        Returns a list of components that declare to implement the extension
-        point interface.
-        """
-        extensions = ComponentMeta._registry.get(self.interface, [])
-        # return only activated components
-        return filter(None, [component.compmgr[cls] for cls in extensions])
-    
-    def __repr__(self):
-        """
-        Returns a textual representation of the extension point.
-        """
-        return '<ExtensionPoint %s>' % self.interface.__name__
 
 
 class ComponentMeta(type):
@@ -154,9 +120,6 @@ class PackageManager(object):
     def getComponents(interface, package_id, component):
         """
         Get objects providing interface within specified package.
-        
-        If package_id is None, this is the same as a call to 
-        seishub.core.ExtensionPoint(interface).extensions(component)
         """
         classes = PackageManager.getClasses(interface, package_id)
         # get, activate and return objects 

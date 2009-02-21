@@ -239,6 +239,8 @@ class RESTProperty(Resource):
                 sub = etree.SubElement(root, label)
                 for _pos, values in values_dict.iteritems():
                     for value in values:
+                        if not value:
+                            continue
                         if not isinstance(value, basestring):
                             value=unicode(value)
                         etree.SubElement(sub, "value").text = value

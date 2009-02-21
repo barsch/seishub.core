@@ -20,7 +20,7 @@ class DatabaseManager(object):
     Option('db', 'uri', DEFAULT_DB_URI, "Database URI.")
     Option('db', 'verbose', False, "Enables database verbosity.")
     IntOption('db', 'max_overflow', DEFAULT_MAX_OVERFLOW, 
-        "The number of connections to allow in connection pool “overflow”, "
+        "The number of connections to allow in connection pool 'overflow', "
         "that is connections that can be opened above and beyond the " +
         "pool_size setting, which defaults to five.")
     IntOption('db', 'pool_size', DEFAULT_POOL_SIZE, 

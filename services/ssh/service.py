@@ -2,7 +2,7 @@
 
 from seishub import __version__ as SEISHUB_VERSION
 from seishub.config import IntOption, Option, BoolOption
-from seishub.core import ExtensionPoint
+from seishub.core import PackageManager
 from seishub.defaults import SSH_PORT, SSH_PRIVATE_KEY, SSH_PUBLIC_KEY, \
     SSH_AUTOSTART
 from seishub.exceptions import SeisHubError
@@ -25,7 +25,7 @@ class SSHServiceProtocol(recvline.HistoricRecvLine):
         self.user = avatar
         self.env = avatar.env
         self.status = {}
-        plugins = ExtensionPoint(ISSHCommand).extensions(self.env)
+        plugins = PackageManager.getComponents(ISSHCommand, None, self.env)
         self.plugin_cmds = dict([(p.getCommandId().upper(), p) 
                                  for p in plugins 
                                  if hasattr(p, 'executeCommand')

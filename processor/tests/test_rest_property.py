@@ -34,15 +34,6 @@ XML_BASE_DOC2 = """<?xml version="1.0" encoding="utf-8"?>
 CDATA = """<![CDATA[ &<
 >&]]>"""
 
-XML_DOC = XML_BASE_DOC % ("üöäß", "5")
-XML_DOC2 = XML_BASE_DOC % ("üöäß", "%d")
-XML_DOC3 = XML_BASE_DOC % (CDATA, "5")
-XML_DOC4 = XML_BASE_DOC % ("%s", "egal")
-XML_DOC5 = XML_BASE_DOC % ("<v>1</v><v>2</v><v>2</v><v>122</v><vv>-12</vv>", 
-                           "egal")
-XML_DOC6 = XML_BASE_DOC2 % ("<v>1</v><v>2</v><v>3</v><u>-1</u><u>-2</u>",
-                            "<v>10</v><v>20</v><v>30</v>" +\
-                            "<u>-10</u><u>-20</u>")
 
 class AResourceType(Component):
     """
@@ -131,6 +122,7 @@ class RestPropertyTests(SeisHubEnvironmentTestCase):
         Tests resource index property.
         """
         proc = Processor(self.env)
+        XML_DOC = XML_BASE_DOC % ("üöäß", "5")
         # create resource
         proc.run(PUT, '/property-test/notvc/test.xml', StringIO(XML_DOC))
         # get index XML w/o trailing slash
@@ -156,13 +148,53 @@ class RestPropertyTests(SeisHubEnvironmentTestCase):
         # remove resource
         proc.run(DELETE, '/property-test/notvc/test.xml')
     
+    def test_getResourceIndexWithEmptyValue(self):
+        """
+        Index property should not show 'None' for an empty index value.
+        """
+        proc = Processor(self.env)
+        XML_DOC = XML_BASE_DOC % ("", "")
+        # create resource
+        proc.run(PUT, '/property-test/notvc/test.xml', StringIO(XML_DOC))
+        # get index XML
+        res = proc.run(GET, '/property-test/notvc/test.xml/.index')
+        data = res.render_GET(proc)
+        self.assertTrue('<label1/>' in data)
+        self.assertFalse('<value>None</value>' in data)
+        # remove resource
+        proc.run(DELETE, '/property-test/notvc/test.xml')
+    
+    def test_getResourceIndexWithDateTime(self):
+        """
+        Datetime and timestamps are stored in the same table. This shouldn't
+        duplicate any entries while retrieving all indexes. 
+        """
+        proc = Processor(self.env)
+        XML_DOC = XML_BASE_DOC % ("20080912T12:12:13.123987", "")
+        # create resource
+        proc.run(PUT, '/property-test/notvc2/test.xml', StringIO(XML_DOC))
+        # get index XML
+        res = proc.run(GET, '/property-test/notvc2/test.xml/.index')
+        data = res.render_GET(proc)
+        self.assertTrue('<label2>' in data)
+        self.assertTrue('<value>2008-09-12 12:12:13.123987</value>' in data)
+        # should be there exactly once
+        # XXX: getIndexData returns two values - one for datetime index and
+        # one for timestamp index, which both read from the same index table
+        self.assertEqual(data.count('2008-09-12 12:12:13.123987'), 1)
+        # remove resource
+        proc.run(DELETE, '/property-test/notvc2/test.xml')
+    
     def test_getResourceIndexWithMultipleValues(self):
         """
         Tests resource index property.
         """
         proc = Processor(self.env)
         # create resource
-        proc.run(PUT, '/property-test/notvc3/test.xml', StringIO(XML_DOC5))
+        XML_DOC = XML_BASE_DOC % ("<v>1</v><v>2</v><v>2</v><v>122</v><a>5</a>", 
+                                  "egal")
+
+        proc.run(PUT, '/property-test/notvc3/test.xml', StringIO(XML_DOC))
         # get data
         res = proc.run(GET, '/property-test/notvc3/test.xml')
         res.render_GET(proc)
@@ -173,7 +205,7 @@ class RestPropertyTests(SeisHubEnvironmentTestCase):
         self.assertTrue("<value>1</value>" in data)
         self.assertTrue("<value>2</value>" in data)
         self.assertTrue("<value>122</value>" in data)
-        self.assertTrue("<value>-12</value>" not in data)
+        self.assertTrue("<value>5</value>" not in data)
         # remove resource
         proc.run(DELETE, '/property-test/notvc3/test.xml')
         
@@ -182,8 +214,11 @@ class RestPropertyTests(SeisHubEnvironmentTestCase):
         Tests resource index property.
         """
         proc = Processor(self.env)
+        XML_DOC = XML_BASE_DOC2 % ("<v>1</v><v>2</v><v>3</v><u>-1</u><u>5</u>",
+                                   "<v>10</v><v>20</v><v>30</v>" + \
+                                   "<u>-10</u><u>-20</u>")
         # create resource
-        proc.run(PUT, '/property-test/notvc4/test.xml', StringIO(XML_DOC6))
+        proc.run(PUT, '/property-test/notvc4/test.xml', StringIO(XML_DOC))
         # get data
         res = proc.run(GET, '/property-test/notvc4/test.xml')
         res.render_GET(proc)
@@ -206,6 +241,7 @@ class RestPropertyTests(SeisHubEnvironmentTestCase):
         """
         proc = Processor(self.env)
         # create resource
+        XML_DOC2 = XML_BASE_DOC % ("üöäß", "%d")
         proc.run(PUT, '/property-test/vc/test.xml/', StringIO(XML_DOC2 % 12))
         proc.run(POST, '/property-test/vc/test.xml/', StringIO(XML_DOC2 % 234))
         proc.run(POST, '/property-test/vc/test.xml/', StringIO(XML_DOC2 % 3456))
@@ -238,6 +274,7 @@ class RestPropertyTests(SeisHubEnvironmentTestCase):
         """
         proc = Processor(self.env)
         # create resource
+        XML_DOC = XML_BASE_DOC % ("üöäß", "5")
         proc.run(PUT, '/property-test/notvc/test.xml', StringIO(XML_DOC))
         # get meta data XML w/o trailing slash
         res = proc.run(GET, '/property-test/notvc/test.xml/.meta')
@@ -262,6 +299,7 @@ class RestPropertyTests(SeisHubEnvironmentTestCase):
         """
         proc = Processor(self.env)
         # create resource
+        XML_DOC2 = XML_BASE_DOC % ("üöäß", "%d")
         proc.run(PUT, '/property-test/vc/test.xml', StringIO(XML_DOC2 % 12))
         proc.run(POST, '/property-test/vc/test.xml', StringIO(XML_DOC2 % 234))
         proc.run(POST, '/property-test/vc/test.xml', StringIO(XML_DOC2 % 3456))
@@ -308,7 +346,8 @@ class RestPropertyTests(SeisHubEnvironmentTestCase):
         """
         proc = Processor(self.env)
         # create resource
-        proc.run(PUT, '/property-test/notvc/1', StringIO(XML_DOC3))
+        XML_DOC = XML_BASE_DOC % (CDATA, "5")
+        proc.run(PUT, '/property-test/notvc/1', StringIO(XML_DOC))
         data = proc.run(GET, '/property-test/notvc/1/.index/').render_GET(proc)
         self.assertTrue("<value> &amp;&lt;\n&gt;&amp;</value>" in data)
         # delete resource
@@ -319,56 +358,57 @@ class RestPropertyTests(SeisHubEnvironmentTestCase):
         Test indexing of XML documents with valid datetime fields.
         """
         proc = Processor(self.env)
+        XML_DOC = XML_BASE_DOC % ("%s", "egal")
         # w/ T
-        xml_doc = XML_DOC4 % "2009-12-20T12:12:21"
+        xml_doc = XML_DOC % "2009-12-20T12:12:21"
         proc.run(PUT, '/property-test/notvc2/1', StringIO(xml_doc))
         data = proc.run(GET, '/property-test/notvc2/1/.index').render_GET(proc)
         self.assertTrue("<value>2009-12-20 12:12:21</value>" in data)
         proc.run(DELETE, '/property-test/notvc2/1')
         # w/o T
-        xml_doc = XML_DOC4 % "2009-12-20 12:12:21"
+        xml_doc = XML_DOC % "2009-12-20 12:12:21"
         proc.run(PUT, '/property-test/notvc2/1', StringIO(xml_doc))
         data = proc.run(GET, '/property-test/notvc2/1/.index').render_GET(proc)
         self.assertTrue("<value>2009-12-20 12:12:21</value>" in data)
         proc.run(DELETE, '/property-test/notvc2/1')
         # milliseconds, w/ T
-        xml_doc = XML_DOC4 % "2009-12-20T12:12:21.123456"
+        xml_doc = XML_DOC % "2009-12-20T12:12:21.123456"
         proc.run(PUT, '/property-test/notvc2/1', StringIO(xml_doc))
         data = proc.run(GET, '/property-test/notvc2/1/.index').render_GET(proc)
         self.assertTrue("<value>2009-12-20 12:12:21.123456</value>" in data)
         proc.run(DELETE, '/property-test/notvc2/1')
         # milliseconds, w/o T
-        xml_doc = XML_DOC4 % "2009-12-20 12:12:21.123456"
+        xml_doc = XML_DOC % "2009-12-20 12:12:21.123456"
         proc.run(PUT, '/property-test/notvc2/1', StringIO(xml_doc))
         data = proc.run(GET, '/property-test/notvc2/1/.index').render_GET(proc)
         self.assertTrue("<value>2009-12-20 12:12:21.123456</value>" in data)
         proc.run(DELETE, '/property-test/notvc2/1')
         # limited milliseconds, w/ T
-        xml_doc = XML_DOC4 % "2009-12-20T12:12:21.123"
+        xml_doc = XML_DOC % "2009-12-20T12:12:21.123"
         proc.run(PUT, '/property-test/notvc2/1', StringIO(xml_doc))
         data = proc.run(GET, '/property-test/notvc2/1/.index').render_GET(proc)
         self.assertTrue("<value>2009-12-20 12:12:21.123000</value>" in data)
         proc.run(DELETE, '/property-test/notvc2/1')
         # limited milliseconds, w/o T
-        xml_doc = XML_DOC4 % "2009-12-20 12:12:21.123"
+        xml_doc = XML_DOC % "2009-12-20 12:12:21.123"
         proc.run(PUT, '/property-test/notvc2/1', StringIO(xml_doc))
         data = proc.run(GET, '/property-test/notvc2/1/.index').render_GET(proc)
         self.assertTrue("<value>2009-12-20 12:12:21.123000</value>" in data)
         proc.run(DELETE, '/property-test/notvc2/1')
         # w/o time -> defaults to 00:00:00
-        xml_doc = XML_DOC4 % "2009-12-20"
+        xml_doc = XML_DOC % "2009-12-20"
         proc.run(PUT, '/property-test/notvc2/1', StringIO(xml_doc))
         data = proc.run(GET, '/property-test/notvc2/1/.index').render_GET(proc)
         self.assertTrue("<value>2009-12-20 00:00:00</value>" in data)
         proc.run(DELETE, '/property-test/notvc2/1')
         # w/o minutes and seconds -> defaults to :00:00
-        xml_doc = XML_DOC4 % "20091220T12"
+        xml_doc = XML_DOC % "20091220T12"
         proc.run(PUT, '/property-test/notvc2/1', StringIO(xml_doc))
         data = proc.run(GET, '/property-test/notvc2/1/.index').render_GET(proc)
         self.assertTrue("<value>2009-12-20 12:00:00</value>" in data)
         proc.run(DELETE, '/property-test/notvc2/1')
         # w/o seconds -> defaults to :00
-        xml_doc = XML_DOC4 % "20091220T12:13"
+        xml_doc = XML_DOC % "20091220T12:13"
         proc.run(PUT, '/property-test/notvc2/1', StringIO(xml_doc))
         data = proc.run(GET, '/property-test/notvc2/1/.index').render_GET(proc)
         self.assertTrue("<value>2009-12-20 12:13:00</value>" in data)
@@ -382,14 +422,15 @@ class RestPropertyTests(SeisHubEnvironmentTestCase):
         every uploaded resource if someone adds a wrong index!
         """
         proc = Processor(self.env)
+        XML_DOC = XML_BASE_DOC % ("%s", "egal")
         # invalid date 
-        xml_doc = XML_DOC4 % "2009-20-12"
+        xml_doc = XML_DOC % "2009-20-12"
         proc.run(PUT, '/property-test/notvc2/1', StringIO(xml_doc))
         data = proc.run(GET, '/property-test/notvc2/1/.index').render_GET(proc)
         self.assertFalse("2009-20-12" in data)
         proc.run(DELETE, '/property-test/notvc2/1')
         # invalid datetime 
-        xml_doc = XML_DOC4 % "2009-20-12T12:12:20"
+        xml_doc = XML_DOC % "2009-20-12T12:12:20"
         proc.run(PUT, '/property-test/notvc2/1', StringIO(xml_doc))
         data = proc.run(GET, '/property-test/notvc2/1/.index').render_GET(proc)
         self.assertFalse("2009-20-12" in data)
