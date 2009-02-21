@@ -86,12 +86,12 @@ class RestPUTTests(SeisHubEnvironmentTestCase):
         # delete resource
         proc.run(DELETE, '/put-test/vc/test.xml')
     
-    def test_putHeadersWithFilename(self):
+    def test_putHeadersWithGivenFilename(self):
         """
-        Put request expects Location header and 201 status code.
+        Successful PUT request returns Location header and 201 status code.
         """
         proc = Processor(self.env)
-        # create resource
+        # create resource test.xml
         proc.run(PUT, '/put-test/notvc/test.xml', StringIO(XML_DOC))
         # needs a location
         self.assertTrue('Location' in proc.headers)
@@ -102,9 +102,9 @@ class RestPUTTests(SeisHubEnvironmentTestCase):
         # delete resource
         proc.run(DELETE, '/put-test/notvc/test.xml')
     
-    def test_putHeadersWithoutFilename(self):
+    def test_putHeadersWithoutGivenFilename(self):
         """
-        Put request expects Location header and 201 status code.
+        Successful PUT request returns Location header and 201 status code.
         """
         proc = Processor(self.env)
         # create resource
@@ -184,7 +184,7 @@ class RestPUTTests(SeisHubEnvironmentTestCase):
             # delete resource
             proc.run(DELETE, '/put-test/notvc/test.xml')
     
-    def test_putJapaneseDocuments(self):
+    def test_putJapaneseXMLDocuments(self):
         """
         Part of the W3C XML conformance test suite.
         

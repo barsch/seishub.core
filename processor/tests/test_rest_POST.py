@@ -3,10 +3,15 @@
 A test suite for POST request on REST resources.
 """
 
+from StringIO import StringIO
 from seishub.core import Component, implements
 from seishub.packages.builtins import IResourceType, IPackage
+from seishub.processor import PUT, POST, DELETE, Processor
 from seishub.processor.resources import RESTFolder
 from seishub.test import SeisHubEnvironmentTestCase
+import glob
+import inspect
+import os
 import unittest
 
 
@@ -55,8 +60,38 @@ class RestPOSTTests(SeisHubEnvironmentTestCase):
         self.env.registry.db_deleteResourceType('post-test', 'vc')
         self.env.registry.db_deletePackage('post-test')
     
-    def test_processRoot(self):
-        pass
+    def test_postJapaneseXMLDocuments(self):
+        """
+        Part of the W3C XML conformance test suite.
+        
+        This covers tests with different encoding and byte orders, e.g. UTF-16 
+        with big and little endian. 
+        
+        @see: L{http://www.w3.org/XML/Test/}.
+        """
+        proc = Processor(self.env)
+        path = os.path.dirname(inspect.getsourcefile(self.__class__))
+        # read all files
+        files = glob.glob(os.path.join(path, 'data', 'japanese', '*.xml'))
+        for file in files:
+            # create resource
+            data = open(file, 'rb').read()
+            # first POST should be handled as PUT
+            proc.run(PUT, '/post-test/notvc/test.xml', StringIO(data))
+            # overwrite resource
+            proc.run(POST, '/post-test/notvc/test.xml', StringIO(data))
+            # delete resource
+            proc.run(DELETE, '/post-test/notvc/test.xml')
+        # same as before but using only POST
+        for file in files:
+            # create resource
+            data = open(file, 'rb').read()
+            # first POST should be handled as PUT
+            proc.run(POST, '/post-test/notvc/test.xml', StringIO(data))
+            # overwrite resource
+            proc.run(POST, '/post-test/notvc/test.xml', StringIO(data))
+            # delete resource
+            proc.run(DELETE, '/post-test/notvc/test.xml')
 
 
 def suite():

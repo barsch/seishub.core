@@ -8,7 +8,8 @@ from seishub.exceptions import ForbiddenError, NotFoundError, SeisHubError, \
     NotAllowedError
 from seishub.processor.interfaces import IRESTResource, IRESTProperty, \
     IXMLIndex
-from seishub.processor.processor import MAXIMAL_URL_LENGTH, PUT, GET, HEAD
+from seishub.processor.processor import MAXIMAL_URL_LENGTH, PUT, GET, HEAD, \
+    POST
 from seishub.processor.resources.resource import Resource, Folder, StaticFolder
 from seishub.util.path import splitPath
 from seishub.util.text import isInteger
@@ -340,12 +341,19 @@ class RESTResourceTypeFolder(Folder):
     
     def _processResource(self, request):
         # resource request
+        try:
+            res = request.env.catalog.getResource(self.package_id,
+                                                  self.resourcetype_id,
+                                                  request.postpath[0],
+                                                  revision=None)
+        except NotFoundError:
+            if request.method == POST:
+                return self.render_PUT(request)
+            raise
+        except:
+            raise
         name = request.postpath.pop(0)
         request.prepath.append(name)
-        res = request.env.catalog.getResource(self.package_id,
-                                              self.resourcetype_id,
-                                              name,
-                                              revision=None)
         result = RESTResource(res)
         # don't render GET request directly
         if request.method == GET:
