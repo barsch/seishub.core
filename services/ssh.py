@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
-
+"""
+A SSH server.
+"""
 from seishub import __version__ as SEISHUB_VERSION
 from seishub.config import IntOption, Option, BoolOption
 from seishub.core import PackageManager
@@ -16,6 +18,9 @@ from twisted.cred import portal
 from twisted.python import components
 from zope.interface import implements
 import os
+
+
+__all__ = ['SSHService']
 
 
 class SSHServiceProtocol(recvline.HistoricRecvLine):
@@ -124,28 +129,40 @@ class SSHServiceProtocol(recvline.HistoricRecvLine):
             self.writeln(cmd + ' - ' + str(plugin.__doc__))
     
     def cmd_VERSION(self):
-        """Prints the current SeisHub version."""
+        """
+        Prints the current SeisHub version.
+        """
         self.writeln('SeisHub SSH version %s' % SEISHUB_VERSION)
     
     def cmd_WHOAMI(self):
-        """Prints your user name."""
+        """
+        Prints your user name.
+        """
         self.writeln(self.user.username)
     
     def cmd_EXIT(self):
-        """Ends your session."""
+        """
+        Ends your session.
+        """
         self.cmd_QUIT()
     
     def cmd_QUIT(self):
-        """Ends your session."""
+        """
+        Ends your session.
+        """
         self.writeln("Bye!")
         self.terminal.loseConnection()
     
     def cmd_CLEAR(self):
-        """Clears the screen."""
+        """
+        Clears the screen.
+        """
         self.terminal.reset()
     
     def cmd_PASSWD(self, line=''):
-        """Changes your password."""
+        """
+        Changes your password.
+        """
         uid = self.user.username
         status = self.status.get('cmd','')
         current = 'current' in self.status
@@ -241,8 +258,9 @@ class SSHServiceRealm:
 
 
 class SSHServiceFactory(factory.SSHFactory):
-    """Factory for SSH Server."""
-    
+    """
+    Factory for SSH Server.
+    """
     def __init__(self, env):
         self.env = env
         self.portal = portal.Portal(SSHServiceRealm(env), 
@@ -308,11 +326,13 @@ class SSHServiceFactory(factory.SSHFactory):
 
 
 class SSHService(TCPServer): 
-    """Service for SSH server."""
+    """
+    Service for SSH server.
+    """
     BoolOption('ssh', 'autostart', SSH_AUTOSTART, "Run service on start-up.")
     IntOption('ssh', 'port', SSH_PORT, "SSH port number.")
-    Option('ssh', 'public_key_file', SSH_PUBLIC_KEY, 'Public RSA key.')
-    Option('ssh', 'private_key_file', SSH_PRIVATE_KEY, 'Private RSA key.')
+    Option('ssh', 'public_key_file', SSH_PUBLIC_KEY, "Public RSA key.")
+    Option('ssh', 'private_key_file', SSH_PRIVATE_KEY, "Private RSA key.")
     
     def __init__(self, env):
         self.env = env

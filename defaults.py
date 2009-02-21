@@ -1,4 +1,10 @@
 # -*- coding: utf-8 -*-
+"""
+Default options for SeisHub.
+
+Most options may be altered via the configuration file seishub.ini. So there is
+no need to change values in here.
+"""
 
 import os
 
@@ -31,6 +37,9 @@ SFTP_PORT = 5021
 SFTP_PRIVATE_KEY = 'conf' + os.sep + 'sftp.private.key'
 SFTP_PUBLIC_KEY = 'conf' + os.sep + 'sftp.public.key'
 SFTP_LOG_FILE = 'logs' + os.sep + 'sftp.log'
+
+FILEMONITOR_AUTOSTART = True
+FILEMONITOR_CHECK_PERIOD = 60
 
 HEARTBEAT_AUTOSTART = False
 HEARTBEAT_CHECK_PERIOD = 20

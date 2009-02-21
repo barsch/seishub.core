@@ -7,6 +7,7 @@ from seishub.services.web import WebService
 from seishub.services.ssh import SSHService
 from seishub.services.sftp import SFTPService
 from seishub.services.heartbeat import HeartbeatService
+from seishub.services.filemonitor import FileMonitorService
 
 
 # setup our Environment
@@ -27,8 +28,10 @@ ssh_service = SSHService(env)
 # SFTP
 sftp_service = SFTPService(env)
 
-# heartbeat
+# Heartbeat
 heartbeat_service = HeartbeatService(env)
 
-# update
+# Filemonitor
+filemonitor_service = FileMonitorService(env)
 
+# update

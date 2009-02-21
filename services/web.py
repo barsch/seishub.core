@@ -27,6 +27,9 @@ import os
 import urllib
 
 
+__all__ = ['WebService']
+
+
 RESOURCELIST_ROOT = """<?xml version="1.0" encoding="UTF-8"?>
 
 <seishub xml:base="%s" xmlns:xlink="http://www.w3.org/1999/xlink">%s

@@ -3,7 +3,7 @@
 <h2>Add new schema</h2>
 <form method="post" enctype="multipart/form-data" id="add" action="">
   <div class="field">
-    <label>Package</label><br />
+    <label>Package / Resource type</label><br />
     <select name="package_id" id="package_id" onchange="changePackage();">
       #for $p in $packages
       #if $resourcetypes[$p]
@@ -11,9 +11,7 @@
       #end if
       #end for
     </select>
-  </div>
-  <div class="field">
-    <label>Resource type</label><br />
+    &nbsp;
     <select name="resourcetype_id" id="resourcetype_id">
       <option></option>
     </select>

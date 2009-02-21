@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+"""
+A heartbeat server.
+"""
 
 from seishub.config import IntOption, ListOption, BoolOption
 from seishub.defaults import HEARTBEAT_CHECK_PERIOD, HEARTBEAT_HUBS, \
@@ -9,9 +12,13 @@ import socket
 import time
 
 
+__all__ = ['HeartbeatService']
+
+
 class HeartbeatProtocol(protocol.DatagramProtocol):
-    """Receive UDP heartbeat packets and log them in a dictionary."""
-    
+    """
+    Receive UDP heartbeat packets and log them in a dictionary.
+    """
     def __init__(self, env):
         self.env = env
     
@@ -23,15 +30,18 @@ class HeartbeatProtocol(protocol.DatagramProtocol):
 
 
 class HeartbeatDetector(internet.TimerService):
-    """Detect clients not sending heartbeats and removes them from list."""
-    
+    """
+    Detect clients not sending heartbeats and removes them from list.
+    """
     def __init__(self, env):
         self.env = env
         internet.TimerService.__init__(self, HEARTBEAT_CHECK_PERIOD, 
                                        self.detect)
     
     def detect(self):
-        """Detects clients w/ heartbeat older than HEARTBEAT_CHECK_TIMEOUT."""
+        """
+        Detects clients with heartbeat older than HEARTBEAT_CHECK_TIMEOUT.
+        """
         limit = time.time() - HEARTBEAT_CHECK_TIMEOUT
         for node in self.env.config.hubs.items():
             if node[1][0] < limit:
@@ -41,8 +51,9 @@ class HeartbeatDetector(internet.TimerService):
 
 
 class HeartbeatTransmitter(internet.TimerService):
-    """Sends heartbeat to list of active nodes."""
-
+    """
+    Sends heartbeat to list of active nodes.
+    """
     def __init__(self, env):
         self.env = env
         internet.TimerService.__init__(self, HEARTBEAT_CHECK_PERIOD, 
@@ -77,14 +88,16 @@ class HeartbeatReceiver(internet.UDPServer): #@UndefinedVariable
 
 
 class HeartbeatService(service.MultiService):
-    """A asynchronous events-based heartbeat server for SeisHub."""
+    """
+    A asynchronous events-based heartbeat server for SeisHub.
+    """
     BoolOption('heartbeat', 'autostart', HEARTBEAT_AUTOSTART, 
-               "Enable service on start-up.")
+        "Enable service on start-up.")
     IntOption('heartbeat', 'port', HEARTBEAT_UDP_PORT, 
-              'Heartbeat port number.')
+        "Heartbeat port number.")
     ListOption('heartbeat', 'default_hubs', ','.join(HEARTBEAT_HUBS), 
-               'Default IPs for very active SeisHub services.')
-    BoolOption('heartbeat', 'active_node', True, 'Heartbeat status')
+        "Default IPs for very active SeisHub services.")
+    BoolOption('heartbeat', 'active_node', True, "Heartbeat status")
     
     def __init__(self, env):
         self.env = env
