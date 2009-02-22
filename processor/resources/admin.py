@@ -257,7 +257,7 @@ class AdminRootFolder(StaticFolder):
         """
         Return CSS request URL of the activated administrative theme.
         """
-        theme_id = self.env.config.get('webadmin', 'theme')
+        theme_id = self.env.config.get('web', 'admin_theme')
         if theme_id in self.themes:
             return self.themes.get(theme_id).theme_css_resource
         else:

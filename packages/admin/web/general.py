@@ -32,14 +32,14 @@ class BasicPanel(Component):
                 self.config.set('seishub', option, 
                                 request.args.get(option,[])[0])
             for option in ('theme',):
-                self.config.set('webadmin', option, 
+                self.config.set('web', 'admin_theme', 
                                 request.args.get(option,[])[0])
             self.config.save()
             data['info'] = "Options have been saved."
         temp = {
           'host': self.config.get('seishub', 'host'),
           'description': self.config.get('seishub', 'description'),
-          'theme': self.config.get('webadmin', 'theme'),
+          'theme': self.config.get('web', 'admin_theme'),
           'themes': self.root.themes,
         }
         data.update(temp)
