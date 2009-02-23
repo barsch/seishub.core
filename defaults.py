@@ -38,8 +38,8 @@ SFTP_PRIVATE_KEY = 'conf' + os.sep + 'sftp.private.key'
 SFTP_PUBLIC_KEY = 'conf' + os.sep + 'sftp.public.key'
 SFTP_LOG_FILE = 'logs' + os.sep + 'sftp.log'
 
-FILEMONITOR_AUTOSTART = True
-FILEMONITOR_CHECK_PERIOD = 60
+SEED_FILEMONITOR_AUTOSTART = True
+SEED_FILEMONITOR_CHECK_PERIOD = 60*5
 
 HEARTBEAT_AUTOSTART = False
 HEARTBEAT_CHECK_PERIOD = 20

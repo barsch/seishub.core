@@ -3,17 +3,9 @@
 import re
 
 
-#def toUnicode(data, remove_decl = False):
-#    """Convert a XML string to unicode by detecting the encoding and optionally
-#    remove the XML declaration.
-#    """
-#    encoding = toUnicode(data, remove_decl)
-#    data = unicode(data, encoding)
-#    return data
-
-
 def toUnicode(data, remove_decl = False):
-    """Detect the encoding of a XML string via BOM and XML declaration.
+    """
+    Detect the encoding of a XML string via BOM and XML declaration.
     
     Encoding detection works as follows:
         - if detection of the BOM succeeds, the codec name of the
@@ -42,7 +34,8 @@ def toUnicode(data, remove_decl = False):
     return data, enc
 
 def parseXMLDeclaration(data, remove_decl = False):
-    """Parse XML declaration and return (data, encoding). 
+    """
+    Parse XML declaration and return (data, encoding). 
     
     If remove is True, data without the XML declaration is returned. 
     If no declaration can be found, (None, None) is returned.
@@ -80,7 +73,8 @@ def parseXMLDeclaration(data, remove_decl = False):
     return data.strip(), enc.lower()
 
 def detectBOM(data):
-    """Attempts to detect the character encoding of the given XML string.
+    """
+    Attempts to detect the character encoding of the given XML string.
     
     @author: Lars Tiede
     @since: 2005/01/20

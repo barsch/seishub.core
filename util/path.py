@@ -39,17 +39,23 @@ def getAbsoluteSegments(path, cwd='/'):
 
 
 def splitPath(path):
-    """Split a path in segments returning a list."""
+    """
+    Split a path in segments returning a list.
+    """
     return getAbsoluteSegments(path)
 
 
 def absPath(path):
-    """Returns the absolute path."""
+    """
+    Returns the absolute path.
+    """
     return "/" + "/".join(splitPath(path))
 
 
 def addBase(base='/', path=''):
-    """Adds a base path to a given path."""
+    """
+    Adds a base path to a given path.
+    """
     if not base.startswith('/'):
         base = '/' + base
     if not base.endswith('/'):

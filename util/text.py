@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
 
+import hashlib
 import locale
 import re
-import hashlib
 
 
 def isInteger(data):
-    """Tests if the given string is an integer."""
+    """
+    Tests if the given string is an integer.
+    """
     try:
         stripped = str(int(data))
     except:
@@ -17,7 +19,8 @@ def isInteger(data):
 
 
 def getFirstSentence(text, maxlen=255):
-    """Returns the text left of the first occurring dot and reduces the final 
+    """
+    Returns the text left of the first occurring dot and reduces the final 
     text to maxlen chars.
     """
     if not text:
@@ -30,7 +33,8 @@ def getFirstSentence(text, maxlen=255):
 
 
 def toUnicode(text, charset=None):
-    """Convert a `str` object to an `unicode` object.
+    """
+    Convert a `str` object to an `unicode` object.
 
     If `charset` is given, we simply assume that encoding for the text,
     but we'll use the "replace" mode so that the decoding will always
@@ -66,12 +70,18 @@ def toUnicode(text, charset=None):
 
 
 def hash(text):
-    """Returns a hash of the given string."""
+    """
+    Returns a hash of the given string.
+    """
     return hashlib.sha224(text).hexdigest()
 
 
 def validate_id(str):
-    """ids have to be alphanumeric, start with a character"""
+    """
+    Validates a given ID.
+    
+    IDs have to be alphanumeric and start with a character.
+    """
     id_pt = """^[A-Za-z0-9]       # leading character
     [A-Za-z0-9_.-]*$              # alphanumeric or '_','.','-'
     """

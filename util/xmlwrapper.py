@@ -7,16 +7,6 @@ from zope.interface import implements, Interface, Attribute
 from zope.interface.exceptions import DoesNotImplement
 
 
-class IXmlNode(Interface):
-    """
-    Basic XML node object.
-    """
-    def getStrContent():
-        """
-        @return: element content of node as a string
-        """
-
-
 class IXmlStylesheet(Interface):
     """
     Parsed XML Stylesheet document.
