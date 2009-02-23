@@ -95,7 +95,7 @@ index_text_tab = Table(DEFAULT_PREFIX + 'text_' + INDEX_TABLE, metadata,
     Column('keyval', Unicode),
     Column('group_pos', Integer),
     Column('document_id', Integer),
-    UniqueConstraint('index_id','keyval','document_id'),
+    UniqueConstraint('index_id','keyval','group_pos','document_id'),
     useexisting=True
 )
 
@@ -106,7 +106,7 @@ index_numeric_tab = Table(DEFAULT_PREFIX + 'numeric_'+ INDEX_TABLE, metadata,
     Column('keyval', Numeric(precision = 53, scale = 11)),
     Column('group_pos', Integer),
     Column('document_id', Integer),
-    UniqueConstraint('index_id','keyval','document_id'),
+    UniqueConstraint('index_id','keyval','group_pos','document_id'),
     useexisting=True
 )
 
@@ -116,7 +116,7 @@ index_float_tab = Table(DEFAULT_PREFIX + 'float_'+ INDEX_TABLE, metadata,
     Column('keyval', Float(precision = 52, asdecimal = False)),
     Column('group_pos', Integer),
     Column('document_id', Integer),
-    UniqueConstraint('index_id','keyval','document_id'),
+    UniqueConstraint('index_id','keyval','group_pos','document_id'),
     useexisting=True
 )
 
@@ -126,7 +126,7 @@ index_datetime_tab = Table(DEFAULT_PREFIX + 'datetime_'+ INDEX_TABLE, metadata,
     Column('keyval', DateTime),
     Column('group_pos', Integer),
     Column('document_id', Integer),
-    UniqueConstraint('index_id','keyval','document_id'),
+    UniqueConstraint('index_id','keyval','group_pos','document_id'),
     useexisting=True
 )
 
@@ -136,7 +136,7 @@ index_date_tab = Table(DEFAULT_PREFIX + 'date_'+ INDEX_TABLE, metadata,
     Column('keyval', Date),
     Column('group_pos', Integer),
     Column('document_id', Integer),
-    UniqueConstraint('index_id','keyval','document_id'),
+    UniqueConstraint('index_id','keyval','group_pos','document_id'),
     useexisting=True
 )
 
@@ -146,7 +146,7 @@ index_boolean_tab = Table(DEFAULT_PREFIX + 'boolean_'+ INDEX_TABLE, metadata,
     Column('keyval', Boolean),
     Column('group_pos', Integer),
     Column('document_id', Integer),
-    UniqueConstraint('index_id','keyval','document_id'),
+    UniqueConstraint('index_id','keyval','group_pos','document_id'),
     useexisting=True
 )
 
@@ -156,6 +156,6 @@ index_integer_tab = Table(DEFAULT_PREFIX + 'integer_'+ INDEX_TABLE, metadata,
     Column('keyval', Integer),
     Column('group_pos', Integer),
     Column('document_id', Integer),
-    UniqueConstraint('index_id','keyval','document_id'),
+    UniqueConstraint('index_id','keyval','group_pos','document_id'),
     useexisting=True
 )
