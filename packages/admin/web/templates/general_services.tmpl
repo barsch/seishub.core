@@ -2,6 +2,11 @@
 
 <form method="post" id="services" action="">
   <table class="list">
+    <tr>
+      <th>&nbsp;</th>
+      <th>Name</th>
+      <th>Port</th>
+    </tr>
     #for $s in $services
     <tr>
       <td>
@@ -13,8 +18,17 @@
       </td>
       <td>
         $s.name
+      </td>
+      <td>
         #if hasattr($s,'args')
-          [#echo $s.args[0]#]
+          #echo $s.args[0]#
+        #end if
+        #if hasattr($s,'services')
+        #for $ss in $s.services
+          #if hasattr($ss,'args')
+            #echo $ss.args[0]#<br />
+          #end if
+        #end for
         #end if
       </td>
     </tr>

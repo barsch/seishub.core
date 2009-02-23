@@ -28,12 +28,52 @@ from seishub.defaults import SEED_FILEMONITOR_AUTOSTART, \
 from seishub.registry.defaults import miniseed_tab
 from sqlalchemy import sql
 from twisted.application import internet, service
+import copy
+import datetime
 import os
+
 
 __all__ = ['SEEDFileMonitorService']
 
 
-FILEMONITOR_INTERVAL = 0.1
+CRAWLER_INTERVAL = 0.1
+
+
+class SEEDFileMonitor(internet.TimerService):
+    """
+    A SEED file monitor.
+    
+    This class scans periodically all given MiniSEED files.
+    """
+    def __init__(self, env, current_seed_files):
+        self.current_seed_files = current_seed_files
+        self.env = env
+        self.db = self.env.db.engine
+        self._files = []
+        internet.TimerService.__init__(self, SEED_FILEMONITOR_CHECK_PERIOD, 
+                                       self.iterate)
+    
+    def reset(self):
+        """
+        Resets the monitor parameters.
+        """
+        # copy of the current file list
+        self._files = copy.copy(self.current_seed_files)
+        # set interval dynamically
+        num = len(self._files) or 1
+        self._loop.interval = SEED_FILEMONITOR_CHECK_PERIOD / num
+    
+    def iterate(self):
+        try:
+            file=self._files.pop()
+        except IndexError:
+            self.reset()
+            return
+        print '-'
+        fh = open(file, 'rb')
+        data = fh.read()
+        fh.close()
+        print file, len(data)
 
 
 class SEEDFileCrawler(internet.TimerService):
@@ -42,22 +82,28 @@ class SEEDFileCrawler(internet.TimerService):
     
     This class scans periodically all given paths for MiniSEED files. 
     """
-    def __init__(self, env):
+    def __init__(self, env, current_seed_files):
         self.env = env
+        self.current_seed_files = current_seed_files
         self.db = self.env.db.engine
         self.reset()
         # call after all is initialized
-        internet.TimerService.__init__(self, .1, self.iterate)
+        internet.TimerService.__init__(self, CRAWLER_INTERVAL, self.iterate)
     
     def reset(self):
         """
         Resets the crawler parameters.
         """
-        self.root_paths = self.env.config.getlist('seed-filemonitor', 'paths')
-        self._roots = [os.path.normcase(r) for r in self.root_paths]
-        self._current_root =  self._roots.pop()
-        self._current_walker = os.walk(self._current_root)
-        self.all_paths = []
+        paths = self.env.config.getlist('seed-filemonitor', 'paths')
+        self._roots = [os.path.normcase(r) for r in paths]
+        self._current_path =  self._roots.pop()
+        self._current_walker = os.walk(self._current_path)
+        self._all_paths = []
+        # prepare file endings
+        today = datetime.datetime.utcnow()
+        self._today = today.strftime("%Y.%j")
+        yesterday = today-datetime.timedelta(1)
+        self._yesterday = yesterday.strftime("%Y.%j")
     
     def iterate(self):
         """
@@ -67,19 +113,20 @@ class SEEDFileCrawler(internet.TimerService):
             path, dirs, files = self._current_walker.next()
         except StopIteration:
             try:
-                self._current_root = self._roots.pop()
-                msg = "Scanning %s" % self._current_root
+                self._current_path = self._roots.pop()
+                msg = "Scanning %s" % self._current_path
                 self.env.log.info(msg)
-                self._current_walker = os.walk(self._current_root)
+                self._current_walker = os.walk(self._current_path)
             except IndexError:
                 # a whole cycle has been done - check paths
                 db_paths = self._selectAllPaths()
-                for path in self.all_paths:
+                for path in self._all_paths:
                     if path in db_paths:
                         db_paths.remove(path)
                 # remove all left over paths
                 for path in db_paths:
                     self._delete(path)
+                # reset everything
                 self.reset()
             return
         # skip directories with sub-directories
@@ -91,8 +138,8 @@ class SEEDFileCrawler(internet.TimerService):
         if not files:
             return
         # update path list
-        if path not in self.all_paths:
-            self.all_paths.append(path)
+        if path not in self._all_paths:
+            self._all_paths.append(path)
         # check database for entries in current path
         sql_obj = sql.select([miniseed_tab.c.file, miniseed_tab.c.mtime], 
                              miniseed_tab.c.path==path)
@@ -111,6 +158,11 @@ class SEEDFileCrawler(internet.TimerService):
                     # modification time differs -> update file
                     self._update(path, file, stats)
                 db_files.pop(file)
+            # update relevant files for SEEDFileMonitor
+            if file.endswith(self._today) or file.endswith(self._yesterday):
+                if filepath not in self.current_seed_files:
+                    self.current_seed_files.append(filepath)
+            # XXX: process quality information
         # remove deleted files from db
         for file in db_files:
             self._delete(path, file)
@@ -181,16 +233,18 @@ class SEEDFileMonitorService(service.MultiService):
     def __init__(self, env):
         self.env = env
         service.MultiService.__init__(self)
-        self.setName('SEEDFileMonitor')
+        self.setName('SEED File Monitor')
         self.setServiceParent(env.app)
         
-        crawler = SEEDFileCrawler(env)
+        current_seed_files = list()
+        
+        crawler = SEEDFileCrawler(env, current_seed_files)
         crawler.setName("SEED File Crawler")
         self.addService(crawler)
-#        
-#        filemonitor = SEEDFileMonitor(env)
-#        filemonitor.setName("SEED File Monitor")
-#        self.addService(filemonitor)
+        
+        filemonitor = SEEDFileMonitor(env, current_seed_files)
+        filemonitor.setName("SEED File Monitor")
+        self.addService(filemonitor)
     
     def privilegedStartService(self):
         if self.env.config.getbool('seed-filemonitor', 'autostart'):
