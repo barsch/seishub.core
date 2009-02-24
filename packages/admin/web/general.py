@@ -319,7 +319,7 @@ class ServicesPanel(Component):
     def _changeServices(self, request):
         serviceList = request.args.get('service', [])
         for srv in service.IServiceCollection(self.env.app):
-            if srv.running and not srv.name in serviceList:
-                self.env.disableService(srv.name)
-            elif not srv.running and srv.name in serviceList:
-                self.env.enableService(srv.name)
+            if srv.running and not srv.service_id in serviceList:
+                self.env.disableService(srv.service_id)
+            elif not srv.running and srv.service_id in serviceList:
+                self.env.enableService(srv.service_id)

@@ -329,6 +329,8 @@ class SSHService(TCPServer):
     """
     Service for SSH server.
     """
+    service_id = "ssh"
+    
     BoolOption('ssh', 'autostart', SSH_AUTOSTART, "Run service on start-up.")
     IntOption('ssh', 'port', SSH_PORT, "SSH port number.")
     Option('ssh', 'public_key_file', SSH_PUBLIC_KEY, "Public RSA key.")

@@ -153,7 +153,6 @@ class IndexesPanel(Component):
         for i,v in INDEX_TYPES.iteritems():
             index_types_dict[v] = i
         
-        
         data  = {
             'index_types': index_types,
             'index_types_dict': index_types_dict,

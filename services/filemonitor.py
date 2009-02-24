@@ -69,11 +69,9 @@ class SEEDFileMonitor(internet.TimerService):
         except IndexError:
             self.reset()
             return
-        print '-'
-        fh = open(file, 'rb')
-        data = fh.read()
-        fh.close()
-        print file, len(data)
+#        fh = open(file, 'rb')
+#        data = fh.read()
+#        fh.close()
 
 
 class SEEDFileCrawler(internet.TimerService):
@@ -94,9 +92,9 @@ class SEEDFileCrawler(internet.TimerService):
         """
         Resets the crawler parameters.
         """
-        paths = self.env.config.getlist('seed-filemonitor', 'paths')
+        paths = self.env.config.getlist('seedfilemonitor', 'paths')
         self._roots = [os.path.normcase(r) for r in paths]
-        self._current_path =  self._roots.pop()
+        self._current_path = self._roots.pop()
         self._current_walker = os.walk(self._current_path)
         self._all_paths = []
         # prepare file endings
@@ -225,15 +223,17 @@ class SEEDFileMonitorService(service.MultiService):
     """
     A SEED file monitor service for SeisHub.
     """
-    BoolOption('seed-filemonitor', 'autostart', SEED_FILEMONITOR_AUTOSTART, 
+    service_id = "seedfilemonitor"
+    
+    BoolOption('seedfilemonitor', 'autostart', SEED_FILEMONITOR_AUTOSTART, 
         "Enable service on start-up.")
-    ListOption('seed-filemonitor', 'paths', 'data', 
+    ListOption('seedfilemonitor', 'paths', 'data', 
         "Paths to scan for SEED files.")
     
     def __init__(self, env):
         self.env = env
         service.MultiService.__init__(self)
-        self.setName('SEED File Monitor')
+        self.setName('SEEDFileMonitor')
         self.setServiceParent(env.app)
         
         current_seed_files = list()
@@ -247,11 +247,11 @@ class SEEDFileMonitorService(service.MultiService):
         self.addService(filemonitor)
     
     def privilegedStartService(self):
-        if self.env.config.getbool('seed-filemonitor', 'autostart'):
+        if self.env.config.getbool('seedfilemonitor', 'autostart'):
             service.MultiService.privilegedStartService(self)
     
     def startService(self):
-        if self.env.config.getbool('seed-filemonitor', 'autostart'):
+        if self.env.config.getbool('seedfilemonitor', 'autostart'):
             service.MultiService.startService(self)
     
     def stopService(self):

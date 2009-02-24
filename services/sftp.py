@@ -617,6 +617,8 @@ class SFTPService(TCPServer):
     """
     Service for SFTP server.
     """
+    service_id = "sftp"
+    
     BoolOption('sftp', 'autostart', SFTP_AUTOSTART, 'Run service on start-up.')
     IntOption('sftp', 'port', SFTP_PORT, "SFTP port number.")
     Option('sftp', 'public_key_file', SFTP_PUBLIC_KEY, 'Public RSA key.')

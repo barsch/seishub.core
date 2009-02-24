@@ -418,6 +418,8 @@ class WebService(service.MultiService):
     """
     MultiService for the HTTP/HTTPS server.
     """
+    service_id = "web"
+    
     BoolOption('web', 'autostart', True, "Run HTTP/HTTPS service on start-up.")
     IntOption('web', 'http_port', HTTP_PORT, "HTTP port number.")
     IntOption('web', 'https_port', HTTPS_PORT, "HTTPS port number.")

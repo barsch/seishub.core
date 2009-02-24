@@ -91,6 +91,8 @@ class HeartbeatService(service.MultiService):
     """
     A asynchronous events-based heartbeat server for SeisHub.
     """
+    service_id = "heartbeat"
+    
     BoolOption('heartbeat', 'autostart', HEARTBEAT_AUTOSTART, 
         "Enable service on start-up.")
     IntOption('heartbeat', 'port', HEARTBEAT_UDP_PORT, 

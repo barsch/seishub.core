@@ -16,19 +16,19 @@ import unittest
 XML_BASE_DOC = """<?xml version="1.0" encoding="utf-8"?>
 
 <testml>
-  <blah1 id="3">
-    <blahblah1>%s</blahblah1>
-    <blah2>%s</blah2>
-  </blah1>
+  <node id="3">
+    <subnode1>%s</subnode1>
+    <subnode2>%s</subnode2>
+  </node>
 </testml>"""
 
 XML_BASE_DOC2 = """<?xml version="1.0" encoding="utf-8"?>
 
 <testml>
-  <blah1 id="3">
-    <blahblah1>%s</blahblah1>
-    <blahblah1>%s</blahblah1>
-  </blah1>
+  <node id="3">
+    <subnode1>%s</subnode1>
+    <subnode1>%s</subnode1>
+  </node>
 </testml>"""
 
 CDATA = """<![CDATA[ &<
@@ -44,7 +44,7 @@ class AResourceType(Component):
     package_id = 'property-test'
     resourcetype_id = 'notvc'
     version_control = False
-    registerIndex('label1', '/testml/blah1/blahblah1', 'text')
+    registerIndex('label1', '/testml/node/subnode1', 'text')
 
 
 class AResourceType2(Component):
@@ -56,7 +56,7 @@ class AResourceType2(Component):
     package_id = 'property-test'
     resourcetype_id = 'notvc2'
     version_control = False
-    registerIndex('label2', '/testml/blah1/blahblah1', 'datetime')
+    registerIndex('label2', '/testml/node/subnode1', 'datetime')
 
 
 class AResourceType3(Component):
@@ -68,7 +68,7 @@ class AResourceType3(Component):
     package_id = 'property-test'
     resourcetype_id = 'notvc3'
     version_control = False
-    registerIndex('label3', '/testml/blah1/blahblah1#v', 'integer')
+    registerIndex('label3', '/testml/node/subnode1#v', 'integer')
     
 
 class AResourceType4(Component):
@@ -80,8 +80,8 @@ class AResourceType4(Component):
     package_id = 'property-test'
     resourcetype_id = 'notvc4'
     version_control = False
-    registerIndex('label4', '/testml/blah1/blahblah1#v', 'integer')
-    registerIndex('label5', '/testml/blah1/blahblah1#u', 'integer')
+    registerIndex('label4', '/testml/node/subnode1#v', 'integer')
+    registerIndex('label5', '/testml/node/subnode1#u', 'integer')
 
 
 class AVersionControlledResourceType(Component):
@@ -93,7 +93,7 @@ class AVersionControlledResourceType(Component):
     package_id = 'property-test'
     resourcetype_id = 'vc'
     version_control = True
-    registerIndex('label4', '/testml/blah1/blah2', 'text')
+    registerIndex('label4', '/testml/node/subnode2', 'text')
 
 
 class RestPropertyTests(SeisHubEnvironmentTestCase):
@@ -191,9 +191,8 @@ class RestPropertyTests(SeisHubEnvironmentTestCase):
         """
         proc = Processor(self.env)
         # create resource
-        XML_DOC = XML_BASE_DOC % ("<v>1</v><v>2</v><v>2</v><v>122</v><a>5</a>", 
+        XML_DOC = XML_BASE_DOC % ("<v>1</v><v>2</v><v>2</v><v>122</v><a>5</a>",
                                   "egal")
-
         proc.run(PUT, '/property-test/notvc3/test.xml', StringIO(XML_DOC))
         # get data
         res = proc.run(GET, '/property-test/notvc3/test.xml')
@@ -214,10 +213,10 @@ class RestPropertyTests(SeisHubEnvironmentTestCase):
         Tests resource index property.
         """
         proc = Processor(self.env)
+        # create resource
         XML_DOC = XML_BASE_DOC2 % ("<v>1</v><v>2</v><v>3</v><u>-1</u><u>5</u>",
                                    "<v>10</v><v>20</v><v>30</v>" + \
                                    "<u>-10</u><u>-20</u>")
-        # create resource
         proc.run(PUT, '/property-test/notvc4/test.xml', StringIO(XML_DOC))
         # get data
         res = proc.run(GET, '/property-test/notvc4/test.xml')

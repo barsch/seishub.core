@@ -112,29 +112,29 @@ class Environment(ComponentManager):
         self.registry.processor_indexes.update()
     
     @defer.inlineCallbacks
-    def enableService(self, srv_name):
+    def enableService(self, id):
         """
         Enable a service.
         """
         for srv in service.IServiceCollection(self.app):
-            if srv.name.lower()==srv_name.lower():
+            if srv.service_id==id:
                 # ensure not to start a service twice; may be fatal with timers
                 if srv.running:
                     self.log.info('Service %s already started.' % srv.name)
                     return
-                self.config.set(srv.name.lower(), 'autostart', True)
+                self.config.set(srv.service_id, 'autostart', True)
                 self.config.save()
                 yield defer.maybeDeferred(srv.startService)
                 self.log.info('Starting service %s.' % srv.name)
     
     @defer.inlineCallbacks
-    def disableService(self, srv_name):
+    def disableService(self, id):
         """
         Disable a service.
         """
         for srv in service.IServiceCollection(self.app):
-            if srv.name.lower()==srv_name.lower():
-                self.config.set(srv.name.lower(), 'autostart', False)
+            if srv.service_id==id:
+                self.config.set(srv.service_id, 'autostart', False)
                 self.config.save()
                 yield defer.maybeDeferred(srv.stopService)
                 self.log.info('Stopping service %s.' % srv.name)
