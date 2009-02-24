@@ -59,12 +59,13 @@ class XmlIndex(Serializable):
     db_table = defaults.index_def_tab
     db_mapping = {
         'resourcetype':Relation(ResourceTypeWrapper, 'resourcetype_id', 
-                                lazy = False),
+                                lazy = True),
         'xpath':'xpath',
         'group_path':'group_path',
         'type':'type',
         'options':'options',
-        'label':'label'
+        'label':'label',
+        '_id':'id'
     }
     
     def __init__(self, resourcetype = None, xpath = None, type = TEXT_INDEX, 
