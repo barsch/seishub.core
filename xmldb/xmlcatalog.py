@@ -88,7 +88,9 @@ class XmlCatalog(object):
         """
         return self.xmldb.deleteAllResources(package_id, resourcetype_id)
     
-    def getResource(self, package_id, resourcetype_id, name, revision = None):
+    def getResource(self, package_id = None, resourcetype_id = None, 
+                    name = None, revision = None, document_id = None, 
+                    id = None):
         """
         Get a specific resource from the database.
         
@@ -99,8 +101,12 @@ class XmlCatalog(object):
             newest revision is used, to retrieve all revisions of a document  
             use getResourceHistory()
         """
-        return self.xmldb.getResource(package_id, resourcetype_id, name, 
-                                      revision)
+        return self.xmldb.getResource(package_id=package_id, 
+                                      resourcetype_id=resourcetype_id, 
+                                      name=name, 
+                                      revision=revision, 
+                                      document_id=document_id,
+                                      id=id)
     
     def getResourceHistory(self, package_id, resourcetype_id, name):
         """
