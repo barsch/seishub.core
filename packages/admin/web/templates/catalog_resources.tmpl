@@ -1,20 +1,22 @@
 <h1>Resources</h1>
 
-<h2>Upload XML Documents</h2>
+
+<h2>Add new XML Documents</h2>
 <form method="post" enctype="multipart/form-data" id="add" action="">
   <div class="field">
-    <label>Package</label><br />
-    <select name="package_id" id="package_id">
+    <label>Package / Resource type</label><br />
+    <select name="package_id" id="package_id" onchange="changePackage('add');">
       #for $p in $packages
       #if $resourcetypes[$p]
-      <option value="$p" onclick="changePackage('$p');">$p</option>
+      <option value="$p"
+        #if $package_id==$p
+        selected="selected"
+        #end if
+      >$p</option>
       #end if
       #end for
     </select>
-  </div>
-  
-  <div class="field">
-    <label>Resource type</label><br />
+    &nbsp;
     <select name="resourcetype_id" id="resourcetype_id">
       <option></option>
     </select>
@@ -27,15 +29,45 @@
   </div>
 
   <div class="button">
-    <input type="submit" value="Submit" />
+    <input type="submit" name="Add" value="Add" />
   </div>
 </form>
 
 <br />
 <br />
 
-<h2>List of all resources</h2>
+<h2>Show resources</h2>
+
 <form method="post" id="list" action="">
+  <div class="field">
+    <label>Package / Resource type</label><br />
+    <select name="package_id" id="package_id" onchange="changePackage('list');">
+      #for $p in $packages
+      #if $resourcetypes[$p]
+      <option value="$p"
+        #if $package_id==$p
+        selected="selected"
+        #end if
+      >$p</option>
+      #end if
+      #end for
+    </select>
+    &nbsp;
+    <select name="resourcetype_id" id="resourcetype_id">
+      <option></option>
+    </select>
+  </div>
+  
+  <div class="button">
+    <input type="submit" name="filter" value="Filter" />
+  </div>
+  
+  <br />
+  
+  <p>
+    $rows rows<br />
+    $clock sec
+  </p>
   <table class="list">
     <tr>
       <th></th>
@@ -69,24 +101,30 @@
 #if $packages
 <script type="text/javascript">
 /* <![CDATA[ */
-
     var resourcetypes = new Array();
     #for $p in $packages
     resourcetypes['$p'] = $resourcetypes[$p];
     #end for
-
-    function changePackage(package_id)
+    
+    function changePackage(form_id)
     {
-      var selectbox = document.getElementById('resourcetype_id');
+      var form = document.getElementById(form_id)
+      var selectbox = form.resourcetype_id
+      var package_id = form.package_id.value;
       selectbox.options.length = 0;
       for (var i=0;i<resourcetypes[package_id].length;i++)
       {
         var link = resourcetypes[package_id][i];
         var addme = new Option(link, link);
         selectbox.options[i] = addme;
+        if (link=='$resourcetype_id')
+        {
+          selectbox.options.selectedIndex = i
+        }
       }
     }
-    changePackage('$packages[0]');
+    changePackage('add');
+    changePackage('list');
     
     function checkAllResources()
     {

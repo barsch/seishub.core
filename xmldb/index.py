@@ -59,7 +59,7 @@ class XmlIndex(Serializable):
     db_table = defaults.index_def_tab
     db_mapping = {
         'resourcetype':Relation(ResourceTypeWrapper, 'resourcetype_id', 
-                                lazy = True),
+                                lazy = False),
         'xpath':'xpath',
         'group_path':'group_path',
         'type':'type',
@@ -81,7 +81,7 @@ class XmlIndex(Serializable):
     def __str__(self):
         return '/' + self.resourcetype.package.package_id + '/' + \
                 self.resourcetype.resourcetype_id + self.xpath
-                
+    
     def getPackage_id(self):
         return self.resourcetype.package.package_id
     

@@ -104,6 +104,7 @@ class DB_LIKE(object):
             raise ValueError("DB_LIKE: String expected!")
         self.value = value
 
+
 class DbEnabled(object):
     """
     Mixin providing access to a sqlalchemy database manager.
@@ -516,9 +517,11 @@ class DbStorage(DbEnabled):
         q = self._order_by(q, table, map, order_by)
         q = q.offset(offset).limit(limit)
         # execute query
+        # XXX: query only from read only user
         db = self.getDb()
         r = db.execute(q)
         try:
+            # XXX: we should avoid fetchall calls - use iterators
             results = r.fetchall()
         finally:
             r.close()

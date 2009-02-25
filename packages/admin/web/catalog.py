@@ -76,7 +76,7 @@ class DatabaseQueryPanel(Component):
     implements(IAdminPanel)
     
     template = 'templates' + os.sep + 'catalog_db_query.tmpl'
-    panel_ids = ('catalog', 'Catalog', 'db-query', 'Query DB')
+    panel_ids = ('catalog', 'Catalog', 'db-query', 'Query Database')
     has_roles = ['CATALOG_ADMIN']
     
     def render(self, request):
@@ -86,8 +86,8 @@ class DatabaseQueryPanel(Component):
             'query': 'select 1 LIMIT 20;', 
             'result': '',
             'cols': '',
-            'rows': '',
-            'clock': '',
+            'rows': 0,
+            'clock': "%0.6f" % 0,
             'tables': tables,
             'views': sorted(self.env.db.getViews()),
             'prefix': DEFAULT_PREFIX,
@@ -95,12 +95,12 @@ class DatabaseQueryPanel(Component):
         args = request.args
         if request.method=='POST':
             query = None
-            if 'query' in args.keys() and 'send' in args.keys():
+            if 'query' in args and 'send' in args:
                 query = data['query'] = request.args['query'][0]
-            elif 'table' in args.keys():
+            elif 'table' in args:
                 table = DEFAULT_PREFIX + request.args['table'][0]
                 query = 'SELECT * FROM ' + table + ' LIMIT 20;'
-            elif 'view' in args.keys():
+            elif 'view' in args:
                 view = request.args['view'][0]
                 query = 'SELECT * FROM "' + view + '" LIMIT 20;'
             if query:
@@ -143,28 +143,33 @@ class ResourcesPanel(Component):
             'resturl': self.env.getRestUrl(),
             'packages': packages,
             'resourcetypes': resourcetypes,
+            'resources': [],
+            'rows': 0,
+            'clock': "%0.6f" % 0
         }
         if request.method=='POST':
             args = request.args
-            if 'file' in args.keys():
+            data['package_id'] = args.get('package_id',[''])[0]
+            data['resourcetype_id'] = args.get('resourcetype_id',[''])[0]
+            if 'file' in args:
                 data['file'] = args.get('file',[''])[0]
-                package_id = args.get('package_id',[''])[0]
-                if package_id in packages:
-                    resourcetype_id = args.get('resourcetype_id',[''])[0]
-                    if resourcetype_id in resourcetypes.get(package_id, []):
-                        data['package_id'] = package_id
-                        data['resourcetype_id'] = resourcetype_id
-                        data = self._addResource(data)
-            elif 'delete' in args.keys() and 'resource[]' in args.keys():
+                data = self._addResource(data)
+            elif 'delete' in args and 'resource[]' in args:
                 data['resource[]'] = args['resource[]']
                 data = self._deleteResource(data)
-        # fetch all URIs
-        data['resources'] = []
-        # XXX: filter (limit) or remove that later!
-        for package in packages:
-            for resourcetype in resourcetypes.get(package, []):
-                res = self.catalog.getAllResources(package, resourcetype)
-                data['resources'].extend(res)
+            elif 'filter' in args:
+                data = self._getResources(data)
+        return data
+    
+    def _getResources(self, data):
+        # XXX: limit ?
+        t1 = time.time()
+        result = self.catalog.getAllResources(data['package_id'], 
+                                            data['resourcetype_id'])
+        t2 = time.time()
+        data['resources'] = result
+        data['clock'] = "%0.6f" % (t2-t1)
+        data['rows'] = len(result)
         return data
     
     def _addResource(self, data):
@@ -205,12 +210,12 @@ class CatalogQueryPanel(Component):
             'query': '', 
             'result': '',
             'rows': '',
-            'clock': ''
+            'clock': "%0.6f" % 0
         }
         args = request.args
         if request.method=='POST':
             query = None
-            if 'query' in args.keys() and 'send' in args.keys():
+            if 'query' in args and 'send' in args:
                 query = data['query'] = request.args['query'][0]
             if query:
                 data['query'] = query
