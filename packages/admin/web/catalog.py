@@ -106,9 +106,9 @@ class DatabaseQueryPanel(Component):
             if query:
                 data['query'] = query
                 try:
-                    t1 = time.clock()
+                    t1 = time.time()
                     result = db.execute(query)
-                    t2 = time.clock()
+                    t2 = time.time()
                     data['clock'] = "%0.6f" % (t2-t1)
                     data['cols'] = result.keys
                     data['rows'] = result.rowcount
@@ -215,9 +215,9 @@ class CatalogQueryPanel(Component):
             if query:
                 data['query'] = query
                 try:
-                    t1 = time.clock()
+                    t1 = time.time()
                     result = self.catalog.query(query)
-                    t2 = time.clock()
+                    t2 = time.time()
                     data['clock'] = "%0.6f" % (t2-t1)
                     data['rows'] = len(result)-1
                     data['result'] = pprint.pformat(result, 4)
