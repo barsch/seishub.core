@@ -298,7 +298,7 @@ class QuickinstallerPanel(Component):
         if request.method=='POST':
             args = request.args
             if 'rebuild' in args.keys():
-                self.env.tree.update()
+                self.env.update()
         
         data = {'packages': packages,
                 'resourcetypes': resourcetypes,

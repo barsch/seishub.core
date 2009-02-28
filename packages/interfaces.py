@@ -167,9 +167,9 @@ class ISSHCommand(Interface):
         """
 
 
-class IPostgreSQLView(Interface):
+class ISQLView(Interface):
     """
-    Interface definition for a PostgreSQL View.
+    Interface definition for a SQL View.
     
     You really have to know what your doing if you are using this interface!
     """
@@ -209,6 +209,10 @@ class IProcessorIndex(Interface):
         Data type of the index.
         
         May be any of the types defined in {seishub.xmldb.index}.
+        """)
+    
+    type = Attribute("""
+        Index label.
         """)
     
     def eval(document):

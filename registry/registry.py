@@ -5,7 +5,7 @@ from seishub.db.orm import DbStorage, DB_NULL
 from seishub.exceptions import SeisHubError, DuplicateObjectError, \
     InvalidParameterError
 from seishub.packages.interfaces import IPackage, IResourceType, IMapper, \
-    IPostgreSQLView, IProcessorIndex
+    ISQLView, IProcessorIndex
 from seishub.registry.package import Alias, Schema, Stylesheet, PackageWrapper, \
     ResourceTypeWrapper
 from seishub.registry.util import RegistryListProxy
@@ -559,7 +559,7 @@ class SQLViewRegistry(object):
         Refresh all SQL views.
         """
         self._view_objs = dict()
-        all = PackageManager.getClasses(IPostgreSQLView)
+        all = PackageManager.getClasses(ISQLView)
         for cls in all:
             if self.env.isComponentEnabled(cls):
                 self._enableView(cls)
@@ -572,10 +572,10 @@ class SQLViewRegistry(object):
         """
         # sanity checks
         try:
-            verifyClass(IPostgreSQLView, cls)
+            verifyClass(ISQLView, cls)
         except Exception, e:
             msg = "Class %s has a wrong implementation of %s.\n%s"
-            self.env.log.warn(msg % (cls, IPostgreSQLView, e))
+            self.env.log.warn(msg % (cls, ISQLView, e))
             return
         # create view
         sql = cls(self.env).createView()
@@ -641,7 +641,7 @@ class ProcessorIndexRegistry(object):
         idx = index.XmlIndex(resourcetype = rt, xpath = "", 
                              type = index.PROCESSOR_INDEX,
                              options = clsname,
-                             label = clsname)
+                             label = cls.label)
         self.env.catalog.index_catalog.registerIndex(idx)
     
     def _enableProcessorIndex(self, cls):
