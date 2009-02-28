@@ -10,7 +10,7 @@
     <label>Description</label><br />
     <textarea name="description" cols="80" rows="5">$description</textarea>
   </div>
-
+  
   <div class="field">
     <label>Theme</label><br />
     <select name="theme">
@@ -20,6 +20,19 @@
                  selected="selected" 
             #end if 
             >$i</option>
+      #end for
+    </select>
+  </div>
+  
+  <div class="field">
+    <label>Log Level</label><br />
+    <select name="log_level">
+      #for $i in sorted($log_levels.keys())
+      <option value="$log_levels[$i]"
+            #if $log_levels[$i].upper()==$log_level.upper()
+                 selected="selected" 
+            #end if 
+            >$log_levels[$i].lower().capitalize()</option>
       #end for
     </select>
   </div>

@@ -6,6 +6,7 @@ General configuration panels for the web-based administration service.
 from seishub.core import Component, implements
 from seishub.defaults import DEFAULT_COMPONENTS
 from seishub.exceptions import SeisHubError
+from seishub.log import LOG_LEVELS
 from seishub.packages.interfaces import IAdminPanel
 from seishub.util.text import getFirstSentence
 from twisted.application import service
@@ -28,21 +29,24 @@ class BasicPanel(Component):
     def render(self, request):
         data = {}
         if request.method == 'POST':
+            args = request.args
             for option in ('host', 'description'):
-                self.config.set('seishub', option, 
-                                request.args.get(option,[])[0])
+                self.config.set('seishub', option, args.get(option,[])[0])
             for option in ('theme',):
-                self.config.set('web', 'admin_theme', 
-                                request.args.get(option,[])[0])
+                self.config.set('web', 'admin_theme', args.get(option,[])[0])
+            if 'log_level' in args:
+                log_level = (args.get(option,[LOG_LEVELS])[0]).upper()
+                self.config.set('logging', 'log_level', log_level)
             self.config.save()
             data['info'] = "Options have been saved."
-        temp = {
+        data.update({
           'host': self.config.get('seishub', 'host'),
           'description': self.config.get('seishub', 'description'),
           'theme': self.config.get('web', 'admin_theme'),
           'themes': self.root.themes,
-        }
-        data.update(temp)
+          'log_levels': dict([(v,k) for k,v in LOG_LEVELS.iteritems()]),
+          'log_level': self.config.get('logging', 'log_level'),
+        })
         return data
 
 

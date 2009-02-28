@@ -58,7 +58,7 @@ class PackageInstaller(object):
                 # check, if already there
                 if env.registry.schemas.get(package_id, resourcetype_id, type):
                     msg = "'%s': Skipping schema '%s'."
-                    env.log.info(msg % (package_id, entry))
+                    env.log.debug(msg % (package_id, entry))
                     continue
                 try:
                     data = file(filename, 'r').read()
@@ -78,7 +78,7 @@ class PackageInstaller(object):
                 if env.registry.stylesheets.get(package_id, resourcetype_id, 
                                                 type):
                     msg = "'%s': Skipping stylesheet '%s'."
-                    env.log.info(msg % (package_id, entry))
+                    env.log.debug(msg % (package_id, entry))
                     continue
                 try:
                     data = file(filename, 'r').read()
@@ -96,7 +96,7 @@ class PackageInstaller(object):
                 if env.registry.aliases.get(package_id, resourcetype_id, 
                                             **entry):
                     msg = "'%s': Skipping alias '%s'."
-                    env.log.info(msg % (package_id, entry))
+                    env.log.debug(msg % (package_id, entry))
                     continue
                 try:
                     env.registry.aliases.register(package_id, resourcetype_id,
@@ -113,7 +113,7 @@ class PackageInstaller(object):
                 if env.catalog.getIndexes(package_id, resourcetype_id, 
                                           **entry):
                     msg = "'%s': Skipping index '%s'."
-                    env.log.info(msg % (package_id, entry))
+                    env.log.debug(msg % (package_id, entry))
                     continue
                 try:
                     env.catalog.registerIndex(package_id, resourcetype_id,
