@@ -6,7 +6,7 @@ General configuration panels for the web-based administration service.
 from seishub.core import Component, implements
 from seishub.defaults import DEFAULT_COMPONENTS
 from seishub.exceptions import SeisHubError
-from seishub.log import LOG_LEVELS
+from seishub.log import LOG_LEVELS, ERROR
 from seishub.packages.interfaces import IAdminPanel
 from seishub.util.text import getFirstSentence
 from twisted.application import service
@@ -35,8 +35,9 @@ class BasicPanel(Component):
             for option in ('theme',):
                 self.config.set('web', 'admin_theme', args.get(option,[])[0])
             if 'log_level' in args:
-                log_level = (args.get(option,[LOG_LEVELS])[0]).upper()
+                log_level = (args.get('log_level',[LOG_LEVELS])[0]).upper()
                 self.config.set('logging', 'log_level', log_level)
+                self.env.log.log_level = LOG_LEVELS.get(log_level, ERROR)
             self.config.save()
             data['info'] = "Options have been saved."
         data.update({

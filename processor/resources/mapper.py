@@ -42,6 +42,9 @@ class MapperResource(Resource):
             # ensure we return a utf-8 encoded string not an unicode object
             if isinstance(result, unicode):
                 result = result.encode('utf-8')
+            # set content-type to plain text if nothing is returned
+            if not result:
+                request.setHeader('content-type', 'text/plain; charset=UTF-8')
             return result
         elif isinstance(result, dict):
             # dictionary of categories and ids for this category
