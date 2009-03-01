@@ -15,7 +15,9 @@ from seishub.exceptions import SeisHubError
 
 
 class PasswordDictChecker:
-    """A simple Twisted password checker using a dict as input."""
+    """
+    A simple Twisted password checker using a dictionary as input.
+    """
     implements(checkers.ICredentialsChecker)
     credentialInterfaces = (credentials.IUsernamePassword,)
     
@@ -26,7 +28,7 @@ class PasswordDictChecker:
         """
         @param credentials: something which implements one of the interfaces in
         self.credentialInterfaces.
-
+        
         @return: a Deferred which will fire a string which identifies an
         avatar, an empty tuple to specify an authenticated anonymous user
         (provided as checkers.ANONYMOUS) or fire a Failure(UnauthorizedLogin).
@@ -43,7 +45,9 @@ class PasswordDictChecker:
 UserBase = declarative_base()
 
 class User(UserBase):
-    """A user object."""
+    """
+    A user object.
+    """
     __tablename__ = 'users'
     
     id = Column(String, primary_key=True)
@@ -64,7 +68,9 @@ class User(UserBase):
 
 
 class AuthenticationManager(object):
-    """The SeisHub authentication manager."""
+    """
+    The Authentication Manager.
+    """
     
     passwords = {}
     users = []
@@ -92,14 +98,18 @@ class AuthenticationManager(object):
                               "soon as possible!")
     
     def _validatePassword(self, password):
-        """All kind of password checks."""
+        """
+        All kind of password checks.
+        """
         min_length = self.env.config.getint('webadmin', 'min_password_length')
         if len(password) < min_length:
             raise SeisHubError("Password is way to short!")
     
     def addUser(self, id, name, password, institution='', email=''):
-        """Adds an user."""
-        if id in self.passwords.keys():
+        """
+        Adds an user.
+        """
+        if id in self.passwords:
             raise DuplicateObjectError("User already exists!")
         self._validatePassword(password)
         user = User(id, name, hash(password), institution, email)
@@ -112,18 +122,32 @@ class AuthenticationManager(object):
         self.refresh()
     
     def checkPassword(self, id, password):
-        """Check current password."""
-        if id not in self.passwords.keys():
-            raise SeisHubError("User does not exists!")
+        """
+        Check current password.
+        """
+        if id not in self.passwords:
+            return False
         return self.passwords[id]==hash(password)
     
+    def checkPasswordHash(self, id, hash):
+        """
+        Check current password hash.
+        """
+        if id not in self.passwords:
+            return False
+        return self.passwords[id]==hash
+    
     def changePassword(self, id, password):
-        """Modifies only the user password."""
+        """
+        Modifies only the user password.
+        """
         self.updateUser(id, password=password)
     
     def updateUser(self, id, name='', password='', institution='', email=''):
-        """Modifies user information."""
-        if id not in self.passwords.keys():
+        """
+        Modifies user information.
+        """
+        if id not in self.passwords:
             raise SeisHubError("User does not exists!")
         session = self.Session()
         user = session.query(User).filter_by(id=id).one()
@@ -144,8 +168,10 @@ class AuthenticationManager(object):
         self.refresh()
     
     def deleteUser(self, id):
-        """Deletes a user."""
-        if id not in self.passwords.keys():
+        """
+        Deletes a user.
+        """
+        if id not in self.passwords:
             raise NotFoundError("User does not exists!")
         session = self.Session()
         user = session.query(User).filter_by(id=id).one()
@@ -157,7 +183,9 @@ class AuthenticationManager(object):
         self.refresh()
     
     def refresh(self):
-        """Refreshes the internal list of users and passwords from database."""
+        """
+        Refreshes the internal list of users and passwords from database.
+        """
         session = self.Session()
         passwords = {}
         users = []
@@ -168,6 +196,8 @@ class AuthenticationManager(object):
         self.passwords = passwords
     
     def getCheckers(self):
-        """Returns a tuple of checkers used by Twisted portal objects."""
+        """
+        Returns a tuple of checkers used by Twisted portal objects.
+        """
         self.refresh()
         return (PasswordDictChecker(self.env),)
