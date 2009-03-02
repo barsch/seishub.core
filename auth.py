@@ -126,7 +126,7 @@ class AuthenticationManager(object):
         Check current password.
         """
         if id not in self.passwords:
-            return False
+            raise SeisHubError("User does not exists!")
         return self.passwords[id]==hash(password)
     
     def checkPasswordHash(self, id, hash):
@@ -134,7 +134,7 @@ class AuthenticationManager(object):
         Check current password hash.
         """
         if id not in self.passwords:
-            return False
+            raise SeisHubError("User does not exists!")
         return self.passwords[id]==hash
     
     def changePassword(self, id, password):
