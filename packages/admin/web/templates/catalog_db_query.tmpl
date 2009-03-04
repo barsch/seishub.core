@@ -8,13 +8,21 @@
   </div>
   
   <div class="button">
-    <label>SQL Tables</label><br />
-    #for $table in $tables
+    <h3>SQL Tables</h3>
+    #for $table in [v for v in $tables if not v.endswith('index')]
     <input type="submit" name="table" value="$table.replace($prefix, '')" />
     #end for
     <br /><br />
-    <label>SQL Views</label><br />
-    #for $view in $views
+    #for $table in [v for v in $tables if v.endswith('index')]
+    <input type="submit" name="table" value="$table.replace($prefix, '')" />
+    #end for
+    <br /><br />
+    <h3>SQL Views</h3>
+    #for $view in [v for v in $views if v.startswith('/')]
+    <input type="submit" name="view" value="$view" />
+    #end for
+    <br /><br />
+    #for $view in [v for v in $views if not v.startswith('/')]
     <input type="submit" name="view" value="$view" />
     #end for
     <br /><br />
