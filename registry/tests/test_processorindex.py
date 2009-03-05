@@ -45,6 +45,7 @@ class TestIndex(Component):
     package_id = 'processorindextest'
     resourcetype_id = 'testtype'
     type = index.FLOAT_INDEX
+    label = 'testindex'
     
     def eval(self, document):
         return [1,2,3]

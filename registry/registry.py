@@ -50,8 +50,7 @@ class ComponentRegistry(DbStorage):
             raise SeisHubError(("Package with id '%s' not found. Make sure " +\
                                "the package has been enabled.") % (package_id))
         return pkg[0] 
-        
-
+    
     def getPackageIds(self):
         """
         Returns sorted list of all enabled package ids.
@@ -604,8 +603,8 @@ class SQLViewRegistry(object):
         Returns a dictionary of activated SQL view classes.
         """
         return self._view_objs
-    
-    
+
+
 class ProcessorIndexRegistry(object):
     """
     ProcessorIndex registry.

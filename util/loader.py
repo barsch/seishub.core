@@ -28,15 +28,6 @@ class ComponentLoader(object):
         self._loadPyFiles(search_path)
         self._loadEggs('seishub.plugins', search_path)
     
-    def _enablePlugin(self, module):
-        """
-        Enable the given plug-in by adding an entry to the configuration.
-        """
-        if module.startswith('seishub.'):
-            return
-        if module + '.*' not in self.env.config['components']:
-            self.env.config['components'].set(module + '.*', 'enabled')
-    
     def _loadEggs(self, entry_point, search_path):
         """
         Loader that loads any eggs on the search path and L{sys.path}.

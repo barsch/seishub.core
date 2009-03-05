@@ -10,21 +10,24 @@ class IPackage(Interface):
     package_id = Attribute("""
         Defines the package ID of this package.
         
-        Single string representing a unique package id.
+        Single string representing a unique package ID.
         """)
-    
     version = Attribute("""
         Sets the version of this package.
         
         Version may be any string.
-    """)
+        """)
 
 
 class IResourceType(IPackage):
     """
     Interface definition for a unique resource type of a package.
     """
-    resourcetype_id = Attribute("""Defines the ID of this resource type.""")
+    resourcetype_id = Attribute("""
+        Defines the resource type ID of this package.
+        
+        Single string representing a unique resource type ID.
+        """)
 
 
 class IMapper(IPackage):
@@ -41,7 +44,7 @@ class IMapper(IPackage):
         """
         Process a GET request.
         
-        This function may return a resource list - a dict in form of 
+        This function may return a resource list - a dictionary in form of 
         {'resource': ['/path/to/resource',], 'mapping': ['/path/to/mapping',]} 
         or a basestring containing a valid XML document. A request at the plain
         mapping_url *must* return a resource list.
@@ -56,6 +59,7 @@ class IMapper(IPackage):
         This function should return a string containing the full path to the
         new resource URL, otherwise it should raise a ProcessorError.
         """
+    process_PUT.optional = 1
     
     def process_POST(request):
         """
@@ -74,8 +78,6 @@ class IMapper(IPackage):
         This function should return True if the resource could be deleted 
         otherwise it should raise a ProcessorError.
         """
-    
-    process_PUT.optional = 1
     process_DELETE.optional = 1
 
 
@@ -89,13 +91,11 @@ class IAdminPanel(Interface):
         Single string representing the relative path from the module to the 
         template file.
         """)
-    
     panel_ids = Attribute("""
-        Defines IDs and labels of an admin panel.
+        Defines IDs and labels of an administrative panel.
         
         Tuple in form of (category, category_label, page, page_label).
         """)
-    
     has_roles = Attribute("""
         Defines a list of roles for using this panel.
         
@@ -105,7 +105,7 @@ class IAdminPanel(Interface):
     
     def render(request):
         """
-        Process a request for an admin panel.
+        Process a request for an administrative panel.
         
         This method should return a dictionary of data to be passed to the 
         template defined above.
@@ -121,7 +121,6 @@ class IAdminTheme(Interface):
         
         Single string representing the name of this theme.
         """)
-    
     theme_css_file = Attribute("""
         Path to a CSS file.
         
@@ -189,6 +188,35 @@ class ISQLView(Interface):
         """
 
 
+#class IIndexView(Interface):
+#    """
+#    Interface definition for a Index View.
+#    
+#    You really have to know what your doing if you are using this interface!
+#    """
+#    view_id = Attribute("""
+#        View ID.
+#        
+#        Single string representing the name of this view - this id must match
+#        the SQL view name, e.g. v_baeume for the following example.
+#        """)
+#    package_id = Attribute("""
+#        Defines the package ID of this index view.
+#        
+#        Single string representing the package ID.
+#        """)
+#    resourcetype_id = Attribute("""
+#        Defines the resourcetype ID of this index view.
+#        
+#        Single string representing the resource type ID.
+#        """)
+#    index_labels = Attribute("""
+#        A list of index names used for generation of the index view.
+#        
+#        List of strings.
+#        """)
+
+
 class IProcessorIndex(Interface):
     """
     Interface definition for a custom ProcessorIndex.
@@ -196,23 +224,22 @@ class IProcessorIndex(Interface):
     package_id = Attribute("""
         Defines the package ID of this index.
         
-        Single string representing the package id.
+        Single string representing the package ID.
         """)
-    
     resourcetype_id = Attribute("""
         Defines the resourcetype ID of this index.
         
-        Single string representing the resourcetype id.
+        Single string representing the resource type ID.
         """)
-    
     type = Attribute("""
         Data type of the index.
         
         May be any of the types defined in {seishub.xmldb.index}.
         """)
-    
-    type = Attribute("""
+    label = Attribute("""
         Index label.
+        
+        Single string representing an unique label.
         """)
     
     def eval(document):
