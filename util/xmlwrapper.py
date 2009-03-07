@@ -262,3 +262,10 @@ class XmlTreeDoc(XmlDoc):
         else:
             nodes = list()
         return nodes
+
+def toString(xml_obj):
+    """
+    Shortcut for default output of XML documents in SeisHub.
+    """
+    return etree.tostring(xml_obj, method='xml', xml_declaration=True, 
+                          pretty_print=True, encoding='utf-8')
