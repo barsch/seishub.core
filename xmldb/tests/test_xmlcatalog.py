@@ -222,11 +222,11 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         r = catalog.getAllResources("testpackage", "station")
         assert len(r) == 0
     
-    def test_reindex(self):
+    def test_reindexIndex(self):
         # TODO: testReindex
-        self.env.catalog.reindex(self.idx1)
-        self.env.catalog.reindex(self.idx2)
-        self.env.catalog.reindex(self.idx3)
+        self.env.catalog.reindexIndex(self.idx1)
+        self.env.catalog.reindexIndex(self.idx2)
+        self.env.catalog.reindexIndex(self.idx3)
     
     def test_getIndexes(self):
         # get all indexes
@@ -265,11 +265,11 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         """XXX: problem with limit clauses on resultsets containing indexes with multiple values per document.
         """
         # set up
-        self.env.catalog.reindex(self.idx1)
+        self.env.catalog.reindexIndex(self.idx1)
         idx4 = self.env.catalog.registerIndex(PID1, RID1, '4', IDX4, "boolean")
-        self.env.catalog.reindex(idx4)
+        self.env.catalog.reindexIndex(idx4)
         idx5 = self.env.catalog.registerIndex(PID1, RID2, '5', IDX5, "boolean")
-        self.env.catalog.reindex(idx5)
+        self.env.catalog.reindexIndex(idx5)
         
         res1 = self.env.catalog.query('/testpackage/station/station ' +\
                                       'order by XY/paramXY asc limit 2', 
@@ -493,11 +493,11 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         Tests automatic view generation.
         """
         # set up
-        self.env.catalog.reindex(self.idx1)
+        self.env.catalog.reindexIndex(self.idx1)
         idx4 = self.env.catalog.registerIndex(PID1, RID1, '4', IDX4, "boolean")
-        self.env.catalog.reindex(idx4)
+        self.env.catalog.reindexIndex(idx4)
         idx5 = self.env.catalog.registerIndex(PID1, RID2, '5', IDX5, "boolean")
-        self.env.catalog.reindex(idx5)
+        self.env.catalog.reindexIndex(idx5)
         # query 1
         sql = 'SELECT * FROM "/testpackage/station"'
         result = self.env.db.engine.execute(sql).fetchall()

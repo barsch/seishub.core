@@ -137,10 +137,10 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
                                                    "5", "/station", 
                                                    type="boolean")
         
-        self.env.catalog.reindex(self.idx1)
-        self.env.catalog.reindex(self.idx2)
-        self.env.catalog.reindex(self.idx3)
-        self.env.catalog.reindex(self.idx4)
+        self.env.catalog.reindexIndex(self.idx1)
+        self.env.catalog.reindexIndex(self.idx2)
+        self.env.catalog.reindexIndex(self.idx3)
+        self.env.catalog.reindexIndex(self.idx4)
         # add sort order test resources
         path = os.path.dirname(inspect.getsourcefile(self.__class__))
         test_path = os.path.join(path,'data')
@@ -156,7 +156,7 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
             idx = self.env.catalog.registerIndex('sortordertests', 'sotest', 
                                                  i[-4:], i)
             self.idx_so.append(idx)
-            self.env.catalog.reindex(idx)
+            self.env.catalog.reindexIndex(idx)
         
     def _cleanup_testdata(self):
         self.env.catalog.deleteIndex(self.idx1)
@@ -559,8 +559,8 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         float_idx = self.env.catalog.registerIndex("testpackage", "station", 
                                                    "idx2", "/station/lon", 
                                                    "float")
-        self.env.catalog.reindex(text_idx)
-        self.env.catalog.reindex(float_idx)
+        self.env.catalog.reindexIndex(text_idx)
+        self.env.catalog.reindexIndex(float_idx)
         
         # print self.catalog.dumpIndex("testpackage", "station", "/station/station_code")
         # clean up

@@ -479,12 +479,12 @@ class XmlIndexCatalog(DbStorage, _QueryProcessor, _IndexView):
     
     def flushIndex(self, xmlindex):
         """
-        Remove all indexed data for given XMLIndex.
+        Remove all indexed data for given XMLIndex object.
         """
         element_cls = xmlindex._getElementCls()
         self.drop(element_cls, index = xmlindex)
     
-    def flushIndexByResource(self, resource):
+    def flushResource(self, resource):
         """
         Remove all indexed data for given Resource object.
         """
@@ -492,3 +492,41 @@ class XmlIndexCatalog(DbStorage, _QueryProcessor, _IndexView):
             self.drop(element_cls, 
                       document = {'_id':resource.document._id})
         return
+    
+###############
+    
+#    def reindexPackage(self, package_id, resourcetype_id=None):
+#        """
+#        Reindex all resources within a given package_id and resourcetype_id.
+#        """
+#        xmlindex_list = self.getIndexes(package_id = package_id,
+#                                        resourcetype_id = resourcetype_id)
+#        # clear all package/resource type specific indexes
+#        for xmlindex in xmlindex_list:
+#            self.flushIndex(xmlindex)
+#        # create a dictionary of resourcetype specific indexes
+#        resourcetype_ids = 
+    
+    def reindexIndex(self, xmlindex):
+        """
+        Reindex all resources by a given XMLIndex object.
+        """
+        if not IXmlIndex.providedBy(xmlindex):
+            raise TypeError("%s is not an IXmlIndex." % str(xmlindex))
+        # clear index
+        self.flushIndex(xmlindex)
+        # fetch all document_id with highest revision for this resource type
+        query = sql.select([document_tab.c['id'], 
+                            sql.func.max(document_tab.c['revision'])])
+        query = query.where(
+            sql.and_(
+                document_tab.c['resource_id'] == resource_tab.c['id'], 
+                resource_tab.c['resourcetype_id'] == xmlindex.resourcetype._id
+            ))
+        query = query.group_by(document_tab.c['id'])
+        result = self._db.execute(query)
+        # iterate over all document IDs and reindex
+        for item in result:
+            res = self._storage.getResource(document_id=item.id)
+            self.indexResource(res, xmlindex)
+        return True

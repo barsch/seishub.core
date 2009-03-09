@@ -165,7 +165,7 @@ class ResourcesPanel(Component):
         # XXX: limit ?
         t1 = time.time()
         result = self.catalog.getAllResources(data['package_id'], 
-                                            data['resourcetype_id'])
+                                              data['resourcetype_id'])
         t2 = time.time()
         data['resources'] = result
         data['clock'] = "%0.6f" % (t2-t1)

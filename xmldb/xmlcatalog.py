@@ -64,7 +64,7 @@ class XmlCatalog(object):
         self.validateResource(new_resource)
         self.xmldb.modifyResource(resource, new_resource)
         # we only keep indexes for the newest revision
-        self.index_catalog.flushIndexByResource(resource)
+        self.index_catalog.flushResource(resource)
         self.index_catalog.indexResource(new_resource)
     
     def deleteResource(self, resource=None, resource_id=None):
@@ -74,7 +74,7 @@ class XmlCatalog(object):
         if resource_id:
             resource = self.xmldb.getResource(id = resource_id)
         # remove indexed data:
-        self.index_catalog.flushIndexByResource(resource)
+        self.index_catalog.flushResource(resource)
         res = self.xmldb.deleteResource(resource)
         if not res:
             msg = "Error deleting a resource: No resource was found with " + \
@@ -99,7 +99,7 @@ class XmlCatalog(object):
         @param name: Name of the resource
         @param revision: revision of related document (if no revision is given,
             newest revision is used, to retrieve all revisions of a document  
-            use getResourceHistory()
+            use getRevisions()
         """
         return self.xmldb.getResource(package_id=package_id, 
                                       resourcetype_id=resourcetype_id, 
@@ -108,7 +108,7 @@ class XmlCatalog(object):
                                       document_id=document_id,
                                       id=id)
     
-    def getResourceHistory(self, package_id, resourcetype_id, name):
+    def getRevisions(self, package_id, resourcetype_id, name):
         """
         Get all revisions of the specified resource.
         
@@ -122,7 +122,7 @@ class XmlCatalog(object):
         @param name: name of the resource
         @return: Resource object
         """
-        return self.xmldb.getResourceHistory(package_id, resourcetype_id, name)
+        return self.xmldb.getRevisions(package_id, resourcetype_id, name)
     
     def getAllResources(self, package_id = None, resourcetype_id = None):
         """
@@ -196,12 +196,11 @@ class XmlCatalog(object):
         type = INDEX_TYPES.get(type.lower())
         _, resourcetype = self.env.registry.objects_from_id(package_id, 
                                                             resourcetype_id)
-        # generate index + reindex
+        # generate index
         xmlindex = XmlIndex(resourcetype = resourcetype, label = label,
                             xpath = xpath, type = type, options = options, 
                             group_path = group_path)
         xmlindex = self.index_catalog.registerIndex(xmlindex)
-        self.reindex(xmlindex)
         # create or update view:
         self.index_catalog.createIndexView(xmlindex)
         return xmlindex
@@ -244,36 +243,6 @@ class XmlCatalog(object):
                                              options = options,
                                              index_id = index_id,
                                              label = label)
-    
-    def reindex(self, xmlindex = None, index_id = None):
-        """
-        Reindex all resources by a given XMLIndex object.
-        """
-        if index_id:
-            xmlindex = self.getIndexes(index_id = index_id)[0]
-        self.index_catalog.flushIndex(xmlindex)
-        # get resource list
-        package_id = xmlindex.resourcetype.package.package_id
-        resourcetype_id = xmlindex.resourcetype.resourcetype_id
-        res_list = self.getAllResources(package_id = package_id,
-                                        resourcetype_id = resourcetype_id)
-        # reindex
-        for res in res_list:
-            self.index_catalog.indexResource(res, xmlindex)
-        return True
-    
-    def reindexAllIndexes(self, package_id, resourcetype_id = None):
-        """
-        Reindex all indexes related to a given package_id and resourcetype_id.
-        """
-        # get resource list
-        res_list = self.getAllResources(package_id = package_id,
-                                        resourcetype_id = resourcetype_id)
-        # flush + reindex each resource
-        for res in res_list:
-            self.index_catalog.flushIndexByResource(res)
-            self.index_catalog.indexResource(res)
-        return True
     
     def getIndexData(self, resource):
         """
@@ -339,3 +308,27 @@ class XmlCatalog(object):
             return results
         return [self.xmldb.getResource(document_id = id) 
                 for id in results['ordered']]
+    
+###################
+    
+    def reindexIndex(self, xmlindex = None, index_id = None):
+        """
+        Reindex all resources by a given XMLIndex object.
+        """
+        if index_id:
+            xmlindex = self.getIndexes(index_id = index_id)[0]
+        return self.index_catalog.reindexIndex(xmlindex)
+    
+#    def reindexPackage(self, package_id, resourcetype_id = None):
+#        """
+#        Reindex all resources within a given package_id and resourcetype_id.
+#        """
+#        self.index_catalog.indexPackage(package_id = package_id,
+#                                        resourcetype_id = resourcetype_id)
+    
+    def reindexResource(self, resource):
+        """
+        Reindex a single given Resource object.
+        """
+        self.index_catalog.flushResource(resource)
+        self.index_catalog.indexResource(resource)

@@ -100,7 +100,8 @@ class XmlDbManager(DbStorage):
     def getResource(self, package_id = None, resourcetype_id = None, 
                     name = None, revision = None, document_id = None, 
                     id = None):
-        """Get a specific resource from the database by either (package_id, 
+        """
+        Get a specific resource from the database by either (package_id, 
         resourcetype_id, name) or by document_id
         
         @param package_id: resourcetype id
@@ -108,7 +109,7 @@ class XmlDbManager(DbStorage):
         @param name: Name of the resource
         @param revision: revision of related document (if no revision is given,
             newest revision is used, to retrieve all revisions of a document  
-            use getResourceHistory(...)
+            use getRevisions(...)
         @param document_id: get a resource by related document's id
         @param id: get a resource by it's unique id
         @return: Resource or None
@@ -126,6 +127,44 @@ class XmlDbManager(DbStorage):
             return res
         res = self._getResource(package_id, resourcetype_id, name, 
                                 revision, id)
+        return res
+    
+    def getRevisions(self, package_id = None, resourcetype_id = None, 
+                     name = None, id = None):
+        """
+        Get all revisions of the specified resource by either 
+        (package_id, resourcetype_id, name) or by id
+        
+        @param package_id: package id
+        @param resourcetype_id: resourcetype id
+        @param name: name of the resource
+        @param id: get a resource by it's unique id
+        @return: Resource object with all revisions accessible as a list
+        """
+        if not ((package_id and resourcetype_id and name) or id):
+            raise TypeError("getRevisions: Invalid number of arguments.")
+        if name:
+            name = str(name)
+        try:
+            res = self.pickup(Resource, 
+                              _order_by = {'document':{'revision':'asc'}}, 
+                              resourcetype = 
+                                {'package':{'package_id':package_id}, 
+                                 'resourcetype_id':resourcetype_id},
+                              name = name,
+                              _id = id)[0]
+        except IndexError:
+            self._raise_not_found(package_id, resourcetype_id, name, id)
+        return res
+    
+    def getAllResources(self, package_id, resourcetype_id = None):
+        """
+        Get a list of resources for specified package_id and resourcetype_id.
+        """
+        res = self.pickup(Resource, 
+                          resourcetype = {'package':{'package_id':package_id}, 
+                                          'resourcetype_id':resourcetype_id},
+                          document = DB_LIMIT('revision', 'max'))
         return res
     
     def deleteResource(self, resource=None, resource_id=None):
@@ -164,43 +203,7 @@ class XmlDbManager(DbStorage):
         if not (revision and\
                 ((package_id and resourcetype_id and name) or id)):
             raise TypeError("revertResource: Invalid number of arguments.")
-        res = self.getResourceHistory(package_id, resourcetype_id, name, id) 
+        res = self.getRevisions(package_id, resourcetype_id, name, id) 
         for doc in res.document:
             if doc.revision > revision:
                 self.drop(XmlDocument, _id = doc._id)
-    
-    def getAllResources(self, package_id, resourcetype_id = None):
-        """
-        Get a list of resources for specified package_id and resourcetype_id.
-        """
-        res = self.pickup(Resource, 
-                          resourcetype = {'package':{'package_id':package_id}, 
-                                          'resourcetype_id':resourcetype_id},
-                          document = DB_LIMIT('revision', 'max'))
-        return res
-    
-    def getResourceHistory(self, package_id = None, resourcetype_id = None, 
-                           name = None, id = None):
-        """Get all revisions of the specified resource by either 
-        (package_id, resourcetype_id, name) or by id
-        @param package_id: package id
-        @param resourcetype_id: resourcetype id
-        @param name: name of the resource
-        @param id: get a resource by it's unique id
-        @return: Resource object with all revisions accessible as a list
-        """
-        if not ((package_id and resourcetype_id and name) or id):
-            raise TypeError("getResourceHistory: Invalid number of arguments.")
-        if name:
-            name = str(name)
-        try:
-            res = self.pickup(Resource, 
-                              _order_by = {'document':{'revision':'asc'}}, 
-                              resourcetype = 
-                                {'package':{'package_id':package_id}, 
-                                 'resourcetype_id':resourcetype_id},
-                              name = name,
-                              _id = id)[0]
-        except IndexError:
-            self._raise_not_found(package_id, resourcetype_id, name, id)
-        return res

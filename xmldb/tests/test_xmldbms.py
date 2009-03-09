@@ -202,7 +202,7 @@ class XmlDbManagerTest(SeisHubEnvironmentTestCase):
         self.assertEquals(rev1.document.data, self.test_data)
         
         # get version history
-        res2 = self.xmldbm.getResourceHistory(id = testres.id)
+        res2 = self.xmldbm.getRevisions(id = testres.id)
         self.assertEqual(len(res2.document), 2)
         self.assertEqual(res2.document[0].revision, 1)
         self.assertEqual(res2.document[0].data, self.test_data)
@@ -213,7 +213,7 @@ class XmlDbManagerTest(SeisHubEnvironmentTestCase):
         testres_v3 = Resource(self.vc_resourcetype, 
                               document = newXMLDocument(self.test_data % 'r3'))
         self.xmldbm.modifyResource(testres, testres_v3)
-        res = self.xmldbm.getResourceHistory(id = testres.id)
+        res = self.xmldbm.getRevisions(id = testres.id)
         self.assertEqual(len(res.document), 3)
         
         # delete revision 2
@@ -222,7 +222,7 @@ class XmlDbManagerTest(SeisHubEnvironmentTestCase):
                           testres.package.package_id, 
                           testres.resourcetype.resourcetype_id, None, 2, None, 
                           testres.id)
-        res = self.xmldbm.getResourceHistory(id = testres.id)
+        res = self.xmldbm.getRevisions(id = testres.id)
         self.assertEqual(len(res.document), 2)
         # revert revision 1
         self.xmldbm.revertResource(id = testres.id, revision = 1)
@@ -230,7 +230,7 @@ class XmlDbManagerTest(SeisHubEnvironmentTestCase):
         self.assertEquals(res.document.revision, 1)
         self.assertEquals(res.document.data, self.test_data)
         # only one revision is left => res.document is not a list
-        res = self.xmldbm.getResourceHistory(id = testres.id)
+        res = self.xmldbm.getRevisions(id = testres.id)
         self.assertEqual(res.document.revision, 1)
         # delete resource
         self.xmldbm.deleteResource(testres)

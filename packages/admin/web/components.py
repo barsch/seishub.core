@@ -190,7 +190,7 @@ class IndexesPanel(Component):
     def _reindex(self, data=[]):
         for id in data:
             try:
-                self.env.catalog.reindex(index_id = int(id))
+                self.env.catalog.reindexIndex(index_id = int(id))
             except Exception, e:
                 self.log.error("Error reindexing index", e)
                 return {'error': ("Error reindexing index", e)}
