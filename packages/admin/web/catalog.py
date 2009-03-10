@@ -13,7 +13,8 @@ import pprint
 import time
 
 
-LIMITS = {'100': 100, '1000': 1000, '10000': 10000, 'unlimited': None}
+LIMITS = {'10': 10, '100': 100, '1000': 1000, '10000': 10000, 
+          'unlimited': None}
 
 
 class BasicPanel(Component):
@@ -150,7 +151,7 @@ class ResourcesPanel(Component):
             'rows': 0,
             'clock': "%0.6f" % 0,
             'limits': sorted(LIMITS.keys()),
-            'limit': '100'
+            'limit': '10'
         }
         if request.method=='POST':
             args = request.args
@@ -168,7 +169,7 @@ class ResourcesPanel(Component):
         return data
     
     def _getResources(self, data):
-        limit = LIMITS.get(data['limit'], 100)
+        limit = LIMITS.get(data['limit'], 10)
         t1 = time.time()
         result = self.catalog.getAllResourceNames(data['package_id'], 
                                                   data['resourcetype_id'],
