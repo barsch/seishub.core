@@ -1,15 +1,17 @@
 <h1>Stylesheets</h1>
 
-<h2>Add new stylesheet</h2>
+<h2>Add Stylesheet</h2>
 <form method="post" enctype="multipart/form-data" id="add" action="">
-  <div class="field">
-    <label>Package / Resource type</label><br />
+  <div class="field-left">
+    <label>Package</label><br />
     <select name="package_id" id="package_id" onchange="changePackage();">
       #for $p in $packages
       <option value="$p">$p</option>
       #end for
     </select>
-    &nbsp;
+  </div>
+  <div class="field-left">
+    <label>Resource Type</label><br />
     <select name="resourcetype_id" id="resourcetype_id">
       <option value="">-</option>
     </select>
@@ -19,7 +21,7 @@
     <input type="text" size="20" name="type" />
   </div>
   <div class="field">
-    <label>XSLT File</label><br />
+    <label>XML Stylesheet Document (XSLT)</label><br />
     <input name="file" type="file" size="50" maxlength="100000" 
            accept="text/xml" />
   </div>
@@ -32,13 +34,13 @@
 <br />
 <br />
 
-<h2>List of all stylesheets</h2>
+<h2>Overview Stylesheets</h2>
 <form method="post" id="list" action="">
   <table class="list">
     <tr>
       <th></th>
       <th>Package</th>
-      <th>Resourcetype</th>
+      <th>Resource Type</th>
       <th>Label</th>
       <th>Document</th>
     </tr>

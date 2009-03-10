@@ -156,6 +156,8 @@ class IndexesPanel(Component):
         data  = {
             'index_types': index_types,
             'index_types_dict': index_types_dict,
+            'package_id': '',
+            'resourcetype_id': '',
             'indexes': [],
             'error': '',
             'xpath': '',
@@ -167,57 +169,80 @@ class IndexesPanel(Component):
         }
         if request.method=='POST':
             args = request.args
-            if 'add' in args.keys() and 'xpath' in args.keys():
-                label = args.get('label',[''])[0]
-                xpath = args.get('xpath',[''])[0]
-                package_id = args.get('package_id',[''])[0]
-                resourcetype_id = args.get('resourcetype_id',[''])[0]
-                type_id = args.get('type_id',[''])[0]
-                options = args.get('options',[None])[0]
-                if package_id in packages:
-                    if resourcetype_id in resourcetypes.get(package_id, []):
-                        data.update(self._addIndex(package_id, resourcetype_id,
-                                                   label, xpath, type_id, 
-                                                   options))
-            elif 'delete' in args.keys() and 'index[]' in args.keys():
-                data.update(self._deleteIndexes(args.get('index[]',[])))
-            elif 'reindex' in args.keys() and 'index[]' in args.keys():
-                data.update(self._reindex(args.get('index[]',[])))
-        # fetch all indexes
-        data['indexes'] = self.catalog.getIndexes()
+            data['package_id'] = args.get('package_id', [''])[0]
+            data['resourcetype_id'] = args.get('resourcetype_id', [''])[0]
+            if 'add' in args.keys() and 'xpath' in args:
+                data['label'] = args.get('label', [''])[0]
+                data['xpath'] = args.get('xpath', [''])[0]
+                data['type_id'] = args.get('type_id', [''])[0]
+                data['options'] = args.get('options', [None])[0]
+                data = self._addIndex(data)
+            elif 'delete' in args and 'index[]' in args:
+                data['index[]'] = args['index[]']
+                data = self._deleteIndexes(data)
+            elif 'reindex' in args and 'index[]' in args:
+                data['index[]'] = args['index[]']
+                data = self._reindexIndexes(data)
+            elif 'reindex-all' in args:
+                data = self._reindexResourceType(data)
+            elif 'filter' in args:
+                data = self._getIndexes(data)
         return data
     
-    def _reindex(self, data=[]):
-        for id in data:
+    def _getIndexes(self, data):
+        # fetch all indexes
+        data['indexes'] = self.catalog.getIndexes(
+            package_id = data['package_id'],
+            resourcetype_id = data['resourcetype_id']
+        )
+        return data
+    
+    def _reindexIndexes(self, data):
+        for id in data.get('index[]', [None]):
             try:
                 self.env.catalog.reindexIndex(index_id = int(id))
             except Exception, e:
                 self.log.error("Error reindexing index", e)
                 return {'error': ("Error reindexing index", e)}
-        return {'info': "Index has been updated."}
+        data['info'] = "Indexes have been updated."
+        return data
     
-    def _deleteIndexes(self, data=[]):
-        for id in data:
+    def _reindexResourceType(self, data):
+        try:
+            self.env.catalog.reindexResourceType(
+                package_id = data['package_id'],
+                resourcetype_id = data['resourcetype_id']
+            )
+        except Exception, e:
+            self.log.error("Error reindexing all resources", e)
+            return {'error': ("Error reindexing resources", e)}
+        data['info'] = "Resources have been reindexed."
+        return data
+    
+    def _deleteIndexes(self, data):
+        for id in data.get('index[]', [None]):
             try:
                 self.catalog.deleteIndex(index_id = int(id))
             except Exception, e:
                 self.log.error("Error removing index", e)
                 return {'error': ("Error removing index", e)}
-        return {'info': "Index has been removed."}
+        data['info'] = "Indexes have been removed."
+        return data
     
-    def _addIndex(self, package_id, resourcetype_id, label, xpath, type_id, 
-                  options):
+    def _addIndex(self, data):
         try:
-            self.catalog.registerIndex(package_id, 
-                                       resourcetype_id, 
-                                       label, 
-                                       xpath, 
-                                       type_id,
-                                       options = options)
+            self.catalog.registerIndex(data['package_id'], 
+                                       data['resourcetype_id'], 
+                                       data['label'], 
+                                       data['xpath'], 
+                                       data['type_id'],
+                                       options = data['options'])
         except Exception, e:
-            self.log.error("Error registering index", e)
-            return {'error': ("Error registering index", e)}
-        return {'info': "Index has been added."}
+            self.log.error("Error adding index", e)
+            data['error'] = ("Error adding index", e)
+            return data
+        data['info'] = "Index has been added."
+        return data
 
 
 class AliasesPanel(Component):

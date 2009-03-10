@@ -1,9 +1,9 @@
 <h1>Schemas</h1>
 
-<h2>Add new schema</h2>
+<h2>Add XML Schema</h2>
 <form method="post" enctype="multipart/form-data" id="add" action="">
-  <div class="field">
-    <label>Package / Resource type</label><br />
+  <div class="field-left">
+    <label>Package</label><br />
     <select name="package_id" id="package_id" onchange="changePackage();">
       #for $p in $packages
       #if $resourcetypes[$p]
@@ -11,7 +11,9 @@
       #end if
       #end for
     </select>
-    &nbsp;
+  </div>
+  <div class="field-left">
+    <label>Resource Type</label><br />
     <select name="resourcetype_id" id="resourcetype_id">
       <option></option>
     </select>
@@ -25,7 +27,7 @@
     </select>
   </div>
   <div class="field">
-    <label>Schema File</label><br />
+    <label>XML Schema Document</label><br />
     <input name="file" type="file" size="50" maxlength="100000" 
            accept="application/xsd+xml" />
   </div>
@@ -38,13 +40,13 @@
 <br />
 <br />
 
-<h2>List of all schemas</h2>
+<h2>Overview Schemas</h2>
 <form method="post" id="list" action="">
   <table class="list">
     <tr>
       <th></th>
       <th>Package</th>
-      <th>Resourcetype</th>
+      <th>Resource Type</th>
       <th>Name</th>
       <th>Type</th>
       <th>Document</th>

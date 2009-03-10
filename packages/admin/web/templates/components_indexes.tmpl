@@ -1,17 +1,23 @@
 <h1>Indexes</h1>
 
-<h2>Add new index</h2>
+<h2>Add Index</h2>
 <form method="post" id="add" action="">
-  <div class="field">
-    <label>Package / Resource type</label><br />
-    <select name="package_id" id="package_id" onchange="changePackage();">
+  <div class="field-left">
+    <label>Package</label><br />
+    <select name="package_id" id="package_id" onchange="changePackage('add');">
       #for $p in $packages
       #if $resourcetypes[$p]
-      <option value="$p">$p</option>
+      <option value="$p"
+        #if $package_id==$p
+        selected="selected"
+        #end if
+      >$p</option>
       #end if
       #end for
     </select>
-    &nbsp;
+  </div>
+  <div class="field-left">
+    <label>Resource Type</label><br />
     <select name="resourcetype_id" id="resourcetype_id">
       <option></option>
     </select>
@@ -20,7 +26,7 @@
     <label>Label</label><br />
     <input type="text" size="30" name="label" value="$label" />
   </div>
-  <div class="field">
+  <div class="field-left">
     <label>Type</label><br />
     <select name="type_id" id="type_id">
       #for $i in $index_types:
@@ -33,7 +39,7 @@
     <input type="text" size="40" name="options" value="$options" />
   </div>
   <div class="field">
-    <label>XPath expression (use # for grouping)</label><br />
+    <label>XPath Expression (use # for grouping)</label><br />
     <input type="text" size="80" name="xpath" value="$xpath" />
   </div>
   <div class="button">
@@ -44,13 +50,41 @@
 <br />
 <br />
 
-<h2>List of all indexes</h2>
+<h2>Overview Indexes</h2>
+
 <form method="post" id="list" action="">
+  <div class="field-left">
+    <label>Package</label><br />
+    <select name="package_id" id="package_id" onchange="changePackage('list');">
+      #for $p in $packages
+      #if $resourcetypes[$p]
+      <option value="$p"
+        #if $package_id==$p
+        selected="selected"
+        #end if
+      >$p</option>
+      #end if
+      #end for
+    </select>
+  </div>
+  <div class="field">
+    <label>Resource Type</label><br />
+    <select name="resourcetype_id" id="resourcetype_id">
+      <option></option>
+    </select>
+  </div>
+  
+  <div class="button">
+    <input type="submit" name="filter" value="Filter" />
+  </div>
+  
+  <br />
+
   <table class="list">
     <tr>
       <th></th>
       <th>Package</th>
-      <th>Resourcetype</th>
+      <th>Resource Type</th>
       <th>Label</th>
       <th>Type</th>
       <th>Options</th>
@@ -77,41 +111,40 @@
   <div class="button">
     <input type="button" value="Select all" onclick="checkAllIndexes() "/> 
     <input type="button" value="Select none" onclick="uncheckAllIndexes() "/> 
-    <input type="submit" name="reindex" value="Reindex" /> 
+    <input type="submit" name="reindex-all" value="Reindex All" />
+    <input type="submit" name="reindex" value="Reindex" />
     <input type="submit" name="delete" value="Delete" />
   </div>
 </form>
 
 
+#if $packages
 <script type="text/javascript">
 /* <![CDATA[ */
-
     var resourcetypes = new Array();
     #for $p in $packages
     resourcetypes['$p'] = $resourcetypes[$p];
     #end for
-
-    function changePackage()
+    
+    function changePackage(form_id)
     {
-        var ps = document.getElementById('package_id');
-        if (ps.selectedIndex)
+      var form = document.getElementById(form_id)
+      var selectbox = form.resourcetype_id
+      var package_id = form.package_id.value;
+      selectbox.options.length = 0;
+      for (var i=0;i<resourcetypes[package_id].length;i++)
+      {
+        var link = resourcetypes[package_id][i];
+        var addme = new Option(link, link);
+        selectbox.options[i] = addme;
+        if (link=='$resourcetype_id')
         {
-            var package_id = ps.options[ps.selectedIndex].value;
+          selectbox.options.selectedIndex = i
         }
-        else
-        {
-            var package_id = ps.options[0].value;
-        }
-        var selectbox = document.getElementById('resourcetype_id');
-        selectbox.options.length = 0;
-        for (var i=0; i<resourcetypes[package_id].length; i++)
-        {
-            var link = resourcetypes[package_id][i];
-            var addme = new Option(link, link);
-            selectbox.options[i] = addme;
-        }
+      }
     }
-    changePackage();
+    changePackage('add');
+    changePackage('list');
     
     function checkAllIndexes()
     {
@@ -132,3 +165,4 @@
     }
 /* ]]> */
 </script>
+#end if

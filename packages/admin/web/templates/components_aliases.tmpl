@@ -8,7 +8,7 @@
 
 <h2>Add new alias</h2>
 <form method="post" id="add" action="">
-  <div class="field">
+  <div class="field-left">
     <label>Package</label><br />
     <select name="package_id" id="package_id" onchange="changePackage()">
        #for $p in $packages
@@ -17,7 +17,7 @@
     </select>
   </div>
   <div class="field">
-    <label>Resource type (optional)</label><br />
+    <label>Resource Type (optional)</label><br />
     <select name="resourcetype_id" id="resourcetype_id">
       <option value="">-</option>
     </select>
@@ -27,11 +27,11 @@
     <input type="text" size="80" name="alias" value="$alias" />
   </div>
   <div class="field">
-    <label>XPath query</label><br />
+    <label>XPath Query</label><br />
     <textarea name="xpath" rows="5" cols="80">$xpath</textarea>
   </div>
   <div class="field">
-    <label>SQL query</label><br />
+    <label>SQL Query</label><br />
     <textarea name="sql" rows="5" cols="80">$sql</textarea>
   </div>
   
@@ -49,10 +49,10 @@
     <tr>
       <th></th>
       <th>Package</th>
-      <th>Resourcetype</th>
+      <th>Resource Type</th>
       <th>Alias URL</th>
       <th>XPath</th>
-      <th>Resulting document</th>
+      <th>Result</th>
     </tr>
     #for $alias in $aliases
     <tr> 

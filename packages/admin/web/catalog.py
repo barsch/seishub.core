@@ -13,6 +13,9 @@ import pprint
 import time
 
 
+LIMITS = {'100': 100, '1000': 1000, '10000': 10000, 'unlimited': None}
+
+
 class BasicPanel(Component):
     """
     Database configuration.
@@ -145,27 +148,31 @@ class ResourcesPanel(Component):
             'resourcetypes': resourcetypes,
             'resources': [],
             'rows': 0,
-            'clock': "%0.6f" % 0
+            'clock': "%0.6f" % 0,
+            'limits': sorted(LIMITS.keys()),
+            'limit': '100'
         }
         if request.method=='POST':
             args = request.args
-            data['package_id'] = args.get('package_id',[''])[0]
-            data['resourcetype_id'] = args.get('resourcetype_id',[''])[0]
+            data['package_id'] = args.get('package_id', [''])[0]
+            data['resourcetype_id'] = args.get('resourcetype_id', [''])[0]
             if 'file' in args:
                 data['file'] = args.get('file',[''])[0]
                 data = self._addResource(data)
             elif 'delete' in args and 'resource[]' in args:
                 data['resource[]'] = args['resource[]']
-                data = self._deleteResource(data)
+                data = self._deleteResources(data)
             elif 'filter' in args:
+                data['limit'] = args.get('limit', LIMITS.keys())[0]
                 data = self._getResources(data)
         return data
     
     def _getResources(self, data):
-        # XXX: limit ?
+        limit = LIMITS.get(data['limit'], 100)
         t1 = time.time()
-        result = self.catalog.getAllResources(data['package_id'], 
-                                              data['resourcetype_id'])
+        result = self.catalog.getAllResourceNames(data['package_id'], 
+                                                  data['resourcetype_id'],
+                                                  limit)
         t2 = time.time()
         data['resources'] = result
         data['clock'] = "%0.6f" % (t2-t1)
@@ -174,24 +181,26 @@ class ResourcesPanel(Component):
     
     def _addResource(self, data):
         try:
-            self.catalog.addResource(package_id=data['package_id'], 
-                                     resourcetype_id=data['resourcetype_id'], 
-                                     xml_data=data['file'])
+            self.catalog.addResource(package_id = data['package_id'], 
+                                     resourcetype_id = data['resourcetype_id'], 
+                                     xml_data = data['file'])
         except InvalidParameterError, e:
             data['error'] = ("Please choose a non-empty XML document", e)
         except SeisHubError, e:
             data['error'] = ("Error adding resource", e)
         data['file']=''
+        data['info'] = "Resource has been added."
         return data
     
-    def _deleteResource(self, data):
-        for id in data.get('resource[]',[None]):
+    def _deleteResources(self, data):
+        for id in data.get('resource[]', [None]):
             try:
                 self.catalog.deleteResource(resource_id = int(id))
             except Exception, e:
                 self.log.info("Error deleting resource", e)
                 data['error'] = ("Error deleting resource", e)
                 return data
+        data['info'] = "Resources have been removed."
         return data
 
 

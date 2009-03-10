@@ -309,7 +309,14 @@ class XmlCatalog(object):
         return [self.xmldb.getResource(document_id = id) 
                 for id in results['ordered']]
     
-###################
+    def getAllResourceNames(self, package_id, resourcetype_id, limit = 100, 
+                            ordered = False):
+        """
+        Return a list of all resource names of given package and resource type.
+        """
+        _, resourcetype = self.env.registry.objects_from_id(package_id, 
+                                                            resourcetype_id)
+        return self.xmldb.getAllResourceNames(resourcetype, limit, ordered)
     
     def reindexIndex(self, xmlindex = None, index_id = None):
         """
@@ -317,18 +324,19 @@ class XmlCatalog(object):
         """
         if index_id:
             xmlindex = self.getIndexes(index_id = index_id)[0]
-        return self.index_catalog.reindexIndex(xmlindex)
+        return self.index_catalog.reindexIndex([xmlindex])
     
-#    def reindexPackage(self, package_id, resourcetype_id = None):
-#        """
-#        Reindex all resources within a given package_id and resourcetype_id.
-#        """
-#        self.index_catalog.indexPackage(package_id = package_id,
-#                                        resourcetype_id = resourcetype_id)
+    def reindexResourceType(self, package_id, resourcetype_id):
+        """
+        Reindex a whole resource type by given package_id and resourcetype_id.
+        """
+        xmlindex_list = self.getIndexes(package_id = package_id,
+                                        resourcetype_id = resourcetype_id)
+        return self.index_catalog.reindexIndex(xmlindex_list)
     
     def reindexResource(self, resource):
         """
-        Reindex a single given Resource object.
+        Reindex a single, given Resource object.
         """
         self.index_catalog.flushResource(resource)
         self.index_catalog.indexResource(resource)

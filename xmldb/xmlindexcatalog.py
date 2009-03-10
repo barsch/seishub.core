@@ -493,40 +493,40 @@ class XmlIndexCatalog(DbStorage, _QueryProcessor, _IndexView):
                       document = {'_id':resource.document._id})
         return
     
-###############
-    
-#    def reindexPackage(self, package_id, resourcetype_id=None):
-#        """
-#        Reindex all resources within a given package_id and resourcetype_id.
-#        """
-#        xmlindex_list = self.getIndexes(package_id = package_id,
-#                                        resourcetype_id = resourcetype_id)
-#        # clear all package/resource type specific indexes
-#        for xmlindex in xmlindex_list:
-#            self.flushIndex(xmlindex)
-#        # create a dictionary of resourcetype specific indexes
-#        resourcetype_ids = 
-    
-    def reindexIndex(self, xmlindex):
+    def reindexIndex(self, xmlindex_list):
         """
-        Reindex all resources by a given XMLIndex object.
+        Reindex all resources by a list of XMLIndex objects.
+        
+        This works only work indexes of a single resource type. We take the 
+        resource type of the first index and skip any additional indexes with
+        a different resource type.
         """
-        if not IXmlIndex.providedBy(xmlindex):
-            raise TypeError("%s is not an IXmlIndex." % str(xmlindex))
-        # clear index
-        self.flushIndex(xmlindex)
+        if not isinstance(xmlindex_list, list):
+            xmlindex_list = list(xmlindex_list)
+        resourcetype_id = xmlindex_list[0].resourcetype._id
+        for xmlindex in xmlindex_list:
+            # check interface
+            if not IXmlIndex.providedBy(xmlindex):
+                raise TypeError("%s is not an IXmlIndex." % str(xmlindex))
+            # skip indexes with different resourcetype_id
+            if xmlindex.resourcetype._id!=resourcetype_id:
+                xmlindex_list.remove(xmlindex)
+                continue
+            # clear index
+            self.flushIndex(xmlindex)
         # fetch all document_id with highest revision for this resource type
         query = sql.select([document_tab.c['id'], 
                             sql.func.max(document_tab.c['revision'])])
         query = query.where(
             sql.and_(
                 document_tab.c['resource_id'] == resource_tab.c['id'], 
-                resource_tab.c['resourcetype_id'] == xmlindex.resourcetype._id
+                resource_tab.c['resourcetype_id'] == resourcetype_id
             ))
         query = query.group_by(document_tab.c['id'])
         result = self._db.execute(query)
         # iterate over all document IDs and reindex
         for item in result:
             res = self._storage.getResource(document_id=item.id)
-            self.indexResource(res, xmlindex)
+            for xmlindex in xmlindex_list:
+                self.indexResource(res, xmlindex)
         return True

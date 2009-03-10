@@ -1,10 +1,10 @@
 <h1>Resources</h1>
 
 
-<h2>Add new XML Documents</h2>
+<h2>Add XML Resource</h2>
 <form method="post" enctype="multipart/form-data" id="add" action="">
-  <div class="field">
-    <label>Package / Resource type</label><br />
+  <div class="field-left">
+    <label>Package</label><br />
     <select name="package_id" id="package_id" onchange="changePackage('add');">
       #for $p in $packages
       #if $resourcetypes[$p]
@@ -16,14 +16,16 @@
       #end if
       #end for
     </select>
-    &nbsp;
+  </div>
+  <div class="field">
+    <label>Resource Type</label><br />
     <select name="resourcetype_id" id="resourcetype_id">
       <option></option>
     </select>
   </div>
 
   <div class="field">
-    <label>XML File</label><br />
+    <label>XML Document</label><br />
     <input name="file" type="file" size="50" maxlength="100000" 
            accept="text/xml" />
   </div>
@@ -36,11 +38,11 @@
 <br />
 <br />
 
-<h2>Show resources</h2>
+<h2>Overview Resources</h2>
 
 <form method="post" id="list" action="">
-  <div class="field">
-    <label>Package / Resource type</label><br />
+  <div class="field-left">
+    <label>Package</label><br />
     <select name="package_id" id="package_id" onchange="changePackage('list');">
       #for $p in $packages
       #if $resourcetypes[$p]
@@ -52,9 +54,23 @@
       #end if
       #end for
     </select>
-    &nbsp;
+  </div>
+  <div class="field-left">
+    <label>Resource Type</label><br />
     <select name="resourcetype_id" id="resourcetype_id">
       <option></option>
+    </select>
+  </div>
+  <div class="field">
+    <label>Limit</label><br />
+    <select name="limit" id="limit">
+      #for $l in $limits
+      <option value="$l"
+        #if $limit==$l
+        selected="selected"
+        #end if
+      >$l</option>
+      #end for
     </select>
   </div>
   
@@ -79,13 +95,15 @@
     #for $resource in $resources
     <tr> 
       <td>
-        <input type="checkbox" name="resource[]" value="$resource._id" />
+        <input type="checkbox" name="resource[]" value="$resource.id" />
       </td> 
-      <td>$resource.package.package_id</td>
-      <td>$resource.resourcetype.resourcetype_id</td>
+      <td>$package_id</td>
+      <td>$resourcetype_id</td>
       <td>$resource.name</td>
       <td>
-        <a href="$resturl/xml$resource">[XML]</a>
+        <a href="$resturl/xml/$package_id/$resourcetype_id/$resource.name">
+          [XML]
+        </a>
       </td>
     </tr>
     #end for

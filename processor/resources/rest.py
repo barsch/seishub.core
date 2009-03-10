@@ -259,6 +259,8 @@ class RESTProperty(Resource):
             etree.SubElement(root, "package").text = self.package_id
             etree.SubElement(root, "resourcetype").text = self.resourcetype_id
             etree.SubElement(root, "name").text = self.name
+            etree.SubElement(root, "document_id").text = str(res.document._id)
+            etree.SubElement(root, "resource_id").text = str(res._id)
             etree.SubElement(root, "revision").text = revision
             etree.SubElement(root, "uid").text = unicode(meta.uid)
             etree.SubElement(root, "datetime").text = \

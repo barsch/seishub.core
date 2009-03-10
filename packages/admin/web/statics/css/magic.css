@@ -6,7 +6,7 @@ body {
     margin: 0;
     padding: 0;
 }
-input,option,select, textarea {
+input, option, select, textarea {
     color: #333333;
     font-family: Arial, Helvetica, sans-serif;
     font-size: 12px;
@@ -203,6 +203,12 @@ table.list td,table.list th {
 /* Forms */
 div.field {
     margin-bottom: 1em;
+    clear: right;
+}
+div.field-left {
+    margin-bottom: 1em;
+    float: left;
+    margin-right: 1em;
 }
 /* Messagebox */
 dl.messagebox {

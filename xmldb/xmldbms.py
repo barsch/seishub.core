@@ -3,7 +3,9 @@
 from seishub.db.orm import DbStorage, DbError, DB_LIMIT
 from seishub.exceptions import DuplicateObjectError, InvalidParameterError, \
     NotFoundError
+from seishub.xmldb.defaults import resource_tab
 from seishub.xmldb.resource import XmlDocument, Resource
+from sqlalchemy import sql
 
 
 class XmlDbManager(DbStorage):
@@ -207,3 +209,18 @@ class XmlDbManager(DbStorage):
         for doc in res.document:
             if doc.revision > revision:
                 self.drop(XmlDocument, _id = doc._id)
+    
+    def getAllResourceNames(self, resourcetype, limit = 100, ordered = False):
+        """
+        Return a list of all resource names of given resource type.
+        """
+        # fetch all resource names for this resource type
+        query = sql.select([resource_tab.c['id'], resource_tab.c['name']])
+        query = query.where(
+            resource_tab.c['resourcetype_id'] == resourcetype._id
+        )
+        if ordered:
+            query = query.order_by(resource_tab.c['name'])
+        if limit:
+            query = query.offset(0).limit(limit)
+        return self._db.execute(query).fetchall()
