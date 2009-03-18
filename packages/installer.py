@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from seishub.exceptions import SeisHubError
 import os
 import sys
 
@@ -57,18 +56,18 @@ class PackageInstaller(object):
                 name = filename.split(os.sep)[-1]
                 # check, if already there
                 if env.registry.schemas.get(package_id, resourcetype_id, type):
-                    msg = "'%s': Skipping schema '%s'."
-                    env.log.debug(msg % (package_id, entry))
+                    msg = "Skipping Schema /%s/%s - %s"
+                    msg = msg % (package_id, resourcetype_id, filename)
+                    env.log.debug(msg)
                     continue
+                msg = "Registering Schema /%s/%s - %s ..." 
+                env.log.info(msg % (package_id, resourcetype_id, filename))
                 try:
                     data = file(filename, 'r').read()
                     env.registry.schemas.register(package_id, resourcetype_id, 
                                                   type, data, name)
-                    msg = "'%s': Registered schema '%s'."
-                    env.log.info( msg % (package_id, entry))
                 except Exception, e:
-                    msg = "Registration of schema failed: %s (%s)"
-                    env.log.warn(msg % (filename ,e))
+                    env.log.warn(e)
         if hasattr(o, '_registry_stylesheets'):
             for entry in o._registry_stylesheets:
                 type = entry['type']
@@ -77,53 +76,53 @@ class PackageInstaller(object):
                 # check, if already there
                 if env.registry.stylesheets.get(package_id, resourcetype_id, 
                                                 type):
-                    msg = "'%s': Skipping stylesheet '%s'."
-                    env.log.debug(msg % (package_id, entry))
+                    msg = "Skipping Stylesheet /%s/%s - %s"
+                    env.log.debug(msg % (package_id, resourcetype_id, 
+                                         filename))
                     continue
+                msg = "Registering Stylesheet /%s/%s - %s ..." 
+                env.log.info(msg % (package_id, resourcetype_id, filename))
                 try:
                     data = file(filename, 'r').read()
                     env.registry.stylesheets.register(package_id, 
                                                       resourcetype_id, type, 
                                                       data, name)
-                    msg = "'%s': Registered stylesheet '%s'."
-                    env.log.info(msg % (package_id, entry))
                 except Exception, e:
-                    msg = "Registration of stylesheet failed: %s (%s)"
-                    env.log.warn(msg % (filename, e))
-        if hasattr(o, '_registry_aliases'):
-            for entry in o._registry_aliases:
-                # check, if already there
-                if env.registry.aliases.get(package_id, resourcetype_id, 
-                                            **entry):
-                    msg = "'%s': Skipping alias '%s'."
-                    env.log.debug(msg % (package_id, entry))
-                    continue
-                try:
-                    env.registry.aliases.register(package_id, resourcetype_id,
-                                                  **entry)
-                    msg = "'%s': Registered alias '%s'."
-                    env.log.info(msg % (package_id, entry))
-                except Exception, e:
-                    msg = "Registration of alias failed: %s/%s/@%s (%s)"
-                    env.log.warn(msg % (package_id, resourcetype_id, 
-                                        entry['name'], e))
+                    env.log.warn(e)
+#        if hasattr(o, '_registry_aliases'):
+#            for entry in o._registry_aliases:
+#                # check, if already there
+#                if env.registry.aliases.get(package_id, resourcetype_id, 
+#                                            **entry):
+#                    msg = "'%s': Skipping alias '%s'."
+#                    env.log.debug(msg % (package_id, entry))
+#                    continue
+#                try:
+#                    env.registry.aliases.register(package_id, resourcetype_id,
+#                                                  **entry)
+#                    msg = "'%s': Registered alias '%s'."
+#                    env.log.info(msg % (package_id, entry))
+#                except Exception, e:
+#                    msg = "Registration of alias failed: %s/%s/@%s (%s)"
+#                    env.log.warn(msg % (package_id, resourcetype_id, 
+#                                        entry['name'], e))
         if hasattr(o, '_registry_indexes') and resourcetype_id:
             for entry in o._registry_indexes:
                 # check, if already there
                 if env.catalog.getIndexes(package_id, resourcetype_id, 
                                           **entry):
-                    msg = "'%s': Skipping index '%s'."
-                    env.log.debug(msg % (package_id, entry))
+                    msg = "Skipping XMLIndex /%s/%s - %s"
+                    env.log.debug(msg % (package_id, resourcetype_id, 
+                                         entry['xpath']))
                     continue
+                msg = "Registering XMLIndex /%s/%s - %s ..." 
+                env.log.info(msg % (package_id, resourcetype_id, 
+                                    entry['xpath']))
                 try:
                     env.catalog.registerIndex(package_id, resourcetype_id,
                                               **entry)
-                    msg = "'%s': Registered index '%s'."
-                    env.log.info(msg % (package_id, entry))
                 except Exception, e:
-                    msg = "Registration of index failed: /%s/%s%s (%s)"
-                    env.log.warn(msg % (package_id, resourcetype_id, 
-                                        entry['xpath'], e))
+                    env.log.warn(e)
     
     @staticmethod
     def _pre_register(*args, **kwargs):
@@ -156,6 +155,7 @@ class PackageInstaller(object):
         
         If package is given, only the specified package will be installed.
         """
+        env.log.debug("Installing file system based Components ...")
         # XXX: problem: if installation fails here, packages still show up in the
         # registry but adding of resources etc. is not possible => possible solution
         # mark those packages as 'defect' and handle that seperately in the admin interface
@@ -195,6 +195,7 @@ class PackageInstaller(object):
                         continue
                 # (re)install resourcetype specific objects
                 PackageInstaller._install_pre_registered(env, rt)
+        env.log.info("Components have been updated.")
     
     @staticmethod
     def cleanup(env):
@@ -231,12 +232,12 @@ registerStylesheet = lambda filename, type: \
                     PackageInstaller._pre_register('_stylesheets', 
                                                    type = type,
                                                    filename = filename)
-registerAlias = lambda name, expr, limit = None, order_by = None: \
-                    PackageInstaller._pre_register('_aliases',
-                                                   name = name,
-                                                   expr = expr,
-                                                   limit = limit,
-                                                   order_by = order_by)
+#registerAlias = lambda name, expr, limit = None, order_by = None: \
+#                    PackageInstaller._pre_register('_aliases',
+#                                                   name = name,
+#                                                   expr = expr,
+#                                                   limit = limit,
+#                                                   order_by = order_by)
 registerIndex = lambda label, xpath, type = 'text', options = None: \
                     PackageInstaller._pre_register('_indexes',
                                                    label = label,

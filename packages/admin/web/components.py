@@ -185,6 +185,8 @@ class IndexesPanel(Component):
                 data = self._reindexIndexes(data)
             elif 'reindex-all' in args:
                 data = self._reindexResourceType(data)
+            elif 'indexview' in args:
+                data = self._refreshIndexView(data)
             elif 'filter' in args:
                 data = self._getIndexes(data)
         return data
@@ -197,14 +199,31 @@ class IndexesPanel(Component):
         )
         return data
     
+    def _updateIndexView(self, data):
+        view_id = '/'+'/'.join([data['package_id'], data['resourcetype_id']])
+        try:
+            self.env.catalog.updateIndexView(
+                package_id = data['package_id'],
+                resourcetype_id = data['resourcetype_id']
+            )
+        except Exception, e:
+            msg = "Error updating IndexView %s:" % view_id
+            self.log.error(msg, e)
+            data['error'] = {'error': (msg, e)}
+        else:
+            data['info'] = "IndexView %s has been updated." % view_id
+        return data
+    
     def _reindexIndexes(self, data):
         for id in data.get('index[]', [None]):
             try:
                 self.env.catalog.reindexIndex(index_id = int(id))
             except Exception, e:
                 self.log.error("Error reindexing index", e)
-                return {'error': ("Error reindexing index", e)}
-        data['info'] = "Indexes have been updated."
+                data['error'] = {'error': ("Error reindexing index", e)}
+                break
+        if not data['error']:
+            data['info'] = "Indexes have been updated."
         return data
     
     def _reindexResourceType(self, data):
@@ -215,8 +234,9 @@ class IndexesPanel(Component):
             )
         except Exception, e:
             self.log.error("Error reindexing all resources", e)
-            return {'error': ("Error reindexing resources", e)}
-        data['info'] = "Resources have been reindexed."
+            data['error'] = {'error': ("Error reindexing resources", e)}
+        else:
+            data['info'] = "Resources have been reindexed."
         return data
     
     def _deleteIndexes(self, data):
@@ -225,8 +245,10 @@ class IndexesPanel(Component):
                 self.catalog.deleteIndex(index_id = int(id))
             except Exception, e:
                 self.log.error("Error removing index", e)
-                return {'error': ("Error removing index", e)}
-        data['info'] = "Indexes have been removed."
+                data['error'] = {'error': ("Error removing index", e)}
+                break
+        if not data['error']:
+            data['info'] = "Indexes have been removed."
         return data
     
     def _addIndex(self, data):
@@ -240,8 +262,8 @@ class IndexesPanel(Component):
         except Exception, e:
             self.log.error("Error adding index", e)
             data['error'] = ("Error adding index", e)
-            return data
-        data['info'] = "Index has been added."
+        else:
+            data['info'] = "Index has been added."
         return data
 
 

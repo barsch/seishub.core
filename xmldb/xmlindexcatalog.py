@@ -9,7 +9,7 @@ from seishub.xmldb.defaults import document_tab, resource_tab
 from seishub.xmldb.index import XmlIndex, type_classes
 from seishub.xmldb.interfaces import IXPathQuery, IResource, IXmlIndex
 from seishub.xmldb.xpath import XPathQuery
-from sqlalchemy import select, sql
+from sqlalchemy import select, sql, literal
 from zope.interface.exceptions import DoesNotImplement
 
 
@@ -19,25 +19,70 @@ class _IndexView(object):
     data per resource type.
     """
     
-    def createIndexView(self, xmlindex):
+    def updateIndexView(self, resourcetype):
         """
-        Create a index view using the given XMLIndex.
+        Updates an index view of a resource type.
         """
-        package_id = xmlindex.resourcetype.package.package_id
-        resourcetype_id = xmlindex.resourcetype.resourcetype_id 
+        if isinstance(resourcetype, XmlIndex):
+            resourcetype = resourcetype.resourcetype
+        package_id = resourcetype.package.package_id
+        resourcetype_id = resourcetype.resourcetype_id
         name = '/%s/%s' % (package_id, resourcetype_id)
-        q = select([document_tab.c['id'].label("document_id"),
-                    packages_tab.c['name'].label("package_id"),
-                    resourcetypes_tab.c['name'].label("resourcetype_id"),
-                    resource_tab.c['name'].label("resource_name")])
-        location_path = [package_id, resourcetype_id, None]
-        q, joins = self._process_location_path(location_path, q)
-        q = q.select_from(joins)
-        self._db_manager.createView(name, util.compileStatement(q))
+        # fetches all indexes of this resource type
+        xmlindex_list = self.getIndexes(package_id, resourcetype_id)
+        if not xmlindex_list:
+            return
+        # create index view
+        query, joins = self._createIndexView(xmlindex_list)
+        if not query:
+            return
+        query = query.select_from(joins)
+        self._db_manager.createView(name, util.compileStatement(query))
+        self._db_manager.env.log.debug("Updating IndexView %s ..." % name)
+    
+    def _createIndexView(self,xmlindex_list, compact=False):
+        """
+        Creates an index view using all given XMLIndex objects.
+        """
+        # sanity checks
+        if not isinstance(xmlindex_list, list):
+            return
+        if len(xmlindex_list)<1:
+            return
+        id = xmlindex_list[0].resourcetype._id
+        package_id = xmlindex_list[0].resourcetype.package.package_id
+        resourcetype_id = xmlindex_list[0].resourcetype.resourcetype_id
+        # check if resource types are the same for all indexes:
+        for xmlindex in xmlindex_list:
+            if xmlindex.resourcetype._id==id:
+                continue
+            msg = "XmlIndex objects must be from the same resource type."
+            raise InvalidParameterError(msg)
+        columns = [document_tab.c['id'].label("document_id")]
+        if not compact:
+            # add also columns package_id and resourcetype_id and resource_name 
+            columns.extend([
+                literal(package_id).label("package_id"), 
+                literal(resourcetype_id).label("resourcetype_id"), 
+                resource_tab.c['name'].label("resource_name")
+            ])
+        query = select(columns, distinct=True)
+        # add recursive all given indexes
+        query, joins = self._joinIndexes(xmlindex_list, query)
+        # join over resource
+        oncl = resource_tab.c['id'] == document_tab.c['resource_id']
+        joins = joins.join(resource_tab, onclause = oncl)
+        # joins over resource type
+        oncl = sql.and_(
+            resourcetypes_tab.c['id'] == resource_tab.c['resourcetype_id'],
+            resourcetypes_tab.c['id'] == xmlindex.resourcetype._id
+        )
+        joins = joins.join(resourcetypes_tab, onclause = oncl)
+        return query, joins
     
     def dropIndexView(self, xmlindex):
         """
-        Removes a index view from the database using a given XMLIndex.
+        Removes an index view of a resource type using a given XMLIndex.
         """
         package_id = xmlindex.resourcetype.package.package_id
         resourcetype_id = xmlindex.resourcetype.resourcetype_id 
@@ -69,7 +114,9 @@ class _QueryProcessor(object):
         idx = None
         # try via label if only one single node is given:
         if not '/' in expr:
-            idx = self.getIndexes(query_base[0], query_base[1], label = expr)
+            idx = self.getIndexes(package_id = query_base[0], 
+                                  resourcetype_id = query_base[1], 
+                                  label = expr)
             if idx:
                 return idx[0]
         # still there: multiple nodes or no label found
@@ -83,7 +130,9 @@ class _QueryProcessor(object):
                         xpath = DB_LIKE(self._replace_wildcards(expr)))
             if idx:
                 return idx[0]
-        idx = self.getIndexes(query_base[0], query_base[1], xpath = expr)
+        idx = self.getIndexes(package_id = query_base[0], 
+                              resourcetype_id = query_base[1],
+                              xpath = expr)
         if idx:
             return idx[0]
         # still there: no index found
@@ -158,45 +207,46 @@ class _QueryProcessor(object):
         joins = joins.join(packages_tab, onclause = oncl)
         return joins
     
-    def _process_location_path(self, location_path, q, joins = None):
+    def _joinIndexes(self, xmlindex_list, q, joins = None):
         """
-        Select all data indexed for the current location path, if only 
-        /package/resourcetype/* is given, select all indexes for the given
-        resourcetype.
+        Joins all given indexes by document_id and optional grouping elements.
         
-        The column names in the selection correspond to the id of the XMLIndex.
+        The column name correspond to the label of the XMLIndex object.
         """
-        pkg, rt = location_path[0:2]
-        if len(location_path)<=3:
-            # location path is on resource level
-            # select *all* known indexes for that resourcetype
-            indexes = self.getIndexes(pkg, rt)
-        else:
-            # find all indexes which fit to query
-            xpath = '/'.join(location_path[2:])
-            indexes = [self.findIndex([pkg, rt], xpath)]
+        grouping = False
+        # look for grouping elements
+        for idx in xmlindex_list:
+            if not idx.group_path:
+                continue
+            grouping = True
+            break
         # join indexes
-        group_paths = {}
-        for idx in indexes:
-            idx_tab = idx._getElementCls().db_table.alias()
+        gp_paths = {}
+        for idx in xmlindex_list:
+            keyval_label = idx.label
+            idx_tab = idx._getElementCls().db_table.alias(keyval_label)
             idx_gp = idx.group_path
             idx_id = int(idx._id)
-            # add keyval to selected columns
-            keyval_label = idx.label
+            # add keyval to selected columns an name it with index label
             q.append_column(idx_tab.c['keyval'].label(keyval_label))
             join = getattr(joins or document_tab, "outerjoin")
-            if idx_gp not in group_paths:
-                # first time we meet a grouping element
-                oncl = sql.and_(idx_tab.c['document_id'] == document_tab.c['id'],
-                                idx_tab.c['index_id'] == idx_id)
-                group_paths[idx_gp]=idx_tab
+            if not grouping or (idx_gp not in gp_paths):
+                # either we don't group at all or this is the first time we 
+                # got a grouping element
+                oncl = sql.and_(
+                    idx_tab.c['document_id'] == document_tab.c['id'],
+                    idx_tab.c['index_id'] == idx_id
+                )
+                if grouping:
+                    gp_paths[idx_gp]=idx_tab
             else:
                 # here we know the grouping element
-                oncl = sql.and_(idx_tab.c['document_id'] == document_tab.c['id'],
-                                idx_tab.c['index_id'] == idx_id,
-                                idx_tab.c['group_pos'] == group_paths[idx_gp].c['group_pos'])
+                oncl = sql.and_(
+                    idx_tab.c['document_id'] == document_tab.c['id'],
+                    idx_tab.c['index_id'] == idx_id,
+                    idx_tab.c['group_pos'] == gp_paths[idx_gp].c['group_pos']
+                )
             joins = join(idx_tab, onclause = oncl)
-        joins = self._join_on_resourcetype(pkg, rt, joins)
         return q, joins
     
     def _process_predicates(self, p, q, joins = None, complement = False):
@@ -301,7 +351,11 @@ class _QueryProcessor(object):
                     resourcetypes_tab.c['name'].label("resourcetype_id"),
                     resource_tab.c['name'].label("resource_name")], 
                    use_labels = True).distinct()
-        q, joins = self._process_location_path(location_path, q)
+        xpath = '/'.join(location_path[2:])
+        pkg, rt = location_path[0:2]
+        xmlindex_list = [self.findIndex([pkg, rt], xpath)]
+        q, joins = self._joinIndexes(xmlindex_list, q)
+        joins = self._join_on_resourcetype(pkg, rt, joins)
         if predicates:
             q, joins, w = self._process_predicates(predicates, q, joins)
             if w:
@@ -382,6 +436,8 @@ class XmlIndexCatalog(DbStorage, _QueryProcessor, _IndexView):
             msg = "Error registering an index: %s"
             raise SeisHubError(msg % str(xmlindex), e)
         #self._addToCache(xmlindex)
+        # refresh index view
+        self.updateIndexView(xmlindex)
         return xmlindex
     
     def deleteIndex(self, xmlindex):
@@ -391,9 +447,12 @@ class XmlIndexCatalog(DbStorage, _QueryProcessor, _IndexView):
         if not xmlindex._id:
             msg = "DeleteIndex: an XmlIndex has no id."
             raise InvalidObjectError(msg)
+        resourcetype = xmlindex.resourcetype
         self.flushIndex(xmlindex)
         self.drop(XmlIndex, _id = xmlindex._id)
         #self._deleteFromCache(xmlindex)
+        # refresh index view
+        self.updateIndexView(resourcetype)
     
     def getIndexes(self, package_id = None, resourcetype_id = None, 
                    xpath = None, group_path = None, type = None, 
@@ -436,22 +495,21 @@ class XmlIndexCatalog(DbStorage, _QueryProcessor, _IndexView):
 #            indexes.intersection_update(idxs)
 #        return list(indexes)
     
-    def indexResource(self, resource, xmlindex = None):
+    def indexResource(self, resource, xmlindex_list = None):
         """
-        Index the given resource using either all or a given XMLIndex.
+        Index the given resource using all or any given XMLIndex objects.
         """
         if not IResource.providedBy(resource):
             raise TypeError("%s is not an IResource." % str(resource))
         package_id = resource.package.package_id
         resourcetype_id = resource.resourcetype.resourcetype_id
-        if xmlindex:
-            xmlindex_list = [xmlindex]
-        else:
+        if not xmlindex_list:
             xmlindex_list = self.getIndexes(package_id = package_id, 
                                             resourcetype_id = resourcetype_id)
         elements = []
         for xmlindex in xmlindex_list:
-            elements.extend(xmlindex.eval(resource.document))
+            temp = xmlindex.eval(resource.document)
+            elements.extend(temp)
         for el in elements:
             try:
                 self.store(el)
@@ -474,7 +532,8 @@ class XmlIndexCatalog(DbStorage, _QueryProcessor, _IndexView):
         elements = list()
         for cls in type_classes.values():
             el = self.pickup(cls, document = {'_id':document_id})
-            elements.extend(el)
+            if el and el[0].document._id==document_id:
+                elements.extend(el)
         return elements
     
     def flushIndex(self, xmlindex):
@@ -493,7 +552,7 @@ class XmlIndexCatalog(DbStorage, _QueryProcessor, _IndexView):
                       document = {'_id':resource.document._id})
         return
     
-    def reindexIndex(self, xmlindex_list):
+    def reindexIndexes(self, xmlindex_list):
         """
         Reindex all resources by a list of XMLIndex objects.
         
@@ -501,8 +560,6 @@ class XmlIndexCatalog(DbStorage, _QueryProcessor, _IndexView):
         resource type of the first index and skip any additional indexes with
         a different resource type.
         """
-        if not isinstance(xmlindex_list, list):
-            xmlindex_list = list(xmlindex_list)
         resourcetype_id = xmlindex_list[0].resourcetype._id
         for xmlindex in xmlindex_list:
             # check interface
@@ -524,9 +581,11 @@ class XmlIndexCatalog(DbStorage, _QueryProcessor, _IndexView):
             ))
         query = query.group_by(document_tab.c['id'])
         result = self._db.execute(query)
-        # iterate over all document IDs and reindex
-        for item in result:
-            res = self._storage.getResource(document_id=item.id)
-            for xmlindex in xmlindex_list:
-                self.indexResource(res, xmlindex)
+        # get all document IDs and reindex
+        # XXX: inefficient - this should be a iterator  
+        # XXX: conflicts with self.store
+        for item in result.fetchall():
+            res = self._storage.getResource(document_id=item[0], 
+                                            revision=item[1])
+            self.indexResource(res, xmlindex_list)
         return True

@@ -154,7 +154,7 @@ class XmlCatalog(object):
             except Exception, e: 
                 msg = "Resource-validation against schema '%s' failed. (%s)"
                 raise InvalidObjectError(msg % (str(schema.getResource().name), 
-                                                e.message))
+                                                str(e)))
     
     def registerIndex(self, package_id = None, resourcetype_id = None, 
                       label = None, xpath = None, type = "text", 
@@ -201,8 +201,8 @@ class XmlCatalog(object):
                             xpath = xpath, type = type, options = options, 
                             group_path = group_path)
         xmlindex = self.index_catalog.registerIndex(xmlindex)
-        # create or update view:
-        self.index_catalog.createIndexView(xmlindex)
+        # update index view
+        self.index_catalog.updateIndexView(xmlindex)
         return xmlindex
     
     def deleteIndex(self, xmlindex = None, index_id = None):
@@ -211,9 +211,10 @@ class XmlCatalog(object):
         """
         if index_id:
             xmlindex = self.getIndexes(index_id = index_id)[0]
+        resourcetype = xmlindex.resourcetype
         self.index_catalog.deleteIndex(xmlindex)
-        # create or update view:
-        self.index_catalog.createIndexView(xmlindex)
+        # update index view via resourcetype
+        self.index_catalog.updateIndexView(resourcetype)
     
     def deleteAllIndexes(self, package_id, resourcetype_id = None):
         """
@@ -222,7 +223,7 @@ class XmlCatalog(object):
         xmlindex_list = self.getIndexes(package_id = package_id,
                                         resourcetype_id = resourcetype_id)
         for xmlindex in xmlindex_list:
-            self.index_catalog.deleteIndex(xmlindex)
+            self.deleteIndex(xmlindex)
     
     def getIndexes(self, package_id = None, resourcetype_id = None, 
                    xpath = None, group_path = None, type = "text", 
@@ -309,6 +310,26 @@ class XmlCatalog(object):
         return [self.xmldb.getResource(document_id = id) 
                 for id in results['ordered']]
     
+    def updateIndexView(self, package_id, resourcetype_id):
+        """
+        """
+        xmlindex = self.getIndexes(package_id=package_id,
+                                   resourcetype_id=resourcetype_id)[0]
+        return self.index_catalog.updateIndexView(xmlindex)
+    
+    def updateAllIndexViews(self):
+        """
+        """
+        xmlindex_list = self.getIndexes()
+        ids = []
+        for xmlindex in xmlindex_list:
+            if xmlindex.resourcetype._id not in ids:
+                ids.append(xmlindex.resourcetype._id)
+                self.index_catalog.updateIndexView(xmlindex)
+            else:    
+                xmlindex_list.remove(xmlindex)
+        self.env.log.info("IndexViews have been updated.")
+    
     def getAllResourceNames(self, package_id, resourcetype_id, limit = 100, 
                             ordered = False):
         """
@@ -324,7 +345,7 @@ class XmlCatalog(object):
         """
         if index_id:
             xmlindex = self.getIndexes(index_id = index_id)[0]
-        return self.index_catalog.reindexIndex([xmlindex])
+        return self.index_catalog.reindexIndexes([xmlindex])
     
     def reindexResourceType(self, package_id, resourcetype_id):
         """
@@ -332,7 +353,7 @@ class XmlCatalog(object):
         """
         xmlindex_list = self.getIndexes(package_id = package_id,
                                         resourcetype_id = resourcetype_id)
-        return self.index_catalog.reindexIndex(xmlindex_list)
+        return self.index_catalog.reindexIndexes(xmlindex_list)
     
     def reindexResource(self, resource):
         """

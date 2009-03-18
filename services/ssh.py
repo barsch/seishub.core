@@ -194,9 +194,9 @@ class SSHServiceProtocol(recvline.HistoricRecvLine):
             else:
                 try:
                     self.env.auth.changePassword(uid, password)
-                except SeisHubError(), e:
-                    self.writeln(e.message)
-                except Exception ,e:
+                except SeisHubError, e:
+                    self.writeln(str(e))
+                except Exception, e:
                     raise e
                 else:
                     self.writeln("Password has been changed.")

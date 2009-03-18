@@ -87,9 +87,8 @@ so_indexes = [
 ]
 
 class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
-#    def _config(self):
-#        self.default_config.set('db', 'verbose', True)
-    
+    """
+    """
     def setUp(self):
         self.catalog = self.env.catalog.index_catalog
         self.xmldb = self.env.catalog.xmldb
@@ -136,11 +135,11 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         self.idx5 = self.env.catalog.registerIndex("testpackage", "station", 
                                                    "5", "/station", 
                                                    type="boolean")
-        
         self.env.catalog.reindexIndex(self.idx1)
         self.env.catalog.reindexIndex(self.idx2)
         self.env.catalog.reindexIndex(self.idx3)
         self.env.catalog.reindexIndex(self.idx4)
+        self.env.catalog.reindexIndex(self.idx5)
         # add sort order test resources
         path = os.path.dirname(inspect.getsourcefile(self.__class__))
         test_path = os.path.join(path,'data')
@@ -159,6 +158,8 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
             self.env.catalog.reindexIndex(idx)
         
     def _cleanup_testdata(self):
+        """
+        """
         self.env.catalog.deleteIndex(self.idx1)
         self.env.catalog.deleteIndex(self.idx2)
         self.env.catalog.deleteIndex(self.idx3)
@@ -173,8 +174,10 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
             self.env.catalog.deleteResource(res)
     
     def test_registerIndex(self):
+        """
+        """
         index = XmlIndex(self.rt1, "/station/XY/paramXY", DATETIME_INDEX, 
-                         "%Y/%m")
+                         "%Y/%m", label='test')
         self.catalog.registerIndex(index)
         
         res = self.catalog.getIndexes(self.rt1.package.package_id, 
@@ -192,7 +195,9 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         self.catalog.deleteIndex(index)
     
     def test_deleteIndex(self):
-        index = XmlIndex(self.rt1, "/station/XY/paramXY")
+        """
+        """
+        index = XmlIndex(self.rt1, "/station/XY/paramXY", label='test')
         self.catalog.registerIndex(index)
         res = self.catalog.getIndexes(self.rt1.package.package_id, 
                                       self.rt1.resourcetype_id,
@@ -205,9 +210,11 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         self.assertEquals(len(res), 0)
     
     def test_getIndexes(self):
-        index_rt1 = XmlIndex(self.rt1, "/station/XY/paramXY")
-        index2_rt1 = XmlIndex(self.rt1, "/station/station_code")
-        index_rt2 = XmlIndex(self.rt2, "/station/XY/paramXY")
+        """
+        """
+        index_rt1 = XmlIndex(self.rt1, "/station/XY/paramXY", label='id1')
+        index2_rt1 = XmlIndex(self.rt1, "/station/station_code", label='id2')
+        index_rt2 = XmlIndex(self.rt2, "/station/XY/paramXY", label='id3')
         self.catalog.registerIndex(index_rt1)
         self.catalog.registerIndex(index2_rt1)
         self.catalog.registerIndex(index_rt2)
@@ -262,8 +269,8 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         # set up
         res = Resource(self.rt1, document = newXMLDocument(RAW_XML2))
         self.xmldb.addResource(res)
-        index1 = XmlIndex(self.rt1, "/station/station_code")
-        index2 = XmlIndex(self.rt1, "/station/XY/paramXY")
+        index1 = XmlIndex(self.rt1, "/station/station_code", label='idx1')
+        index2 = XmlIndex(self.rt1, "/station/XY/paramXY", label='idx2')
         self.catalog.registerIndex(index1)
         self.catalog.registerIndex(index2)
         
@@ -573,14 +580,14 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
 #        self._cleanup_testdata()
 #        after = list(self.catalog._cache['package_id'].values()[0])
     
-    def test_createIndexView(self):
+    def test_updateIndexView(self):
         """
         Tests creation of an index view.
         """
         # create test catalog
         self._setup_testdata()
         
-        self.catalog.createIndexView(self.idx1)
+        self.catalog.updateIndexView(self.idx1)
         sql = 'SELECT * FROM "/testpackage/station"'
         res = self.env.db.engine.execute(sql).fetchall()
         self.assertEquals(res, [(6, u'testpackage', u'station', u'RAW_XML1', 

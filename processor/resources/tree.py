@@ -51,7 +51,7 @@ class ResourceTree(StaticFolder):
         This method should be called, if the status any included resource 
         objects changes, e.g. a mapper gets disabled.
         """
-        self.env.log.debug('Updating resource tree.')
+        self.env.log.debug('Updating ResourceTree ...')
         self.children = {}
         self._registry = {}
         # set mappings
@@ -65,3 +65,4 @@ class ResourceTree(StaticFolder):
         self.putChild('browser', AdminRootFolder(self.env))
         # set XML resource root folder
         self.putChild('xml', RESTFolder())
+        self.env.log.info('ResourceTree has been updated.')

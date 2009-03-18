@@ -16,12 +16,13 @@ import unittest
 
 
 USE_TEST_DB = 'sqlite://'
-#USE_TEST_DB = 'postgres://seishub:seishub@localhost:5432/postgis'
+#USE_TEST_DB = 'postgres://seishub:seishub@localhost:5432/postgres'
 
 # use this options below only for debugging test cases
 CHECK_DATABASE = False
 CLEAN_DATABASE = True
 DISPOSE_CONNECTION = False
+VERBOSE_DATABASE = False
 
 
 class SeisHubEnvironmentTestCase(unittest.TestCase):
@@ -46,6 +47,7 @@ class SeisHubEnvironmentTestCase(unittest.TestCase):
         self.default_config.set('logging', 'log_level', 'OFF')
         self.default_config.set('seishub', 'auth_uri', 'sqlite://')
         self.default_config.set('db', 'uri', USE_TEST_DB)
+        self.default_config.set('db', 'verbose', VERBOSE_DATABASE)
     
     def _config(self):
         """

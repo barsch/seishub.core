@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from seishub.core import Component, implements
-from seishub.packages.installer import registerSchema, registerStylesheet, \
-    registerAlias
+from seishub.packages.installer import registerSchema, registerStylesheet
 from seishub.packages.interfaces import IResourceType, IPackage
 from seishub.test import SeisHubEnvironmentTestCase
 import os
@@ -22,8 +21,8 @@ class AResourceType(Component):
     package_id = 'atestpackage'
     resourcetype_id = 'aresourcetype'
     registerStylesheet('data' + os.sep + 'resourcelist_json.xslt', 'aformat')
-    registerAlias('analias','/resourceroot[./a/predicate/expression]',
-                  limit = 10, order_by = {'/path/to/element':'ASC'})
+#    registerAlias('analias','/resourceroot[./a/predicate/expression]',
+#                  limit = 10, order_by = {'/path/to/element':'ASC'})
 
 
 class PackageRegistryFilesystemTest(SeisHubEnvironmentTestCase):
@@ -93,25 +92,25 @@ class PackageRegistryFilesystemTest(SeisHubEnvironmentTestCase):
         assert {'filename': p2, 'type': 'xhtml'} in\
                 FooBar._registry_stylesheets
     
-    def test_registerAlias(self):
-        # no package id/resourcetype id
-        try:
-            class Foo():
-                registerAlias('blah','blah')
-        except Exception, e:
-            assert isinstance(e, AssertionError)
-        
-        class Bar():
-            package_id = 'testpackage'
-            resourcetype_id = 'resourcetype'
-            registerAlias('otheralias','/resourceroot[./other/predicate/expression]',
-                          limit = 10, order_by = {'/path/to/other/element':'ASC'})
-        
-        assert {'name': 'otheralias', 
-                'expr': '/resourceroot[./other/predicate/expression]', 
-                'limit': 10, 
-                'order_by': {'/path/to/other/element': 'ASC'}
-                } in Bar._registry_aliases
+#    def test_registerAlias(self):
+#        # no package id/resourcetype id
+#        try:
+#            class Foo():
+#                registerAlias('blah','blah')
+#        except Exception, e:
+#            assert isinstance(e, AssertionError)
+#        
+#        class Bar():
+#            package_id = 'testpackage'
+#            resourcetype_id = 'resourcetype'
+#            registerAlias('otheralias','/resourceroot[./other/predicate/expression]',
+#                          limit = 10, order_by = {'/path/to/other/element':'ASC'})
+#        
+#        assert {'name': 'otheralias', 
+#                'expr': '/resourceroot[./other/predicate/expression]', 
+#                'limit': 10, 
+#                'order_by': {'/path/to/other/element': 'ASC'}
+#                } in Bar._registry_aliases
     
     def test_autoInstaller(self):
         from seishub.packages.installer import PackageInstaller
@@ -130,15 +129,15 @@ class PackageRegistryFilesystemTest(SeisHubEnvironmentTestCase):
         p = os.path.join(self.env.config.path,'seishub','registry','tests',
                          'data','resourcelist_json.xslt')
         self.assertEqual(stylesheet[0].resource.document.data, file(p).read())
-        # aliases
-        alias = self.registry.aliases.get('atestpackage', 'aresourcetype', 
-                                        'analias')
-        self.assertEqual(len(alias), 1)
-        self.assertEqual(alias[0].expr,'/resourceroot[./a/predicate/expression]')
-        # clean up
-        self.registry.aliases.delete(alias[0].package.package_id,
-                                     alias[0].resourcetype.resourcetype_id,
-                                     alias[0].name)
+#        # aliases
+#        alias = self.registry.aliases.get('atestpackage', 'aresourcetype', 
+#                                        'analias')
+#        self.assertEqual(len(alias), 1)
+#        self.assertEqual(alias[0].expr,'/resourceroot[./a/predicate/expression]')
+#        # clean up
+#        self.registry.aliases.delete(alias[0].package.package_id,
+#                                     alias[0].resourcetype.resourcetype_id,
+#                                     alias[0].name)
         self.registry.stylesheets.delete(stylesheet[0].package.package_id,
                                          stylesheet[0].resourcetype.\
                                             resourcetype_id,

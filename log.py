@@ -17,7 +17,9 @@ LOG_LEVELS = {'OFF': -1,
 
 
 class ErrorLog(log.FileLogObserver):
-    """Error log only for logging error messages."""
+    """
+    Error log only for logging error messages.
+    """
     
     def emit(self, eventDict):
         #skip access messages
@@ -27,8 +29,11 @@ class ErrorLog(log.FileLogObserver):
 
 
 class Logger(object):
-    """A log manager to handle all incoming log calls. You still may use 
-    twisted.python.log.msg and twisted.python.log.err to emit log messages.
+    """
+    A log manager to handle all incoming log calls. 
+    
+    You still may use twisted.python.log.msg and twisted.python.log.err to 
+    emit log messages.
     """
     
     Option('logging', 'error_log_file', 'error.log',
@@ -66,8 +71,11 @@ class Logger(object):
         for l in log.theLogPublisher:
             log.removeObserver(l)
     
-    def _formatMessage(self, level, msg, showTraceback):
-        log.msg('%s:  %s' % (level, msg), isError=True)
+    def _formatMessage(self, level, msg, showTraceback, color=False):
+        msg = '%6s  %s' % (level+':', msg)
+        #if color:
+        #    msg = '\\x%db[2;31;31m%s\\x1b[0m' % (color, msg)
+        log.msg(msg, isError=True)
         if showTraceback:
             log.msg(traceback.format_exc(), isError=True)
     
@@ -82,12 +90,12 @@ class Logger(object):
     def error(self, msg, showTraceback=False):
         if self.log_level < ERROR:
             return
-        self._formatMessage('ERROR', msg, showTraceback)
+        self._formatMessage('ERROR', msg, showTraceback, color=2)
         
     def warn(self, msg, showTraceback=False):
         if self.log_level < WARN:
             return
-        self._formatMessage('WARN', msg, showTraceback)
+        self._formatMessage('WARN', msg, showTraceback, color=1)
     
     def info(self, msg, showTraceback=False):
         if self.log_level < INFO:

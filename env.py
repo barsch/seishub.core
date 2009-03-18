@@ -107,9 +107,10 @@ class Environment(ComponentManager):
         General update method after enabling/disabling components.
         """
         self.registry.mappers.update()
-        self.registry.sqlviews.update()
         self.tree.update()
         self.registry.processor_indexes.update()
+        self.catalog.updateAllIndexViews()
+        self.registry.sqlviews.update()
     
     @defer.inlineCallbacks
     def enableService(self, id):
@@ -156,7 +157,7 @@ class Environment(ComponentManager):
                 PackageInstaller.install(self, component.package_id)
             except Exception, e:
                 self.disableComponent(component)
-                return e.message
+                return str(e)
         self.log.info('Enabling component %s' % fullname)
         self.update()
     

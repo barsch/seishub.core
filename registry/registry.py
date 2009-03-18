@@ -557,6 +557,7 @@ class SQLViewRegistry(object):
         """
         Refresh all SQL views.
         """
+        self.env.log.debug("Updating SQLViews ...")
         self._view_objs = dict()
         all = PackageManager.getClasses(ISQLView)
         for cls in all:
@@ -564,6 +565,7 @@ class SQLViewRegistry(object):
                 self._enableView(cls)
             elif hasattr(cls, 'view_id') and cls.view_id in self._view_objs:
                 self._disableView(cls)
+        self.env.log.info("SQLViews have been updated.")
     
     def _enableView(self, cls):
         """
@@ -578,12 +580,14 @@ class SQLViewRegistry(object):
             return
         # create view
         sql = cls(self.env).createView()
+        if not sql:
+            return
         name = cls.view_id
         try:
             self.env.db.createView(name, sql)
         except Exception, e:
             msg = "Could not create a SQL view defined by class %s.\n%s"
-            self.env.log.error(msg % (cls, e.message))
+            self.env.log.error(msg % (cls, str(e)))
             return
         # register
         self._view_objs[cls.view_id] = cls
@@ -593,7 +597,7 @@ class SQLViewRegistry(object):
             self.env.db.dropView(cls.view_id)
         except Exception, e:
             msg = "Could not delete a SQL view defined by class %s.\n%s"
-            self.env.log.error(msg % (cls, e.message))
+            self.env.log.error(msg % (cls, str(e)))
             return
         # unregister
         self._view_objs.pop(cls.view_id)

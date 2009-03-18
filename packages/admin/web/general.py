@@ -152,7 +152,7 @@ class UsersPanel(Component):
                                   email=email, institution=institution)
             except SeisHubError, e:
                 # password checks are made in self.auth.addUser method 
-                data['error'] = e.message
+                data['error'] = str(e)
             except Exception, e:
                 self.log.error("Error adding new user", e)
                 data['error'] = "Error adding new user", e
@@ -173,7 +173,7 @@ class UsersPanel(Component):
                 self.auth.deleteUser(id=id)
             except SeisHubError(), e:
                 # checks are made in self.auth.deleteUser method 
-                data['error'] = e.message
+                data['error'] = str(e)
             except Exception, e:
                 self.log.error("Error deleting user", e)
                 data['error'] = "Error deleting user", e
