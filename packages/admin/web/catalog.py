@@ -87,7 +87,7 @@ class DatabaseQueryPanel(Component):
         db = self.env.db.engine
         tables = sorted([t for t in db.table_names() if DEFAULT_PREFIX in t])
         data = {
-            'query': 'select 1 LIMIT 20;', 
+            'query': 'SELECT 1;', 
             'result': '',
             'cols': '',
             'rows': 0,
@@ -103,10 +103,11 @@ class DatabaseQueryPanel(Component):
                 query = data['query'] = request.args['query'][0]
             elif 'table' in args:
                 table = DEFAULT_PREFIX + request.args['table'][0]
-                query = 'SELECT * FROM ' + table + ' LIMIT 20;'
+                query = 'SELECT * \nFROM ' + table + '\nLIMIT 20;'
             elif 'view' in args:
                 view = request.args['view'][0]
-                query = 'SELECT * FROM "' + view + '" LIMIT 20;'
+                query = 'SELECT * \nFROM "' + view + \
+                        '" \nORDER BY document_id DESC\nLIMIT 20;'
             if query:
                 data['query'] = query
                 try:

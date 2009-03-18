@@ -220,7 +220,11 @@ class XmlDbManager(DbStorage):
             resource_tab.c['resourcetype_id'] == resourcetype._id
         )
         if ordered:
+            # order by name
             query = query.order_by(resource_tab.c['name'])
+        else:
+            # order by document id -> shows latest first
+            query = query.order_by(resource_tab.c['id'].desc())
         if limit:
             query = query.offset(0).limit(limit)
         return self._db.execute(query).fetchall()
