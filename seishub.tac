@@ -8,7 +8,13 @@ from seishub.services.ssh import SSHService
 from seishub.services.sftp import SFTPService
 from seishub.services.heartbeat import HeartbeatService
 from seishub.services.filemonitor import SEEDFileMonitorService
+import sys
 
+
+# check for python version
+if not sys.hexversion >= 0x2060000:
+    print "ERROR: SeisHub needs at least Python 2.6 or higher in order to run."
+    exit()
 
 # setup our Environment
 env=Environment()
