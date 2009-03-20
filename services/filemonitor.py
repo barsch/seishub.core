@@ -58,9 +58,9 @@ class SEEDFileSerializer(object):
     
     def _scan(self, path, file):
         # scan for gaps + overlaps
-        if self.libmseed:
-            return self.libmseed.findGaps(os.path.join(path, file)), []
-        return [], []
+        if not self.libmseed:
+            return None
+        return self.libmseed.getGapList(os.path.join(path, file))
     
     def _delete(self, path, file=None):
         """
@@ -81,7 +81,8 @@ class SEEDFileSerializer(object):
         """
         Add a new file into the database.
         """
-        gaps, overlaps = self._scan(path, file)
+        result  = self._scan(path, file)
+        import pdb;pdb.set_trace()
         sql_obj = miniseed_tab.insert().values(file=file,
                                                path=path, 
                                                mtime=stats.st_mtime,
@@ -97,7 +98,8 @@ class SEEDFileSerializer(object):
         """
         Modify a file in the database.
         """
-        gaps, overlaps = self._scan(path, file)
+        result  = self._scan(path, file)
+        import pdb;pdb.set_trace()
         sql_obj = miniseed_tab.update()
         sql_obj = sql_obj.where(miniseed_tab.c['file']==file)
         sql_obj = sql_obj.where(miniseed_tab.c['path']==path)
@@ -163,6 +165,8 @@ class SEEDFileCrawler(internet.TimerService, SEEDFileSerializer):
         paths = self.env.config.getlist('seedfilemonitor', 'paths')
         self._roots = [os.path.normcase(r) for r in paths]
         self._current_path = self._roots.pop()
+        msg = "Scanning %s ..." % self._current_path
+        self.env.log.debug(msg)
         self._current_walker = os.walk(self._current_path, followlinks=True)
         self._all_paths = []
         # prepare file endings
@@ -180,8 +184,8 @@ class SEEDFileCrawler(internet.TimerService, SEEDFileSerializer):
         except StopIteration:
             try:
                 self._current_path = self._roots.pop()
-                msg = "Scanning %s" % self._current_path
-                self.env.log.info(msg)
+                msg = "Scanning %s ..." % self._current_path
+                self.env.log.debug(msg)
                 self._current_walker = os.walk(self._current_path)
             except IndexError:
                 # a whole cycle has been done - check paths

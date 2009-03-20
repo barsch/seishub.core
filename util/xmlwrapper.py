@@ -151,10 +151,10 @@ class XmlStylesheet(object):
         self.content_type = root.xpath('.//xsl:output/@media-type', 
                                        namespaces=root.nsmap)
     
-    def transform(self, xmltree_doc):
+    def transform(self, xmltree_doc, **kwargs):
         if not IXmlDoc.providedBy(xmltree_doc):
             raise DoesNotImplement(IXmlDoc)
-        result_tree = self.transform_func(xmltree_doc.getXml_doc())
+        result_tree = self.transform_func(xmltree_doc.getXml_doc(), **kwargs)
         return result_tree
 
 

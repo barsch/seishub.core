@@ -53,6 +53,7 @@ class Processor:
         self.data = StringIO()
         # set resource tree, default paths, arguments
         self.args = {}
+        self.args0 = {}
         self.prepath = []
         self.postpath = []
         self.tree = self.env.tree
@@ -100,6 +101,9 @@ class Processor:
         # read content
         self.content.seek(0, 0)
         self.data=self.content.read()
+        # easy args handler
+        for id in self.args:
+            self.args0[id] = self.args[id][0]
         return self.render()
     
     def render(self):

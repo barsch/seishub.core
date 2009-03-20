@@ -96,11 +96,11 @@ class DatabaseManager(object):
                                 encoding = 'utf-8', 
                                 convert_unicode = True)
     
-    def query(self, sql):
+    def query(self, *args, **kwargs):
         """
         Shortcut for querying the database.
         """
-        return self.engine.execute(sql)
+        return self.engine.execute(*args, **kwargs)
     
     def createView(self, name, sql):
         """

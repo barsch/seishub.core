@@ -185,8 +185,6 @@ class IndexesPanel(Component):
                 data = self._reindexIndexes(data)
             elif 'reindex-all' in args:
                 data = self._reindexResourceType(data)
-            elif 'indexview' in args:
-                data = self._refreshIndexView(data)
             elif 'filter' in args:
                 data = self._getIndexes(data)
         return data
@@ -197,21 +195,6 @@ class IndexesPanel(Component):
             package_id = data['package_id'],
             resourcetype_id = data['resourcetype_id']
         )
-        return data
-    
-    def _updateIndexView(self, data):
-        view_id = '/'+'/'.join([data['package_id'], data['resourcetype_id']])
-        try:
-            self.env.catalog.updateIndexView(
-                package_id = data['package_id'],
-                resourcetype_id = data['resourcetype_id']
-            )
-        except Exception, e:
-            msg = "Error updating IndexView %s:" % view_id
-            self.log.error(msg, e)
-            data['error'] = {'error': (msg, e)}
-        else:
-            data['info'] = "IndexView %s has been updated." % view_id
         return data
     
     def _reindexIndexes(self, data):

@@ -68,8 +68,12 @@ class ComponentRegistry(DbStorage):
     
     def getAllPackagesAndResourceTypes(self):
         """
-        Returns dictionary of enabled resource type ids and package ids, 
-        in form of: {'package_id': ['resourcetype_id_1', 'resourcetype_id_2']}.
+        Returns dictionary of enabled resource type and package IDs.
+        
+        List of resource types of each package is sorted.
+        
+        @return: {'package_id': ['resourcetype_id_1', 'resourcetype_id_2']}
+        @rtype: dictionary
         """
         ids = self.getPackageIds()
         resourcetypes = dict()
@@ -77,6 +81,9 @@ class ComponentRegistry(DbStorage):
             all = PackageManager.getClasses(IResourceType, id)
             resourcetypes[id] = [cls.resourcetype_id for cls in all \
                                 if self.env.isComponentEnabled(cls)]
+        # sort
+        for id in resourcetypes.keys():
+            resourcetypes[id] = sorted(resourcetypes[id])
         return resourcetypes
     
     def getResourceType(self, package_id, resourcetype_id):
