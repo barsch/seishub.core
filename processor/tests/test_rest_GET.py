@@ -195,8 +195,8 @@ class RestGETTests(SeisHubEnvironmentTestCase):
         self.assertFalse(isinstance(data['test.xml'].res.document, list))
         self.assertFalse(isinstance(data['test2.xml'].res.document, list))
         # check revisions
-        self.assertTrue(data['test.xml'].res.document.revision, 3)
-        self.assertTrue(data['test2.xml'].res.document.revision, 2)
+        self.assertEquals(data['test.xml'].res.document.revision, 3)
+        self.assertEquals(data['test2.xml'].res.document.revision, 2)
         self.assertEquals(data['test.xml'].render_GET(proc), XML_DOC2 % 33)
         self.assertEquals(data['test2.xml'].render_GET(proc), XML_DOC2 % 222)
         # delete resource
@@ -255,7 +255,7 @@ class RestGETTests(SeisHubEnvironmentTestCase):
         # data must be a basestring
         self.assertTrue(isinstance(data1, basestring))
         # check content
-        self.assertTrue(data1, XML_DOC)
+        self.assertEquals(data1, XML_DOC)
         # delete resource
         proc.run(DELETE, '/get-test/notvc/test.xml')
     
@@ -277,7 +277,7 @@ class RestGETTests(SeisHubEnvironmentTestCase):
         # both results should equal
         self.assertTrue(data1==data2)
         # check content
-        self.assertTrue(data1, XML_DOC)
+        self.assertEquals(data1, XML_DOC)
         # GET revision 2
         res3 = proc.run(GET, '/get-test/vc/test.xml/2')
         data3 = res3.render_GET(proc)
@@ -309,7 +309,7 @@ class RestGETTests(SeisHubEnvironmentTestCase):
         # data must be a basestring
         self.assertTrue(isinstance(data1, basestring))
         # check content
-        self.assertTrue(data1, XML_DOC)
+        self.assertEquals(data1, XML_DOC)
         # try to GET revision 2
         try:
             proc.run(GET, '/get-test/notvc/test.xml/2')
@@ -358,7 +358,7 @@ class RestGETTests(SeisHubEnvironmentTestCase):
         proc.run(PUT, '/get-test/notvc/2', StringIO(XML_DOC))
         res = proc.run(GET, '/get-test/notvc/1')
         data = res.render_GET(proc)
-        self.assertTrue(data, XML_DOC)
+        self.assertEquals(data, XML_DOC)
         # clean up
         proc.run(DELETE, '/get-test/notvc/1')
         proc.run(DELETE, '/get-test/notvc/2')

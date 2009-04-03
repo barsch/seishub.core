@@ -103,6 +103,8 @@ class Processor:
         self.data=self.content.read()
         # easy args handler
         for id in self.args:
+            if not len(self.args[id]):
+                continue
             self.args0[id] = self.args[id][0]
         return self.render()
     

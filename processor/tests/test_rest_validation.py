@@ -44,7 +44,7 @@ class APackage(Component):
     """
     implements(IPackage)
     
-    package_id = 'put-validation-test'
+    package_id = 'validation-test'
 
 
 class SchematronResourceType(Component):
@@ -53,9 +53,10 @@ class SchematronResourceType(Component):
     """
     implements(IResourceType)
     
-    package_id = 'put-validation-test'
+    package_id = 'validation-test'
     resourcetype_id = 'schematron'
-    registerSchema('data' + os.sep + 'schematron.sch', 'Schematron')
+    registerSchema('data' + os.sep + 'validation' + os.sep + 'schematron.sch', 
+                   'Schematron')
 
 class RelaxNGResourceType(Component):
     """
@@ -63,10 +64,11 @@ class RelaxNGResourceType(Component):
     """
     implements(IResourceType)
     
-    package_id = 'put-validation-test'
+    package_id = 'validation-test'
     resourcetype_id = 'relaxng'
     
-    registerSchema('data' + os.sep + 'relaxng.rng', 'RelaxNG')
+    registerSchema('data' + os.sep + 'validation' + os.sep + 'relaxng.rng', 
+                   'RelaxNG')
 
 
 class XMLSchemaResourceType(Component):
@@ -75,22 +77,11 @@ class XMLSchemaResourceType(Component):
     """
     implements(IResourceType)
     
-    package_id = 'put-validation-test'
+    package_id = 'validation-test'
     resourcetype_id = 'xmlschema'
     
-    registerSchema('data' + os.sep + 'xmlschema.xsd', 'XMLSchema')
-
-
-class ComplexXMLSchemaResourceType(Component):
-    """
-    A test resource type including a complex XMLSchema validation schema.
-    """
-    implements(IResourceType)
-    
-    package_id = 'put-validation-test'
-    resourcetype_id = 'complex'
-    
-    registerSchema('data' + os.sep + 'QuakeML-BED-1.1.xsd', 'XMLSchema')
+    registerSchema('data' + os.sep + 'validation' + os.sep + 'xmlschema.xsd', 
+                   'XMLSchema')
 
 
 class MultipleXMLSchemaResourceType(Component):
@@ -99,11 +90,13 @@ class MultipleXMLSchemaResourceType(Component):
     """
     implements(IResourceType)
     
-    package_id = 'put-validation-test'
+    package_id = 'validation-test'
     resourcetype_id = 'multi'
     
-    registerSchema('data' + os.sep + 'xmlschema.xsd', 'XMLSchema')
-    registerSchema('data' + os.sep + 'relaxng.rng', 'RelaxNG')
+    registerSchema('data' + os.sep + 'validation' + os.sep + 'xmlschema.xsd', 
+                   'XMLSchema')
+    registerSchema('data' + os.sep + 'validation' + os.sep + 'relaxng.rng', 
+                   'RelaxNG')
 
 
 class RestValidationTests(SeisHubEnvironmentTestCase):
@@ -113,7 +106,6 @@ class RestValidationTests(SeisHubEnvironmentTestCase):
     def setUp(self):
         self.env.enableComponent(APackage)
         self.env.enableComponent(XMLSchemaResourceType)
-        self.env.enableComponent(ComplexXMLSchemaResourceType)
         self.env.enableComponent(MultipleXMLSchemaResourceType)
         self.env.enableComponent(RelaxNGResourceType)
         self.env.enableComponent(SchematronResourceType)
@@ -121,13 +113,13 @@ class RestValidationTests(SeisHubEnvironmentTestCase):
     
     def tearDown(self):
         # delete all package schemas
-        for schema in self.env.registry.schemas.get('put-validation-test'):
+        for schema in self.env.registry.schemas.get('validation-test'):
             self.env.registry.schemas.delete(document_id=schema.document_id)
         # delete all resource types
-        for rt in self.env.registry.getResourceTypeIds('put-validation-test'):
-            self.env.registry.db_deleteResourceType('put-validation-test', rt)
+        for rt in self.env.registry.getResourceTypeIds('validation-test'):
+            self.env.registry.db_deleteResourceType('validation-test', rt)
         # delete package
-        self.env.registry.db_deletePackage('put-validation-test')
+        self.env.registry.db_deletePackage('validation-test')
     
     def test_validateRelaxNG(self):
         """
@@ -135,19 +127,19 @@ class RestValidationTests(SeisHubEnvironmentTestCase):
         """
         proc = Processor(self.env)
         # create valid resource
-        proc.run(PUT, '/put-validation-test/relaxng/valid.xml', 
+        proc.run(PUT, '/validation-test/relaxng/valid.xml', 
                  StringIO(XML_DOC % "<a><b></b></a>"))
         # create invalid resource
         try:
-            proc.run(PUT, '/put-validation-test/relaxng/invalid.xml', 
+            proc.run(PUT, '/validation-test/relaxng/invalid.xml', 
                      StringIO(XML_DOC % "<a><c></c></a>"))
             self.fail("Expected SeisHubError")
         except SeisHubError, e:
             self.assertEqual(e.code, http.CONFLICT)
         # delete resource
-        proc.run(DELETE, '/put-validation-test/relaxng/valid.xml')
+        proc.run(DELETE, '/validation-test/relaxng/valid.xml')
         try:
-            proc.run(DELETE, '/put-validation-test/relaxng/invalid.xml')
+            proc.run(DELETE, '/validation-test/relaxng/invalid.xml')
             self.fail("Expected SeisHubError")
         except SeisHubError, e:
             self.assertEqual(e.code, http.NOT_FOUND)
@@ -158,19 +150,19 @@ class RestValidationTests(SeisHubEnvironmentTestCase):
         """
         proc = Processor(self.env)
         # create valid resource
-        proc.run(PUT, '/put-validation-test/schematron/valid.xml', 
+        proc.run(PUT, '/validation-test/schematron/valid.xml', 
                  StringIO(XML_VALID_SCHEMATRON))
         # create invalid resource
         try:
-            proc.run(PUT, '/put-validation-test/schematron/invalid.xml', 
+            proc.run(PUT, '/validation-test/schematron/invalid.xml', 
                      StringIO(XML_INVALID_SCHEMATRON))
             self.fail("Expected SeisHubError")
         except SeisHubError, e:
             self.assertEqual(e.code, http.CONFLICT)
         # delete resource
-        proc.run(DELETE, '/put-validation-test/schematron/valid.xml')
+        proc.run(DELETE, '/validation-test/schematron/valid.xml')
         try:
-            proc.run(DELETE, '/put-validation-test/schematron/invalid.xml')
+            proc.run(DELETE, '/validation-test/schematron/invalid.xml')
             self.fail("Expected SeisHubError")
         except SeisHubError, e:
             self.assertEqual(e.code, http.NOT_FOUND)
@@ -181,19 +173,19 @@ class RestValidationTests(SeisHubEnvironmentTestCase):
         """
         proc = Processor(self.env)
         # create valid resource
-        proc.run(PUT, '/put-validation-test/xmlschema/valid.xml', 
+        proc.run(PUT, '/validation-test/xmlschema/valid.xml', 
                  StringIO(XML_DOC % "<a><b></b></a>"))
         # create invalid resource
         try:
-            proc.run(PUT, '/put-validation-test/xmlschema/invalid.xml', 
+            proc.run(PUT, '/validation-test/xmlschema/invalid.xml', 
                      StringIO(XML_DOC % "<b><a/></b>"))
             self.fail("Expected SeisHubError")
         except SeisHubError, e:
             self.assertEqual(e.code, http.CONFLICT)
         # delete resource
-        proc.run(DELETE, '/put-validation-test/xmlschema/valid.xml')
+        proc.run(DELETE, '/validation-test/xmlschema/valid.xml')
         try:
-            proc.run(DELETE, '/put-validation-test/xmlschema/invalid.xml')
+            proc.run(DELETE, '/validation-test/xmlschema/invalid.xml')
             self.fail("Expected SeisHubError")
         except SeisHubError, e:
             self.assertEqual(e.code, http.NOT_FOUND)
@@ -204,17 +196,17 @@ class RestValidationTests(SeisHubEnvironmentTestCase):
         """
         proc = Processor(self.env)
         # create valid resource
-        proc.run(PUT, '/put-validation-test/multi/valid.xml', 
+        proc.run(PUT, '/validation-test/multi/valid.xml', 
                  StringIO(XML_DOC % "<a><b></b></a>"))
         # create invalid resource
         try:
-            proc.run(PUT, '/put-validation-test/multi/invalid.xml', 
+            proc.run(PUT, '/validation-test/multi/invalid.xml', 
                      StringIO(XML_DOC % "<b><a/></b>"))
             self.fail("Expected SeisHubError")
         except SeisHubError, e:
             self.assertEqual(e.code, http.CONFLICT)
         # delete resource
-        proc.run(DELETE, '/put-validation-test/multi/valid.xml')
+        proc.run(DELETE, '/validation-test/multi/valid.xml')
 
 
 def suite():

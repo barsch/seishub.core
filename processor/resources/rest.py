@@ -68,12 +68,12 @@ class RESTResource(Resource):
         # set XML declaration inclusive UTF-8 encoding string
         if not data.startswith('<xml'):
             data = addXMLDeclaration(data, 'utf-8')
-        # parse request headers for output type
-        format = request.args.get('format',[None])[0] or \
-                 request.args.get('output',[None])[0]
+        # parse request headers for output/format options
+        formats = request.args.get('format',[]) or \
+                  request.args.get('output',[])
         # handle output/format conversion
-        if format:
-            # fetch a XSLT document object
+        for format in formats:
+            # fetch a XSLT document objects
             reg = request.env.registry
             xslt = reg.stylesheets.get(package_id = self.package_id,
                                        resourcetype_id = self.resourcetype_id,
@@ -88,6 +88,7 @@ class RESTResource(Resource):
             else:
                 msg = "There is no stylesheet for requested format %s."
                 request.env.log.debug(msg % format)
+        # return data
         return data
     
     def render_POST(self, request):
@@ -115,8 +116,29 @@ class RESTResource(Resource):
         if self.package_id=='seishub':
             msg = "SeisHub resources may not be modified directly."
             raise ForbiddenError(msg)
+        # parse request headers for output/format options
+        data = request.data
+        formats = request.args.get('format',[]) or \
+                  request.args.get('output',[])
+        # handle output/format conversion
+        for format in formats:
+            # fetch a XSLT document objects
+            reg = request.env.registry
+            xslt = reg.stylesheets.get(package_id = self.package_id,
+                                       resourcetype_id = self.resourcetype_id,
+                                       type = format)
+            if len(xslt):
+                xslt = xslt[0]
+                data = xslt.transform(data)
+                # set additional content-type if given in XSLT
+                if xslt.content_type:
+                    request.setHeader('content-type', 
+                                      xslt.content_type + '; charset=UTF-8')
+            else:
+                msg = "There is no stylesheet for requested format %s."
+                request.env.log.debug(msg % format)
         # modify resource
-        request.env.catalog.modifyResource(self.res, request.data)
+        request.env.catalog.modifyResource(self.res, data)
         # resource successfully modified - set status code
         request.code = http.NO_CONTENT
         return ''
@@ -402,10 +424,31 @@ class RESTResourceTypeFolder(Folder):
             name=request.postpath[0]
         else:
             name=None
+        # parse request headers for output/format options
+        data = request.data
+        formats = request.args.get('format',[]) or \
+                  request.args.get('output',[])
+        # handle output/format conversion
+        for format in formats:
+            # fetch a XSLT document objects
+            reg = request.env.registry
+            xslt = reg.stylesheets.get(package_id = self.package_id,
+                                       resourcetype_id = self.resourcetype_id,
+                                       type = format)
+            if len(xslt):
+                xslt = xslt[0]
+                data = xslt.transform(data)
+                # set additional content-type if given in XSLT
+                if xslt.content_type:
+                    request.setHeader('content-type', 
+                                      xslt.content_type + '; charset=UTF-8')
+            else:
+                msg = "There is no stylesheet for requested format %s."
+                request.env.log.debug(msg % format)
         # add a new resource
-        res = request.env.catalog.addResource(self.package_id,
+        res = request.env.catalog.addResource(self.package_id, 
                                               self.resourcetype_id,
-                                              request.data,
+                                              data, 
                                               name=name)
         # resource created - set status code and location header
         request.code = http.CREATED

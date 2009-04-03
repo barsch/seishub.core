@@ -28,7 +28,7 @@ class FileSystemTests(SeisHubEnvironmentTestCase):
     """
     def setUp(self):
         path = os.path.dirname(inspect.getsourcefile(self.__class__))
-        fs_path = os.path.join(path, 'data', 'fs')
+        fs_path = os.path.join(path, 'data', 'filesystem')
         self.env.tree = FileSystemResource(fs_path)
     
     def tearDown(self):
