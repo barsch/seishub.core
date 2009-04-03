@@ -584,7 +584,7 @@ class XmlIndexCatalog(DbStorage, _QueryProcessor, _IndexView):
         # get all document IDs and reindex
         # XXX: inefficient - this should be a iterator  
         # XXX: conflicts with self.store
-        for item in result.fetchall():
+        for item in result:
             res = self._storage.getResource(document_id=item[0], 
                                             revision=item[1])
             self.indexResource(res, xmlindex_list)

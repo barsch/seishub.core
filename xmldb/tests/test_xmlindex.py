@@ -222,6 +222,13 @@ class XmlIndexTest(SeisHubEnvironmentTestCase):
         doc = newXMLDocument(RAW_XML1 % (timestr, ""))
         res = idx.eval(doc, self.env)[0]
         self.assertEqual(res.key, dt)
+        # negative timestamp is not working
+        idx = XmlIndex(self.rt1, "/station/creation_date", 
+                       index.TIMESTAMP_INDEX)
+        timestr = "-5000.500"
+        doc = newXMLDocument(RAW_XML1 % (timestr, ""))
+        res = idx.eval(doc, self.env)
+        self.assertFalse(res)
     
     def test_DateIndex(self):
         """

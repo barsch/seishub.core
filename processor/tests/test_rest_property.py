@@ -359,58 +359,58 @@ class RestPropertyTests(SeisHubEnvironmentTestCase):
         proc = Processor(self.env)
         XML_DOC = XML_BASE_DOC % ("%s", "egal")
         # w/ T
-        xml_doc = XML_DOC % "2009-12-20T12:12:21"
+        xml_doc = XML_DOC % "1969-12-20T12:12:21"
         proc.run(PUT, '/property-test/notvc2/1', StringIO(xml_doc))
         data = proc.run(GET, '/property-test/notvc2/1/.index').render_GET(proc)
-        self.assertTrue("<value>2009-12-20 12:12:21</value>" in data)
+        self.assertTrue("<value>1969-12-20 12:12:21</value>" in data)
         proc.run(DELETE, '/property-test/notvc2/1')
         # w/o T
-        xml_doc = XML_DOC % "2009-12-20 12:12:21"
+        xml_doc = XML_DOC % "1969-12-20 12:12:21"
         proc.run(PUT, '/property-test/notvc2/1', StringIO(xml_doc))
         data = proc.run(GET, '/property-test/notvc2/1/.index').render_GET(proc)
-        self.assertTrue("<value>2009-12-20 12:12:21</value>" in data)
+        self.assertTrue("<value>1969-12-20 12:12:21</value>" in data)
         proc.run(DELETE, '/property-test/notvc2/1')
         # milliseconds, w/ T
-        xml_doc = XML_DOC % "2009-12-20T12:12:21.123456"
+        xml_doc = XML_DOC % "1969-12-20T12:12:21.123456"
         proc.run(PUT, '/property-test/notvc2/1', StringIO(xml_doc))
         data = proc.run(GET, '/property-test/notvc2/1/.index').render_GET(proc)
-        self.assertTrue("<value>2009-12-20 12:12:21.123456</value>" in data)
+        self.assertTrue("<value>1969-12-20 12:12:21.123456</value>" in data)
         proc.run(DELETE, '/property-test/notvc2/1')
         # milliseconds, w/o T
-        xml_doc = XML_DOC % "2009-12-20 12:12:21.123456"
+        xml_doc = XML_DOC % "1969-12-20 12:12:21.123456"
         proc.run(PUT, '/property-test/notvc2/1', StringIO(xml_doc))
         data = proc.run(GET, '/property-test/notvc2/1/.index').render_GET(proc)
-        self.assertTrue("<value>2009-12-20 12:12:21.123456</value>" in data)
+        self.assertTrue("<value>1969-12-20 12:12:21.123456</value>" in data)
         proc.run(DELETE, '/property-test/notvc2/1')
         # limited milliseconds, w/ T
-        xml_doc = XML_DOC % "2009-12-20T12:12:21.123"
+        xml_doc = XML_DOC % "1969-12-20T12:12:21.123"
         proc.run(PUT, '/property-test/notvc2/1', StringIO(xml_doc))
         data = proc.run(GET, '/property-test/notvc2/1/.index').render_GET(proc)
-        self.assertTrue("<value>2009-12-20 12:12:21.123000</value>" in data)
+        self.assertTrue("<value>1969-12-20 12:12:21.123000</value>" in data)
         proc.run(DELETE, '/property-test/notvc2/1')
         # limited milliseconds, w/o T
-        xml_doc = XML_DOC % "2009-12-20 12:12:21.123"
+        xml_doc = XML_DOC % "1969-12-20 12:12:21.123"
         proc.run(PUT, '/property-test/notvc2/1', StringIO(xml_doc))
         data = proc.run(GET, '/property-test/notvc2/1/.index').render_GET(proc)
-        self.assertTrue("<value>2009-12-20 12:12:21.123000</value>" in data)
+        self.assertTrue("<value>1969-12-20 12:12:21.123000</value>" in data)
         proc.run(DELETE, '/property-test/notvc2/1')
         # w/o time -> defaults to 00:00:00
-        xml_doc = XML_DOC % "2009-12-20"
+        xml_doc = XML_DOC % "1969-12-20"
         proc.run(PUT, '/property-test/notvc2/1', StringIO(xml_doc))
         data = proc.run(GET, '/property-test/notvc2/1/.index').render_GET(proc)
-        self.assertTrue("<value>2009-12-20 00:00:00</value>" in data)
+        self.assertTrue("<value>1969-12-20 00:00:00</value>" in data)
         proc.run(DELETE, '/property-test/notvc2/1')
         # w/o minutes and seconds -> defaults to :00:00
-        xml_doc = XML_DOC % "20091220T12"
+        xml_doc = XML_DOC % "19691220T12"
         proc.run(PUT, '/property-test/notvc2/1', StringIO(xml_doc))
         data = proc.run(GET, '/property-test/notvc2/1/.index').render_GET(proc)
-        self.assertTrue("<value>2009-12-20 12:00:00</value>" in data)
+        self.assertTrue("<value>1969-12-20 12:00:00</value>" in data)
         proc.run(DELETE, '/property-test/notvc2/1')
         # w/o seconds -> defaults to :00
-        xml_doc = XML_DOC % "20091220T12:13"
+        xml_doc = XML_DOC % "19691220T12:13"
         proc.run(PUT, '/property-test/notvc2/1', StringIO(xml_doc))
         data = proc.run(GET, '/property-test/notvc2/1/.index').render_GET(proc)
-        self.assertTrue("<value>2009-12-20 12:13:00</value>" in data)
+        self.assertTrue("<value>1969-12-20 12:13:00</value>" in data)
         proc.run(DELETE, '/property-test/notvc2/1')
     
     def test_invalidDateTimeIndexes(self):

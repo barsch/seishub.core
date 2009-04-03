@@ -50,7 +50,7 @@
   #for $f in $r
     <td>
       #filter WebSafe
-      #if isinstance(f, unicode)
+      #if isinstance(f, basestring)
         #echo f.__repr__() #
       #else
         $f
