@@ -5,11 +5,13 @@
   <tr>
     <th>Name</th>
     <th>Entries</th>
+    <th>Size</th>
   </tr> 
-#for $name, $count  in $tables.iteritems()
+#for $item in $tables
   <tr>
-    <td>$name</td>
-    <td>$count</td>
+    <td>$item.name</td>
+    <td>$item.entries</td>
+    <td>$item.size</td>
   </tr>
 #end for
 </table>

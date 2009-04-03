@@ -149,3 +149,24 @@ class DatabaseManager(object):
             temp = self.engine.execute(sql).fetchall()
             return [id[0] for id in temp]
         return []
+    
+    def getTableSize(self, name):
+        """
+        Returns the size of a database table or view.
+        """
+        if self.engine.name == 'postgres':
+            sql = "SELECT pg_relation_size('%s');" % name
+            result = self.engine.execute(sql).fetchall()[0]
+            return result[0]
+        return None
+    
+    def getDatabaseSize(self):
+        """
+        Returns the size of the whole database.
+        """
+        if self.engine.name == 'postgres':
+            # XXX:
+            sql = "SELECT pg_database_size('%s');" % self.engine.url.database
+            result = self.engine.execute(sql).fetchall()[0]
+            return result[0]
+        return None

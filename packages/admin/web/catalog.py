@@ -254,26 +254,22 @@ class DatabaseStatusPanel(Component):
     has_roles = ['CATALOG_ADMIN']
     
     def render(self, request):
-        db = self.env.db.engine
-        tables = {}
-        views = {}
-        for table in sorted(db.table_names()):
+        db = self.env.db
+        tables = []
+        for table in sorted(db.engine.table_names()):
             if not table.startswith(DEFAULT_PREFIX):
                 continue
-            query = 'SELECT count(*) FROM ' + table
+            temp = {}
+            temp['name'] = table
+            # get size
+            temp['size'] = db.getTableSize(table)
+            # count objects
             try:
-                query = db.execute(query)
-                tables[table] = query.fetchall()[0][0]
+                query = "SELECT count(*) FROM %s;" % table
+                temp['entries'] = db.query(query).fetchall()[0][0]
             except:
-                pass
-        for view in self.env.db.getViews():
-            query = 'SELECT count(*) FROM ' + view
-            try:
-                query = db.execute(query)
-                views[view] = query.fetchall()[0][0]
-            except:
-                pass
+                temp['entries'] = 0
+            tables.append(temp)
         return {
-            'tables': tables,
-            'views': views,
+            'tables': tables
         }
