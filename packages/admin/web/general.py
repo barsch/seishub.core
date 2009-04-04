@@ -254,13 +254,15 @@ class PluginsPanel(Component):
             if classname in enabled or classname in DEFAULT_COMPONENTS or \
                 modulename in DEFAULT_COMPONENTS:
                 if not self.env.isComponentEnabled(classname):
-                    msg = self.env.enableComponent(component)
+                    msg = self.env.enableComponent(component, update=False)
                     if msg and msg not in error:
                         error.append(msg)
             elif self.env.isComponentEnabled(classname):
-                msg = self.env.disableComponent(component)
+                msg = self.env.disableComponent(component, update=False)
                 if msg and msg not in error:
                     error.append(msg)
+        # call update on the end
+        self.env.update()
         return error
     
     def _viewPlugins(self, request, error=None):

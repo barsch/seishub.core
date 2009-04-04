@@ -140,7 +140,7 @@ class Environment(ComponentManager):
                 yield defer.maybeDeferred(srv.stopService)
                 self.log.info('Stopping service %s.' % srv.name)
     
-    def enableComponent(self, component):
+    def enableComponent(self, component, update=True):
         """
         Enables a component.
         """
@@ -159,9 +159,10 @@ class Environment(ComponentManager):
                 self.disableComponent(component)
                 return str(e)
         self.log.info('Enabling component %s' % fullname)
-        self.update()
+        if update:
+            self.update()
     
-    def disableComponent(self, component):
+    def disableComponent(self, component, update=True):
         """
         Disables a component.
         """
@@ -177,7 +178,8 @@ class Environment(ComponentManager):
         self.log.info('Disabling component %s' % fullname)
         self.config.save()
         PackageInstaller.cleanup(self)
-        self.update()
+        if update:
+            self.update()
     
     def initDefaultOptions(self):
         """
