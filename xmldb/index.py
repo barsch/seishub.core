@@ -136,13 +136,15 @@ class XmlIndex(Serializable):
     relative_xpath = property(getRelative_xpath, setRelative_xpath, 
                               "relative xpath")
     
-    def _selectElementCls(self, type):
-        return type_classes[type]
-        
     def _getElementCls(self):
-        return self._selectElementCls(self.type)
+        """
+        Return the correct index element class, according to index type.
+        """
+        if self.type == PROCESSOR_INDEX:
+            return type_classes[self._getProcessorIndex().type]
+        return type_classes[self.type]
     
-    def _getProcessorIndex(self, env):
+    def _getProcessorIndex(self):
         if hasattr(self, '_processor_idx'):
             return self._processor_idx
         # import the IProcessorIndex implementer class for this index
@@ -151,8 +153,9 @@ class XmlIndex(Serializable):
         mod_name = self.options[:pos]
         mod = sys.modules[mod_name]
         cls = getattr(mod, class_name)
-        self._processor_idx = cls(env)
-        return self._processor_idx
+        # self._processor_idx = cls(env)
+        self._processor_idx = cls
+        return cls
     
     def _eval(self, xml_doc, env):
         if not IXmlDocument.providedBy(xml_doc):
@@ -170,7 +173,7 @@ class XmlIndex(Serializable):
     
     def eval(self, xml_doc, env = None):
         if self.type == PROCESSOR_INDEX:
-            pidx = self._getProcessorIndex(env)
+            pidx = self._getProcessorIndex()(env)
             type = pidx.type
             elements = pidx.eval(xml_doc)
             if not isinstance(elements, list):
@@ -185,8 +188,8 @@ class XmlIndex(Serializable):
                 if not self.type == PROCESSOR_INDEX:
                     el = el.getStrContent()
                 try:
-                    res.append(self._selectElementCls(type)(self, el, 
-                                                            xml_doc, pos))
+                    res.append(self._getElementCls()(self, el, 
+                                                         xml_doc, pos))
                 except Exception, e:
                     if env:
                         env.log.info(e)
