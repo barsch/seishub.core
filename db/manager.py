@@ -170,3 +170,9 @@ class DatabaseManager(object):
             result = self.engine.execute(sql).fetchall()[0]
             return result[0]
         return None
+    
+    def isSQLite(self):
+        """
+        Return True if a SQLite database is used.
+        """
+        return self.engine.name.lower() == 'sqlite'

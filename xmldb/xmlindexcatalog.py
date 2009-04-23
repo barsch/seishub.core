@@ -9,6 +9,7 @@ from seishub.xmldb.defaults import document_tab, resource_tab
 from seishub.xmldb.index import XmlIndex, type_classes
 from seishub.xmldb.interfaces import IXPathQuery, IResource, IXmlIndex
 from seishub.xmldb.xpath import XPathQuery
+from seishub.xmldb.resource import Resource, XmlDocument
 from sqlalchemy import select, sql, literal
 from zope.interface.exceptions import DoesNotImplement
 
@@ -351,11 +352,13 @@ class _QueryProcessor(object):
                     resourcetypes_tab.c['name'].label("resourcetype_id"),
                     resource_tab.c['name'].label("resource_name")], 
                    use_labels = True).distinct()
-        xpath = '/'.join(location_path[2:])
+        #xpath = '/'.join(location_path[2:])
         pkg, rt = location_path[0:2]
-        xmlindex_list = [self.findIndex([pkg, rt], xpath)]
-        q, joins = self._joinIndexes(xmlindex_list, q)
-        joins = self._join_on_resourcetype(pkg, rt, joins)
+        # XXX: check if this is needed, requires indexation of rootnode
+        #xmlindex_list = [self.findIndex([pkg, rt], xpath)]
+        #q, joins = self._joinIndexes(xmlindex_list, q)
+        #joins = self._join_on_resourcetype(pkg, rt, joins)
+        joins = self._join_on_resourcetype(pkg, rt)
         if predicates:
             q, joins, w = self._process_predicates(predicates, q, joins)
             if w:
@@ -514,8 +517,7 @@ class XmlIndexCatalog(DbStorage, _QueryProcessor, _IndexView):
             try:
                 self.store(el)
             except DbError:
-                # tried to store an index element with same parameters as one
-                # indexed before => ignore
+                # ignore duplicate index elements
                 pass
         return elements
     
@@ -556,36 +558,54 @@ class XmlIndexCatalog(DbStorage, _QueryProcessor, _IndexView):
         """
         Reindex all resources by a list of XMLIndex objects.
         
-        This works only work indexes of a single resource type. We take the 
+        This works only with indexes of a single resource type. We take the 
         resource type of the first index and skip any additional indexes with
         a different resource type.
         """
-        resourcetype_id = xmlindex_list[0].resourcetype._id
+        resourcetype = xmlindex_list[0].resourcetype
+        #resourcetype_id = resourcetype._id
         for xmlindex in xmlindex_list:
             # check interface
             if not IXmlIndex.providedBy(xmlindex):
                 raise TypeError("%s is not an IXmlIndex." % str(xmlindex))
             # skip indexes with different resourcetype_id
-            if xmlindex.resourcetype._id!=resourcetype_id:
+            if xmlindex.resourcetype._id!=resourcetype._id:
                 xmlindex_list.remove(xmlindex)
                 continue
             # clear index
             self.flushIndex(xmlindex)
-        # fetch all document_id with highest revision for this resource type
-        query = sql.select([document_tab.c['id'], 
-                            sql.func.max(document_tab.c['revision'])])
+        # fetch all document_id for this resourcetype
+        query = sql.select()
+        a = document_tab.alias('a')
+        if resourcetype.version_control:
+            # on version controlled resourcetypes, select highest revision only 
+            rmax_query = sql.select([document_tab.c['resource_id'],
+                                     sql.func.max(document_tab.c['revision']).\
+                                     label('max_revision')
+                                     ])
+            rmax_query = rmax_query.group_by(document_tab.c['resource_id'])
+            b = rmax_query.alias('b')
+            j = b.join(a, sql.and_(a.c['resource_id'] == b.c['resource_id'],
+                                   a.c['revision'] == b.c['max_revision']))
+            query = query.select_from(j)
+        query = query.with_only_columns([a.c['id'], 
+                                         a.c['data'], 
+                                         a.c['revision']])
         query = query.where(
             sql.and_(
-                document_tab.c['resource_id'] == resource_tab.c['id'], 
-                resource_tab.c['resourcetype_id'] == resourcetype_id
+                a.c['resource_id'] == resource_tab.c['id'], 
+                resource_tab.c['resourcetype_id'] == resourcetype._id
             ))
-        query = query.group_by(document_tab.c['id'])
         result = self._db.execute(query)
         # get all document IDs and reindex
-        # XXX: inefficient - this should be a iterator  
-        # XXX: conflicts with self.store
+        if self._db_manager.isSQLite():
+            # sqlite does not support multiple open connections; In particular
+            # it is not possible to commit inserts while keeping an open cursor
+            result = result.fetchall()
         for item in result:
-            res = self._storage.getResource(document_id=item[0], 
-                                            revision=item[1])
+            # build temporary objects manually for performance reasons
+            doc = XmlDocument(data = item['data'], revision = item['revision'])
+            doc._id = item['id']
+            res = Resource(resourcetype = resourcetype, document = doc)
             self.indexResource(res, xmlindex_list)
         return True

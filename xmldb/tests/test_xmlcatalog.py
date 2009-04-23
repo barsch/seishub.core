@@ -82,6 +82,9 @@ IDX5 = "/testml"
 
 
 class XmlCatalogTest(SeisHubEnvironmentTestCase):
+#    def _config(self):
+#        self.default_config.set('db', 'verbose', True)
+        
     def setUp(self):
         # register packages
         self.env.registry.db_registerPackage(PID1)
@@ -340,8 +343,8 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         self.env.registry.db_registerResourceType("test-catalog", "index", 
                                                   version_control=True)
         # add an index
-        self.env.catalog.registerIndex("test-catalog", "index", 'lat', 
-                                       "/station/lat")
+        idx = self.env.catalog.registerIndex("test-catalog", "index", 'lat', 
+                                             "/station/lat")
         # add a resource + some revisions
         res1 = self.env.catalog.addResource("test-catalog", "index", RAW_XML, 
                                             name="muh.xml")
@@ -361,6 +364,8 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         res=self.env.catalog.getResource("test-catalog", "index", "muh.xml", 2)
         index_dict=self.env.catalog.getIndexData(res)
         self.assertEqual(index_dict, {u'lat': {0: [u'50.23200']}})
+        # reindex manually
+        self.env.catalog.reindexIndex(idx)
         # clean up
         self.env.catalog.deleteAllResources("test-catalog")
         self.env.catalog.deleteAllIndexes("test-catalog")
