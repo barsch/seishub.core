@@ -126,7 +126,7 @@ class DatabaseManager(object):
             msg = "A view with the name %s does not exist."
             raise NotFoundError(msg % name)
     
-    def dropAllViews(self, name):
+    def dropAllViews(self):
         """
         Drop all SQL views from database.
         """

@@ -116,8 +116,8 @@ class DatabaseQueryPanel(Component):
                     t2 = time.time()
                     data['clock'] = "%0.6f" % (t2-t1)
                     data['cols'] = result.keys
-                    data['rows'] = result.rowcount
                     data['result'] = result.fetchall()
+                    data['rows'] = len(data['result'])
                 except Exception, e:
                     self.env.log.error('Database query error', e)
                     data['error'] = ('Database query error', e)
@@ -218,7 +218,7 @@ class CatalogQueryPanel(Component):
     
     def render(self, request):
         data = {
-            'query': '', 
+            'query': '/seishub/*', 
             'result': '',
             'rows': '',
             'clock': "%0.6f" % 0
