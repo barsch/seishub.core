@@ -50,10 +50,30 @@ class WebRequest(Processor, http.Request):
         http.Request.__init__(self, channel, queued)
         self.notifications = []
     
+    def authenticateUser(self):
+        """
+        XXX: this will change soon!
+        """
+        try:
+            authenticated = self.env.auth.checkPassword(self.getUser(), 
+                                                        self.getPassword())
+        except:
+            return False
+        return authenticated
+    
     def render(self):
         """
         Renders the requested resource returned from the self.process() method.
         """
+        # XXX: all or nothing - only authenticated are allowed to access
+        # should be replaced with a much finer mechanism
+        # URL, role and group based ...
+        if not self.authenticateUser() or self.path == '/browser/logout':
+            self.setHeader('WWW-Authenticate', 'Basic realm="topsecret"')
+            self.setResponseCode(http.UNAUTHORIZED)
+            self.write('Authentication required.')
+            self.finish()
+            return
         # traverse the resource tree
         try:
             result = getChildForRequest(self.env.tree, self)
