@@ -65,4 +65,7 @@ class ResourceTree(StaticFolder):
         self.putChild('browser', AdminRootFolder(self.env))
         # set XML resource root folder
         self.putChild('xml', RESTFolder())
+        # set favicon.ico
+        self.putChild('favicon.ico', 
+                      self.children['browser'].children['favicon.ico'])
         self.env.log.info('ResourceTree has been updated.')

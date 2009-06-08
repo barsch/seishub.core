@@ -36,6 +36,11 @@ table.list td,table.list th {
     padding-bottom: 3px;
     padding-top: 3px;
 }
+
+table.list th {
+    background-color: #f7f7f7;
+}
+
 /* header */
 #header {
     height: 115px;
