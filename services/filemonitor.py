@@ -32,6 +32,12 @@ import copy
 import datetime
 import os
 
+try:
+    from obspy.mseed import libmseed
+    mseed = libmseed()
+except:
+    mseed = None
+
 
 __all__ = ['SEEDFileMonitorService']
 
@@ -46,51 +52,57 @@ class SEEDFileSerializer(object):
     def __init__(self, env):
         self.env = env
         self.db = self.env.db.engine
-        try:
-            from obspy.mseed import libmseed
-            self.libmseed = libmseed()
-        except:
-            self.libmseed = None
+        if not mseed:
             msg = "SEEDFileMonitorService needs obspy.mseed to parse gaps" + \
                   " and overlaps in miniseed files!"
             self.env.log.error(msg)
-            pass
 
     def _scan(self, path, file):
         """
         Gets header, gaps and overlap information of given MiniSEED file.
         """
-        if not self.libmseed:
-            return ({}, [])
-        filename = os.path.join(path, file)
+        if not mseed:
+            return {}
+        filename = str(os.path.join(path, file))
+        result = {}
         # get header
         try:
-            result = self.libmseed.getFirstRecordHeaderInfo(filename)
+            d = mseed.getFirstRecordHeaderInfo(filename)
+            result['station_id'] = d.get('station', '')
+            result['location_id'] = d.get('location', '')
+            result['channel_id'] = d.get('channel', '')
+            result['network_id'] = d.get('network', '')
         except Exception, e:
             self.env.log.error('getFirstRecordHeaderInfo', str(e))
             result = {}
         # get start and end time
         try:
-            (start, end) = self.libmseed.getStartAndEndTime(filename)
+            (start, end) = mseed.getStartAndEndTime(filename)
             result['start_datetime'] = start
             result['end_datetime'] = end
         except Exception, e:
             self.env.log.error('getStartAndEndTime', str(e))
         # scan for gaps + overlaps
         try:
-            gap_list = self.libmseed.getGapList(filename)
-            result['gaps'] = len([g for g in gap_list if g[6] > 0])
-            result['overlaps'] = len(gap_list) - result['gaps']
+            gap_list = mseed.getGapList(filename)
+            result['DQ_gaps'] = len([g for g in gap_list if g[6] > 0])
+            result['DQ_overlaps'] = len(gap_list) - result['DQ_gaps']
         except Exception, e:
             self.env.log.error('getGapList', str(e))
         # quality flags
         try:
-            self.libmseed.getDataQualityFlagsCount(filename)
+            result['DQ_flags'] = mseed.getDataQualityFlagsCount(filename)
         except Exception, e:
             self.env.log.error('getDataQualityFlagsCount', str(e))
         # timing quality
         try:
-            self.libmseed.getTimingQuality(filename)
+            data = mseed.getTimingQuality(filename)
+            result['TQ_max'] = data.get('max', None)
+            result['TQ_min'] = data.get('min', None)
+            result['TQ_avg'] = data.get('average', None)
+            result['TQ_median'] = data.get('median', None)
+            result['TQ_upper_quantile'] = data.get('upper_quantile', None)
+            result['TQ_lower_quantile'] = data.get('lower_quantile', None)
         except Exception, e:
             self.env.log.error('getTimingQuality', str(e))
         return result
@@ -163,6 +175,8 @@ class SEEDFileMonitor(internet.TimerService, SEEDFileSerializer):
         # set interval dynamically
         num = len(self._files) or 1
         self._loop.interval = SEED_FILEMONITOR_CHECK_PERIOD / num
+        msg = "Scanning %s ..." % self._files
+        self.env.log.debug(msg)
 
     def iterate(self):
         try:
@@ -231,8 +245,8 @@ class SEEDFileCrawler(internet.TimerService, SEEDFileSerializer):
         if dirs:
             return
         # filter file names with wrong format
-        files = [f for f in files if f.count('.') == 6]
-        # skip empty directories 
+        #files = [f for f in files if f.count('.') == 6]
+        # skip directories
         if not files:
             return
         # update path list

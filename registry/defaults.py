@@ -3,7 +3,7 @@
 from seishub.db import DEFAULT_PREFIX
 from seishub.db.manager import meta as metadata
 from sqlalchemy import Table, Column, ForeignKey, UniqueConstraint, Integer, \
-    Text, Boolean, DateTime
+    Text, Boolean, DateTime, Numeric
 
 
 PACKAGES_TABLE = 'packages'
@@ -84,8 +84,15 @@ miniseed_tab = Table(DEFAULT_PREFIX + MINISEED_TABLE, metadata,
     Column('channel_id', Text, nullable=True),
     Column('start_datetime', DateTime, nullable=True),
     Column('end_datetime', DateTime, nullable=True),
-    Column('gaps', Integer, nullable=True),
-    Column('overlaps', Integer, nullable=True),
+    Column('DQ_gaps', Integer, nullable=True),
+    Column('DQ_overlaps', Integer, nullable=True),
+    Column('DQ_flags', Integer, nullable=True),
+    Column('TQ_min', Numeric, nullable=True),
+    Column('TQ_avg', Numeric, nullable=True),
+    Column('TQ_max', Numeric, nullable=True),
+    Column('TQ_median', Numeric, nullable=True),
+    Column('TQ_lower_quantile', Numeric, nullable=True),
+    Column('TQ_upper_quantile', Numeric, nullable=True),
     UniqueConstraint('file', 'path'),
     useexisting=True,
 )
