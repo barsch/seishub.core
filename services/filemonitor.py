@@ -42,7 +42,7 @@ CRAWLER_INTERVAL = 0.1
 class SEEDFileSerializer(object):
     """
     """
-    
+
     def __init__(self, env):
         self.env = env
         self.db = self.env.db.engine
@@ -52,64 +52,92 @@ class SEEDFileSerializer(object):
         except:
             self.libmseed = None
             msg = "SEEDFileMonitorService needs obspy.mseed to parse gaps" + \
-                  " and overlaps in miniseed files!" 
+                  " and overlaps in miniseed files!"
             self.env.log.error(msg)
             pass
-    
+
     def _scan(self, path, file):
-        # scan for gaps + overlaps
+        """
+        Gets header, gaps and overlap information of given MiniSEED file.
+        """
         if not self.libmseed:
-            return None
-        return self.libmseed.getGapList(os.path.join(path, file))
-    
+            return ({}, [])
+        filename = os.path.join(path, file)
+        # get header
+        try:
+            result = self.libmseed.getFirstRecordHeaderInfo(filename)
+        except Exception, e:
+            self.env.log.error('getFirstRecordHeaderInfo', str(e))
+            result = {}
+        # get start and end time
+        try:
+            (start, end) = self.libmseed.getStartAndEndTime(filename)
+            result['start_datetime'] = start
+            result['end_datetime'] = end
+        except Exception, e:
+            self.env.log.error('getStartAndEndTime', str(e))
+        # scan for gaps + overlaps
+        try:
+            gap_list = self.libmseed.getGapList(filename)
+            result['gaps'] = len([g for g in gap_list if g[6] > 0])
+            result['overlaps'] = len(gap_list) - result['gaps']
+        except Exception, e:
+            self.env.log.error('getGapList', str(e))
+        # quality flags
+        try:
+            self.libmseed.getDataQualityFlagsCount(filename)
+        except Exception, e:
+            self.env.log.error('getDataQualityFlagsCount', str(e))
+        # timing quality
+        try:
+            self.libmseed.getTimingQuality(filename)
+        except Exception, e:
+            self.env.log.error('getTimingQuality', str(e))
+        return result
+
     def _delete(self, path, file=None):
         """
         Remove a file or all files with a given path from the database.
         """
         sql_obj = miniseed_tab.delete()
         if file:
-            sql_obj = sql_obj.where(sql.and_(miniseed_tab.c['file']==file,
-                                             miniseed_tab.c['path']==path))
+            sql_obj = sql_obj.where(sql.and_(miniseed_tab.c['file'] == file,
+                                             miniseed_tab.c['path'] == path))
         else:
-            sql_obj = sql_obj.where(miniseed_tab.c['path']==path)
+            sql_obj = sql_obj.where(miniseed_tab.c['path'] == path)
         try:
             self.db.execute(sql_obj)
         except:
             pass
-    
+
     def _insert(self, path, file, stats):
         """
         Add a new file into the database.
         """
-        result  = self._scan(path, file)
-        import pdb;pdb.set_trace()
-        sql_obj = miniseed_tab.insert().values(file=file,
-                                               path=path, 
+        result = self._scan(path, file)
+        sql_obj = miniseed_tab.insert().values(file=file, path=path,
                                                mtime=stats.st_mtime,
-                                               size=stats.st_size,
-                                               gaps=len(gaps),
-                                               overlaps=len(overlaps))
+                                               size=stats.st_size, **result)
         try:
             self.db.execute(sql_obj)
-        except:
+        except Exception, e:
+            self.env.log.error(str(e))
             pass
-    
+
     def _update(self, path, file, stats):
         """
         Modify a file in the database.
         """
-        result  = self._scan(path, file)
-        import pdb;pdb.set_trace()
+        result = self._scan(path, file)
         sql_obj = miniseed_tab.update()
-        sql_obj = sql_obj.where(miniseed_tab.c['file']==file)
-        sql_obj = sql_obj.where(miniseed_tab.c['path']==path)
-        sql_obj = sql_obj.values(mtime=stats.st_mtime,
-                                 size=stats.st_size,
-                                 gaps=len(gaps),
-                                 overlaps=len(overlaps))
+        sql_obj = sql_obj.where(miniseed_tab.c['file'] == file)
+        sql_obj = sql_obj.where(miniseed_tab.c['path'] == path)
+        sql_obj = sql_obj.values(mtime=stats.st_mtime, size=stats.st_size,
+                                 **result)
         try:
             self.db.execute(sql_obj)
-        except:
+        except Exception, e:
+            self.env.log.error(str(e))
             pass
 
 
@@ -123,9 +151,9 @@ class SEEDFileMonitor(internet.TimerService, SEEDFileSerializer):
         SEEDFileSerializer.__init__(self, env)
         self.current_seed_files = current_seed_files
         self._files = []
-        internet.TimerService.__init__(self, SEED_FILEMONITOR_CHECK_PERIOD, 
+        internet.TimerService.__init__(self, SEED_FILEMONITOR_CHECK_PERIOD,
                                        self.iterate)
-    
+
     def reset(self):
         """
         Resets the monitor parameters.
@@ -135,10 +163,10 @@ class SEEDFileMonitor(internet.TimerService, SEEDFileSerializer):
         # set interval dynamically
         num = len(self._files) or 1
         self._loop.interval = SEED_FILEMONITOR_CHECK_PERIOD / num
-    
+
     def iterate(self):
         try:
-            file=self._files.pop()
+            file = self._files.pop()
         except IndexError:
             self.reset()
             return
@@ -157,7 +185,7 @@ class SEEDFileCrawler(internet.TimerService, SEEDFileSerializer):
         self.reset()
         # call after all is initialized
         internet.TimerService.__init__(self, CRAWLER_INTERVAL, self.iterate)
-    
+
     def reset(self):
         """
         Resets the crawler parameters.
@@ -172,9 +200,9 @@ class SEEDFileCrawler(internet.TimerService, SEEDFileSerializer):
         # prepare file endings
         today = datetime.datetime.utcnow()
         self._today = today.strftime("%Y.%j")
-        yesterday = today-datetime.timedelta(1)
+        yesterday = today - datetime.timedelta(1)
         self._yesterday = yesterday.strftime("%Y.%j")
-    
+
     def iterate(self):
         """
         This handles exactly one directory and all included files.
@@ -203,7 +231,7 @@ class SEEDFileCrawler(internet.TimerService, SEEDFileSerializer):
         if dirs:
             return
         # filter file names with wrong format
-        files = [f for f in files if f.count('.')==6]
+        files = [f for f in files if f.count('.') == 6]
         # skip empty directories 
         if not files:
             return
@@ -212,7 +240,7 @@ class SEEDFileCrawler(internet.TimerService, SEEDFileSerializer):
             self._all_paths.append(path)
         # check database for entries in current path
         sql_obj = sql.select([miniseed_tab.c['file'], miniseed_tab.c['mtime']],
-                             miniseed_tab.c['path']==path)
+                             miniseed_tab.c['path'] == path)
         db_files = dict(self.db.execute(sql_obj).fetchall())
         # check files
         for file in files:
@@ -224,7 +252,7 @@ class SEEDFileCrawler(internet.TimerService, SEEDFileSerializer):
                 # file does not exists -> add file
                 self._insert(path, file, stats)
             else:
-                if stats.st_mtime!=db_files[file]:
+                if stats.st_mtime != db_files[file]:
                     # modification time differs -> update file
                     self._update(path, file, stats)
                 db_files.pop(file)
@@ -235,16 +263,16 @@ class SEEDFileCrawler(internet.TimerService, SEEDFileSerializer):
         # remove deleted files from db
         for file in db_files:
             self._delete(path, file)
-    
+
     def _selectAllPaths(self):
         """
         Query for all paths inside the database.
         """
         sql_obj = sql.select([miniseed_tab.c['path']]).distinct()
         try:
-            result=self.db.execute(sql_obj)
+            result = self.db.execute(sql_obj)
         except:
-            result=[]
+            result = []
         return [path[0] for path in result]
 
 
@@ -253,36 +281,36 @@ class SEEDFileMonitorService(service.MultiService):
     A SEED file monitor service for SeisHub.
     """
     service_id = "seedfilemonitor"
-    
-    BoolOption('seedfilemonitor', 'autostart', SEED_FILEMONITOR_AUTOSTART, 
+
+    BoolOption('seedfilemonitor', 'autostart', SEED_FILEMONITOR_AUTOSTART,
         "Enable service on start-up.")
-    ListOption('seedfilemonitor', 'paths', 'data', 
+    ListOption('seedfilemonitor', 'paths', 'data',
         "Paths to scan for SEED files.")
-    
+
     def __init__(self, env):
         self.env = env
         service.MultiService.__init__(self)
         self.setName('SEEDFileMonitor')
         self.setServiceParent(env.app)
-        
+
         current_seed_files = list()
-        
+
         crawler = SEEDFileCrawler(env, current_seed_files)
         crawler.setName("SEED File Crawler")
         self.addService(crawler)
-        
+
         filemonitor = SEEDFileMonitor(env, current_seed_files)
         filemonitor.setName("SEED File Monitor")
         self.addService(filemonitor)
-    
+
     def privilegedStartService(self):
         if self.env.config.getbool('seedfilemonitor', 'autostart'):
             service.MultiService.privilegedStartService(self)
-    
+
     def startService(self):
         if self.env.config.getbool('seedfilemonitor', 'autostart'):
             service.MultiService.startService(self)
-    
+
     def stopService(self):
         if self.running:
             service.MultiService.stopService(self)
