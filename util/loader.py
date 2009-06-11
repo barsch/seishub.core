@@ -26,7 +26,7 @@ class ComponentLoader(object):
 
     def _loadEggs(self, entry_point, search_path):
         """
-        Loader that loads any eggs on the search path and L{sys.path}.
+        Loader that loads SeisHub eggs from the search path and L{sys.path}.
         """
         self.env.log.debug('Looking for plug-ins ...')
         # add system paths
@@ -36,6 +36,9 @@ class ComponentLoader(object):
             pkg_resources.Environment(search_path)
         )
         for d in distributions:
+            # lookup entry points
+            if entry_point not in d.get_entry_map().keys():
+                continue
             self.env.log.debug('Found egg %s ...' % (d))
             pkg_resources.working_set.add(d)
 
