@@ -49,18 +49,18 @@ class WebRequest(Processor, http.Request):
         Processor.__init__(self, self.env)
         http.Request.__init__(self, channel, queued)
         self.notifications = []
-    
+
     def authenticateUser(self):
         """
         XXX: this will change soon!
         """
         try:
-            authenticated = self.env.auth.checkPassword(self.getUser(), 
+            authenticated = self.env.auth.checkPassword(self.getUser(),
                                                         self.getPassword())
         except:
             return False
         return authenticated
-    
+
     def render(self):
         """
         Renders the requested resource returned from the self.process() method.
@@ -68,7 +68,7 @@ class WebRequest(Processor, http.Request):
         # XXX: all or nothing - only authenticated are allowed to access
         # should be replaced with a much finer mechanism
         # URL, role and group based ...
-        if not self.authenticateUser() or self.path == '/browser/logout':
+        if not self.authenticateUser() or self.path == '/manage/logout':
             self.setHeader('WWW-Authenticate', 'Basic realm="topsecret"')
             self.setResponseCode(http.UNAUTHORIZED)
             self.write('Authentication required.')
@@ -123,7 +123,7 @@ class WebRequest(Processor, http.Request):
             return server.NOT_DONE_YET
         msg = "I don't know how to handle this resource type %s"
         raise InternalServerError(msg % type(result))
-    
+
     def _cbSuccess(self, result):
         if isinstance(result, dict):
             # a folderish resource
@@ -137,7 +137,7 @@ class WebRequest(Processor, http.Request):
             d.addCallback(self._renderResource)
             d.addErrback(self._cbFailed)
             return server.NOT_DONE_YET
-    
+
     def _cbFailed(self, failure):
         if not isinstance(failure, Failure):
             raise
@@ -152,7 +152,7 @@ class WebRequest(Processor, http.Request):
         self.write('')
         self.finish()
         return
-    
+
     def _renderFileResource(self, obj):
         """
         Renders a object implementing L{IFileResource}.
@@ -194,7 +194,7 @@ class WebRequest(Processor, http.Request):
         # a request for partial data, e.g. Range: bytes=160694272-
         if range and 'bytes=' in range and '-' in range.split('=')[1]:
             parts = range.split('bytes=')[1].strip().split('-')
-            if len(parts)==2:
+            if len(parts) == 2:
                 start = parts[0]
                 end = parts[1]
                 if isInteger(start):
@@ -205,7 +205,7 @@ class WebRequest(Processor, http.Request):
                 else:
                     end = size
                 self.setResponseCode(http.PARTIAL_CONTENT)
-                self.setHeader('content-range',"bytes %s-%s/%s " % (
+                self.setHeader('content-range', "bytes %s-%s/%s " % (
                      str(start), str(end), str(size)))
                 #content-length should be the actual size of the stuff we're
                 #sending, not the full size of the on-server entity.
@@ -215,7 +215,7 @@ class WebRequest(Processor, http.Request):
         static.FileTransfer(fp, fsize, self)
         # and make sure the connection doesn't get closed
         return server.NOT_DONE_YET
-    
+
     def _renderResource(self, data=''):
         """
         Renders a resource.
@@ -228,7 +228,7 @@ class WebRequest(Processor, http.Request):
             self.setHeader('content-type', 'application/xml; charset=UTF-8')
         # gzip encoding
         encoding = self.getHeader("accept-encoding")
-        if encoding and encoding.find("gzip")>=0:
+        if encoding and encoding.find("gzip") >= 0:
             zbuf = StringIO.StringIO()
             zfile = gzip.GzipFile(None, 'wb', 9, zbuf)
             zfile.write(data)
@@ -243,7 +243,7 @@ class WebRequest(Processor, http.Request):
         else:
             self.write(data)
         self.finish()
-    
+
     def _renderFolder(self, children={}):
         """
         Renders a folderish resource.
@@ -258,6 +258,9 @@ class WebRequest(Processor, http.Request):
             obj = children.get(id)
             tag = 'resource'
             category = obj.category
+            # skip hidden objects
+            if obj.hidden:
+                continue
             if obj.folderish:
                 tag = 'folder'
                 size = ''
@@ -274,8 +277,8 @@ class WebRequest(Processor, http.Request):
         if 'content-type' not in self.headers:
             self.setHeader('content-type', 'application/xml; charset=UTF-8')
         # parse request headers for output type
-        format = self.args.get('format',[None])[0] or \
-                 self.args.get('output',[None])[0]
+        format = self.args.get('format', [None])[0] or \
+                 self.args.get('output', [None])[0]
         # handle output/format conversion
         if format:
             # fetch a xslt document object
@@ -287,14 +290,14 @@ class WebRequest(Processor, http.Request):
                 xslt = xslt[0]
                 data = xslt.transform(data)
                 if xslt.content_type:
-                    self.setHeader('content-type', 
+                    self.setHeader('content-type',
                                    xslt.content_type + '; charset=UTF-8')
             else:
                 msg = "There is no stylesheet for requested format %s."
                 self.env.log.debug(msg % format)
         # gzip encoding
         encoding = self.getHeader("accept-encoding")
-        if encoding and encoding.find("gzip")>=0:
+        if encoding and encoding.find("gzip") >= 0:
             zbuf = StringIO.StringIO()
             zfile = gzip.GzipFile(None, 'wb', 9, zbuf)
             zfile.write(data)
@@ -309,7 +312,7 @@ class WebRequest(Processor, http.Request):
         else:
             self.write(data)
         self.finish()
-    
+
     def notifyFinish(self):
         """
         Notify when finishing the request
@@ -321,12 +324,12 @@ class WebRequest(Processor, http.Request):
         """
         self.notifications.append(defer.Deferred())
         return self.notifications[-1]
-    
+
     def connectionLost(self, reason):
         for d in self.notifications:
             d.errback(reason)
         self.notifications = []
-    
+
     def finish(self):
         if not self.finished:
             http.Request.finish(self)
@@ -373,7 +376,7 @@ class HTTPSService(SSLServer):
             log_file = os.path.join(self.env.config.path, log_file)
         factory = WebServiceFactory(env, log_file)
         SSLServer.__init__(self, https_port, factory, context, 1)
-    
+
     def _getCertificates(self):
         """
         Fetch HTTPS certificate paths from configuration.
@@ -387,7 +390,7 @@ class HTTPSService(SSLServer):
         if not os.path.isabs(cert_file):
             cert_file = os.path.join(self.env.config.path, cert_file)
         # test if certificates exist
-        msg = "HTTPS certificate file %s is missing!" 
+        msg = "HTTPS certificate file %s is missing!"
         if not os.path.isfile(cert_file):
             self.env.log.warn(msg % cert_file)
             return self._generateCertificates()
@@ -395,7 +398,7 @@ class HTTPSService(SSLServer):
             self.env.log.warn(msg % pkey_file)
             return self._generateCertificates()
         return pkey_file, cert_file
-    
+
     def _generateCertificates(self):
         """
         Generates new self-signed certificates.
@@ -407,7 +410,7 @@ class HTTPSService(SSLServer):
         # generate
         msg = "Generating new certificate files for the HTTPS service ..."
         self.env.log.warn(msg)
-        timespan = (0, 60*60*24*365*5) # five years
+        timespan = (0, 60 * 60 * 24 * 365 * 5) # five years
         pkey_file = os.path.join(self.env.config.path, HTTPS_PKEY_FILE)
         cert_file = os.path.join(self.env.config.path, HTTPS_CERT_FILE)
         # CA
@@ -439,7 +442,7 @@ class WebService(service.MultiService):
     MultiService for the HTTP/HTTPS server.
     """
     service_id = "web"
-    
+
     BoolOption('web', 'autostart', True, "Run HTTP/HTTPS service on start-up.")
     IntOption('web', 'http_port', HTTP_PORT, "HTTP port number.")
     IntOption('web', 'https_port', HTTPS_PORT, "HTTPS port number.")
@@ -448,29 +451,29 @@ class WebService(service.MultiService):
     Option('web', 'https_pkey_file', HTTPS_PKEY_FILE, "Private key file.")
     Option('web', 'https_cert_file', HTTPS_CERT_FILE, "Certificate file.")
     Option('web', 'admin_theme', ADMIN_THEME, "Default administration theme.")
-    
+
     def __init__(self, env):
         self.env = env
         service.MultiService.__init__(self)
         self.setName('HTTP/HTTPS Server')
         self.setServiceParent(env.app)
-        
+
         http_service = HTTPService(env)
         http_service.setName("HTTP Server")
         self.addService(http_service)
-        
+
         https_service = HTTPSService(env)
         https_service.setName("HTTPS Server")
         self.addService(https_service)
-    
+
     def privilegedStartService(self):
         if self.env.config.getbool('web', 'autostart'):
             service.MultiService.privilegedStartService(self)
-    
+
     def startService(self):
         if self.env.config.getbool('web', 'autostart'):
             service.MultiService.startService(self)
-    
+
     def stopService(self):
         if self.running:
             service.MultiService.stopService(self)

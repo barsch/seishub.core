@@ -250,87 +250,87 @@ class IndexesPanel(Component):
         return data
 
 
-class AliasesPanel(Component):
-    """
-    List all aliases and add new ones.
-    """
-    implements(IAdminPanel)
-    
-    template = 'templates' + os.sep + 'components_aliases.tmpl'
-    panel_ids = ('components', 'Components', 'edit-aliases', 'Aliases')
-    has_roles = ['COMPONENT_ALIASES']
-    
-    def render(self, request):
-        packages = self.env.registry.getPackageIds()
-        resourcetypes = self.env.registry.getAllPackagesAndResourceTypes()
-        
-        data  = {
-            'aliases': {},
-            'error': '',
-            'alias': '',
-            'xpath': '',
-            'sql': '',
-            'packages': packages,
-            'resourcetypes': resourcetypes,
-            'resturl': self.env.getRestUrl(),
-        }
-        if request.method=='POST':
-            args = request.args
-            package_id = args.get('package_id',[''])[0]
-            resourcetype_id = args.get('resourcetype_id',[''])[0]
-            alias = args.get('alias',[''])[0]
-            xpath = args.get('xpath',[''])[0]
-            if 'add' in args.keys() and xpath and alias:
-                data.update(self._addAlias(package_id, resourcetype_id, 
-                                           alias, xpath))
-            elif 'delete' in args.keys() and 'alias[]' in args.keys():
-                data.update(self._deleteAliases(args.get('alias[]',[])))
-        # fetch all aliases
-        data['aliases'] = self.env.registry.aliases
-        return data
-    
-    def _deleteAliases(self, aliases=[]):
-        for alias in aliases:
-            try:
-                self.env.registry.aliases.delete(uri = alias)
-            except Exception, e:
-                self.log.error("Error deleting an alias", e)
-                return {'error': ("Error deleting an alias", e)}
-        return {'info': "Alias has been deleted."}
-    
-    def _addAlias(self, package_id, resourcetype_id, alias, xpath):
-        try:
-            self.env.registry.aliases.register(package_id, 
-                                               resourcetype_id, 
-                                               alias, 
-                                               xpath)
-        except Exception, e:
-            self.log.error("Error generating an alias", e)
-            return {'error': ("Error generating an alias", e)}
-        return {'info': "Alias has been added."}
-
-
-class QuickinstallerPanel(Component):
-    """
-    Manage components.
-    """
-    implements(IAdminPanel)
-    
-    template = 'templates' + os.sep + 'components_quickinstaller.tmpl'
-    panel_ids = ('components', 'Components', 'quickinstaller', 
-                 'Quickinstaller')
-    has_roles = ['SEISHUB_ADMIN']
-    
-    def render(self, request):
-        packages = self.env.registry.getPackageIds()
-        resourcetypes = self.env.registry.getAllPackagesAndResourceTypes()
-        
-        if request.method=='POST':
-            args = request.args
-            if 'rebuild' in args.keys():
-                self.env.update()
-        
-        data = {'packages': packages,
-                'resourcetypes': resourcetypes,
-                'tree': self.env.tree._registry }
-        return data
+#class AliasesPanel(Component):
+#    """
+#    List all aliases and add new ones.
+#    """
+#    implements(IAdminPanel)
+#    
+#    template = 'templates' + os.sep + 'components_aliases.tmpl'
+#    panel_ids = ('components', 'Components', 'edit-aliases', 'Aliases')
+#    has_roles = ['COMPONENT_ALIASES']
+#    
+#    def render(self, request):
+#        packages = self.env.registry.getPackageIds()
+#        resourcetypes = self.env.registry.getAllPackagesAndResourceTypes()
+#        
+#        data  = {
+#            'aliases': {},
+#            'error': '',
+#            'alias': '',
+#            'xpath': '',
+#            'sql': '',
+#            'packages': packages,
+#            'resourcetypes': resourcetypes,
+#            'resturl': self.env.getRestUrl(),
+#        }
+#        if request.method=='POST':
+#            args = request.args
+#            package_id = args.get('package_id',[''])[0]
+#            resourcetype_id = args.get('resourcetype_id',[''])[0]
+#            alias = args.get('alias',[''])[0]
+#            xpath = args.get('xpath',[''])[0]
+#            if 'add' in args.keys() and xpath and alias:
+#                data.update(self._addAlias(package_id, resourcetype_id, 
+#                                           alias, xpath))
+#            elif 'delete' in args.keys() and 'alias[]' in args.keys():
+#                data.update(self._deleteAliases(args.get('alias[]',[])))
+#        # fetch all aliases
+#        data['aliases'] = self.env.registry.aliases
+#        return data
+#    
+#    def _deleteAliases(self, aliases=[]):
+#        for alias in aliases:
+#            try:
+#                self.env.registry.aliases.delete(uri = alias)
+#            except Exception, e:
+#                self.log.error("Error deleting an alias", e)
+#                return {'error': ("Error deleting an alias", e)}
+#        return {'info': "Alias has been deleted."}
+#    
+#    def _addAlias(self, package_id, resourcetype_id, alias, xpath):
+#        try:
+#            self.env.registry.aliases.register(package_id, 
+#                                               resourcetype_id, 
+#                                               alias, 
+#                                               xpath)
+#        except Exception, e:
+#            self.log.error("Error generating an alias", e)
+#            return {'error': ("Error generating an alias", e)}
+#        return {'info': "Alias has been added."}
+#
+#
+#class QuickinstallerPanel(Component):
+#    """
+#    Manage components.
+#    """
+#    implements(IAdminPanel)
+#    
+#    template = 'templates' + os.sep + 'components_quickinstaller.tmpl'
+#    panel_ids = ('components', 'Components', 'quickinstaller', 
+#                 'Quickinstaller')
+#    has_roles = ['SEISHUB_ADMIN']
+#    
+#    def render(self, request):
+#        packages = self.env.registry.getPackageIds()
+#        resourcetypes = self.env.registry.getAllPackagesAndResourceTypes()
+#        
+#        if request.method=='POST':
+#            args = request.args
+#            if 'rebuild' in args.keys():
+#                self.env.update()
+#        
+#        data = {'packages': packages,
+#                'resourcetypes': resourcetypes,
+#                'tree': self.env.tree._registry }
+#        return data

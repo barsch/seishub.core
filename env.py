@@ -11,13 +11,14 @@ from seishub.config import Configuration, Option, _TRUE_VALUES
 from seishub.core import ComponentManager
 from seishub.db.manager import DatabaseManager
 from seishub.defaults import DEFAULT_COMPONENTS, HTTP_PORT
-from seishub.util.loader import ComponentLoader
 from seishub.log import Logger
 from seishub.packages.installer import PackageInstaller
 from seishub.processor import ResourceTree
+from seishub.util.loader import ComponentLoader
 from seishub.xmldb.xmlcatalog import XmlCatalog
 from twisted.application import service
 from twisted.internet import defer
+import inspect
 import os
 import sys
 import time
@@ -43,20 +44,20 @@ class Environment(ComponentManager):
         * a package handler env.registry
         * a user management handler env.auth
     """
-    
+
     Option('seishub', 'host', 'localhost', "Default host of this server.")
-    
+
     def __init__(self, conf=None):
         """
         Initialize the SeisHub environment.
         """
+        # get SeisHub path
+        path = self.getSeisHubPath()
         # set up component manager
         ComponentManager.__init__(self)
         self.compmgr = self
         # set a start up timestamp
         self.startup_time = int(time.time())
-        # get SeisHub path
-        path = self.getSeisHubPath()
         # set configuration handler
         if not conf or not isinstance(conf, Configuration):
             conf_file = os.path.join(path, 'conf', 'seishub.ini')
@@ -70,7 +71,7 @@ class Environment(ComponentManager):
         # initialize all default options
         self.initDefaultOptions()
         # set up DB handler
-        self.db = DatabaseManager(self) 
+        self.db = DatabaseManager(self)
         # set XML catalog
         self.catalog = XmlCatalog(self)
         # user and group management
@@ -78,30 +79,30 @@ class Environment(ComponentManager):
         # load plug-ins
         ComponentLoader(self)
         # Package manager
-        # initialize ComponentRegistry after ComponentLoader(), as plug-ins may 
-        # provide registry objects
+        # initialize ComponentRegistry after ComponentLoader(), as plug-ins 
+        # may provide registry objects
         self.registry = ComponentRegistry(self)
         # trigger auto installer
         PackageInstaller.install(self)
         # initialize the resource tree
         self.tree = ResourceTree(self)
         self.update()
-    
+
     def getSeisHubPath(self):
         """
-        Returns the absolute path to the SeisHub directory.
+        Returns the absolute root path to the SeisHub directory.
         """
-        import seishub
-        return os.path.split(os.path.dirname(seishub.__file__))[0]
-    
+        src_path = inspect.getsourcefile(self.__class__)
+        return os.path.dirname(os.path.dirname(src_path))
+
     def getRestUrl(self):
         """
         Returns the root URL of the REST pages.
         """
         rest_host = self.config.get('seishub', 'host') or 'localhost'
         rest_port = self.config.getint('http_port', 'port') or HTTP_PORT
-        return 'http://'+ rest_host + ':' + str(rest_port)
-    
+        return 'http://' + rest_host + ':' + str(rest_port)
+
     def update(self):
         """
         General update method after enabling/disabling components.
@@ -111,14 +112,14 @@ class Environment(ComponentManager):
         self.registry.processor_indexes.update()
         self.catalog.updateAllIndexViews()
         self.registry.sqlviews.update()
-    
+
     @defer.inlineCallbacks
     def enableService(self, id):
         """
         Enable a service.
         """
         for srv in service.IServiceCollection(self.app):
-            if srv.service_id==id:
+            if srv.service_id == id:
                 # ensure not to start a service twice; may be fatal with timers
                 if srv.running:
                     self.log.info('Service %s already started.' % srv.name)
@@ -127,28 +128,28 @@ class Environment(ComponentManager):
                 self.config.save()
                 yield defer.maybeDeferred(srv.startService)
                 self.log.info('Starting service %s.' % srv.name)
-    
+
     @defer.inlineCallbacks
     def disableService(self, id):
         """
         Disable a service.
         """
         for srv in service.IServiceCollection(self.app):
-            if srv.service_id==id:
+            if srv.service_id == id:
                 self.config.set(srv.service_id, 'autostart', False)
                 self.config.save()
                 yield defer.maybeDeferred(srv.stopService)
                 self.log.info('Stopping service %s.' % srv.name)
-    
+
     def enableComponent(self, component, update=True):
         """
         Enables a component.
         """
         module = sys.modules[component.__module__]
-        fullname = module.__name__+'.'+component.__name__
+        fullname = module.__name__ + '.' + component.__name__
         if not component in self:
             self[component]
-        self.enabled[component]=True
+        self.enabled[component] = True
         self.config.set('components', fullname, 'enabled')
         self.config.save()
         # package installer must run first before saving
@@ -161,26 +162,26 @@ class Environment(ComponentManager):
         self.log.info('Enabling component %s' % fullname)
         if update:
             self.update()
-    
+
     def disableComponent(self, component, update=True):
         """
         Disables a component.
         """
         module = sys.modules[component.__module__]
-        fullname = module.__name__+'.'+component.__name__
-        
+        fullname = module.__name__ + '.' + component.__name__
+
         if fullname in DEFAULT_COMPONENTS:
             return
         if component in self:
             del self[component]
-        self.enabled[component]=False
+        self.enabled[component] = False
         self.config.set('components', fullname, 'disabled')
         self.log.info('Disabling component %s' % fullname)
         self.config.save()
         PackageInstaller.cleanup(self)
         if update:
             self.update()
-    
+
     def initDefaultOptions(self):
         """
         Initialize any not yet set default options in configuration file.
@@ -196,7 +197,7 @@ class Environment(ComponentManager):
                     self.log.info('Setting default value for [%s] %s = %s' \
                                   % (section, name, value))
                     self.config.save()
-    
+
     def initComponent(self, component):
         """
         Initialize additional member variables for components.
@@ -214,7 +215,7 @@ class Environment(ComponentManager):
         component.catalog = self.catalog
         component.registry = self.registry
         component.auth = self.auth
-    
+
     def isComponentEnabled(self, cls):
         """
         Implemented to only allow activation of components that are not
@@ -230,18 +231,18 @@ class Environment(ComponentManager):
         else:
             modulename = cls.__module__
             classname = modulename + '.' + cls.__name__
-        
+
         # all default components are enabled
         if classname in DEFAULT_COMPONENTS:
             return True
         if modulename in DEFAULT_COMPONENTS:
             return True
-        
+
         # parse config file and return state of either class or module
         rules = [(name, value in _TRUE_VALUES)
                  for name, value in self.config.options('components')]
         rules = sorted(rules)
-        
+
         for pattern, state in rules:
             if pattern == classname.lower():
                 return state

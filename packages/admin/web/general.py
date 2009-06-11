@@ -21,21 +21,21 @@ class BasicPanel(Component):
     Basic configuration.
     """
     implements(IAdminPanel)
-    
+
     template = 'templates' + os.sep + 'general_basic.tmpl'
     panel_ids = ('admin', 'General', 'basic', 'Basic Settings')
     has_roles = ['SEISHUB_ADMIN']
-    
+
     def render(self, request):
         data = {}
         if request.method == 'POST':
             args = request.args
             for option in ('host', 'description'):
-                self.config.set('seishub', option, args.get(option,[])[0])
+                self.config.set('seishub', option, args.get(option, [])[0])
             for option in ('theme',):
-                self.config.set('web', 'admin_theme', args.get(option,[])[0])
+                self.config.set('web', 'admin_theme', args.get(option, [])[0])
             if 'log_level' in args:
-                log_level = (args.get('log_level',[LOG_LEVELS])[0]).upper()
+                log_level = (args.get('log_level', [LOG_LEVELS])[0]).upper()
                 self.config.set('logging', 'log_level', log_level)
                 self.env.log.log_level = LOG_LEVELS.get(log_level, ERROR)
             self.config.save()
@@ -45,7 +45,7 @@ class BasicPanel(Component):
           'description': self.config.get('seishub', 'description'),
           'theme': self.config.get('web', 'admin_theme'),
           'themes': self.root.themes,
-          'log_levels': dict([(v,k) for k,v in LOG_LEVELS.iteritems()]),
+          'log_levels': dict([(v, k) for k, v in LOG_LEVELS.iteritems()]),
           'log_level': self.config.get('logging', 'log_level'),
         })
         return data
@@ -56,11 +56,11 @@ class ConfigPanel(Component):
     General configuration.
     """
     implements(IAdminPanel)
-    
+
     template = 'templates' + os.sep + 'general_config.tmpl'
     panel_ids = ('admin', 'General', 'config', 'Config')
     has_roles = ['SEISHUB_ADMIN']
-    
+
     def render(self, request):
         data = {}
         sections = self.config.sections()
@@ -77,11 +77,11 @@ class LogsPanel(Component):
     Web based log file viewer.
     """
     implements(IAdminPanel)
-    
+
     template = 'templates' + os.sep + 'general_logs.tmpl'
     panel_ids = ('admin', 'General', 'logs', 'Logs')
     has_roles = ['SEISHUB_ADMIN']
-    
+
     def render(self, request):
         error_log_file = self.env.config.get('logging', 'error_log_file')
         log_dir = os.path.join(self.env.config.path, 'logs')
@@ -89,12 +89,12 @@ class LogsPanel(Component):
         try:
             fh = open(log_file, 'r')
             logs = fh.readlines()
-            fh.close()  
+            fh.close()
         except:
             logs = ["Can't open log file."]
         error_logs = logs[-500:]
         data = {
-          'errorlog': error_logs, 
+          'errorlog': error_logs,
         }
         return data
 
@@ -104,11 +104,11 @@ class UsersPanel(Component):
     Administration of users.
     """
     implements(IAdminPanel)
-    
+
     template = 'templates' + os.sep + 'general_users.tmpl'
     panel_ids = ('admin', 'General', 'permission-users', 'Users')
     has_roles = ['SEISHUB_ADMIN']
-    
+
     def render(self, request):
         data = {}
         # process POST request
@@ -124,11 +124,11 @@ class UsersPanel(Component):
             'name': '',
             'email': '',
             'institution': '',
-            'users': self.auth.users 
+            'users': self.auth.users
         }
         result.update(data)
         return result
-    
+
     def _addUser(self, args):
         """
         Add a new user.
@@ -148,7 +148,7 @@ class UsersPanel(Component):
             data['error'] = "Password and password confirmation are not equal!"
         else:
             try:
-                self.auth.addUser(id=id, name=name, password=password, 
+                self.auth.addUser(id=id, name=name, password=password,
                                   email=email, institution=institution)
             except SeisHubError, e:
                 # password checks are made in self.auth.addUser method 
@@ -159,7 +159,7 @@ class UsersPanel(Component):
             else:
                 data = {'info': "New user has been added."}
         return data
-    
+
     def _deleteUser(self, args):
         """
         Delete one or multiple users.
@@ -182,34 +182,34 @@ class UsersPanel(Component):
         return data
 
 
-class RolesPanel(Component):
-    """
-    Administration of roles.
-    """
-    implements(IAdminPanel)
-    
-    template = 'templates' + os.sep + 'general_roles.tmpl'
-    panel_ids = ('admin', 'General', 'permission-roles', 'Roles')
-    has_roles = ['SEISHUB_ADMIN']
-    
-    def render(self, request):
-        data = {}
-        return data
-
-
-class GroupsPanel(Component):
-    """
-    Administration of groups.
-    """
-    implements(IAdminPanel)
-    
-    template = 'templates' + os.sep + 'general_roles.tmpl'
-    panel_ids = ('admin', 'General', 'permission-groups', 'Groups')
-    has_roles = ['SEISHUB_ADMIN']
-    
-    def render(self, request):
-        data = {}
-        return data
+#class RolesPanel(Component):
+#    """
+#    Administration of roles.
+#    """
+#    implements(IAdminPanel)
+#    
+#    template = 'templates' + os.sep + 'general_roles.tmpl'
+#    panel_ids = ('admin', 'General', 'permission-roles', 'Roles')
+#    has_roles = ['SEISHUB_ADMIN']
+#    
+#    def render(self, request):
+#        data = {}
+#        return data
+#
+#
+#class GroupsPanel(Component):
+#    """
+#    Administration of groups.
+#    """
+#    implements(IAdminPanel)
+#    
+#    template = 'templates' + os.sep + 'general_roles.tmpl'
+#    panel_ids = ('admin', 'General', 'permission-groups', 'Groups')
+#    has_roles = ['SEISHUB_ADMIN']
+#    
+#    def render(self, request):
+#        data = {}
+#        return data
 
 
 class PluginsPanel(Component):
@@ -217,11 +217,11 @@ class PluginsPanel(Component):
     Administration of plug-ins.
     """
     implements(IAdminPanel)
-    
+
     template = 'templates' + os.sep + 'general_plugins.tmpl'
     panel_ids = ('admin', 'General', 'plug-ins', 'Plug-ins')
     has_roles = ['SEISHUB_ADMIN']
-    
+
     def render(self, request):
         error = None
         if request.method == 'POST':
@@ -234,18 +234,18 @@ class PluginsPanel(Component):
             if 'reload' in request.args:
                 self._refreshPlugins()
         return self._viewPlugins(request, error)
-    
+
     def _refreshPlugins(self):
         from seishub.util.loader import ComponentLoader
         ComponentLoader(self.env)
-    
+
     def _updatePlugins(self, request):
         """
         Update components.
         """
         enabled = request.args.get('enabled', [])
         error = []
-        
+
         from seishub.core import ComponentMeta
         for component in ComponentMeta._components:
             module = sys.modules[component.__module__]
@@ -264,7 +264,7 @@ class PluginsPanel(Component):
         # call update on the end
         self.env.update()
         return error
-    
+
     def _viewPlugins(self, request, error=None):
         plugins = {}
         from seishub.core import ComponentMeta
@@ -274,7 +274,7 @@ class PluginsPanel(Component):
             modulename = module.__name__
             classname = modulename + '.' + component.__name__
             plugin = {
-              'name': component.__name__, 
+              'name': component.__name__,
               'module': module.__name__,
               'file': module.__file__,
               'classname': classname,
@@ -283,11 +283,11 @@ class PluginsPanel(Component):
               'required': classname in DEFAULT_COMPONENTS or \
                           modulename in DEFAULT_COMPONENTS,
             }
-            plugins.setdefault(modulename,{})
-            plugins[modulename].setdefault('plugins',[]).append(plugin)
+            plugins.setdefault(modulename, {})
+            plugins[modulename].setdefault('plugins', []).append(plugin)
             plugins[modulename]['description'] = description
         data = {
-          'sorted_plugins': sorted(plugins), 
+          'sorted_plugins': sorted(plugins),
           'plugins': plugins,
           'error': error,
         }
@@ -299,11 +299,11 @@ class ServicesPanel(Component):
     Administration of services.
     """
     implements(IAdminPanel)
-    
+
     template = 'templates' + os.sep + 'general_services.tmpl'
     panel_ids = ('admin', 'General', 'services', 'Services')
     has_roles = ['SEISHUB_ADMIN']
-    
+
     def render(self, request):
         if request.method == 'POST':
             if 'shutdown' in request.args:
@@ -316,13 +316,13 @@ class ServicesPanel(Component):
           'services': service.IServiceCollection(self.env.app),
         }
         return data
-    
+
     def _shutdownSeisHub(self):
         reactor.stop() #@UndefinedVariable
-    
+
     def _restartSeisHub(self):
         raise NotImplemented
-    
+
     def _changeServices(self, request):
         serviceList = request.args.get('service', [])
         for srv in service.IServiceCollection(self.env.app):

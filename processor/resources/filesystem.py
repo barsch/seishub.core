@@ -25,33 +25,33 @@ class FileSystemResource(Resource, filepath.FilePath):
     A file system resource.
     """
     implements(IFileSystemResource)
-    
+
     content_types = static.loadMimeTypes()
     content_encodings = {".gz" : "gzip", ".bz2": "bzip2"}
     type = None
-    
-    def __init__(self, path, default_type="text/html", registry=None, 
-                 processors = {'.epy': PythonScript,
-                               '.rpy': ResourceScript}):
-        Resource.__init__(self)
+
+    def __init__(self, path, default_type="text/html", registry=None,
+                 processors={'.epy': PythonScript, '.rpy': ResourceScript},
+                 hidden=False):
+        Resource.__init__(self, hidden)
         filepath.FilePath.__init__(self, path)
         # folder or file?
         self.restat()
         if self.isdir():
             self.category = 'folder'
             self.is_leaf = False
-            self.folderish = True 
+            self.folderish = True
         else:
             self.category = 'file'
             self.is_leaf = True
-            self.folderish = False 
+            self.folderish = False
         # content type
         self.default_type = default_type
         # a registry for cached file based scripts
         self.registry = registry or static.Registry()
         # allowed processors
         self.processors = processors
-    
+
     def getMetadata(self):
         self.restat()
         s = self.statinfo
@@ -63,7 +63,7 @@ class FileSystemResource(Resource, filepath.FilePath):
                 "mtime"        : s.st_mtime,
                 "nlink"        : s.st_nlink
         }
-    
+
     def getChild(self, id, request):
         # refresh file meta information
         self.restat()
@@ -83,17 +83,17 @@ class FileSystemResource(Resource, filepath.FilePath):
             request.setHeader('content-type', 'text/html; charset=UTF-8')
             return proc(fpath.path, self.registry)
         return self._clone(fpath.path)
-    
+
     def _clone(self, path):
-        return self.__class__(path, 
-                              default_type=self.default_type, 
+        return self.__class__(path,
+                              default_type=self.default_type,
                               registry=self.registry,
-                              processors = self.processors)
-    
+                              processors=self.processors)
+
     def render_GET(self, request):
         """
         Returns either the content of the folder or the file object.
-        """ 
+        """
         if not self.exists():
             raise NotFoundError("Item %s does not exists." % self.path)
         if self.isdir():

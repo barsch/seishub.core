@@ -24,7 +24,7 @@ class RESTResource(Resource):
     A REST resource node.
     """
     implements(IRESTResource)
-    
+
     def __init__(self, res):
         Resource.__init__(self)
         self.category = 'resource'
@@ -35,9 +35,9 @@ class RESTResource(Resource):
         self.name = res.name
         self.revision = res.document.revision
         self.res = res
-    
+
     def getMetadata(self):
-        meta = self.res.document.meta 
+        meta = self.res.document.meta
         file_datetime = int(time.mktime(meta.datetime.timetuple()))
         file_size = meta.size
         file_uid = meta.uid or 0
@@ -46,7 +46,7 @@ class RESTResource(Resource):
                 'size': file_size,
                 'atime': file_datetime,
                 'mtime': file_datetime}
-    
+
     def render_GET(self, request):
         """
         Process a resource query request.
@@ -62,35 +62,35 @@ class RESTResource(Resource):
         for all possible error codes.
         """
         data = self.res.document.data
-        # ensure we return a utf-8 encoded string not an unicode object
+        # ensure we return a UTF-8 encoded string not an Unicode object
         if isinstance(data, unicode):
             data = data.encode('utf-8')
         # set XML declaration inclusive UTF-8 encoding string
         if not data.startswith('<xml'):
             data = addXMLDeclaration(data, 'utf-8')
         # parse request headers for output/format options
-        formats = request.args.get('format',[]) or \
-                  request.args.get('output',[])
+        formats = request.args.get('format', []) or \
+                  request.args.get('output', [])
         # handle output/format conversion
         for format in formats:
             # fetch a XSLT document objects
             reg = request.env.registry
-            xslt = reg.stylesheets.get(package_id = self.package_id,
-                                       resourcetype_id = self.resourcetype_id,
-                                       type = format)
+            xslt = reg.stylesheets.get(package_id=self.package_id,
+                                       resourcetype_id=self.resourcetype_id,
+                                       type=format)
             if len(xslt):
                 xslt = xslt[0]
                 data = xslt.transform(data)
                 # set additional content-type if given in XSLT
                 if xslt.content_type:
-                    request.setHeader('content-type', 
+                    request.setHeader('content-type',
                                       xslt.content_type + '; charset=UTF-8')
             else:
                 msg = "There is no stylesheet for requested format %s."
                 request.env.log.debug(msg % format)
         # return data
         return data
-    
+
     def render_POST(self, request):
         """
         Processes a resource modification request.
@@ -112,27 +112,27 @@ class RESTResource(Resource):
         Modifying a document always needs a valid path to a resource or uses a
         user defined mapping.
         """
-        # seishub directory is not directly changeable
-        if self.package_id=='seishub':
+        # SeisHub directory is not directly changeable
+        if self.package_id == 'seishub':
             msg = "SeisHub resources may not be modified directly."
             raise ForbiddenError(msg)
         # parse request headers for output/format options
         data = request.data
-        formats = request.args.get('format',[]) or \
-                  request.args.get('output',[])
+        formats = request.args.get('format', []) or \
+                  request.args.get('output', [])
         # handle output/format conversion
         for format in formats:
             # fetch a XSLT document objects
             reg = request.env.registry
-            xslt = reg.stylesheets.get(package_id = self.package_id,
-                                       resourcetype_id = self.resourcetype_id,
-                                       type = format)
+            xslt = reg.stylesheets.get(package_id=self.package_id,
+                                       resourcetype_id=self.resourcetype_id,
+                                       type=format)
             if len(xslt):
                 xslt = xslt[0]
                 data = xslt.transform(data)
                 # set additional content-type if given in XSLT
                 if xslt.content_type:
-                    request.setHeader('content-type', 
+                    request.setHeader('content-type',
                                       xslt.content_type + '; charset=UTF-8')
             else:
                 msg = "There is no stylesheet for requested format %s."
@@ -142,7 +142,7 @@ class RESTResource(Resource):
         # resource successfully modified - set status code
         request.code = http.NO_CONTENT
         return ''
-    
+
     def render_MOVE(self, request):
         """
         Processes a resource move/rename request.
@@ -151,11 +151,11 @@ class RESTResource(Resource):
         U{http://msdn.microsoft.com/en-us/library/aa142926(EXCHG.65).aspx}
         """
         # seishub directory is not directly changeable
-        if self.package_id=='seishub':
+        if self.package_id == 'seishub':
             msg = "SeisHub resources may not be moved directly."
             raise ForbiddenError(msg)
         # test if destination is set
-        destination = request.received_headers.get('Destination', False) 
+        destination = request.received_headers.get('Destination', False)
         if not destination:
             msg = "Expected a destination header."
             raise SeisHubError(msg, code=http.BAD_REQUEST)
@@ -166,10 +166,10 @@ class RESTResource(Resource):
             msg = "Expected a complete destination path."
             raise SeisHubError(msg, code=http.BAD_REQUEST)
         # test size of destination URI
-        if len(destination)>=MAXIMAL_URL_LENGTH:
+        if len(destination) >= MAXIMAL_URL_LENGTH:
             msg = "Destination URI is to long."
             raise SeisHubError(msg, code=http.REQUEST_URI_TOO_LONG)
-        
+
         # strip host
         destination = destination[len(request.env.getRestUrl()):]
         # source URI and destination URI must not be the same value
@@ -178,7 +178,7 @@ class RESTResource(Resource):
             msg = "Source URI and destination URI must not be the same value."
             raise ForbiddenError(msg)
         # test if valid destination path
-        if len(parts)<1 or parts[:-1]!=request.prepath[:-1]:
+        if len(parts) < 1 or parts[:-1] != request.prepath[:-1]:
             msg = "Destination %s not allowed." % destination
             raise ForbiddenError(msg)
         # rename resource
@@ -186,10 +186,10 @@ class RESTResource(Resource):
         # on successful creation - set status code and location header
         request.code = http.CREATED
         url = request.env.getRestUrl() + destination
-        # won't accept unicode
+        # won't accept Unicode
         request.headers['Location'] = str(url)
         return ''
-    
+
     def render_DELETE(self, request):
         """
         Processes a resource deletion request.
@@ -207,8 +207,8 @@ class RESTResource(Resource):
         Deleting a document always needs a valid path to a resource or may use 
         a user defined mapping.
         """
-        # resource in SeisHub directory are not directly deletable
-        if self.package_id=='seishub':
+        # resource in SeisHub directory are not directly removable
+        if self.package_id == 'seishub':
             msg = "SeisHub resources may not be deleted directly."
             raise ForbiddenError(msg)
         # delete resource
@@ -223,7 +223,7 @@ class XMLIndex(Resource):
     A XML index node.
     """
     implements(IXMLIndex)
-    
+
     def __init__(self):
         Resource.__init__(self)
         self.category = 'index'
@@ -236,7 +236,7 @@ class RESTProperty(Resource):
     A REST property node.
     """
     implements(IRESTProperty)
-    
+
     def __init__(self, package_id, resourcetype_id, name, revision=None):
         Resource.__init__(self)
         self.is_leaf = True
@@ -245,11 +245,11 @@ class RESTProperty(Resource):
         self.resourcetype_id = resourcetype_id
         self.name = name
         self.revision = revision
-    
+
     def render_GET(self, request):
-        property = request.postpath[-1] 
+        property = request.postpath[-1]
         # check for valid properties
-        if property=='.index':
+        if property == '.index':
             res = request.env.catalog.getResource(self.package_id,
                                                   self.resourcetype_id,
                                                   self.name,
@@ -265,11 +265,11 @@ class RESTProperty(Resource):
                         if not value:
                             continue
                         if not isinstance(value, basestring):
-                            value=unicode(value)
+                            value = unicode(value)
                         etree.SubElement(sub, "value").text = value
             data = etree.tostring(root, pretty_print=True, encoding='utf-8')
             format_prefix = 'index'
-        elif property=='.meta':
+        elif property == '.meta':
             res = request.env.catalog.getResource(self.package_id,
                                                   self.resourcetype_id,
                                                   self.name,
@@ -300,22 +300,22 @@ class RESTProperty(Resource):
         if not data.startswith('<xml'):
             data = addXMLDeclaration(data, 'utf-8')
         # parse request headers for output type
-        format = request.args.get('format',[None])[0] or \
-                 request.args.get('output',[None])[0]
+        format = request.args.get('format', [None])[0] or \
+                 request.args.get('output', [None])[0]
         # handle output/format conversion
         if format:
             format = '%s.%s' % (format_prefix, format)
             # fetch a XSLT document object
             reg = request.env.registry
-            xslt = reg.stylesheets.get(package_id = 'seishub', 
-                                       resourcetype_id = 'stylesheet', 
-                                       type = format)
+            xslt = reg.stylesheets.get(package_id='seishub',
+                                       resourcetype_id='stylesheet',
+                                       type=format)
             if len(xslt):
                 xslt = xslt[0]
                 data = xslt.transform(data)
                 # set additional content-type if given in XSLT
                 if xslt.content_type:
-                    request.setHeader('content-type', 
+                    request.setHeader('content-type',
                                       xslt.content_type + '; charset=UTF-8')
             else:
                 msg = "There is no stylesheet for requested format %s."
@@ -327,27 +327,27 @@ class RESTResourceTypeFolder(Folder):
     """
     A REST resource type folder.
     """
-    
+
     def __init__(self, package_id, resourcetype_id):
         Folder.__init__(self)
         self.category = 'resourcetype'
         self.is_leaf = True
         self.package_id = package_id
         self.resourcetype_id = resourcetype_id
-    
+
     def render(self, request):
         rlen = len(request.postpath)
-        if request.method in [GET, HEAD] and rlen==0:
+        if request.method in [GET, HEAD] and rlen == 0:
             return self.render_GET(request)
-        elif request.method==PUT and rlen in [0, 1]:
+        elif request.method == PUT and rlen in [0, 1]:
             return self.render_PUT(request)
-        elif len(request.postpath)==1:
+        elif len(request.postpath) == 1:
             return self._processResource(request)
-        elif request.method==GET and rlen>=2:
+        elif request.method == GET and rlen >= 2:
             if isInteger(request.postpath[1]):
-                if rlen==2:
+                if rlen == 2:
                     return self._processRevision(request)
-                elif rlen==3 and request.postpath[2].startswith('.'):
+                elif rlen == 3 and request.postpath[2].startswith('.'):
                     name = request.postpath.pop(0)
                     request.prepath.append(name)
                     revision = request.postpath.pop(0)
@@ -361,8 +361,8 @@ class RESTResourceTypeFolder(Folder):
                                     name)
         allowed_methods = getattr(self, 'allowedMethods', ())
         msg = "This operation is not allowed on this resource."
-        raise NotAllowedError(allowed_methods = allowed_methods, message = msg)
-    
+        raise NotAllowedError(allowed_methods=allowed_methods, message=msg)
+
     def _processResource(self, request):
         # resource request
         try:
@@ -384,7 +384,7 @@ class RESTResourceTypeFolder(Folder):
             return result
         else:
             return result.render(request)
-    
+
     def _processRevision(self, request):
         # revision request
         name = request.postpath.pop(0)
@@ -396,7 +396,7 @@ class RESTResourceTypeFolder(Folder):
                                               name,
                                               revision=revision)
         return RESTResource(res)
-    
+
     def render_PUT(self, request):
         """
         Create a new XML resource for this resource type.
@@ -415,50 +415,50 @@ class RESTResourceTypeFolder(Folder):
         @see: U{http://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html#sec9.6}
         @see: U{http://thoughtpad.net/alan-dean/http-headers-status.gif}
         """
-        # seishub directory is not directly changeable
-        if self.package_id=='seishub':
+        # SeisHub directory is not directly changeable
+        if self.package_id == 'seishub':
             msg = "SeisHub resources may not be added directly."
             raise ForbiddenError(msg)
         # check if name is given
-        if len(request.postpath)==1:
-            name=request.postpath[0]
+        if len(request.postpath) == 1:
+            name = request.postpath[0]
         else:
-            name=None
+            name = None
         # parse request headers for output/format options
         data = request.data
-        formats = request.args.get('format',[]) or \
-                  request.args.get('output',[])
+        formats = request.args.get('format', []) or \
+                  request.args.get('output', [])
         # handle output/format conversion
         for format in formats:
             # fetch a XSLT document objects
             reg = request.env.registry
-            xslt = reg.stylesheets.get(package_id = self.package_id,
-                                       resourcetype_id = self.resourcetype_id,
-                                       type = format)
+            xslt = reg.stylesheets.get(package_id=self.package_id,
+                                       resourcetype_id=self.resourcetype_id,
+                                       type=format)
             if len(xslt):
                 xslt = xslt[0]
                 data = xslt.transform(data)
                 # set additional content-type if given in XSLT
                 if xslt.content_type:
-                    request.setHeader('content-type', 
+                    request.setHeader('content-type',
                                       xslt.content_type + '; charset=UTF-8')
             else:
                 msg = "There is no stylesheet for requested format %s."
                 request.env.log.debug(msg % format)
         # add a new resource
-        res = request.env.catalog.addResource(self.package_id, 
+        res = request.env.catalog.addResource(self.package_id,
                                               self.resourcetype_id,
-                                              data, 
+                                              data,
                                               name=name)
         # resource created - set status code and location header
         request.code = http.CREATED
         url = "%s/%s/%s" % (request.env.getRestUrl(),
                             '/'.join(request.prepath),
                             str(res.name))
-        # won't accept unicode
+        # won't accept Unicode
         request.headers['Location'] = str(url)
         return ''
-    
+
     def render_GET(self, request):
         """
         Returns all resources and indexes of this resource type.
@@ -480,12 +480,12 @@ class RESTPackageFolder(StaticFolder):
     """
     A REST package folder.
     """
-    
+
     def __init__(self, package_id):
         Folder.__init__(self)
         self.category = 'package'
         self.package_id = package_id
-    
+
     def getChild(self, id, request):
         """
         Returns a L{RESTResourceTypeFolder} object for a valid id.
@@ -493,7 +493,7 @@ class RESTPackageFolder(StaticFolder):
         if request.env.registry.isResourceTypeId(self.package_id, id):
             return RESTResourceTypeFolder(self.package_id, id)
         raise NotFoundError("XML resource type %s not found." % id)
-    
+
     def render_GET(self, request):
         """
         Returns a dictionary of all resource types of this package.
@@ -508,11 +508,11 @@ class RESTFolder(StaticFolder):
     """
     A REST root folder.
     """
-    
+
     def __init__(self):
         Folder.__init__(self)
         self.category = 'xmlroot'
-    
+
     def getChild(self, id, request):
         """
         Returns a L{XMLPackageFolder} object for a valid id.
@@ -520,7 +520,7 @@ class RESTFolder(StaticFolder):
         if request.env.registry.isPackageId(id):
             return RESTPackageFolder(id)
         raise NotFoundError("XML package %s not found." % id)
-    
+
     def render_GET(self, request):
         """
         Returns a dictionary of all SeisHub packages.

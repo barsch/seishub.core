@@ -21,7 +21,7 @@ class AdminPanel(Resource):
     A administrative panel.
     """
     implements(IAdminResource)
-    
+
     def __init__(self, root, panel):
         Resource.__init__(self)
         self.is_leaf = True
@@ -31,7 +31,7 @@ class AdminPanel(Resource):
         self.panel.root = root
         self.root = root
         self.cid, _, self.pid, _ = self.panel.panel_ids
-    
+
     def render(self, request):
         # content
         data = self.panel.render(request)
@@ -44,7 +44,7 @@ class AdminPanel(Resource):
         page.navigation = self._renderNavigation()
         page.submenu = self._renderSubMenu()
         # content panel
-        filename = resource_filename(self.panel.__module__, 
+        filename = resource_filename(self.panel.__module__,
                                      self.panel.template)
         content = Template(file=filename, searchList=[data])
         page.content = content
@@ -52,14 +52,14 @@ class AdminPanel(Resource):
         page.css = self.root.getActiveAdminThemeCSS()
         # additional stuff
         page.version = SEISHUB_VERSION
-        page.CSS = content.getVar('CSS','')
-        page.JAVASCRIPT = content.getVar('JAVASCRIPT','')
+        page.CSS = content.getVar('CSS', '')
+        page.JAVASCRIPT = content.getVar('JAVASCRIPT', '')
         # error handling
         page.error = self._renderError(data)
         # default headers
         request.setHeader('content-type', 'text/html; charset=UTF-8')
         return str(page)
-    
+
     def _renderError(self, data):
         """
         Render an error or info message.
@@ -82,13 +82,13 @@ class AdminPanel(Resource):
             temp.message = '<br />'.join([str(l) for l in msg])
         elif isinstance(msg, basestring):
             temp.message = msg
-        elif isinstance(msg, tuple) and len(msg)==2:
+        elif isinstance(msg, tuple) and len(msg) == 2:
             temp.message = str(msg[0])
             temp.exception = str(msg[1])
         else:
             temp.message = str(msg)
         return temp
-    
+
     def _renderNavigation(self):
         """
         Generate the main navigation bar.
@@ -99,7 +99,7 @@ class AdminPanel(Resource):
         temp.cat_id = self.cid
         temp.resturl = self.panel.env.getRestUrl()
         return temp
-    
+
     def _renderSubMenu(self):
         """
         Generate the sub menu box.
@@ -117,7 +117,7 @@ class AdminFolder(StaticFolder):
     A administrative sub folder.
     """
     implements(IAdminResource)
-    
+
     def __init__(self, root, panels):
         Resource.__init__(self)
         self.category = 'admin'
@@ -128,7 +128,7 @@ class AdminFolder(StaticFolder):
             # create child
             id = panel.panel_ids[2]
             self.putChild(id, AdminPanel(root, panel))
-    
+
     def render_GET(self, request):
         # set default page
         cid = self.panels[0].panel_ids[0]
@@ -143,24 +143,24 @@ class AdminRootFolder(StaticFolder):
     The root folder resource containing all active administrative resources.
     """
     implements(IAdminResource)
-    
-    def __init__(self, env):
-        Resource.__init__(self)
+
+    def __init__(self, env, hidden=False):
+        Resource.__init__(self, hidden)
         self.env = env
         self.category = 'admin'
         # default template dir
-        self.template_dir = os.path.join(self.env.config.path, 
-                                         'seishub', 'packages', 'admin', 
+        self.template_dir = os.path.join(self.env.config.path,
+                                         'seishub', 'packages', 'admin',
                                          'web', 'templates')
         # default template dir
-        self.statics_dir = os.path.join(self.env.config.path, 
-                                        'seishub', 'packages', 'admin', 
+        self.statics_dir = os.path.join(self.env.config.path,
+                                        'seishub', 'packages', 'admin',
                                         'web', 'statics')
         # register themes, panels and static content
         self._registerAdminThemes()
         self._registerAdminPanels()
         self._registerStaticContent()
-    
+
     def render_GET(self, request):
         # sanity checks
         if not self.mainmenu or not self.submenu:
@@ -171,12 +171,12 @@ class AdminRootFolder(StaticFolder):
         default_page = '/' + '/'.join(request.prepath) + '/' + cid + '/' + pid
         request.redirect(default_page)
         return ""
-    
+
     def _registerAdminThemes(self):
         """
         Register all administrative themes.
         """
-        self.themes={}
+        self.themes = {}
         themes = PackageManager.getComponents(IAdminTheme, None, self.env)
         for theme in themes:
             # sanity checks
@@ -189,14 +189,14 @@ class AdminRootFolder(StaticFolder):
                 self.env.log.warn(msg)
                 continue
             self.themes[theme.theme_id] = theme
-    
+
     def _registerAdminPanels(self):
         """
         Register all administrative panels.
         """
         temp = {}
-        self.mainmenu={}
-        self.submenu={}
+        self.mainmenu = {}
+        self.submenu = {}
         panels = PackageManager.getComponents(IAdminPanel, None, self.env)
         for panel in panels:
             # sanity checks
@@ -204,7 +204,7 @@ class AdminRootFolder(StaticFolder):
                 msg = 'Attribute panel_ids missing in %s' % panel
                 self.env.log.warn(msg)
                 continue
-            if len(panel.panel_ids)!=4:
+            if len(panel.panel_ids) != 4:
                 msg = 'Attribute panel_ids got wrong format in %s' % panel
                 self.env.log.warn(msg)
                 continue
@@ -227,7 +227,7 @@ class AdminRootFolder(StaticFolder):
             self.submenu[cid][pid] = pname
         for id, panels in temp.iteritems():
             self.putChild(id, AdminFolder(self, panels))
-    
+
     def _registerStaticContent(self):
         """
         Register all static content.
@@ -238,10 +238,10 @@ class AdminRootFolder(StaticFolder):
             self.putChild(id, FileSystemResource(path))
         # favicon
         favicon = os.path.join(self.statics_dir, 'favicon.ico')
-        self.putChild('favicon.ico', 
-                      FileSystemResource(favicon, "image/x-icon"))
+        self.putChild('favicon.ico',
+                      FileSystemResource(favicon, "image/x-icon", hidden=True))
         # register additional static content defined by plug-ins
-        static_contents = PackageManager.getComponents(IAdminStaticContent, 
+        static_contents = PackageManager.getComponents(IAdminStaticContent,
                                                        None, self.env)
         for res in static_contents:
             # sanity checks
@@ -252,7 +252,7 @@ class AdminRootFolder(StaticFolder):
             items = res.getStaticContent()
             for path, file in items.iteritems():
                 self.putChild(path, FileSystemResource(file))
-    
+
     def getActiveAdminThemeCSS(self):
         """
         Return CSS request URL of the activated administrative theme.

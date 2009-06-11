@@ -14,13 +14,14 @@ class Resource(object):
     A basic resource object.
     """
     implements(IResource)
-    
-    def __init__(self):
+
+    def __init__(self, hidden=False):
         self.children = {}
         self.category = 'resource'
         self.folderish = True
         self.is_leaf = False
-    
+        self.hidden = hidden
+
     def getMetadata(self):
         """
         Returns a map of arbitrary metadata. 
@@ -40,7 +41,7 @@ class Resource(object):
         value isn't available as gracefully as possible.
         """
         return {'permissions': 0100644}
-    
+
     def putChild(self, path, obj):
         """
         Register a static child for this resource.
@@ -60,8 +61,7 @@ class Resource(object):
                     temp.children[part] = StaticFolder()
                 temp = temp.children.get(part)
             temp.children[parts[-1]] = obj
-    
-    
+
     def getChild(self, id, request):
         """
         Retrieve a single child resource from me.
@@ -90,7 +90,7 @@ class Resource(object):
                         about the request that is being made for this child.
         """
         return self.children.get(id, None)
-    
+
     def getChildWithDefault(self, id, request):
         """
         Retrieve a static or dynamically generated child resource from me.
@@ -106,7 +106,7 @@ class Resource(object):
         if id in self.children:
             return self.children[id]
         return self.getChild(id, request)
-    
+
     def render(self, request):
         """
         Render a given resource. See L{IResource}'s render method.
@@ -130,10 +130,10 @@ class Resource(object):
         if not func:
             allowed_methods = getattr(self, 'allowedMethods', ())
             msg = "This operation is not allowed on this resource."
-            raise NotAllowedError(allowed_methods = allowed_methods, 
-                                  message = msg)
+            raise NotAllowedError(allowed_methods=allowed_methods,
+                                  message=msg)
         return func(request)
-    
+
     def render_HEAD(self, request):
         """
         Default handling of B{HEAD} method.
@@ -142,7 +142,7 @@ class Resource(object):
         the framework will handle this correctly.
         """
         return self.render_GET(request)
-    
+
     def render_OPTIONS(self, request):
         """
         Default handling of B{OPTIONS} method.
@@ -151,7 +151,7 @@ class Resource(object):
         request.setHeader("DAV", "1")
         request.setHeader("allow", ',' .join(request.allowed_methods))
         return ""
-    
+
     def update(self):
         """
         This is only a dummy for test cases directly using certain resources.
@@ -163,14 +163,14 @@ class Folder(Resource):
     """
     A folder resource containing resource objects.
     """
-    
+
     def __init__(self):
         Resource.__init__(self)
         self.category = 'folder'
-    
+
     def getMetadata(self):
         return {'permissions': 040755}
-    
+
     def render_GET(self, request):
         """
         Returns content of this folder node as dictionary.

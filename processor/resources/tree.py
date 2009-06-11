@@ -21,7 +21,7 @@ class ResourceTree(StaticFolder):
         StaticFolder.__init__(self)
         self.env = env
         self._registry = {}
-    
+
     def putChild(self, path, obj):
         """
         Register a static child to the root node.
@@ -32,7 +32,7 @@ class ResourceTree(StaticFolder):
         if '/' not in path:
             # we got a single id
             self.children[path] = obj
-            self._registry['/' + path] = str(obj) 
+            self._registry['/' + path] = str(obj)
         else:
             # we got some absolute path
             parts = splitPath(path)
@@ -43,7 +43,7 @@ class ResourceTree(StaticFolder):
                 temp = temp.children.get(part)
             temp.children[parts[-1]] = obj
             self._registry[path] = str(obj)
-    
+
     def update(self):
         """
         Rebuilds the whole resource tree.
@@ -62,10 +62,10 @@ class ResourceTree(StaticFolder):
         for url, path in self.env.config.options('fs'):
             self.putChild(url, FileSystemResource(path))
         # set Administration root folder
-        self.putChild('browser', AdminRootFolder(self.env))
+        self.putChild('manage', AdminRootFolder(self.env, hidden=True))
         # set XML resource root folder
         self.putChild('xml', RESTFolder())
         # set favicon.ico
-        self.putChild('favicon.ico', 
-                      self.children['browser'].children['favicon.ico'])
+        self.putChild('favicon.ico',
+                      self.children['manage'].children['favicon.ico'])
         self.env.log.info('ResourceTree has been updated.')
