@@ -24,7 +24,7 @@ import sys
 
 __all__ = ['Component', 'implements', 'Interface', 'ERROR', 'WARN', 'INFO',
            'DEBUG', 'ComponentMeta', 'ComponentManager', 'PackageManager',
-           'ALL']
+           'DEBUGX']
 
 ERROR = 0
 WARN = 5
