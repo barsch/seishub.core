@@ -22,13 +22,15 @@ from zope.interface.declarations import _implements, classImplements
 import sys
 
 
-__all__ = ['Component', 'implements', 'Interface', 'ERROR', 'WARN', 'INFO', 
-           'DEBUG', 'ComponentMeta', 'ComponentManager', 'PackageManager']
+__all__ = ['Component', 'implements', 'Interface', 'ERROR', 'WARN', 'INFO',
+           'DEBUG', 'ComponentMeta', 'ComponentManager', 'PackageManager',
+           'ALL']
 
 ERROR = 0
 WARN = 5
 INFO = 10
 DEBUG = 20
+DEBUGX = 30
 
 
 class ComponentMeta(type):
@@ -39,7 +41,7 @@ class ComponentMeta(type):
     """
     _components = []
     _registry = {}
-    
+
     def __new__(cls, name, bases, d):
         """
         Create the component class.
@@ -48,7 +50,7 @@ class ComponentMeta(type):
         # Don't put the Component base class in the registry
         if name == 'Component':
             return new_class
-        
+
         # Only override __init__ for Components not inheriting ComponentManager
         if True not in [issubclass(x, ComponentManager) for x in bases]:
             # Allow components to have a no-argument initializer so that
@@ -73,11 +75,11 @@ class ComponentMeta(type):
                             raise
             maybe_init._original = init
             new_class.__init__ = maybe_init
-        
+
         # Don't put abstract component classes in the registry
         if d.get('abstract'):
             return new_class
-        
+
         ComponentMeta._components.append(new_class)
         registry = ComponentMeta._registry
         for interface in d.get('_implements', []):
@@ -95,16 +97,16 @@ class PackageManager(object):
     Takes care of package registration.
     """
     _registry = {}
-    
+
     @staticmethod
     def _addClass(cls):
         if not hasattr(cls, 'package_id'):
             return
         registry = PackageManager._registry
         registry.setdefault(cls.package_id, []).append(cls)
-    
+
     @staticmethod
-    def getClasses(interface, package_id = None):
+    def getClasses(interface, package_id=None):
         """
         Get classes implementing interface within specified package.
         """
@@ -115,7 +117,7 @@ class PackageManager(object):
         if package_id:
             classes = [cls for cls in classes if cls in registry.get(package_id, [])]
         return classes
-    
+
     @staticmethod
     def getComponents(interface, package_id, component):
         """
@@ -124,7 +126,7 @@ class PackageManager(object):
         classes = PackageManager.getClasses(interface, package_id)
         # get, activate and return objects 
         return filter(None, [component.compmgr[cls] for cls in classes])
-    
+
     @staticmethod
     def getPackageIds():
         """
@@ -142,7 +144,7 @@ class Component(object):
     what extension points of other components it extends.
     """
     __metaclass__ = ComponentMeta
-    
+
     def __new__(cls, *args, **kwargs):
         """
         Return an existing instance of the component if it has already been
@@ -157,7 +159,7 @@ class Component(object):
         try:
             compmgr = args[0]
         except IndexError:
-            raise TypeError("Component takes a component manager instance " +\
+            raise TypeError("Component takes a component manager instance " + \
                             "as first argument.")
         self = compmgr.components.get(cls)
         if self is None:
@@ -186,7 +188,7 @@ class ComponentManager(object):
     """
     The component manager keeps a pool of active components.
     """
-    
+
     def __init__(self):
         """
         Initialize the component manager.
@@ -195,13 +197,13 @@ class ComponentManager(object):
         self.enabled = {}
         if isinstance(self, Component):
             self.components[self.__class__] = self
-    
+
     def __contains__(self, cls):
         """
         Return if the given class is in the list of active components.
         """
         return cls in self.components
-    
+
     def __getitem__(self, cls):
         """
         Activate the component instance for the given class, or return the
@@ -214,7 +216,7 @@ class ComponentManager(object):
         component = self.components.get(cls)
         if not component:
             if cls not in ComponentMeta._components:
-                raise SeisHubError('Component "%s" not registered' % 
+                raise SeisHubError('Component "%s" not registered' %
                                    cls.__name__)
             try:
                 component = cls(self)
@@ -222,16 +224,16 @@ class ComponentManager(object):
                 raise SeisHubError('Unable to instantiate component %r (%s)' %
                                 (cls, e))
         return component
-    
-    def __delitem__(self,cls):
+
+    def __delitem__(self, cls):
         del self.components[cls]
-    
+
     def initComponent(self, component):
         """
         Can be overridden by sub-classes so that special initialization for
         components can be provided.
         """
-    
+
     def isComponentEnabled(self, cls):
         """
         Can be overridden by sub-classes to veto the activation of a component.

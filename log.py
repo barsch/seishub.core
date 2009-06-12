@@ -5,7 +5,7 @@ import traceback
 
 from twisted.python import log, logfile
 
-from seishub.core import ERROR, WARN, INFO, DEBUG
+from seishub.core import ERROR, WARN, INFO, DEBUG, DEBUGX
 from seishub.config import Option, IntOption
 
 
@@ -13,7 +13,8 @@ LOG_LEVELS = {'OFF':-1,
               'ERROR': ERROR,
               'WARN': WARN,
               'INFO': INFO,
-              'DEBUG': DEBUG}
+              'DEBUG': DEBUG,
+              'DEBUGX': DEBUGX}
 
 
 class ErrorLog(log.FileLogObserver):
@@ -106,3 +107,8 @@ class Logger(object):
         if self.log_level < DEBUG:
             return
         self._formatMessage('DEBUG', msg, showTraceback)
+
+    def debugx(self, msg, showTraceback=False):
+        if self.log_level < DEBUG:
+            return
+        self._formatMessage('XXX', msg, showTraceback)

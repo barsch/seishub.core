@@ -75,13 +75,6 @@ class SEEDFileSerializer(object):
         except Exception, e:
             self.env.log.error('getFirstRecordHeaderInfo', str(e))
             result = {}
-        # get start and end time
-        try:
-            (start, end) = mseed.getStartAndEndTime(filename)
-            result['start_datetime'] = start
-            result['end_datetime'] = end
-        except Exception, e:
-            self.env.log.error('getStartAndEndTime', str(e))
         # scan for gaps + overlaps
         try:
             gap_list = mseed.getGapList(filename)
@@ -89,6 +82,15 @@ class SEEDFileSerializer(object):
             result['DQ_overlaps'] = len(gap_list) - result['DQ_gaps']
         except Exception, e:
             self.env.log.error('getGapList', str(e))
+        # get start and end time
+        try:
+            (start, end) = mseed.getStartAndEndTime(filename)
+            result['start_datetime'] = \
+                datetime.datetime.utcfromtimestamp(start.timestamp())
+            result['end_datetime'] = \
+                datetime.datetime.utcfromtimestamp(end.timestamp())
+        except Exception, e:
+            self.env.log.error('getStartAndEndTime', str(e))
         # quality flags
         try:
             result['DQ_flags'] = mseed.getDataQualityFlagsCount(filename)
@@ -126,9 +128,10 @@ class SEEDFileSerializer(object):
         """
         Add a new file into the database.
         """
+        self.env.log.debugx('Inserting %s %s' % (path, file))
         result = self._scan(path, file)
         sql_obj = miniseed_tab.insert().values(file=file, path=path,
-                                               mtime=stats.st_mtime,
+                                               mtime=int(stats.st_mtime),
                                                size=stats.st_size, **result)
         try:
             self.db.execute(sql_obj)
@@ -140,11 +143,12 @@ class SEEDFileSerializer(object):
         """
         Modify a file in the database.
         """
+        self.env.log.debugx('Updating %s %s' % (path, file))
         result = self._scan(path, file)
         sql_obj = miniseed_tab.update()
         sql_obj = sql_obj.where(miniseed_tab.c['file'] == file)
         sql_obj = sql_obj.where(miniseed_tab.c['path'] == path)
-        sql_obj = sql_obj.values(mtime=stats.st_mtime, size=stats.st_size,
+        sql_obj = sql_obj.values(mtime=int(stats.st_mtime), size=stats.st_size,
                                  **result)
         try:
             self.db.execute(sql_obj)
@@ -245,7 +249,7 @@ class SEEDFileCrawler(internet.TimerService, SEEDFileSerializer):
         if dirs:
             return
         # filter file names with wrong format
-        #files = [f for f in files if f.count('.') == 6]
+        # files = [f for f in files if f.count('.') > 4]
         # skip directories
         if not files:
             return
@@ -266,7 +270,8 @@ class SEEDFileCrawler(internet.TimerService, SEEDFileSerializer):
                 # file does not exists -> add file
                 self._insert(path, file, stats)
             else:
-                if stats.st_mtime != db_files[file]:
+                # check as integer - some database round false
+                if int(stats.st_mtime) != db_files[file]:
                     # modification time differs -> update file
                     self._update(path, file, stats)
                 db_files.pop(file)
@@ -313,9 +318,9 @@ class SEEDFileMonitorService(service.MultiService):
         crawler.setName("SEED File Crawler")
         self.addService(crawler)
 
-        filemonitor = SEEDFileMonitor(env, current_seed_files)
-        filemonitor.setName("SEED File Monitor")
-        self.addService(filemonitor)
+#        filemonitor = SEEDFileMonitor(env, current_seed_files)
+#        filemonitor.setName("SEED File Monitor")
+#        self.addService(filemonitor)
 
     def privilegedStartService(self):
         if self.env.config.getbool('seedfilemonitor', 'autostart'):
