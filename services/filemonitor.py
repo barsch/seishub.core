@@ -198,7 +198,7 @@ class SEEDFileMonitor(internet.TimerService, SEEDFileSerializer):
         # remove file with wrong pattern
         if not fnmatch.fnmatch(file, self.pattern):
             self._delete(path, file)
-            self.current_seed_files.pop(filepath)
+            self.current_seed_files.remove(filepath)
             return
         # check database for entry
         sql_obj = sql.select([miniseed_tab.c['mtime']],
@@ -221,10 +221,10 @@ class SEEDFileMonitor(internet.TimerService, SEEDFileSerializer):
             return
         else:
             # remove remaining entries from database
-            self._delete(path, file)
-            if filepath in self.current_seed_files:
-                self.current_seed_files.pop(filepath)
-
+            try:
+                self.current_seed_files.remove(filepath)
+            except KeyError:
+                pass
 
 
 class SEEDFileCrawler(internet.TimerService, SEEDFileSerializer):
@@ -302,12 +302,13 @@ class SEEDFileCrawler(internet.TimerService, SEEDFileSerializer):
             # compare with database entries
             if file not in db_files:
                 # file does not exists -> add file
-                self._insert(path, file, stats)
+                self.current_seed_files.append(filepath)
+                continue
             else:
                 # check modification time
                 if int(stats.st_mtime) != db_files[file]:
                     # modification time differs -> update file
-                    self._update(path, file, stats)
+                    self.current_seed_files.append(filepath)
                 db_files.pop(file)
             # filter and update current files for SEEDFileMonitor
             if file.endswith(self._today) or file.endswith(self._yesterday):
@@ -316,8 +317,10 @@ class SEEDFileCrawler(internet.TimerService, SEEDFileSerializer):
         # remove remaining entries from database
         for file in db_files:
             self._delete(path, file)
-            if filepath in self.current_seed_files:
-                self.current_seed_files.pop(filepath)
+            try:
+                self.current_seed_files.remove(filepath)
+            except KeyError:
+                pass
 
     def _selectAllPaths(self):
         """
