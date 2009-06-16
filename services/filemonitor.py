@@ -66,10 +66,14 @@ class SEEDFileSerializer(object):
         # get header
         try:
             d = mseed.getFirstRecordHeaderInfo(filename)
-            result['station_id'] = d.get('station', '')
-            result['location_id'] = d.get('location', '')
-            result['channel_id'] = d.get('channel', '')
-            result['network_id'] = d.get('network', '')
+            if d['station'] != '':
+                result['station_id'] = d['station']
+            if d['location'] != '':
+                result['location_id'] = d['location']
+            if d['channel'] != '':
+                result['channel_id'] = d['channel']
+            if d['network'] != '':
+                result['network_id'] = d['network']
         except Exception, e:
             self.env.log.error('getFirstRecordHeaderInfo', str(e))
             result = {}
