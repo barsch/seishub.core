@@ -95,7 +95,16 @@ class SEEDFileSerializer(object):
             self.env.log.error('getStartAndEndTime', str(e))
         # quality flags
         try:
-            result['DQ_flags'] = mseed.getDataQualityFlagsCount(filename)
+            data = mseed.getDataQualityFlagsCount(filename)
+            if data and len(data) == 8:
+                result['DQ_amplifier_saturation'] = data[0]
+                result['DQ_digitizer_clipping'] = data[1]
+                result['DQ_spikes'] = data[2]
+                result['DQ_glitches'] = data[3]
+                result['DQ_missing_or_padded_data'] = data[4]
+                result['DQ_telemetry_synchronization'] = data[5]
+                result['DQ_digital_filter_charging'] = data[6]
+                result['DQ_questionable_time_tag'] = data[7]
         except Exception, e:
             self.env.log.error('getDataQualityFlagsCount', str(e))
         # timing quality
@@ -256,7 +265,8 @@ class SEEDFileCrawler(internet.TimerService, SEEDFileSerializer):
         msg = "Scanning '%s' ..." % self._current_path
         self.env.log.debug(msg)
         # start walking
-        self._current_walker = os.walk(self._current_path, followlinks=True)
+        self._current_walker = os.walk(self._current_path, topdown=True,
+                                       followlinks=True)
         self._all_paths = []
         # prepare file endings
         today = datetime.datetime.utcnow()
@@ -270,6 +280,8 @@ class SEEDFileCrawler(internet.TimerService, SEEDFileSerializer):
         """
         try:
             path, _, files = self._current_walker.next()
+            msg = "Scanning '%s' ..." % path
+            self.env.log.debugx(msg)
         except StopIteration:
             try:
                 self._current_path = self._roots.pop()
@@ -321,6 +333,7 @@ class SEEDFileCrawler(internet.TimerService, SEEDFileSerializer):
         # remove remaining entries from database
         for file in db_files:
             self._delete(path, file)
+            filepath = os.path.join(path, file)
             try:
                 self.current_seed_files.remove(filepath)
             except KeyError:
