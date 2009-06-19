@@ -32,8 +32,8 @@ class FileSystemResource(Resource, filepath.FilePath):
 
     def __init__(self, path, default_type="text/html", registry=None,
                  processors={'.epy': PythonScript, '.rpy': ResourceScript},
-                 hidden=False):
-        Resource.__init__(self, hidden)
+                 **kwargs):
+        Resource.__init__(self, **kwargs)
         filepath.FilePath.__init__(self, path)
         # folder or file?
         self.restat()
@@ -88,7 +88,8 @@ class FileSystemResource(Resource, filepath.FilePath):
         return self.__class__(path,
                               default_type=self.default_type,
                               registry=self.registry,
-                              processors=self.processors)
+                              processors=self.processors, hidden=self.hidden,
+                              public=self.public)
 
     def render_GET(self, request):
         """

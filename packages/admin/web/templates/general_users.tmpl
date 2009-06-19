@@ -1,5 +1,6 @@
 <h1>Users</h1>
 
+#if $action=='add'
 <h2>Add new user</h2>
 <form method="post" id="add" action="">
   <div class="field">
@@ -26,15 +27,53 @@
     <label>Institution</label><br />
     <input type="text" size="80" name="institution" value="$institution" />
   </div>
-
   <div class="button">
     <input type="submit" name="add" value="Add" />
+    <input type="submit" name="cancel" value="Cancel" />
   </div>
 </form>
 
 <br />
 <br />
+#end if
 
+
+#if $action=='edit'
+<h2>Edit user &quot;$id&quot;</h2>
+<form method="post" id="edit" action="">
+  <input type="hidden" name="id" value="$id" />
+  <div class="field">
+    <label>Name</label><br />
+    <input type="text" size="80" name="name" value="$name" />
+  </div>
+  <div class="field">
+    <label>Password</label><br />
+    <input type="password" size="20" name="password" value="" />
+  </div>
+  <div class="field">
+    <label>Password Confirmation</label><br />
+    <input type="password" size="20" name="confirmation" value="" />
+  </div>
+  <div class="field">
+    <label>E-Mail</label><br />
+    <input type="text" size="80" name="email" value="$email" />
+  </div>
+  <div class="field">
+    <label>Institution</label><br />
+    <input type="text" size="80" name="institution" value="$institution" />
+  </div>
+  <div class="button">
+    <input type="submit" name="edit" value="Save" />
+    <input type="submit" name="cancel" value="Cancel" />
+  </div>
+</form>
+
+<br />
+<br />
+#end if
+
+
+#if not $action
 <h2>List of all users</h2>
 <form method="post" id="list" action="">
   <table class="list">
@@ -52,13 +91,21 @@
       </td> 
       <td>$user.id</td>
       <td>$user.name</td>
-      <td>$user.email</td>
+      <td>
+        #if $user.email
+        <a href="mailto:$user.email">$user.email</a>
+        #end if
+      </td>
       <td>$user.institution</td>
     </tr>
     #end for
   </table>
   
   <div class="button">
-    <input type="submit" name="delete" value="Delete" />
+    <input type="submit" name="add-user" value="Add" />
+    <input type="submit" name="edit-user" value="Edit" />
+    <input type="submit" name="delete" value="Delete"
+           onClick="return confirm('Are you sure you want to delete?')" />
   </div>
 </form>
+#end if

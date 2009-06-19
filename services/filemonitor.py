@@ -76,7 +76,7 @@ class SEEDFileSerializer(object):
                 result['network_id'] = d['network']
         except Exception, e:
             self.env.log.error('getFirstRecordHeaderInfo', str(e))
-            result = {}
+            pass
         # scan for gaps + overlaps
         try:
             gap_list = mseed.getGapList(filename)
@@ -84,6 +84,7 @@ class SEEDFileSerializer(object):
             result['DQ_overlaps'] = len(gap_list) - result['DQ_gaps']
         except Exception, e:
             self.env.log.error('getGapList', str(e))
+            pass
         # get start and end time
         try:
             (start, end) = mseed.getStartAndEndTime(filename)
@@ -93,6 +94,7 @@ class SEEDFileSerializer(object):
                 datetime.datetime.utcfromtimestamp(end.timestamp())
         except Exception, e:
             self.env.log.error('getStartAndEndTime', str(e))
+            pass
         # quality flags
         try:
             data = mseed.getDataQualityFlagsCount(filename)
@@ -107,17 +109,19 @@ class SEEDFileSerializer(object):
                 result['DQ_questionable_time_tag'] = data[7]
         except Exception, e:
             self.env.log.error('getDataQualityFlagsCount', str(e))
+            pass
         # timing quality
         try:
             data = mseed.getTimingQuality(filename)
             result['TQ_max'] = data.get('max', None)
             result['TQ_min'] = data.get('min', None)
             result['TQ_avg'] = data.get('average', None)
-            result['TQ_median'] = data.get('median', None)
-            result['TQ_upper_quantile'] = data.get('upper_quantile', None)
-            result['TQ_lower_quantile'] = data.get('lower_quantile', None)
+            result['TQ_Q2'] = data.get('median', None)
+            result['TQ_Q3'] = data.get('upper_quantile', None)
+            result['TQ_Q1'] = data.get('lower_quantile', None)
         except Exception, e:
             self.env.log.error('getTimingQuality', str(e))
+            pass
         return result
 
     def _delete(self, path, file=None):
@@ -191,8 +195,10 @@ class SEEDFileMonitor(internet.TimerService, SEEDFileSerializer):
         self._files = copy.copy(self.current_seed_files)
         # set interval dynamically
         num = len(self._files) or 1
-        self._loop.interval = SEED_FILEMONITOR_CHECK_PERIOD / num
+        self._loop.interval = int(10 / num)
         msg = "Scanning %s ..." % self._files
+        self.env.log.debugx(msg)
+        msg = "Loop interval %d s" % self._loop.interval
         self.env.log.debugx(msg)
         # prepare file endings
         today = datetime.datetime.utcnow()
@@ -206,12 +212,16 @@ class SEEDFileMonitor(internet.TimerService, SEEDFileSerializer):
             path = os.path.dirname(filepath)
             file = os.path.basename(filepath)
         except IndexError:
+            # end of list reached - restart crawling
             self.reset()
             return
-        # remove file with wrong pattern
+        # remove files with wrong pattern
         if not fnmatch.fnmatch(file, self.pattern):
             self._delete(path, file)
-            self.current_seed_files.remove(filepath)
+            try:
+                self.current_seed_files.remove(filepath)
+            except KeyError:
+                pass
             return
         # check database for entry
         sql_obj = sql.select([miniseed_tab.c['mtime']],
@@ -219,7 +229,11 @@ class SEEDFileMonitor(internet.TimerService, SEEDFileSerializer):
                                       miniseed_tab.c['file'] == file))
         db_file = self.db.execute(sql_obj).fetchone()
         # get file stats
-        stats = os.stat(filepath)
+        try:
+            stats = os.stat(filepath)
+        except:
+            # couldn't read the stats of this path
+            return
         # compare with database entries
         if not db_file:
             # file does not exists -> add file
@@ -230,7 +244,7 @@ class SEEDFileMonitor(internet.TimerService, SEEDFileSerializer):
             self._update(path, file, stats)
             return
         elif file.endswith(self._today) or file.endswith(self._yesterday):
-            # check if current file
+            # current file - needs to be updated
             return
         else:
             # remove remaining entries from database

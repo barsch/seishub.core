@@ -46,7 +46,11 @@ class DatabaseManager(object):
         self.metadata = meta
         self.metadata.bind = self.engine
         #this will check for the presence of a table first before creating
-        self.metadata.create_all(self.engine, checkfirst = True)
+        try:
+            self.metadata.create_all(self.engine, checkfirst = True)
+        except sa.exceptions.DBAPIError, e:
+            print("ERROR:  %s" % str(e.orig))
+            quit()
     
     def _getEngine(self):
         """

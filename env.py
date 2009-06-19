@@ -7,10 +7,10 @@ and logging access.
 """
 
 from seishub.auth import AuthenticationManager
-from seishub.config import Configuration, Option, _TRUE_VALUES
+from seishub.config import Configuration, Option, _TRUE_VALUES, IntOption
 from seishub.core import ComponentManager
 from seishub.db.manager import DatabaseManager
-from seishub.defaults import DEFAULT_COMPONENTS, HTTP_PORT
+from seishub.defaults import DEFAULT_COMPONENTS, HTTP_PORT, MIN_PASSWORD_LENGTH
 from seishub.log import Logger
 from seishub.packages.installer import PackageInstaller
 from seishub.processor import ResourceTree
@@ -46,6 +46,8 @@ class Environment(ComponentManager):
     """
 
     Option('seishub', 'host', 'localhost', "Default host of this server.")
+    IntOption('seishub', 'min_password_length', MIN_PASSWORD_LENGTH, 
+        "Minimum password length.")
 
     def __init__(self, conf=None):
         """

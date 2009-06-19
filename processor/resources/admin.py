@@ -22,12 +22,13 @@ class AdminPanel(Resource):
     """
     implements(IAdminResource)
 
-    def __init__(self, root, panel):
-        Resource.__init__(self)
+    def __init__(self, root, panel, **kwargs):
+        Resource.__init__(self, **kwargs)
         self.is_leaf = True
         self.category = 'admin'
         self.folderish = False
         self.panel = panel
+        self.public = self.panel.public
         self.panel.root = root
         self.root = root
         self.cid, _, self.pid, _ = self.panel.panel_ids
@@ -118,8 +119,9 @@ class AdminFolder(StaticFolder):
     """
     implements(IAdminResource)
 
-    def __init__(self, root, panels):
-        Resource.__init__(self)
+    def __init__(self, root, panels, **kwargs):
+        Resource.__init__(self, **kwargs)
+        self.public = True
         self.category = 'admin'
         self.root = root
         self.panels = panels
@@ -144,8 +146,9 @@ class AdminRootFolder(StaticFolder):
     """
     implements(IAdminResource)
 
-    def __init__(self, env, hidden=False):
-        Resource.__init__(self, hidden)
+    def __init__(self, env, **kwargs):
+        Resource.__init__(self, **kwargs)
+        self.public = True
         self.env = env
         self.category = 'admin'
         # default template dir
@@ -216,6 +219,9 @@ class AdminRootFolder(StaticFolder):
                 msg = 'Method render() missing in %s' % panel
                 self.env.log.warn(msg)
                 continue
+            # set default values
+            if not hasattr(panel, 'public'):
+                panel.public = False
             # create child
             cid, cname, pid, pname = panel.panel_ids
             temp.setdefault(cid, [])
@@ -235,11 +241,17 @@ class AdminRootFolder(StaticFolder):
         # register default static content
         for id in ['images', 'css', 'js', 'yui']:
             path = os.path.join(self.statics_dir, id)
-            self.putChild(id, FileSystemResource(path))
+            self.putChild(id, FileSystemResource(path, public=True))
         # favicon
-        favicon = os.path.join(self.statics_dir, 'favicon.ico')
-        self.putChild('favicon.ico',
-                      FileSystemResource(favicon, "image/x-icon", hidden=True))
+        filename = os.path.join(self.statics_dir, 'favicon.ico')
+        res = FileSystemResource(filename, "image/x-icon", hidden=True,
+                                 public=True)
+        self.putChild('favicon.ico', res)
+        # start page
+        filename = os.path.join(self.statics_dir, 'welcome.html')
+        res = FileSystemResource(filename, "text/html; charset=UTF-8",
+                                 hidden=True, public=True)
+        self.putChild('welcome', res)
         # register additional static content defined by plug-ins
         static_contents = PackageManager.getComponents(IAdminStaticContent,
                                                        None, self.env)
@@ -251,7 +263,7 @@ class AdminRootFolder(StaticFolder):
                 continue
             items = res.getStaticContent()
             for path, file in items.iteritems():
-                self.putChild(path, FileSystemResource(file))
+                self.putChild(path, FileSystemResource(file, public=True))
 
     def getActiveAdminThemeCSS(self):
         """

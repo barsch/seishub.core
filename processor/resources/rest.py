@@ -25,8 +25,8 @@ class RESTResource(Resource):
     """
     implements(IRESTResource)
 
-    def __init__(self, res):
-        Resource.__init__(self)
+    def __init__(self, res, **kwargs):
+        Resource.__init__(self, **kwargs)
         self.category = 'resource'
         self.is_leaf = True
         self.folderish = False
@@ -224,8 +224,8 @@ class XMLIndex(Resource):
     """
     implements(IXMLIndex)
 
-    def __init__(self):
-        Resource.__init__(self)
+    def __init__(self, **kwargs):
+        Resource.__init__(self, **kwargs)
         self.category = 'index'
         self.is_leaf = True
         self.folderish = False
@@ -237,8 +237,9 @@ class RESTProperty(Resource):
     """
     implements(IRESTProperty)
 
-    def __init__(self, package_id, resourcetype_id, name, revision=None):
-        Resource.__init__(self)
+    def __init__(self, package_id, resourcetype_id, name, revision=None,
+                 **kwargs):
+        Resource.__init__(self, **kwargs)
         self.is_leaf = True
         self.folderish = False
         self.package_id = package_id
@@ -328,8 +329,8 @@ class RESTResourceTypeFolder(Folder):
     A REST resource type folder.
     """
 
-    def __init__(self, package_id, resourcetype_id):
-        Folder.__init__(self)
+    def __init__(self, package_id, resourcetype_id, **kwargs):
+        Folder.__init__(self, **kwargs)
         self.category = 'resourcetype'
         self.is_leaf = True
         self.package_id = package_id
@@ -481,8 +482,8 @@ class RESTPackageFolder(StaticFolder):
     A REST package folder.
     """
 
-    def __init__(self, package_id):
-        Folder.__init__(self)
+    def __init__(self, package_id, **kwargs):
+        Folder.__init__(self, **kwargs)
         self.category = 'package'
         self.package_id = package_id
 
@@ -509,8 +510,8 @@ class RESTFolder(StaticFolder):
     A REST root folder.
     """
 
-    def __init__(self):
-        Folder.__init__(self)
+    def __init__(self, **kwargs):
+        Folder.__init__(self, **kwargs)
         self.category = 'xmlroot'
 
     def getChild(self, id, request):

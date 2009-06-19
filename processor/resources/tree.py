@@ -17,15 +17,16 @@ class ResourceTree(StaticFolder):
     resources. You may add children to this folder resource by using an 
     absolute path at the putChild method.
     """
-    def __init__(self, env):
-        StaticFolder.__init__(self)
+    def __init__(self, env, **kwargs):
+        StaticFolder.__init__(self, **kwargs)
         self.env = env
         self._registry = {}
+        self.public = True
 
     def putChild(self, path, obj):
         """
         Register a static child to the root node.
-        
+
         The root node also accepts absolute paths. Missing sub folders are
         automatically generated and added to the resource tree.
         """
@@ -47,8 +48,8 @@ class ResourceTree(StaticFolder):
     def update(self):
         """
         Rebuilds the whole resource tree.
-        
-        This method should be called, if the status any included resource 
+
+        This method should be called, if the status any included resource
         objects changes, e.g. a mapper gets disabled.
         """
         self.env.log.debug('Updating ResourceTree ...')
@@ -62,10 +63,14 @@ class ResourceTree(StaticFolder):
         for url, path in self.env.config.options('fs'):
             self.putChild(url, FileSystemResource(path))
         # set Administration root folder
-        self.putChild('manage', AdminRootFolder(self.env, hidden=True))
+        res = AdminRootFolder(self.env, hidden=True)
+        self.putChild('manage', res)
         # set XML resource root folder
         self.putChild('xml', RESTFolder())
         # set favicon.ico
-        self.putChild('favicon.ico',
-                      self.children['manage'].children['favicon.ico'])
+        res = self.children['manage'].children['favicon.ico']
+        self.putChild('favicon.ico', res)
+        # set welcome page
+        res = self.children['manage'].children['welcome']
+        self.putChild('welcome', res)
         self.env.log.info('ResourceTree has been updated.')

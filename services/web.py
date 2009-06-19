@@ -50,7 +50,7 @@ class WebRequest(Processor, http.Request):
         http.Request.__init__(self, channel, queued)
         self.notifications = []
 
-    def authenticateUser(self):
+    def isAuthenticatedUser(self):
         """
         XXX: this will change soon!
         """
@@ -61,18 +61,21 @@ class WebRequest(Processor, http.Request):
             return False
         return authenticated
 
+    def authenticate(self):
+        """
+        """
+        self.setHeader('WWW-Authenticate', 'Basic realm=""')
+        self.setResponseCode(http.UNAUTHORIZED)
+        self.write('Authentication required.')
+        self.finish()
+
     def render(self):
         """
         Renders the requested resource returned from the self.process() method.
         """
-        # XXX: all or nothing - only authenticated are allowed to access
-        # should be replaced with a much finer mechanism
-        # URL, role and group based ...
-        if not self.authenticateUser() or self.path == '/manage/logout':
-            self.setHeader('WWW-Authenticate', 'Basic realm="topsecret"')
-            self.setResponseCode(http.UNAUTHORIZED)
-            self.write('Authentication required.')
-            self.finish()
+        # check for logout
+        if self.path == '/manage/logout':
+            self.authenticate()
             return
         # traverse the resource tree
         try:
@@ -91,11 +94,18 @@ class WebRequest(Processor, http.Request):
         # set default HTTP headers
         self.setHeader('server', 'SeisHub ' + SEISHUB_VERSION)
         self.setHeader('date', http.datetimeToString())
-        # check result and either render direct or in thread
+        # result rendered?
         if result == server.NOT_DONE_YET:
             # resource takes care about rendering
             return
-        elif IFileSystemResource.providedBy(result):
+        # XXX: all or nothing - only authenticated are allowed to access
+        # should be replaced with a much finer mechanism
+        # URL, role and group based
+        if not result.public and not self.isAuthenticatedUser():
+            self.authenticate()
+            return
+        # check result and either render direct or in thread
+        if IFileSystemResource.providedBy(result):
             # file system resources render direct 
             data = result.render(self)
             if result.folderish:

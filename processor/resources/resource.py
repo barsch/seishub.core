@@ -15,12 +15,13 @@ class Resource(object):
     """
     implements(IResource)
 
-    def __init__(self, hidden=False):
+    def __init__(self, **kwargs):
         self.children = {}
         self.category = 'resource'
         self.folderish = True
         self.is_leaf = False
-        self.hidden = hidden
+        self.hidden = kwargs.get('hidden', False)
+        self.public = kwargs.get('public', False)
 
     def getMetadata(self):
         """
@@ -164,8 +165,8 @@ class Folder(Resource):
     A folder resource containing resource objects.
     """
 
-    def __init__(self):
-        Resource.__init__(self)
+    def __init__(self, **kwargs):
+        Resource.__init__(self, **kwargs)
         self.category = 'folder'
 
     def getMetadata(self):

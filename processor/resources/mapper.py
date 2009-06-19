@@ -12,8 +12,8 @@ class MapperResource(Resource):
     """
     Processor handler of a mapping resource.
     """
-    def __init__(self, mapper, folderish=False):
-        Resource.__init__(self)
+    def __init__(self, mapper, folderish=False, **kwargs):
+        Resource.__init__(self, **kwargs)
         self.is_leaf = True
         self.mapper = mapper
         if folderish:
@@ -22,7 +22,7 @@ class MapperResource(Resource):
         else:
             self.folderish = False
             self.category = 'mapping'
-    
+
     def getMetadata(self):
         if self.folderish:
             # should be a directory
@@ -30,7 +30,7 @@ class MapperResource(Resource):
         else:
             # we got some file
             return {'permissions': 0100644}
-    
+
     def render_GET(self, request):
         func = getattr(self.mapper, 'process_GET')
         if not func:
@@ -60,40 +60,40 @@ class MapperResource(Resource):
         msg = "A mapper must return a dictionary of categories and ids or " + \
               "a basestring for a resulting document."
         raise SeisHubError(msg, code=http.INTERNAL_SERVER_ERROR)
-    
+
     def render_POST(self, request):
         func = getattr(self.mapper, 'process_POST', None)
         if not func:
             allowed_methods = getattr(self, 'allowedMethods', ())
             msg = "This operation is not allowed on this resource."
-            raise NotAllowedError(allowed_methods = allowed_methods, 
-                                  message = msg)
+            raise NotAllowedError(allowed_methods=allowed_methods,
+                                  message=msg)
         func(request)
         request.code = http.NO_CONTENT
         return ''
-    
+
     def render_DELETE(self, request):
         func = getattr(self.mapper, 'process_DELETE', None)
         if not func:
             allowed_methods = getattr(self, 'allowedMethods', ())
             msg = "This operation is not allowed on this resource."
-            raise NotAllowedError(allowed_methods = allowed_methods, 
-                                  message = msg)
+            raise NotAllowedError(allowed_methods=allowed_methods,
+                                  message=msg)
         func(request)
         request.code = http.NO_CONTENT
         return ''
-    
+
     def render_PUT(self, request):
         func = getattr(self.mapper, 'process_PUT', None)
         if not func:
             allowed_methods = getattr(self, 'allowedMethods', ())
             msg = "This operation is not allowed on this resource."
-            raise NotAllowedError(allowed_methods = allowed_methods, 
-                                  message = msg)
+            raise NotAllowedError(allowed_methods=allowed_methods,
+                                  message=msg)
         result = func(request)
         request.code = http.CREATED
         request.headers['Location'] = str(result)
         return ''
-    
+
     def _clone(self, **kwargs):
         return self.__class__(self.mapper, **kwargs)

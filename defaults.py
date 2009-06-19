@@ -17,7 +17,7 @@ DEFAULT_COMPONENTS = ('seishub.packages.admin.web.general.PluginsPanel',
                       'seishub.packages.builtins',
                       'seishub.packages.admin.web.themes.MagicTheme')
 
-MIN_PASSWORD_LENGTH = 5
+MIN_PASSWORD_LENGTH = 8
 ADMIN_THEME = 'magic'
 
 HTTP_LOG_FILE = 'logs' + os.sep + 'http.log'
@@ -39,7 +39,7 @@ SFTP_PUBLIC_KEY = 'conf' + os.sep + 'sftp.public.key'
 SFTP_LOG_FILE = 'logs' + os.sep + 'sftp.log'
 
 SEED_FILEMONITOR_AUTOSTART = False
-SEED_FILEMONITOR_CHECK_PERIOD = 20 #60*5
+SEED_FILEMONITOR_CHECK_PERIOD = 60*5
 
 HEARTBEAT_AUTOSTART = False
 HEARTBEAT_CHECK_PERIOD = 20

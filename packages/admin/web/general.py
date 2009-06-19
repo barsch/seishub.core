@@ -114,20 +114,46 @@ class UsersPanel(Component):
         # process POST request
         if request.method == 'POST':
             args = request.args
-            if 'delete' in args.keys():
+            if 'add-user' in args.keys():
+                data['action'] = 'add'
+            elif 'edit-user' in args.keys():
+                data = self._getUser(args)
+            elif 'delete' in args.keys():
                 data = self._deleteUser(args)
             elif 'add' in args.keys():
-                data = self._addUser(args)
+                data['action'] = 'add'
+                data.update(self._addUser(args))
+            elif 'edit' in args.keys():
+                data['action'] = 'edit'
+                data.update(self._editUser(args))
         # default values
         result = {
             'id': '',
             'name': '',
             'email': '',
             'institution': '',
-            'users': self.auth.users
+            'users': self.auth.users,
+            'action': ''
         }
         result.update(data)
         return result
+
+    def _getUser(self, args):
+        """
+        Get user data.
+        """
+        data = {}
+        id = args.get('id', [''])[0]
+        if not id:
+            data['error'] = "No user selected."
+        else:
+            user = self.auth.getUser(id)
+            data['id'] = user.id
+            data['name'] = user.name
+            data['email'] = user.email
+            data['institution'] = user.institution
+            data['action'] = 'edit'
+        return data
 
     def _addUser(self, args):
         """
@@ -158,6 +184,39 @@ class UsersPanel(Component):
                 data['error'] = "Error adding new user", e
             else:
                 data = {'info': "New user has been added."}
+                data['action'] = None
+        return data
+
+    def _editUser(self, args):
+        """
+        Modify user information.
+        """
+        data = {}
+        id = data['id'] = args.get('id', [''])[0]
+        password = args.get('password', [''])[0]
+        confirmation = args.get('confirmation', [''])[0]
+        name = data['name'] = args.get('name', [''])[0]
+        email = data['email'] = args.get('email', [''])[0]
+        institution = data['institution'] = args.get('institution', [''])[0]
+        if not id:
+            data['error'] = "No user id given."
+        elif not name:
+            data['error'] = "No user name given."
+        elif password != confirmation:
+            data['error'] = "Password and password confirmation are not equal!"
+        else:
+            try:
+                self.auth.updateUser(id=id, name=name, password=password,
+                                     email=email, institution=institution)
+            except SeisHubError, e:
+                # password checks are made in self.auth.addUser method 
+                data['error'] = str(e)
+            except Exception, e:
+                self.log.error("Error updating user", e)
+                data['error'] = "Error updating user", e
+            else:
+                data = {'info': "User information have been updated."}
+                data['action'] = None
         return data
 
     def _deleteUser(self, args):
