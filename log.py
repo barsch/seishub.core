@@ -109,6 +109,6 @@ class Logger(object):
         self._formatMessage('DEBUG', msg, showTraceback)
 
     def debugx(self, msg, showTraceback=False):
-        if self.log_level < DEBUG:
+        if self.log_level < DEBUGX:
             return
         self._formatMessage('XXX', msg, showTraceback)

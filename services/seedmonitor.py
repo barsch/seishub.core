@@ -221,7 +221,7 @@ class SEEDFileMonitor(internet.TimerService, SEEDFileSerializer):
             self._delete(path, file)
             try:
                 self.current_seed_files.remove(filepath)
-            except KeyError:
+            except ValueError:
                 pass
             return
         # check database for entry
@@ -251,7 +251,7 @@ class SEEDFileMonitor(internet.TimerService, SEEDFileSerializer):
             # remove remaining entries from database
             try:
                 self.current_seed_files.remove(filepath)
-            except KeyError:
+            except ValueError:
                 pass
 
 
@@ -307,8 +307,10 @@ class SEEDFileCrawler(internet.TimerService, SEEDFileSerializer):
                 # a whole cycle has been done - check paths
                 db_paths = self._selectAllPaths()
                 for path in self._all_paths:
-                    if path in db_paths:
+                    try:
                         db_paths.remove(path)
+                    except ValueError:
+                        pass
                 # remove all left over paths
                 for path in db_paths:
                     self._delete(path)
@@ -356,7 +358,7 @@ class SEEDFileCrawler(internet.TimerService, SEEDFileSerializer):
             filepath = os.path.join(path, file)
             try:
                 self.current_seed_files.remove(filepath)
-            except KeyError:
+            except ValueError:
                 pass
 
     def _selectAllPaths(self):
