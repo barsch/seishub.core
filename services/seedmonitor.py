@@ -22,7 +22,7 @@ inside of the SeisHub service:
   relies on the results of L{SEEDFileCrawler}.
 """
 
-from seishub.config import BoolOption, ListOption, Option
+from seishub.config import BoolOption, ListOption, Option, IntOption
 from seishub.defaults import SEED_FILEMONITOR_AUTOSTART, \
     SEED_FILEMONITOR_CHECK_PERIOD
 from seishub.registry.defaults import miniseed_tab
@@ -183,7 +183,8 @@ class SEEDFileMonitor(internet.TimerService, SEEDFileSerializer):
         SEEDFileSerializer.__init__(self, env)
         self.current_seed_files = env.current_seed_files
         self._files = []
-        internet.TimerService.__init__(self, 10, self.iterate)
+        # first interval after 60 seconds
+        internet.TimerService.__init__(self, 60, self.iterate)
 
     def reset(self):
         """
@@ -194,7 +195,8 @@ class SEEDFileMonitor(internet.TimerService, SEEDFileSerializer):
         self._files = copy.copy(self.current_seed_files)
         # set interval dynamically
         num = len(self._files) or 1
-        self._loop.interval = int(10 / num)
+        period = self.env.config.getint('seedfilemonitor', 'check_period')
+        self._loop.interval = int(period / num)
         msg = "Scanning %s ..." % self._files
         self.env.log.debugx(msg)
         msg = "Loop interval %d s" % self._loop.interval
@@ -348,8 +350,6 @@ class SEEDFileCrawler(internet.TimerService, SEEDFileSerializer):
                 if filepath not in self.current_seed_files:
                     # file not older than 2 days will always be rescanned
                     self.current_seed_files.append(filepath)
-                    # remove from db files
-                    db_files.pop(file)
         # remove remaining entries from database
         for file in db_files:
             self._delete(path, file)
@@ -383,6 +383,8 @@ class SEEDFileMonitorService(service.MultiService):
         "List of file paths to scan for SEED files.")
     Option('seedfilemonitor', 'pattern', '*.*.*.*.*.*.*',
         "SEED file name pattern.")
+    IntOption('seedfilemonitor', 'check_period', SEED_FILEMONITOR_CHECK_PERIOD,
+        "SEED monitor check period in seconds.")
 
     def __init__(self, env):
         self.env = env
