@@ -33,7 +33,7 @@ __all__ = ['SFTPService']
 
 
 DEFAULT_GID = 1000
-DEBUG = 0
+
 
 class SFTPProcessor(Processor):
     """
@@ -518,7 +518,8 @@ class SFTPServiceAvatar(avatar.ConchUser):
         self.username = username
         self.env = env
         self.channelLookup.update({"session": ssh.session.SSHSession})
-        self.subsystemLookup.update({"sftp": ssh.filetransfer.FileTransferServer})
+        self.subsystemLookup.update({"sftp":
+                                     ssh.filetransfer.FileTransferServer})
 
 components.registerAdapter(SFTPServiceProtocol, SFTPServiceAvatar, ISFTPServer)
 

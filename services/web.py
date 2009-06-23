@@ -6,7 +6,7 @@ A HTTP/HTTPS server.
 from seishub import __version__ as SEISHUB_VERSION
 from seishub.config import IntOption, BoolOption, Option
 from seishub.defaults import HTTP_PORT, HTTPS_PORT, HTTPS_CERT_FILE, \
-    HTTPS_PKEY_FILE, HTTP_LOG_FILE, HTTPS_LOG_FILE, ADMIN_THEME
+    HTTPS_PKEY_FILE, HTTP_LOG_FILE, HTTPS_LOG_FILE, ADMIN_THEME, DEFAULT_PAGES
 from seishub.exceptions import InternalServerError, ForbiddenError, \
     SeisHubError
 from seishub.processor import Processor, HEAD, getChildForRequest
@@ -64,7 +64,7 @@ class WebRequest(Processor, http.Request):
     def authenticate(self):
         """
         """
-        self.setHeader('WWW-Authenticate', 'Basic realm=""')
+        self.setHeader('WWW-Authenticate', 'Basic realm="SeisHub"')
         self.setResponseCode(http.UNAUTHORIZED)
         self.write('Authentication required.')
         self.finish()
@@ -109,6 +109,10 @@ class WebRequest(Processor, http.Request):
             # file system resources render direct 
             data = result.render(self)
             if result.folderish:
+                # check for default page
+                for id in DEFAULT_PAGES:
+                    if id in data and not data[id].folderish:
+                        self.redirect(addBase(self.path, id))
                 return self._renderFolder(data)
             else:
                 return self._renderFileResource(data)

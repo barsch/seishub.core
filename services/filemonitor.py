@@ -116,9 +116,9 @@ class SEEDFileSerializer(object):
             result['TQ_max'] = data.get('max', None)
             result['TQ_min'] = data.get('min', None)
             result['TQ_avg'] = data.get('average', None)
-            result['TQ_Q2'] = data.get('median', None)
-            result['TQ_Q3'] = data.get('upper_quantile', None)
-            result['TQ_Q1'] = data.get('lower_quantile', None)
+            result['TQ_median'] = data.get('median', None)
+            result['TQ_uq'] = data.get('upper_quantile', None)
+            result['TQ_lq'] = data.get('lower_quantile', None)
         except Exception, e:
             self.env.log.error('getTimingQuality', str(e))
             pass
@@ -179,12 +179,11 @@ class SEEDFileMonitor(internet.TimerService, SEEDFileSerializer):
     
     This class scans periodically all given MiniSEED files.
     """
-    def __init__(self, env, current_seed_files=list()):
+    def __init__(self, env):
         SEEDFileSerializer.__init__(self, env)
-        self.current_seed_files = current_seed_files
+        self.current_seed_files = env.current_seed_files
         self._files = []
-        internet.TimerService.__init__(self, SEED_FILEMONITOR_CHECK_PERIOD,
-                                       self.iterate)
+        internet.TimerService.__init__(self, 10, self.iterate)
 
     def reset(self):
         """
@@ -260,9 +259,9 @@ class SEEDFileCrawler(internet.TimerService, SEEDFileSerializer):
     
     This class scans periodically all given paths for MiniSEED files. 
     """
-    def __init__(self, env, current_seed_files=list()):
+    def __init__(self, env):
         SEEDFileSerializer.__init__(self, env)
-        self.current_seed_files = current_seed_files
+        self.current_seed_files = env.current_seed_files
         self.reset()
         # call after all is initialized
         internet.TimerService.__init__(self, CRAWLER_INTERVAL, self.iterate)
@@ -317,6 +316,9 @@ class SEEDFileCrawler(internet.TimerService, SEEDFileSerializer):
         # update path list
         if path not in self._all_paths:
             self._all_paths.append(path)
+        # skip empty directories
+        if not files:
+            return
         # check database for entries in current path
         sql_obj = sql.select([miniseed_tab.c['file'], miniseed_tab.c['mtime']],
                              miniseed_tab.c['path'] == path)
@@ -339,11 +341,15 @@ class SEEDFileCrawler(internet.TimerService, SEEDFileSerializer):
                 if int(stats.st_mtime) != db_files[file]:
                     # modification time differs -> update file
                     self.current_seed_files.append(filepath)
+                # remove from db files
                 db_files.pop(file)
             # filter and update current files for SEEDFileMonitor
             if file.endswith(self._today) or file.endswith(self._yesterday):
                 if filepath not in self.current_seed_files:
+                    # file not older than 2 days will always be rescanned
                     self.current_seed_files.append(filepath)
+                    # remove from db files
+                    db_files.pop(file)
         # remove remaining entries from database
         for file in db_files:
             self._delete(path, file)
@@ -389,14 +395,14 @@ class SEEDFileMonitorService(service.MultiService):
                   " and overlaps in miniseed files!"
             self.env.log.error(msg)
 
-        # a shared file list instance
-        shared_file_list = list()
+        # establish a shared file list instance in our environment
+        env.current_seed_files = list()
 
-        crawler = SEEDFileCrawler(env, shared_file_list)
+        crawler = SEEDFileCrawler(env)
         crawler.setName("SEED File Crawler")
         self.addService(crawler)
 
-        filemonitor = SEEDFileMonitor(env, shared_file_list)
+        filemonitor = SEEDFileMonitor(env)
         filemonitor.setName("SEED File Monitor")
         self.addService(filemonitor)
 

@@ -425,6 +425,8 @@ class RESTResourceTypeFolder(Folder):
             name = request.postpath[0]
         else:
             name = None
+        # set uid
+        uid = None
         # parse request headers for output/format options
         data = request.data
         formats = request.args.get('format', []) or \
@@ -449,8 +451,7 @@ class RESTResourceTypeFolder(Folder):
         # add a new resource
         res = request.env.catalog.addResource(self.package_id,
                                               self.resourcetype_id,
-                                              data,
-                                              name=name)
+                                              data, uid=uid, name=name)
         # resource created - set status code and location header
         request.code = http.CREATED
         url = "%s/%s/%s" % (request.env.getRestUrl(),
