@@ -16,6 +16,7 @@ from seishub.util.ls import lsLine
 from seishub.util.path import absPath
 from twisted.application.internet import TCPServer #@UnresolvedImport
 from twisted.conch import avatar, ssh
+from twisted.conch.ssh.factory import SSHFactory
 from twisted.conch.interfaces import ISFTPFile, ISFTPServer, IConchUser
 from twisted.conch.ssh.filetransfer import SFTPError, FX_FILE_ALREADY_EXISTS, \
     FX_FAILURE, FX_OP_UNSUPPORTED, FXF_READ, FXF_WRITE, FX_NO_SUCH_FILE
@@ -538,7 +539,7 @@ class SFTPServiceRealm:
             raise Exception, "No supported interfaces found."
 
 
-class SFTPServiceFactory(ssh.factory.SSHFactory):
+class SFTPServiceFactory(SSHFactory):
     """
     Factory for SFTP server.
     """
