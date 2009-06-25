@@ -23,7 +23,6 @@ class Logger(object):
     emit log messages.
     """
 
-    Option('logging', 'log_file', 'seishub.log', "Name of the log file.")
     Option('logging', 'log_level', 'DEBUG',
         """Level of verbosity in log.
 
@@ -31,25 +30,12 @@ class Logger(object):
 
     def __init__(self, env, log_file=None):
         self.env = env
-        if isinstance(log_file, basestring):
-            self.env.config.set('logging', 'log_file', log_file)
-            self.env.config.save()
         self.start()
 
     def start(self):
         # log level
         log_level = self.env.config.get('logging', 'log_level').upper()
         self.log_level = LOG_LEVELS.get(log_level, ERROR)
-        if not self.log_level:
-            return
-        # log file
-        log_file = self.env.config.get('logging', 'log_file')
-        log_dir = os.path.join(self.env.config.path, 'logs')
-        lh = logfile.LogFile(log_file, log_dir)
-        # rotate after each new start-up
-        lh.rotate()
-        # start logging
-        log.FileLogObserver(lh).start()
 
     def stop(self):
         for l in log.theLogPublisher:
