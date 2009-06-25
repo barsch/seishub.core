@@ -6,7 +6,7 @@ from twisted.application import service
 
 
 # setup our Environment
-env = EnvironmentBase(config_file='seedmon.ini', log_file='seedmon.log')
+env = EnvironmentBase(config_file='seedmon.ini')
 
 # set autostart
 env.config.set('seedfilemonitor', 'autostart', True)

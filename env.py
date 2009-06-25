@@ -30,7 +30,7 @@ class EnvironmentBase(object):
     """
     Basic environment with logger, database and configuration handler.
     """
-    def __init__(self, log_file='seishub.log', config_file='seishub.ini'):
+    def __init__(self, config_file='seishub.ini'):
         """
         Initialize the SeisHub environment.
         """
@@ -52,7 +52,7 @@ class EnvironmentBase(object):
         self.config.path = path
         self.config.hubs = {}
         # set log handler
-        self.log = Logger(self, log_file)
+        self.log = Logger(self)
         # initialize all default options
         self.initDefaultOptions()
         # set up DB handler

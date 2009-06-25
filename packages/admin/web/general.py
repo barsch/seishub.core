@@ -83,9 +83,7 @@ class LogsPanel(Component):
     has_roles = ['SEISHUB_ADMIN']
 
     def render(self, request):
-        error_log_file = self.env.config.get('logging', 'error_log_file')
-        log_dir = os.path.join(self.env.config.path, 'logs')
-        log_file = os.path.join(log_dir, error_log_file)
+        log_file = os.path.join(self.env.config.path, 'logs', 'seishub.log')
         try:
             fh = open(log_file, 'r')
             logs = fh.readlines()
