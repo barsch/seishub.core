@@ -25,8 +25,8 @@ inside of the SeisHub service:
 """
 
 from seishub.config import BoolOption, ListOption, Option, IntOption
-from seishub.defaults import SEED_FILEMONITOR_AUTOSTART, \
-    SEED_FILEMONITOR_CHECK_PERIOD
+from seishub.defaults import SEEDFILEMONITOR_SCANNER_PERIOD, \
+    SEEDFILEMONITOR_CRAWLER_PERIOD, SEEDFILEMONITOR_AUTOSTART
 from seishub.registry.defaults import miniseed_tab
 from sqlalchemy import sql
 from twisted.application import internet, service
@@ -44,9 +44,6 @@ except:
 
 
 __all__ = ['SEEDFileMonitorService']
-
-
-CRAWLER_INTERVAL = 10
 
 
 class SEEDFileSerializer(object):
@@ -185,7 +182,6 @@ class SEEDFileMonitor(internet.TimerService, SEEDFileSerializer):
         SEEDFileSerializer.__init__(self, env)
         self.current_seed_files = env.current_seed_files
         self._files = []
-        # first interval after 60 seconds
         internet.TimerService.__init__(self, 60, self.iterate)
 
     def reset(self):
@@ -197,7 +193,7 @@ class SEEDFileMonitor(internet.TimerService, SEEDFileSerializer):
         self._files = copy.copy(self.current_seed_files)
         # set interval dynamically
         num = len(self._files) or 1
-        period = self.env.config.getint('seedfilemonitor', 'check_period')
+        period = self.env.config.getint('seedfilemonitor', 'scanner_period')
         self._loop.interval = int(period / num)
         msg = "Scanning %s ..." % self._files
         self.env.log.debugx(msg)
@@ -266,9 +262,7 @@ class SEEDFileCrawler(internet.TimerService, SEEDFileSerializer):
     def __init__(self, env):
         SEEDFileSerializer.__init__(self, env)
         self.current_seed_files = env.current_seed_files
-        self.reset()
-        # call after all is initialized
-        internet.TimerService.__init__(self, CRAWLER_INTERVAL, self.iterate)
+        internet.TimerService.__init__(self, 5, self.iterate)
 
     def reset(self):
         """
@@ -277,6 +271,10 @@ class SEEDFileCrawler(internet.TimerService, SEEDFileSerializer):
         # get current configuration
         paths = self.env.config.getlist('seedfilemonitor', 'paths')
         self.pattern = self.env.config.get('seedfilemonitor', 'pattern')
+        period = self.env.config.getint('seedfilemonitor', 'crawler_period')
+        self.focus = self.env.config.getbool('seedfilemonitor',
+                                             'focus_on_recent_files')
+        self._loop.interval = int(period)
         self._roots = [os.path.normcase(r) for r in paths]
         self._current_path = self._roots.pop()
         msg = "Scanning '%s' ..." % self._current_path
@@ -319,6 +317,10 @@ class SEEDFileCrawler(internet.TimerService, SEEDFileSerializer):
                 # reset everything
                 self.reset()
             return
+        except AttributeError:
+            # first loop after initialization - call reset
+            self.reset()
+            return
         # update path list
         if path not in self._all_paths:
             self._all_paths.append(path)
@@ -349,6 +351,8 @@ class SEEDFileCrawler(internet.TimerService, SEEDFileSerializer):
                     self.current_seed_files.append(filepath)
                 # remove from db files
                 db_files.pop(file)
+            if not self.focus:
+                continue
             # filter and update current files for SEEDFileMonitor
             if file.endswith(self._today) or file.endswith(self._yesterday):
                 if filepath not in self.current_seed_files:
@@ -381,14 +385,18 @@ class SEEDFileMonitorService(service.MultiService):
     """
     service_id = "seedfilemonitor"
 
-    BoolOption('seedfilemonitor', 'autostart', SEED_FILEMONITOR_AUTOSTART,
+    BoolOption('seedfilemonitor', 'autostart', SEEDFILEMONITOR_AUTOSTART,
         "Enable service on start-up.")
     ListOption('seedfilemonitor', 'paths', 'data',
         "List of file paths to scan for SEED files.")
     Option('seedfilemonitor', 'pattern', '*.*.*.*.*.*.*',
         "SEED file name pattern.")
-    IntOption('seedfilemonitor', 'check_period', SEED_FILEMONITOR_CHECK_PERIOD,
-        "SEED monitor check period in seconds.")
+    IntOption('seedfilemonitor', 'crawler_period',
+        SEEDFILEMONITOR_CRAWLER_PERIOD, "Path check interval in seconds.")
+    IntOption('seedfilemonitor', 'scanner_period',
+        SEEDFILEMONITOR_SCANNER_PERIOD, "File check interval in seconds.")
+    BoolOption('seedfilemonitor', 'focus_on_recent_files', True,
+        "Scanner focuses on recent files.")
 
     def __init__(self, env):
         self.env = env

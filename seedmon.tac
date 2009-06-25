@@ -8,8 +8,9 @@ from twisted.application import service
 # setup our Environment
 env = EnvironmentBase(config_file='seedmon.ini')
 
-# set autostart
+# set default values
 env.config.set('seedfilemonitor', 'autostart', True)
+env.config.set('seedfilemonitor', 'crawler_period', 1)
 env.config.save()
 
 # create application
