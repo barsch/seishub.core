@@ -7,10 +7,10 @@ and logging access.
 """
 
 from seishub.auth import AuthenticationManager
-from seishub.config import Configuration, Option, _TRUE_VALUES, IntOption
+from seishub.config import Configuration, Option, _TRUE_VALUES
 from seishub.core import ComponentManager
 from seishub.db.manager import DatabaseManager
-from seishub.defaults import DEFAULT_COMPONENTS, HTTP_PORT, MIN_PASSWORD_LENGTH
+from seishub.defaults import DEFAULT_COMPONENTS, HTTP_PORT
 from seishub.log import Logger
 from seishub.packages.installer import PackageInstaller
 from seishub.processor import ResourceTree
@@ -26,10 +26,63 @@ import time
 from seishub.registry.registry import ComponentRegistry
 
 
-__all__ = ['Environment']
+class EnvironmentBase(object):
+    """
+    Basic environment with logger, database and configuration handler.
+    """
+    def __init__(self, log_file='seishub.log', config_file='seishub.ini'):
+        """
+        Initialize the SeisHub environment.
+        """
+        # check for python version
+        if not sys.hexversion >= 0x2060000:
+            print("ERROR: SeisHub needs at least Python 2.6 or higher in " +
+                  "order to run.")
+            exit()
+        # get SeisHub path
+        path = self.getSeisHubPath()
+        # set a start up timestamp
+        self.startup_time = int(time.time())
+        # set configuration handler
+        if isinstance(config_file, Configuration):
+            self.config = config_file
+        else:
+            conf_file = os.path.join(path, 'conf', config_file)
+            self.config = Configuration(conf_file)
+        self.config.path = path
+        self.config.hubs = {}
+        # set log handler
+        self.log = Logger(self, log_file)
+        # initialize all default options
+        self.initDefaultOptions()
+        # set up DB handler
+        self.db = DatabaseManager(self)
+
+    def getSeisHubPath(self):
+        """
+        Returns the absolute root path to the SeisHub directory.
+        """
+        src_path = inspect.getsourcefile(self.__class__)
+        return os.path.dirname(os.path.dirname(src_path))
+
+    def initDefaultOptions(self):
+        """
+        Initialize any not yet set default options in configuration file.
+        """
+        defaults = self.config.defaults()
+        for section in defaults.keys():
+            for name in defaults.get(section).keys():
+                if self.config.has_site_option(section, name):
+                    continue
+                else:
+                    value = defaults.get(section).get(name)
+                    self.config.set(section, name, value)
+                    self.log.info('Setting default value for [%s] %s = %s' \
+                                  % (section, name, value))
+                    self.config.save()
 
 
-class Environment(ComponentManager):
+class Environment(EnvironmentBase, ComponentManager):
     """
     The one class to rule them all.
     
@@ -44,36 +97,19 @@ class Environment(ComponentManager):
         * a package handler env.registry
         * a user management handler env.auth
     """
-
     Option('seishub', 'host', 'localhost', "Default host of this server.")
-    IntOption('seishub', 'min_password_length', MIN_PASSWORD_LENGTH, 
-        "Minimum password length.")
 
-    def __init__(self, conf=None):
+    def __init__(self, **kwargs):
         """
         Initialize the SeisHub environment.
         """
-        # get SeisHub path
-        path = self.getSeisHubPath()
+        # set logger, configuration and database handler
+        EnvironmentBase.__init__(self, **kwargs)
         # set up component manager
         ComponentManager.__init__(self)
         self.compmgr = self
-        # set a start up timestamp
-        self.startup_time = int(time.time())
-        # set configuration handler
-        if not conf or not isinstance(conf, Configuration):
-            conf_file = os.path.join(path, 'conf', 'seishub.ini')
-            self.config = Configuration(conf_file)
-        else:
-            self.config = conf
-        self.config.path = path
-        self.config.hubs = {}
-        # set log handler
-        self.log = Logger(self)
         # initialize all default options
         self.initDefaultOptions()
-        # set up DB handler
-        self.db = DatabaseManager(self)
         # set XML catalog
         self.catalog = XmlCatalog(self)
         # user and group management
@@ -89,13 +125,6 @@ class Environment(ComponentManager):
         # initialize the resource tree
         self.tree = ResourceTree(self)
         self.update()
-
-    def getSeisHubPath(self):
-        """
-        Returns the absolute root path to the SeisHub directory.
-        """
-        src_path = inspect.getsourcefile(self.__class__)
-        return os.path.dirname(os.path.dirname(src_path))
 
     def getRestUrl(self):
         """
@@ -183,22 +212,6 @@ class Environment(ComponentManager):
         PackageInstaller.cleanup(self)
         if update:
             self.update()
-
-    def initDefaultOptions(self):
-        """
-        Initialize any not yet set default options in configuration file.
-        """
-        defaults = self.config.defaults()
-        for section in defaults.keys():
-            for name in defaults.get(section).keys():
-                if self.config.has_site_option(section, name):
-                    continue
-                else:
-                    value = defaults.get(section).get(name)
-                    self.config.set(section, name, value)
-                    self.log.info('Setting default value for [%s] %s = %s' \
-                                  % (section, name, value))
-                    self.config.save()
 
     def initComponent(self, component):
         """

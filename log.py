@@ -1,32 +1,18 @@
 # -*- coding: utf-8 -*-
 
+from seishub.config import Option, IntOption
+from seishub.core import ERROR, WARN, INFO, DEBUG, DEBUGX
+from twisted.python import log, logfile
 import os
 import traceback
 
-from twisted.python import log, logfile
 
-from seishub.core import ERROR, WARN, INFO, DEBUG, DEBUGX
-from seishub.config import Option, IntOption
-
-
-LOG_LEVELS = {'OFF':-1,
+LOG_LEVELS = {'OFF': 0,
               'ERROR': ERROR,
               'WARN': WARN,
               'INFO': INFO,
               'DEBUG': DEBUG,
               'DEBUGX': DEBUGX}
-
-
-class ErrorLog(log.FileLogObserver):
-    """
-    Error log only for logging error messages.
-    """
-
-    def emit(self, eventDict):
-        #skip access messages
-        if not eventDict["isError"]:
-            return
-        log.FileLogObserver.emit(self, eventDict)
 
 
 class Logger(object):
@@ -37,45 +23,40 @@ class Logger(object):
     emit log messages.
     """
 
-    Option('logging', 'error_log_file', 'error.log',
-        """If `log_type` is `file`, this should be a the name of the file.""")
-
+    Option('logging', 'log_file', 'seishub.log', "Name of the log file.")
     Option('logging', 'log_level', 'DEBUG',
         """Level of verbosity in log.
-        
-        Should be one of (`ERROR`, `WARN`, `INFO`, `DEBUG`).""")
-    IntOption('logging', 'log_size', 1024 * 1024,
-        """File size in bytes that triggers the server to move old logs to a 
-        separate file.""")
 
-    def __init__(self, env):
-        # init new log
+        Should be one of (`ERROR`, `WARN`, `INFO`, `DEBUG`).""")
+
+    def __init__(self, env, log_file=None):
         self.env = env
+        if isinstance(log_file, basestring):
+            self.env.config.set('logging', 'log_file', log_file)
+            self.env.config.save()
         self.start()
 
     def start(self):
-        log_dir = os.path.join(self.env.config.path, 'logs')
-
-        # Get log level and rotation size
+        # log level
         log_level = self.env.config.get('logging', 'log_level').upper()
-        log_size = self.env.config.get('logging', 'log_size')
         self.log_level = LOG_LEVELS.get(log_level, ERROR)
-
-        # Error log
-        errlog_file = self.env.config.get('logging', 'error_log_file')
-        self.errlog_handler = logfile.LogFile(errlog_file, log_dir,
-                                              rotateLength=log_size)
-        self.errlog = ErrorLog(self.errlog_handler)
-        self.errlog.start()
+        if not self.log_level:
+            return
+        # log file
+        log_file = self.env.config.get('logging', 'log_file')
+        log_dir = os.path.join(self.env.config.path, 'logs')
+        lh = logfile.LogFile(log_file, log_dir)
+        # rotate after each new start-up
+        lh.rotate()
+        # start logging
+        log.FileLogObserver(lh).start()
 
     def stop(self):
         for l in log.theLogPublisher:
             log.removeObserver(l)
 
-    def _formatMessage(self, level, msg, showTraceback, color=False):
+    def _formatMessage(self, level, msg, showTraceback):
         msg = '%6s  %s' % (level + ':', msg)
-        #if color:
-        #    msg = '\\x%db[2;31;31m%s\\x1b[0m' % (color, msg)
         log.msg(msg, isError=True)
         if showTraceback:
             log.msg(traceback.format_exc(), isError=True)
@@ -91,12 +72,12 @@ class Logger(object):
     def error(self, msg, showTraceback=False):
         if self.log_level < ERROR:
             return
-        self._formatMessage('ERROR', msg, showTraceback, color=2)
+        self._formatMessage('ERROR', msg, showTraceback)
 
     def warn(self, msg, showTraceback=False):
         if self.log_level < WARN:
             return
-        self._formatMessage('WARN', msg, showTraceback, color=1)
+        self._formatMessage('WARN', msg, showTraceback)
 
     def info(self, msg, showTraceback=False):
         if self.log_level < INFO:

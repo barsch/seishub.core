@@ -26,7 +26,7 @@ __all__ = ['Component', 'implements', 'Interface', 'ERROR', 'WARN', 'INFO',
            'DEBUG', 'ComponentMeta', 'ComponentManager', 'PackageManager',
            'DEBUGX']
 
-ERROR = 0
+ERROR = 1
 WARN = 5
 INFO = 10
 DEBUG = 20

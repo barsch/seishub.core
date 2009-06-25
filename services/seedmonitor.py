@@ -12,14 +12,16 @@ This service consists of two L{TimerService}s which are periodically called
 inside of the SeisHub service: 
 
 (1) SEEDFileCrawler
-  Scans over time all given directories for any modifications and stores them 
-  to the database. Files which have a recent julian day and year combination
-  in there filename (e.g. *.2009.002 for the second day of year 2009) will 
-  be collected for usage in the L{SEEDFileMonitor}.
+  Scans over time all given directories for MiniSEED files of a given pattern.
+  All files and their last modification time will be collected and compared
+  with the internal database. Modified files will be passed to the 
+  L{SEEDFileMonitor} class. Files which have a recent julian day and year 
+  combination in there filename (e.g. *.2009.002 for the second day of year 
+  2009) will be always rescanned periodically.
 
 (2) SEEDFileMonitor 
-  Scans only specific SEED files where changes are expected. This service 
-  relies on the results of L{SEEDFileCrawler}.
+  Scans all given files for MiniSEED information,, timing and data quality. 
+  This service relies on the results of L{SEEDFileCrawler}.
 """
 
 from seishub.config import BoolOption, ListOption, Option, IntOption
@@ -44,7 +46,7 @@ except:
 __all__ = ['SEEDFileMonitorService']
 
 
-CRAWLER_INTERVAL = 1
+CRAWLER_INTERVAL = 10
 
 
 class SEEDFileSerializer(object):

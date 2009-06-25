@@ -68,7 +68,7 @@ class SeisHubEnvironmentTestCase(unittest.TestCase):
         self._config()
         self.config.save()
         # create environment
-        self.env = Environment(self.config)
+        self.env = Environment(config_file=self.config)
         self.env.initComponent(self)
         # read number of data in tables auto-generated
         if CHECK_DATABASE:

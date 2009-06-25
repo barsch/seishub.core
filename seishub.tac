@@ -1,27 +1,18 @@
 # -*- coding: utf-8 -*-
 
-from twisted.application import service
-
 from seishub.env import Environment
-from seishub.services.web import WebService
-from seishub.services.ssh import SSHService
-from seishub.services.sftp import SFTPService
-#from seishub.services.heartbeat import HeartbeatService
 from seishub.services.seedmonitor import SEEDFileMonitorService
-import sys
+from seishub.services.sftp import SFTPService
+from seishub.services.ssh import SSHService
+from seishub.services.web import WebService
+from twisted.application import service
+#from seishub.services.heartbeat import HeartbeatService
 
-
-# check for python version
-if not sys.hexversion >= 0x2060000:
-    print "ERROR: SeisHub needs at least Python 2.6 or higher in order to run."
-    exit()
 
 # setup our Environment
-env=Environment()
+env = Environment()
 
-# Twisted
-# XXX: maybe use gid and uid for posix environments
-#application = service.Application("SeisHub", uid=XXX, gid=XXX)
+# create application
 application = service.Application("SeisHub")
 env.app = application
 
@@ -39,5 +30,3 @@ sftp_service = SFTPService(env)
 
 # SEED File Monitor
 seedmonitor_service = SEEDFileMonitorService(env)
-
-# update

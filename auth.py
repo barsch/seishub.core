@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+from seishub.config import IntOption
+from seishub.defaults import MIN_PASSWORD_LENGTH
 from seishub.exceptions import NotFoundError, DuplicateObjectError, \
     SeisHubError
 from seishub.util.text import hash
@@ -69,6 +71,8 @@ class AuthenticationManager(object):
     """
     The Authentication Manager.
     """
+    IntOption('seishub', 'min_password_length', MIN_PASSWORD_LENGTH,
+        "Minimum password length.")
 
     passwords = {}
     users = []
