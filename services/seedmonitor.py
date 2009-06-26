@@ -337,7 +337,7 @@ class SEEDFileCrawler(internet.TimerService, SEEDFileSerializer):
         if len(self.watchlist) > 0:
             li = self._loop.interval + 1
         else:
-            li = self._loop.interval - 1
+            li = int(self.crawler_period)
         self._loop.interval = max(int(self.crawler_period), li, 0.1)
         # logging
         self.env.log.debugx('Crawler restarted.')
