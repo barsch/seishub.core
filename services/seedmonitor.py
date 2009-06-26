@@ -257,22 +257,24 @@ class SEEDFileScanner(internet.TimerService, SEEDFileSerializer):
         """
         Resets the scanner parameters.
         """
+        # skip if nothing to do
+        if not self.watchlist:
+            # but we set a safer loop interval
+            self._loop.interval = 30
+            return
         self._updateCurrentConfiguration()
-        # work with copy of watch list to reach the reset page once a while
-        self._files = copy.copy(self.watchlist)
+        # handle first 100 files 
+        self._files = self.watchlist[0:100]
         # set loop interval
         self._loop.interval = int(self.scanner_period)
-        # logging
-        self.env.log.debugx('Scanner restarted.')
-        msg = "Scanner loop interval: %d s" % self._loop.interval
-        self.env.log.debugx(msg)
-        msg = "Watch list: %d files" % len(self._files)
-        self.env.log.debugx(msg)
 
     def iterate(self):
         """
         Handles exactly one MiniSEED file.
         """
+        # skip if nothing to do
+        if not self.watchlist:
+            return
         try:
             filepath = self._files.pop()
         except IndexError:
@@ -339,6 +341,8 @@ class SEEDFileCrawler(internet.TimerService, SEEDFileSerializer):
         self._loop.interval = max(int(self.crawler_period), 0.1)
         # logging
         self.env.log.debugx('Crawler restarted.')
+        msg = "Current watch list: %d files" % len(self.watchlist)
+        self.env.log.debugx(msg)
         msg = "Crawler loop interval: %d s" % self._loop.interval
         self.env.log.debugx(msg)
         msg = "Crawling root '%s' ..." % self._root
