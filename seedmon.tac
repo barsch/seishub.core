@@ -10,7 +10,7 @@ env = EnvironmentBase(config_file='seedmon.ini')
 
 # set default values
 env.config.set('seedfilemonitor', 'autostart', True)
-env.config.set('seedfilemonitor', 'crawler_period', 1)
+env.config.set('seedfilemonitor', 'crawler_period', 0)
 env.config.save()
 
 # create application
