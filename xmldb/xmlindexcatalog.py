@@ -67,6 +67,8 @@ class _IndexView(object):
                 literal(resourcetype_id).label("resourcetype_id"),
                 resource_tab.c['name'].label("resource_name")
             ])
+        #XXX: why distinct?
+        #query = select(columns, distinct=True)
         query = select(columns, distinct=True)
         # add recursive all given indexes
         query, joins = self._joinIndexes(xmlindex_list, query)
