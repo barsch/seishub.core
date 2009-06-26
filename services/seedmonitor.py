@@ -55,6 +55,7 @@ class SEEDFileSerializer(object):
         self.env = env
         self.watchlist = env.watchlist
         self.db = self.env.db.engine
+        self._updateCurrentConfiguration()
 
     def _scan(self, path, file):
         """
