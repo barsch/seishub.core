@@ -26,7 +26,8 @@ inside of the SeisHub service:
 
 from seishub.config import BoolOption, ListOption, Option, IntOption
 from seishub.defaults import SEEDFILEMONITOR_SCANNER_PERIOD, \
-    SEEDFILEMONITOR_CRAWLER_PERIOD, SEEDFILEMONITOR_AUTOSTART
+    SEEDFILEMONITOR_CRAWLER_PERIOD, SEEDFILEMONITOR_AUTOSTART, \
+    SEEDFILEMONITOR_CRAWLER_FILE_CAP
 from seishub.registry.defaults import miniseed_tab
 from sqlalchemy import sql
 from twisted.application import internet, service
@@ -129,7 +130,6 @@ class SEEDFileSerializer(object):
         """
         Remove a file or all files with a given path from the database.
         """
-        self.env.log.debugx('Deleting %s %s' % (path, file))
         sql_obj = miniseed_tab.delete()
         if file:
             sql_obj = sql_obj.where(sql.and_(miniseed_tab.c['file'] == file,
@@ -138,6 +138,7 @@ class SEEDFileSerializer(object):
             sql_obj = sql_obj.where(miniseed_tab.c['path'] == path)
         try:
             self.db.execute(sql_obj)
+            self.env.log.debugx('Deleting %s %s' % (path, file))
         except:
             pass
 
@@ -145,22 +146,20 @@ class SEEDFileSerializer(object):
         """
         Add a new file into the database.
         """
-        self.env.log.debugx('Inserting %s %s' % (path, file))
         result = self._scan(path, file)
         sql_obj = miniseed_tab.insert().values(file=file, path=path,
                                                mtime=int(stats.st_mtime),
                                                size=stats.st_size, **result)
         try:
             self.db.execute(sql_obj)
-        except Exception, e:
-            self.env.log.error(str(e))
+            self.env.log.debugx('Inserting %s %s' % (path, file))
+        except:
             pass
 
     def _update(self, path, file, stats):
         """
         Modify a file in the database.
         """
-        self.env.log.debugx('Updating %s %s' % (path, file))
         result = self._scan(path, file)
         sql_obj = miniseed_tab.update()
         sql_obj = sql_obj.where(miniseed_tab.c['file'] == file)
@@ -169,6 +168,7 @@ class SEEDFileSerializer(object):
                                  **result)
         try:
             self.db.execute(sql_obj)
+            self.env.log.debugx('Updating %s %s' % (path, file))
         except Exception, e:
             self.env.log.error(str(e))
             pass
@@ -209,6 +209,8 @@ class SEEDFileSerializer(object):
         self.crawler_paths = [os.path.normcase(path) for path in paths]
         self.crawler_period = self.env.config.getint('seedfilemonitor',
                                                      'crawler_period')
+        self.crawler_file_cap = self.env.config.getint('seedfilemonitor',
+                                                       'crawler_file_cap')
         self.focus = self.env.config.getbool('seedfilemonitor',
                                              'focus_on_recent_files')
         # prepare file endings
@@ -257,9 +259,8 @@ class SEEDFileScanner(internet.TimerService, SEEDFileSerializer):
         self._updateCurrentConfiguration()
         # work with copy of watch list to reach the reset page once a while
         self._files = copy.copy(self.watchlist)
-        # set loop interval dynamically
-        num = len(self._files) or 1
-        self._loop.interval = max(int(self.scanner_period / num), 0.1)
+        # set loop interval
+        self._loop.interval = int(self.scanner_period)
         # logging
         self.env.log.debugx('Scanner restarted.')
         msg = "Scanner loop interval: %d s" % self._loop.interval
@@ -333,12 +334,8 @@ class SEEDFileCrawler(internet.TimerService, SEEDFileSerializer):
         self._root = self._roots.pop()
         # create walker
         self._walker = os.walk(self._root, followlinks=True)
-        # set loop interval dynamically
-        if len(self.watchlist) > 0:
-            li = self._loop.interval + 1
-        else:
-            li = int(self.crawler_period)
-        self._loop.interval = max(int(self.crawler_period), li, 0.1)
+        # set loop interval
+        self._loop.interval = max(int(self.crawler_period), 0.1)
         # logging
         self.env.log.debugx('Crawler restarted.')
         msg = "Crawler loop interval: %d s" % self._loop.interval
@@ -350,6 +347,9 @@ class SEEDFileCrawler(internet.TimerService, SEEDFileSerializer):
         """
         Handles exactly one directory.
         """
+        # if watch list is pretty full - retry later
+        if len(self.watchlist) > self.crawler_file_cap:
+            return
         try:
             path, _, files = self._walker.next()
         except StopIteration:
@@ -439,6 +439,8 @@ class SEEDFileMonitorService(service.MultiService):
         SEEDFILEMONITOR_CRAWLER_PERIOD, "Path check interval in seconds.")
     IntOption('seedfilemonitor', 'scanner_period',
         SEEDFILEMONITOR_SCANNER_PERIOD, "File check interval in seconds.")
+    IntOption('seedfilemonitor', 'crawler_file_cap',
+        SEEDFILEMONITOR_CRAWLER_FILE_CAP, "Maximum files in watch list.")
     BoolOption('seedfilemonitor', 'focus_on_recent_files', True,
         "Scanner focuses on recent files.")
 
@@ -474,4 +476,6 @@ class SEEDFileMonitorService(service.MultiService):
 
     def stopService(self):
         if self.running:
+            # reset watch list
+            self.env.watchlist = list()
             service.MultiService.stopService(self)
