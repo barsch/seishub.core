@@ -91,10 +91,8 @@ class SEEDFileSerializer(object):
         # get start and end time
         try:
             (start, end) = mseed.getStartAndEndTime(filepath)
-            result['start_datetime'] = \
-                datetime.datetime.utcfromtimestamp(start.timestamp())
-            result['end_datetime'] = \
-                datetime.datetime.utcfromtimestamp(end.timestamp())
+            result['start_datetime'] = start.datetime
+            result['end_datetime'] = end.datetime
         except Exception, e:
             self.env.log.error('getStartAndEndTime', str(e))
             pass
