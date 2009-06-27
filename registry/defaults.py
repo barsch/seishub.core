@@ -3,7 +3,7 @@
 from seishub.db import DEFAULT_PREFIX
 from seishub.db.manager import meta as metadata
 from sqlalchemy import Table, Column, ForeignKey, UniqueConstraint, Integer, \
-    Text, Boolean, DateTime, Numeric
+    Text, Boolean, DateTime, Numeric, Index
 
 
 PACKAGES_TABLE = 'packages'
@@ -103,3 +103,6 @@ miniseed_tab = Table(DEFAULT_PREFIX + MINISEED_TABLE, metadata,
     UniqueConstraint('file', 'path'),
     useexisting=True,
 )
+Index('idx_' + DEFAULT_PREFIX + MINISEED_TABLE + '_net_sta_cha',
+      miniseed_tab.c.network_id, miniseed_tab.c.station_id,
+      miniseed_tab.c.channel_id)
