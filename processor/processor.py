@@ -59,7 +59,7 @@ class Processor:
         self.tree = self.env.tree
         # set allowed methods
         self.allowed_methods = ALLOWED_HTTP_METHODS
-    
+
     def run(self, method, path='/', content=None, received_headers={}):
         """
         A shortcut to call Processor.process() with default arguments.
@@ -74,7 +74,7 @@ class Processor:
         if received_headers:
             self.received_headers = received_headers
         return self.process()
-    
+
     def process(self):
         """
         Working through the process chain.
@@ -84,7 +84,7 @@ class Processor:
         a leaf node, like a file or document resource.
         """
         if isinstance(self.path, unicode):
-            raise TypeError("URL must be a str instance, not unicode!") 
+            raise TypeError("URL must be a str instance, not unicode!")
         # unquote url
         self.path = urllib.unquote(self.path)
         # check for URI length
@@ -100,14 +100,14 @@ class Processor:
             raise NotImplementedError(msg)
         # read content
         self.content.seek(0, 0)
-        self.data=self.content.read()
+        self.data = self.content.read()
         # easy args handler
         for id in self.args:
             if not len(self.args[id]):
                 continue
             self.args0[id] = self.args[id][0]
         return self.render()
-    
+
     def render(self):
         """
         Return the rendered result of a child object.
@@ -118,9 +118,9 @@ class Processor:
         # traverse the resource tree
         child = getChildForRequest(self.env.tree, self)
         return child.render(self)
-    
+
     def setHeader(self, id, value):
-        self.headers[id]=value
+        self.headers[id] = value
 
 
 def getChildForRequest(resource, request):

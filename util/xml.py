@@ -3,7 +3,7 @@
 import re
 
 
-def toUnicode(data, remove_decl = False):
+def toUnicode(data, remove_decl=False):
     """
     Detect the encoding of a XML string via BOM and XML declaration.
     
@@ -33,33 +33,31 @@ def toUnicode(data, remove_decl = False):
         data = unicode(data, enc)
     return data, enc
 
-def parseXMLDeclaration(data, remove_decl = False):
+
+def parseXMLDeclaration(data, remove_decl=False):
     """
     Parse XML declaration and return (data, encoding). 
     
     If remove is True, data without the XML declaration is returned. 
     If no declaration can be found, (None, None) is returned.
     """
-    
+
     ## set up regular expression
     xmlDeclPattern = r"""
-    ^<\?xml\s+             # w/o BOM, xmldecl starts with <?xml at the first byte
-        ([^>]*?                 # some chars (version info), matched minimal
-    (encoding(\s*)=(\s*)           # encoding attribute begins
+    ^<\?xml\s+          # w/o BOM, xmldecl starts with <?xml at the first byte
+        ([^>]*?         # some chars (version info), matched minimal
+    (encoding(\s*)=(\s*)# encoding attribute begins
     ["']                # attribute start delimiter
     (?P<encstr>         # what's matched in the brackets will be named encstr
-     [^"']+              # every character not delimiter (not overly exact!)
+     [^"']+             # every character not delimiter (not overly exact!)
     )                   # closes the brackets pair for the named group
-    ["']))?               # attribute end delimiter
-    [^>]*                 # some chars optionally (standalone decl or whitespace)
+    ["']))?             # attribute end delimiter
+    [^>]*               # some chars optionally (standalone decl or whitespace)
     \?>                 # xmldecl end
     """
-    
+
     xmlDeclRE = re.compile(xmlDeclPattern, re.VERBOSE)
-    
-#    # utf-8 encode
-#    if isinstance(data, unicode):
-#        data = data.encode("utf-8")
+
     ## search and extract encoding string
     match = xmlDeclRE.search(data)
     # @see: http://www.w3.org/TR/2006/REC-xml11-20060816/#charencoding
@@ -69,8 +67,9 @@ def parseXMLDeclaration(data, remove_decl = False):
 
     if remove_decl:
         data = xmlDeclRE.sub('', data)
-    
+
     return data.strip(), enc.lower()
+
 
 def detectBOM(data):
     """
@@ -83,9 +82,9 @@ def detectBOM(data):
           U{http://www.w3.org/TR/2006/REC-xml-20060816/#sec-guessing}
     """
     ### detection using BOM
-    
+
     ## the BOMs we know, by their pattern
-    bomDict={ # bytepattern : name              
+    bomDict = { # bytepattern : name              
              (0x00, 0x00, 0xFE, 0xFF) : "utf-32be",
              (0xFF, 0xFE, 0x00, 0x00) : "utf-32le",
              (0xFE, 0xFF, None, None) : "utf-16be",
@@ -94,7 +93,7 @@ def detectBOM(data):
             }
     ## go to beginning of file and get the first 4 bytes
     (byte1, byte2, byte3, byte4) = tuple(map(ord, data[0:4]))
-    
+
     ## try bom detection using 4 bytes, 3 bytes, or 2 bytes and strip bom
     bomDetection = bomDict.get((byte1, byte2, byte3, byte4))
     if not bomDetection :
@@ -107,7 +106,7 @@ def detectBOM(data):
             data = data[3:]
     else:
         data = data[4:]
-    
+
     ## if BOM detected, we're done :-)
     if bomDetection:
         return data, bomDetection
@@ -120,7 +119,7 @@ def detectBOM(data):
     return data, None
 
 
-def addXMLDeclaration(data, encoding = "UTF-8", version = "1.0"):
+def addXMLDeclaration(data, encoding="UTF-8", version="1.0"):
     decl = '<?xml version="%s" encoding="%s"?>\n\n'
     return decl % (version, encoding) + data
 
@@ -140,7 +139,7 @@ def applyMacros(query):
     """
     # remove line breaks
     query = ' '.join(query.splitlines()).strip()
-    if query[0]!='{':
+    if query[0] != '{':
         return query
     # split macro section {} from actual query
     macros, query = query.split('}', 1)
@@ -148,5 +147,5 @@ def applyMacros(query):
     # parse the macros and replace in query
     for macro in macros.split(','):
         kw, arg = macro.split('=')
-        query = query.replace('{'+kw.strip()+'}', arg.strip())
+        query = query.replace('{' + kw.strip() + '}', arg.strip())
     return query.strip()

@@ -98,8 +98,11 @@ index_text_tab = Table(DEFAULT_PREFIX + 'text_' + INDEX_TABLE, metadata,
     UniqueConstraint('index_id', 'keyval', 'group_pos', 'document_id'),
     useexisting=True
 )
-Index('idx_' + DEFAULT_PREFIX + 'text_' + INDEX_TABLE + '_index_document',
+Index('idx_' + DEFAULT_PREFIX + 'text_' + INDEX_TABLE + '_idx_doc',
       index_text_tab.c.index_id, index_text_tab.c.document_id)
+Index('idx_' + DEFAULT_PREFIX + 'text_' + INDEX_TABLE + '_idx_doc_pos',
+      index_text_tab.c.index_id, index_text_tab.c.document_id,
+      index_text_tab.c.group_pos)
 
 
 index_numeric_tab = Table(DEFAULT_PREFIX + 'numeric_' + INDEX_TABLE, metadata,
@@ -112,8 +115,11 @@ index_numeric_tab = Table(DEFAULT_PREFIX + 'numeric_' + INDEX_TABLE, metadata,
     UniqueConstraint('index_id', 'keyval', 'group_pos', 'document_id'),
     useexisting=True
 )
-Index('idx_' + DEFAULT_PREFIX + 'numeric_' + INDEX_TABLE + '_index_document',
+Index('idx_' + DEFAULT_PREFIX + 'numeric_' + INDEX_TABLE + '_idx_doc',
       index_numeric_tab.c.index_id, index_numeric_tab.c.document_id)
+Index('idx_' + DEFAULT_PREFIX + 'numeric_' + INDEX_TABLE + '_idx_doc_pos',
+      index_numeric_tab.c.index_id, index_numeric_tab.c.document_id,
+      index_numeric_tab.c.group_pos)
 
 
 index_float_tab = Table(DEFAULT_PREFIX + 'float_' + INDEX_TABLE, metadata,
@@ -125,8 +131,11 @@ index_float_tab = Table(DEFAULT_PREFIX + 'float_' + INDEX_TABLE, metadata,
     UniqueConstraint('index_id', 'keyval', 'group_pos', 'document_id'),
     useexisting=True
 )
-Index('idx_' + DEFAULT_PREFIX + 'float_' + INDEX_TABLE + '_index_document',
+Index('idx_' + DEFAULT_PREFIX + 'float_' + INDEX_TABLE + '_idx_doc',
       index_float_tab.c.index_id, index_float_tab.c.document_id)
+Index('idx_' + DEFAULT_PREFIX + 'float_' + INDEX_TABLE + '_idx_doc_pos',
+      index_float_tab.c.index_id, index_float_tab.c.document_id,
+      index_float_tab.c.group_pos)
 
 
 index_datetime_tab = Table(DEFAULT_PREFIX + 'datetime_' + INDEX_TABLE,
@@ -139,8 +148,11 @@ index_datetime_tab = Table(DEFAULT_PREFIX + 'datetime_' + INDEX_TABLE,
     UniqueConstraint('index_id', 'keyval', 'group_pos', 'document_id'),
     useexisting=True
 )
-Index('idx_' + DEFAULT_PREFIX + 'datetime_' + INDEX_TABLE + '_index_document',
+Index('idx_' + DEFAULT_PREFIX + 'datetime_' + INDEX_TABLE + '_idx_doc',
       index_datetime_tab.c.index_id, index_datetime_tab.c.document_id)
+Index('idx_' + DEFAULT_PREFIX + 'datetime_' + INDEX_TABLE + '_idx_doc_pos',
+      index_datetime_tab.c.index_id, index_datetime_tab.c.document_id,
+      index_datetime_tab.c.group_pos)
 
 
 index_date_tab = Table(DEFAULT_PREFIX + 'date_' + INDEX_TABLE, metadata,
@@ -152,8 +164,11 @@ index_date_tab = Table(DEFAULT_PREFIX + 'date_' + INDEX_TABLE, metadata,
     UniqueConstraint('index_id', 'keyval', 'group_pos', 'document_id'),
     useexisting=True
 )
-Index('idx_' + DEFAULT_PREFIX + 'date_' + INDEX_TABLE + '_index_document',
+Index('idx_' + DEFAULT_PREFIX + 'date_' + INDEX_TABLE + '_idx_doc',
       index_date_tab.c.index_id, index_date_tab.c.document_id)
+Index('idx_' + DEFAULT_PREFIX + 'date_' + INDEX_TABLE + '_idx_doc_pos',
+      index_date_tab.c.index_id, index_date_tab.c.document_id,
+      index_date_tab.c.group_pos)
 
 
 index_boolean_tab = Table(DEFAULT_PREFIX + 'boolean_' + INDEX_TABLE, metadata,
@@ -165,8 +180,11 @@ index_boolean_tab = Table(DEFAULT_PREFIX + 'boolean_' + INDEX_TABLE, metadata,
     UniqueConstraint('index_id', 'keyval', 'group_pos', 'document_id'),
     useexisting=True
 )
-Index('idx_' + DEFAULT_PREFIX + 'boolean_' + INDEX_TABLE + '_index_document',
+Index('idx_' + DEFAULT_PREFIX + 'boolean_' + INDEX_TABLE + '_idx_doc',
       index_boolean_tab.c.index_id, index_boolean_tab.c.document_id)
+Index('idx_' + DEFAULT_PREFIX + 'boolean_' + INDEX_TABLE + '_idx_doc_pos',
+      index_boolean_tab.c.index_id, index_boolean_tab.c.document_id,
+      index_boolean_tab.c.group_pos)
 
 
 index_integer_tab = Table(DEFAULT_PREFIX + 'integer_' + INDEX_TABLE, metadata,
@@ -178,5 +196,8 @@ index_integer_tab = Table(DEFAULT_PREFIX + 'integer_' + INDEX_TABLE, metadata,
     UniqueConstraint('index_id', 'keyval', 'group_pos', 'document_id'),
     useexisting=True
 )
-Index('idx_' + DEFAULT_PREFIX + 'integer_' + INDEX_TABLE + '_index_document',
+Index('idx_' + DEFAULT_PREFIX + 'integer_' + INDEX_TABLE + '_idx_doc',
       index_integer_tab.c.index_id, index_integer_tab.c.document_id)
+Index('idx_' + DEFAULT_PREFIX + 'integer_' + INDEX_TABLE + '_idx_doc_pos',
+      index_integer_tab.c.index_id, index_integer_tab.c.document_id,
+      index_integer_tab.c.group_pos)

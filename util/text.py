@@ -29,7 +29,7 @@ def getFirstSentence(text, maxlen=255):
         return text[0:maxlen]
     text = text.split(".")
     text = text[0] + '.'
-    return text[0:maxlen]
+    return text[0:maxlen].strip()
 
 
 def toUnicode(text, charset=None):
@@ -88,7 +88,7 @@ def validate_id(str):
     # XXX: not here!
     if str is None:
         return None
-    # ecnode to bytestring first
+    # encode to bytestring first
     str = str.encode("utf-8")
     # match regex
     re_id = re.compile(id_pt, re.VERBOSE)
