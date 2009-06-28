@@ -4,10 +4,10 @@ Database related utilities.
 """
 
 
-from datetime import datetime
 from lxml.etree import Element, SubElement as Sub, tostring
 from seishub.util.xmlwrapper import toString
 from sqlalchemy import sql, Table
+import datetime
 import json
 
 
@@ -83,8 +83,14 @@ class DateTimeAwareJSONEncoder(json.JSONEncoder):
     """ 
     """
     def default(self, obj):
-        if isinstance(obj, datetime):
+        if isinstance(obj, datetime.date):
+            return obj.strftime('%Y-%m-%d')
+        elif isinstance(obj, datetime.time):
+            return obj.strftime('%H:%M:%S')
+        elif isinstance(obj, datetime.datetime):
             return obj.strftime('%Y-%m-%dT%H:%M:%SZ')
+        elif isinstance (obj, datetime.timedelta):
+            return str(obj)
         else:
             return json.JSONEncoder.default(self, obj)
 
@@ -117,7 +123,8 @@ def formatResults(request, results, count=None, limit=None, offset=0):
         # generate correct header
         request.setHeader('content-type', 'application/json; charset=UTF-8')
         # create output
-        return json.dumps({'ResultSet': data}, cls=DateTimeAwareJSONEncoder)
+        return json.dumps({'ResultSet': data},
+                          cls=DateTimeAwareJSONEncoder, indent=4)
     elif 'xhtml' in formats:
         # build up a XHTML table
         xml = Element("table", border="1")
@@ -126,7 +133,7 @@ def formatResults(request, results, count=None, limit=None, offset=0):
             Sub(s, "th").text = str(key)
         for result in results:
             s = Sub(xml, "tr")
-            for (key, value) in dict(result).iteritems():
+            for value in result:
                 if value == None:
                     value = ''
                 Sub(s, "td").text = str(value)
