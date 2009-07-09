@@ -131,7 +131,7 @@ class Environment(EnvironmentBase, ComponentManager):
         Returns the root URL of the REST pages.
         """
         rest_host = self.config.get('seishub', 'host') or 'localhost'
-        rest_port = self.config.getint('http_port', 'port') or HTTP_PORT
+        rest_port = self.config.getint('web', 'http_port') or HTTP_PORT
         return 'http://' + rest_host + ':' + str(rest_port)
 
     def update(self):
