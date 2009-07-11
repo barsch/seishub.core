@@ -4,6 +4,7 @@ Database related utilities.
 """
 
 
+from decimal import Decimal
 from lxml.etree import Element, SubElement as Sub, tostring
 from seishub.util.xmlwrapper import toString
 from sqlalchemy import sql, Table
@@ -79,7 +80,7 @@ def querySingleColumn(request, table, column, **kwargs):
                          count=count)
 
 
-class DateTimeAwareJSONEncoder(json.JSONEncoder):
+class CustomJSONEncoder(json.JSONEncoder):
     """ 
     """
     def default(self, obj):
@@ -91,6 +92,8 @@ class DateTimeAwareJSONEncoder(json.JSONEncoder):
             return obj.strftime('%Y-%m-%dT%H:%M:%SZ')
         elif isinstance (obj, datetime.timedelta):
             return str(obj)
+        elif isinstance (obj, Decimal):
+            return float(obj)
         else:
             return json.JSONEncoder.default(self, obj)
 
@@ -124,7 +127,7 @@ def formatResults(request, results, count=None, limit=None, offset=0):
         request.setHeader('content-type', 'application/json; charset=UTF-8')
         # create output
         return json.dumps({'ResultSet': data},
-                          cls=DateTimeAwareJSONEncoder, indent=4)
+                          cls=CustomJSONEncoder, indent=4)
     elif 'xhtml' in formats:
         # build up a XHTML table
         xml = Element("table", border="1")
