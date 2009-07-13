@@ -5,7 +5,7 @@ from seishub.defaults import MIN_PASSWORD_LENGTH
 from seishub.exceptions import NotFoundError, DuplicateObjectError, \
     SeisHubError
 from seishub.util.text import hash
-from sqlalchemy import Column, String, create_engine, Integer
+from sqlalchemy import Column, String, create_engine, Integer, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from twisted.cred import checkers, credentials, error
@@ -42,9 +42,9 @@ class PasswordDictChecker:
         return defer.fail(err)
 
 
-UserBase = declarative_base()
+Base = declarative_base()
 
-class User(UserBase):
+class User(Base):
     """
     A user object.
     """
@@ -69,6 +69,22 @@ class User(UserBase):
         return "<User %s(%d): '%s')>" % (self.id, self.uid, self.name)
 
 
+class Guppy(Base):
+    """
+    A guppy object.
+    """
+    __tablename__ = 'guppy'
+
+    timestamp = Column(DateTime, primary_key=True)
+    size = Column(Integer)
+    count = Column(Integer)
+
+    def __init__(self, timestamp, size, count):
+        self.timestamp = timestamp
+        self.size = size
+        self.count = count
+
+
 class AuthenticationManager(object):
     """
     The Authentication Manager.
@@ -86,7 +102,7 @@ class AuthenticationManager(object):
                                           'auth.db')
         engine = create_engine(uri, encoding='utf-8', convert_unicode=True)
         # Define and create user table
-        metadata = UserBase.metadata
+        metadata = Base.metadata
         metadata.create_all(engine, checkfirst=True)
         self.Session = sessionmaker(bind=engine)
         self.refresh()
@@ -221,3 +237,27 @@ class AuthenticationManager(object):
         """
         self.refresh()
         return (PasswordDictChecker(self.env),)
+
+#XXX: should go out of auth - needs refactoring!
+
+    def addGuppy(self, timestamp, size, count):
+        """
+        Adds a guppy entry.
+        """
+        guppy = Guppy(timestamp=timestamp, size=size, count=count)
+        session = self.Session()
+        session.add(guppy)
+        try:
+            session.commit()
+        except Exception, e:
+            session.rollback()
+            raise SeisHubError(str(e))
+
+    def getGuppy(self, number=10):
+        session = self.Session()
+        guppy = session.query(Guppy).order_by(Guppy.timestamp).limit(number)
+        try:
+            session.commit()
+        except:
+            session.rollback()
+        return guppy
