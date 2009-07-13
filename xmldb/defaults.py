@@ -39,7 +39,7 @@ document_meta_tab = Table(DEFAULT_PREFIX + DOCUMENT_META_TABLE, metadata,
     Column('size', Integer),
     Column('datetime', DateTime, default=datetime.now,
            onupdate=datetime.now),
-    Column('uid', String()),
+    Column('uid', String(80)),
     Column('hash', String(56)),
     useexisting=True,
 )
