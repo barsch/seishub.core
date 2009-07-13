@@ -32,7 +32,7 @@ class ServiceCommand(Component):
 
 class ReindexCommand(Component):
     """
-    Reindex the catalog.
+    Reindex the catalog (takes quite a while and blocks the server).
     """
     implements(ISSHCommand)
 
