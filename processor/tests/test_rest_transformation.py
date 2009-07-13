@@ -7,7 +7,7 @@ from StringIO import StringIO
 from seishub.core import Component, implements
 from seishub.packages.builtins import IResourceType, IPackage
 from seishub.packages.installer import registerStylesheet
-from seishub.processor import PUT, POST, DELETE, GET, Processor
+from seishub.processor import POST, PUT, DELETE, GET, Processor
 from seishub.processor.resources import RESTFolder
 from seishub.test import SeisHubEnvironmentTestCase
 import inspect
@@ -115,7 +115,7 @@ class APackage(Component):
     A test package.
     """
     implements(IPackage)
-    
+
     package_id = 'transformation-test'
 
 
@@ -124,10 +124,10 @@ class AResourceType(Component):
     A test resource type including various transformation style sheets.
     """
     implements(IResourceType)
-    
+
     package_id = 'transformation-test'
     resourcetype_id = 'rt'
-    
+
     registerStylesheet('data' + os.sep + 'transformation' + os.sep + \
                        'xml2html.xslt', 'xml2html')
     registerStylesheet('data' + os.sep + 'transformation' + os.sep + \
@@ -147,7 +147,7 @@ class RestTransformationTests(SeisHubEnvironmentTestCase):
         self.env.enableComponent(AResourceType)
         self.env.tree = RESTFolder()
         self.path = os.path.dirname(inspect.getsourcefile(self.__class__))
-    
+
     def tearDown(self):
         # delete all package style sheets
         for doc in self.env.registry.stylesheets.get('transformation-test'):
@@ -157,14 +157,14 @@ class RestTransformationTests(SeisHubEnvironmentTestCase):
             self.env.registry.db_deleteResourceType('transformation-test', rt)
         # delete package
         self.env.registry.db_deletePackage('transformation-test')
-    
+
     def test_getFormatedResource(self):
         """
         Get resource in a certain format using a single style sheet.
         """
         proc = Processor(self.env)
         # create resource
-        proc.run(PUT, '/transformation-test/rt/test.xml', StringIO(XML_DOC))
+        proc.run(POST, '/transformation-test/rt/test.xml', StringIO(XML_DOC))
         # without format
         proc.args = {'format': []}
         res = proc.run(GET, '/transformation-test/rt/test.xml')
@@ -187,14 +187,14 @@ class RestTransformationTests(SeisHubEnvironmentTestCase):
         self.assertEquals(data, XML_DOC)
         # delete resource
         proc.run(DELETE, '/transformation-test/rt/test.xml')
-    
+
     def test_getMultiFormatedResource(self):
         """
         Get resource in a certain format using multiple style sheets.
         """
         proc = Processor(self.env)
         # create resource
-        proc.run(PUT, '/transformation-test/rt/test.xml', StringIO(XML_DOC))
+        proc.run(POST, '/transformation-test/rt/test.xml', StringIO(XML_DOC))
         # transform using a format chain
         proc.args = {'format': ['xml2html', 'html2txt']}
         res = proc.run(GET, '/transformation-test/rt/test.xml')
@@ -222,7 +222,7 @@ class RestTransformationTests(SeisHubEnvironmentTestCase):
         self.assertEquals(data, TXT_DOC)
         # delete resource
         proc.run(DELETE, '/transformation-test/rt/test.xml')
-    
+
     def test_putFormatedResource(self):
         """
         Upload resource in a certain format using a single style sheets.
@@ -230,7 +230,7 @@ class RestTransformationTests(SeisHubEnvironmentTestCase):
         proc = Processor(self.env)
         # create + transform resource
         proc.args = {'format': ['xml2html']}
-        proc.run(PUT, '/transformation-test/rt/test.xml', StringIO(XML_DOC))
+        proc.run(POST, '/transformation-test/rt/test.xml', StringIO(XML_DOC))
         # get uploaded resource
         proc.args = {}
         res = proc.run(GET, '/transformation-test/rt/test.xml')
@@ -243,7 +243,7 @@ class RestTransformationTests(SeisHubEnvironmentTestCase):
         self.assertEquals(data, TXT_DOC)
         # delete resource
         proc.run(DELETE, '/transformation-test/rt/test.xml')
-    
+
     def test_putMultiFormatedResource(self):
         """
         Upload resource in a certain format using multiple style sheets.
@@ -251,7 +251,7 @@ class RestTransformationTests(SeisHubEnvironmentTestCase):
         proc = Processor(self.env)
         # create + transform resource
         proc.args = {'format': ['xml2html', 'html2xml']}
-        proc.run(PUT, '/transformation-test/rt/test.xml', StringIO(XML_DOC))
+        proc.run(POST, '/transformation-test/rt/test.xml', StringIO(XML_DOC))
         # get uploaded resource
         proc.args = {}
         res = proc.run(GET, '/transformation-test/rt/test.xml')
@@ -266,7 +266,7 @@ class RestTransformationTests(SeisHubEnvironmentTestCase):
         proc.run(DELETE, '/transformation-test/rt/test.xml')
         # create + transform resource with missing style sheet
         proc.args = {'format': ['xml2html', 'html2xml', 'XXX']}
-        proc.run(PUT, '/transformation-test/rt/test.xml', StringIO(XML_DOC))
+        proc.run(POST, '/transformation-test/rt/test.xml', StringIO(XML_DOC))
         # get uploaded resource
         proc.args = {}
         res = proc.run(GET, '/transformation-test/rt/test.xml')
@@ -276,7 +276,7 @@ class RestTransformationTests(SeisHubEnvironmentTestCase):
         proc.run(DELETE, '/transformation-test/rt/test.xml')
         # create + transform resource with missing style sheet
         proc.args = {'format': ['xml2html', 'XXX', 'YYY']}
-        proc.run(PUT, '/transformation-test/rt/test.xml', StringIO(XML_DOC))
+        proc.run(POST, '/transformation-test/rt/test.xml', StringIO(XML_DOC))
         # get uploaded resource
         proc.args = {}
         res = proc.run(GET, '/transformation-test/rt/test.xml')
@@ -284,17 +284,17 @@ class RestTransformationTests(SeisHubEnvironmentTestCase):
         self.assertEquals(data, HTML_DOC.strip())
         # delete resource
         proc.run(DELETE, '/transformation-test/rt/test.xml')
-    
+
     def test_postMultiFormatedResource(self):
         """
         Update resource in a certain format using multiple style sheets.
         """
         proc = Processor(self.env)
         # create resource
-        proc.run(PUT, '/transformation-test/rt/test.xml', StringIO(XML_DOC))
+        proc.run(POST, '/transformation-test/rt/test.xml', StringIO(XML_DOC))
         # update resource with transformation
         proc.args = {'format': ['xml2html', 'html2xml']}
-        proc.run(POST, '/transformation-test/rt/test.xml', StringIO(XML_DOC))
+        proc.run(PUT, '/transformation-test/rt/test.xml', StringIO(XML_DOC))
         # get uploaded resource
         proc.args = {}
         res = proc.run(GET, '/transformation-test/rt/test.xml')

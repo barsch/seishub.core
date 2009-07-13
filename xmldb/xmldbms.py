@@ -9,17 +9,17 @@ from sqlalchemy import sql
 
 
 class XmlDbManager(DbStorage):
-    
+
     def _raise_not_found(self, package_id, resourcetype_id, name, id):
         if id:
             msg = "Resource with id %s not found."
             raise NotFoundError(msg % id)
         msg = "Resource not found. ('%s/%s/%s')"
-        raise NotFoundError(msg % (package_id, 
-                                   resourcetype_id, 
+        raise NotFoundError(msg % (package_id,
+                                   resourcetype_id,
                                    name))
-    
-    def addResource(self, resource = Resource()):
+
+    def addResource(self, resource=Resource()):
         """
         Add a new resource to the database.
         """
@@ -28,7 +28,7 @@ class XmlDbManager(DbStorage):
         try:
             self.store(resource, resource.document.meta, resource.document)
         except DbError, e:
-            msg = "Error adding a resource: A resource with the given " +\
+            msg = "Error adding a resource: A resource with the given " + \
                   "parameters already exists."
             raise DuplicateObjectError(msg, e)
 #            if xml_resource.resourcetype.version_control:
@@ -42,8 +42,8 @@ class XmlDbManager(DbStorage):
 #            else:
 #                # resource is already there and not version controlled
 #                raise DuplicateObjectError(msg, e)
-    
-    def modifyResource(self, old_resource, resource):
+
+    def modifyResource(self, old_resource, resource, uid=None):
         """
         Modify an existing resource.
         
@@ -52,21 +52,20 @@ class XmlDbManager(DbStorage):
         document has actually changed -> compare old/new document ?
         """
         if not old_resource.resourcetype._id == resource.resourcetype._id:
-            msg = "Error modifying a resource: Resourcetypes of old and " +\
+            msg = "Error modifying a resource: Resourcetypes of old and " + \
                   "new resource do not match. %s != %s"
             raise InvalidParameterError(msg % (old_resource.resourcetype._id,
                                                resource.resourcetype._id))
-        # preserve creator
-        # all other document metadata may be overwritten by the new document
-        resource.document.meta.uid = old_resource.document.meta.uid
+        # all document metadata may be overwritten by the new document
+        resource.document.meta.uid = uid
         resource._id = old_resource._id
         if resource.resourcetype.version_control:
-            self.update(resource, cascading = True)
+            self.update(resource, cascading=True)
         else:
             resource.document._id = old_resource.document._id
             resource.document.meta._id = old_resource.document.meta._id
             self.update(resource, resource.document, resource.document.meta)
-    
+
     def renameResource(self, resource, new_name):
         """
         Rename an existing resource.
@@ -75,12 +74,12 @@ class XmlDbManager(DbStorage):
         try:
             self.update(resource)
         except DbError, e:
-            msg = "Error renaming a resource: A resource with the given " +\
+            msg = "Error renaming a resource: A resource with the given " + \
                   "parameters already exists. (%s)"
             raise DuplicateObjectError(msg % str(resource), e)
-    
-    def _getResource(self, package_id = None, resourcetype_id = None, 
-                     name = None, revision = None, id = None):
+
+    def _getResource(self, package_id=None, resourcetype_id=None,
+                     name=None, revision=None, id=None):
         if not revision:
             # no revision specified, select newest
             document = DB_LIMIT('revision', 'max')
@@ -90,18 +89,18 @@ class XmlDbManager(DbStorage):
         if name:
             name = str(name)
         try:
-            res = self.pickup(Resource, resourcetype = 
+            res = self.pickup(Resource, resourcetype=
                               {'package': {'package_id':package_id},
-                               'resourcetype_id':resourcetype_id}, 
-                              name = name, 
-                              _id = id, document = document)[0]
+                               'resourcetype_id':resourcetype_id},
+                              name=name,
+                              _id=id, document=document)[0]
         except IndexError:
             self._raise_not_found(package_id, resourcetype_id, name, id)
         return res
-    
-    def getResource(self, package_id = None, resourcetype_id = None, 
-                    name = None, revision = None, document_id = None, 
-                    id = None):
+
+    def getResource(self, package_id=None, resourcetype_id=None,
+                    name=None, revision=None, document_id=None,
+                    id=None):
         """
         Get a specific resource from the database by either (package_id, 
         resourcetype_id, name) or by document_id
@@ -121,18 +120,18 @@ class XmlDbManager(DbStorage):
             raise TypeError("getResource(): Invalid number of arguments.")
         if document_id:
             try:
-                res = self.pickup(Resource, 
-                                  document = {'_id':document_id})[0]
+                res = self.pickup(Resource,
+                                  document={'_id':document_id})[0]
             except IndexError, e:
-                raise NotFoundError("Resource not found. ('%s')" %\
+                raise NotFoundError("Resource not found. ('%s')" % \
                                     (document_id), e)
             return res
-        res = self._getResource(package_id, resourcetype_id, name, 
+        res = self._getResource(package_id, resourcetype_id, name,
                                 revision, id)
         return res
-    
-    def getRevisions(self, package_id = None, resourcetype_id = None, 
-                     name = None, id = None):
+
+    def getRevisions(self, package_id=None, resourcetype_id=None,
+                     name=None, id=None):
         """
         Get all revisions of the specified resource by either 
         (package_id, resourcetype_id, name) or by id
@@ -148,27 +147,27 @@ class XmlDbManager(DbStorage):
         if name:
             name = str(name)
         try:
-            res = self.pickup(Resource, 
-                              _order_by = {'document':{'revision':'asc'}}, 
-                              resourcetype = 
-                                {'package':{'package_id':package_id}, 
+            res = self.pickup(Resource,
+                              _order_by={'document':{'revision':'asc'}},
+                              resourcetype=
+                                {'package':{'package_id':package_id},
                                  'resourcetype_id':resourcetype_id},
-                              name = name,
-                              _id = id)[0]
+                              name=name,
+                              _id=id)[0]
         except IndexError:
             self._raise_not_found(package_id, resourcetype_id, name, id)
         return res
-    
-    def getAllResources(self, package_id, resourcetype_id = None):
+
+    def getAllResources(self, package_id, resourcetype_id=None):
         """
         Get a list of resources for specified package_id and resourcetype_id.
         """
-        res = self.pickup(Resource, 
-                          resourcetype = {'package':{'package_id':package_id}, 
+        res = self.pickup(Resource,
+                          resourcetype={'package':{'package_id':package_id},
                                           'resourcetype_id':resourcetype_id},
-                          document = DB_LIMIT('revision', 'max'))
+                          document=DB_LIMIT('revision', 'max'))
         return res
-    
+
     def deleteResource(self, resource=None, resource_id=None):
         """
         Remove a resource by a specified Resource.
@@ -178,26 +177,26 @@ class XmlDbManager(DbStorage):
         """
         if resource:
             resource_id = resource.id
-        return self.drop(Resource, _id = resource_id)
-    
+        return self.drop(Resource, _id=resource_id)
+
     def deleteRevision(self, resource, revision):
         """
         Delete a certain revision for a given Resource object.
         """
         document = DB_LIMIT('revision', 'fixed', revision)
-        res = self.pickup(Resource,_id = resource._id, document = document)[0]
-        self.drop(XmlDocument, _id = res.document._id)
-    
-    def deleteAllResources(self, package_id, resourcetype_id = None):
+        res = self.pickup(Resource, _id=resource._id, document=document)[0]
+        self.drop(XmlDocument, _id=res.document._id)
+
+    def deleteAllResources(self, package_id, resourcetype_id=None):
         """
         Delete all resources of specified package_id and resourcetype_id.
         """
-        self.drop(Resource, 
-                  resourcetype = {'package':{'package_id':package_id}, 
+        self.drop(Resource,
+                  resourcetype={'package':{'package_id':package_id},
                                   'resourcetype_id':resourcetype_id})
-    
-    def revertResource(self, package_id = None, resourcetype_id = None, 
-                       name = None, revision = None, id = None):
+
+    def revertResource(self, package_id=None, resourcetype_id=None,
+                       name=None, revision=None, id=None):
         """
         Reverts the specified revision for the given resource by removing 
         all newer revisions than the specified one.
@@ -205,12 +204,12 @@ class XmlDbManager(DbStorage):
         if not (revision and\
                 ((package_id and resourcetype_id and name) or id)):
             raise TypeError("revertResource: Invalid number of arguments.")
-        res = self.getRevisions(package_id, resourcetype_id, name, id) 
+        res = self.getRevisions(package_id, resourcetype_id, name, id)
         for doc in res.document:
             if doc.revision > revision:
-                self.drop(XmlDocument, _id = doc._id)
-    
-    def getAllResourceNames(self, resourcetype, limit = 100, ordered = False):
+                self.drop(XmlDocument, _id=doc._id)
+
+    def getAllResourceNames(self, resourcetype, limit=100, ordered=False):
         """
         Return a list of all resource names of given resource type.
         """

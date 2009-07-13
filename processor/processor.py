@@ -80,8 +80,8 @@ class Processor:
         Working through the process chain.
         
         This method returns either a dictionary for a folder node containing 
-        objects implementing the L{IResource} interface or a single object for 
-        a leaf node, like a file or document resource.
+        objects implementing the L{IResource} interface or a single object 
+        for a leaf node, like a file or document resource.
         """
         if isinstance(self.path, unicode):
             raise TypeError("URL must be a str instance, not unicode!")
@@ -121,6 +121,12 @@ class Processor:
 
     def setHeader(self, id, value):
         self.headers[id] = value
+
+    def getUser(self):
+        try:
+            return self.user
+        except:
+            return None
 
 
 def getChildForRequest(resource, request):

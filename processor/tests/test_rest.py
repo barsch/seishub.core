@@ -7,14 +7,14 @@ from StringIO import StringIO
 from seishub.core import Component, implements
 from seishub.exceptions import SeisHubError
 from seishub.packages.builtins import IResourceType, IPackage
-from seishub.processor import PUT, POST, DELETE, MOVE, Processor
+from seishub.processor import POST, PUT, DELETE, MOVE, Processor
 from seishub.processor.resources import RESTFolder
 from seishub.test import SeisHubEnvironmentTestCase
 from twisted.web import http
 import unittest
 
 
-NOT_IMPLEMENTED_HTTP_METHODS = ['TRACE', 'COPY', 'PROPFIND','PROPPATCH', 
+NOT_IMPLEMENTED_HTTP_METHODS = ['TRACE', 'COPY', 'PROPFIND', 'PROPPATCH',
                                 'MKCOL', 'CONNECT', 'PATCH', 'LOCK', 'UNLOCK']
 
 XML_DOC = """<?xml version="1.0" encoding="utf-8"?>
@@ -35,7 +35,7 @@ class AResourceType(Component):
     A non versioned test resource type.
     """
     implements(IResourceType, IPackage)
-    
+
     package_id = 'rest-test'
     resourcetype_id = 'notvc'
     version_control = False
@@ -46,7 +46,7 @@ class AVersionControlledResourceType(Component):
     A version controlled test resource type.
     """
     implements(IResourceType, IPackage)
-    
+
     package_id = 'rest-test'
     resourcetype_id = 'vc'
     version_control = True
@@ -60,12 +60,12 @@ class RestTests(SeisHubEnvironmentTestCase):
         self.env.enableComponent(AVersionControlledResourceType)
         self.env.enableComponent(AResourceType)
         self.env.tree = RESTFolder()
-    
+
     def tearDown(self):
         self.env.registry.db_deleteResourceType('rest-test', 'notvc')
         self.env.registry.db_deleteResourceType('rest-test', 'vc')
         self.env.registry.db_deletePackage('rest-test')
-    
+
     def test_notImplementedMethodsOnRoot(self):
         proc = Processor(self.env)
         for method in NOT_IMPLEMENTED_HTTP_METHODS:
@@ -81,7 +81,7 @@ class RestTests(SeisHubEnvironmentTestCase):
                 self.fail("Expected SeisHubError")
             except SeisHubError, e:
                 self.assertEqual(e.code, http.NOT_IMPLEMENTED)
-    
+
     def test_notImplementedMethodsOnPackage(self):
         proc = Processor(self.env)
         for method in NOT_IMPLEMENTED_HTTP_METHODS:
@@ -97,7 +97,7 @@ class RestTests(SeisHubEnvironmentTestCase):
                 self.fail("Expected SeisHubError")
             except SeisHubError, e:
                 self.assertEqual(e.code, http.NOT_IMPLEMENTED)
-    
+
     def test_notImplementedMethodsOnResourceType(self):
         proc = Processor(self.env)
         for method in NOT_IMPLEMENTED_HTTP_METHODS:
@@ -113,11 +113,11 @@ class RestTests(SeisHubEnvironmentTestCase):
                 self.fail("Expected SeisHubError")
             except SeisHubError, e:
                 self.assertEqual(e.code, http.NOT_IMPLEMENTED)
-    
+
     def test_notImplementedMethodsOnResource(self):
         proc = Processor(self.env)
         # create resource
-        proc.run(PUT, '/rest-test/notvc/test.xml', StringIO(XML_DOC))
+        proc.run(POST, '/rest-test/notvc/test.xml', StringIO(XML_DOC))
         for method in NOT_IMPLEMENTED_HTTP_METHODS:
             # without trailing slash
             try:
@@ -133,12 +133,12 @@ class RestTests(SeisHubEnvironmentTestCase):
                 self.assertEqual(e.code, http.NOT_IMPLEMENTED)
         # delete resource
         proc.run(DELETE, '/rest-test/notvc/test.xml')
-    
+
     def test_notImplementedMethodsOnRevision(self):
         proc = Processor(self.env)
         # create resource
-        proc.run(PUT, '/rest-test/vc/test.xml', StringIO(XML_DOC))
         proc.run(POST, '/rest-test/vc/test.xml', StringIO(XML_DOC))
+        proc.run(PUT, '/rest-test/vc/test.xml', StringIO(XML_DOC))
         for method in NOT_IMPLEMENTED_HTTP_METHODS:
             # without trailing slash
             try:
@@ -154,10 +154,10 @@ class RestTests(SeisHubEnvironmentTestCase):
                 self.assertEqual(e.code, http.NOT_IMPLEMENTED)
         # delete resource
         proc.run(DELETE, '/rest-test/vc/test.xml')
-    
+
     def test_forbiddenMethodsOnRoot(self):
         proc = Processor(self.env)
-        for method in [POST, PUT, DELETE, MOVE]:
+        for method in [PUT, POST, DELETE, MOVE]:
             # without trailing slash
             try:
                 proc.run(method, '')
@@ -170,10 +170,10 @@ class RestTests(SeisHubEnvironmentTestCase):
                 self.fail("Expected SeisHubError")
             except SeisHubError, e:
                 self.assertEqual(e.code, http.NOT_ALLOWED)
-    
+
     def test_forbiddenMethodsOnPackage(self):
         proc = Processor(self.env)
-        for method in [POST, PUT, DELETE, MOVE]:
+        for method in [PUT, POST, DELETE, MOVE]:
             # without trailing slash
             try:
                 proc.run(method, '/rest-test')
@@ -186,10 +186,10 @@ class RestTests(SeisHubEnvironmentTestCase):
                 self.fail("Expected SeisHubError")
             except SeisHubError, e:
                 self.assertEqual(e.code, http.NOT_ALLOWED)
-    
+
     def test_forbiddenMethodsOnResourceType(self):
         proc = Processor(self.env)
-        for method in [POST, DELETE, MOVE]:
+        for method in [PUT, DELETE, MOVE]:
             # without trailing slash
             try:
                 proc.run(method, '/rest-test/notvc')
@@ -202,13 +202,13 @@ class RestTests(SeisHubEnvironmentTestCase):
                 self.fail("Expected SeisHubError")
             except SeisHubError, e:
                 self.assertEqual(e.code, http.NOT_ALLOWED)
-    
+
     def test_forbiddenMethodsOnRevision(self):
         proc = Processor(self.env)
         # create resource
-        proc.run(PUT, '/rest-test/vc/test.xml', StringIO(XML_DOC))
         proc.run(POST, '/rest-test/vc/test.xml', StringIO(XML_DOC))
-        for method in [DELETE, MOVE, POST, PUT]:
+        proc.run(PUT, '/rest-test/vc/test.xml', StringIO(XML_DOC))
+        for method in [DELETE, MOVE, PUT, POST]:
             # without trailing slash
             try:
                 proc.run(method, '/rest-test/vc/test.xml/2')
@@ -223,16 +223,16 @@ class RestTests(SeisHubEnvironmentTestCase):
                 self.assertEqual(e.code, http.NOT_ALLOWED)
         # delete resource
         proc.run(DELETE, '/rest-test/vc/test.xml')
-    
+
     def test_orderOfAddingResourcesMatters(self):
         """
         This test in this specific order failed in a previous revision.
-        """ 
+        """
         proc = Processor(self.env)
+        proc.run(POST, '/rest-test/vc/test.xml', StringIO(XML_DOC))
         proc.run(PUT, '/rest-test/vc/test.xml', StringIO(XML_DOC))
-        proc.run(POST, '/rest-test/vc/test.xml', StringIO(XML_DOC))
-        proc.run(POST, '/rest-test/vc/test.xml', StringIO(XML_DOC))
-        proc.run(PUT, '/rest-test/notvc/test.xml', StringIO(XML_DOC))
+        proc.run(PUT, '/rest-test/vc/test.xml', StringIO(XML_DOC))
+        proc.run(POST, '/rest-test/notvc/test.xml', StringIO(XML_DOC))
         proc.run(DELETE, '/rest-test/vc/test.xml')
         proc.run(DELETE, '/rest-test/notvc/test.xml')
 

@@ -61,6 +61,9 @@ class WebRequest(Processor, http.Request):
             return False
         return authenticated
 
+    def getUser(self):
+        return http.Request.getUser(self)
+
     def authenticate(self):
         """
         """

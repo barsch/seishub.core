@@ -52,7 +52,7 @@ class XmlCatalog(object):
         """
         self.xmldb.renameResource(resource, new_name)
 
-    def modifyResource(self, resource, xml_data):
+    def modifyResource(self, resource, xml_data, uid=None):
         """
         Modify the XML document of an already existing resource.
         
@@ -62,7 +62,7 @@ class XmlCatalog(object):
                                 document=newXMLDocument(xml_data),
                                 name=resource.name)
         self.validateResource(new_resource)
-        self.xmldb.modifyResource(resource, new_resource)
+        self.xmldb.modifyResource(resource, new_resource, uid)
         # we only keep indexes for the newest revision
         self.index_catalog.flushResource(resource)
         self.index_catalog.indexResource(new_resource)

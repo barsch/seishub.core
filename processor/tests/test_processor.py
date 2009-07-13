@@ -7,8 +7,8 @@ from StringIO import StringIO
 from seishub.core import Component, implements
 from seishub.exceptions import SeisHubError
 from seishub.packages.builtins import IResourceType, IPackage
-from seishub.processor import MAXIMAL_URL_LENGTH, ALLOWED_HTTP_METHODS, PUT, \
-    POST, DELETE, GET, Processor
+from seishub.processor import MAXIMAL_URL_LENGTH, ALLOWED_HTTP_METHODS, POST, \
+    PUT, DELETE, GET, Processor
 from seishub.test import SeisHubEnvironmentTestCase
 from twisted.web import http
 import unittest
@@ -45,7 +45,7 @@ class AResourceType(Component):
     A non versioned test resource type.
     """
     implements(IResourceType, IPackage)
-    
+
     package_id = 'processor-test'
     resourcetype_id = 'notvc'
     version_control = False
@@ -56,7 +56,7 @@ class AVersionControlledResourceType(Component):
     A version controlled test resource type.
     """
     implements(IResourceType, IPackage)
-    
+
     package_id = 'processor-test'
     resourcetype_id = 'vc'
     version_control = True
@@ -69,12 +69,12 @@ class ProcessorTests(SeisHubEnvironmentTestCase):
     def setUp(self):
         self.env.enableComponent(AVersionControlledResourceType)
         self.env.enableComponent(AResourceType)
-    
+
     def tearDown(self):
         self.env.registry.db_deleteResourceType('processor-test', 'vc')
         self.env.registry.db_deleteResourceType('processor-test', 'notvc')
         self.env.registry.db_deletePackage('processor-test')
-    
+
     def test_oversizedURL(self):
         """
         Request URL is restricted by MAXIMAL_URL_LENGTH.
@@ -86,7 +86,7 @@ class ProcessorTests(SeisHubEnvironmentTestCase):
                 self.fail("Expected SeisHubError")
             except SeisHubError, e:
                 self.assertEqual(e.code, http.REQUEST_URI_TOO_LONG)
-    
+
     def test_processResourceType(self):
         proc = Processor(self.env)
         proc.path = '/xml/processor-test/notvc'
@@ -94,8 +94,8 @@ class ProcessorTests(SeisHubEnvironmentTestCase):
         data = proc.run(GET, '/xml/processor-test/notvc')
         # data must be a dict
         self.assertTrue(isinstance(data, dict))
-        # test valid PUT method
-        data = proc.run(PUT, '/xml/processor-test/notvc', StringIO(XML_DOC))
+        # test valid POST method
+        data = proc.run(POST, '/xml/processor-test/notvc', StringIO(XML_DOC))
         # check response; data should be empty; we look into request
         self.assertFalse(data)
         self.assertEqual(proc.code, http.CREATED)
@@ -113,11 +113,11 @@ class ProcessorTests(SeisHubEnvironmentTestCase):
         # check response; data should be empty; we look into request
         self.assertFalse(data)
         self.assertEqual(proc.code, http.NO_CONTENT)
-    
+
     def test_processResource(self):
         proc = Processor(self.env)
-        # upload a resource via PUT
-        data = proc.run(PUT, '/xml/processor-test/notvc', StringIO(XML_DOC))
+        # upload a resource via POST
+        data = proc.run(POST, '/xml/processor-test/notvc', StringIO(XML_DOC))
         # check response; data should be empty; we look into request
         self.assertFalse(data)
         self.assertEqual(proc.code, http.CREATED)
@@ -129,8 +129,8 @@ class ProcessorTests(SeisHubEnvironmentTestCase):
         location = location[len(self.env.getRestUrl()):]
         data = proc.run(GET, location).render_GET(proc)
         self.assertEquals(data, XML_DOC)
-        # overwrite this resource via POST request
-        proc.run(POST, location, StringIO(XML_DOC2))
+        # overwrite this resource via PUT request
+        proc.run(PUT, location, StringIO(XML_DOC2))
         # GET resource
         data = proc.run(GET, location).render_GET(proc)
         self.assertNotEquals(data, XML_DOC)
@@ -143,14 +143,14 @@ class ProcessorTests(SeisHubEnvironmentTestCase):
             self.fail("Expected SeisHubError")
         except SeisHubError, e:
             self.assertEqual(e.code, http.NOT_FOUND)
-    
+
     def test_processVCResource(self):
         """
         Test for a version controlled resource.
         """
         proc = Processor(self.env)
-        # upload a resource via PUT
-        data = proc.run(PUT, '/xml/processor-test/vc', StringIO(XML_DOC))
+        # upload a resource via POST
+        data = proc.run(POST, '/xml/processor-test/vc', StringIO(XML_DOC))
         # check response; data should be empty; we look into request
         self.assertFalse(data)
         self.assertEqual(proc.code, http.CREATED)
@@ -158,9 +158,9 @@ class ProcessorTests(SeisHubEnvironmentTestCase):
         self.assertTrue('Location' in proc.headers)
         location = proc.headers.get('Location')
         self.assertTrue(location.startswith(self.env.getRestUrl() + proc.path))
-        # overwrite this resource via POST request
+        # overwrite this resource via PUT request
         location = location[len(self.env.getRestUrl()):]
-        data = proc.run(POST, location, StringIO(XML_DOC2))
+        data = proc.run(PUT, location, StringIO(XML_DOC2))
         # check response; data should be empty; we look into request
         self.assertFalse(data)
         self.assertEqual(proc.code, http.NO_CONTENT)
@@ -192,32 +192,32 @@ class ProcessorTests(SeisHubEnvironmentTestCase):
             self.fail("Expected SeisHubError")
         except SeisHubError, e:
             self.assertEqual(e.code, http.NOT_FOUND)
-    
+
     def test_strangeRequestPatterns(self):
         """
         Test strange request patterns.
         """
         proc = Processor(self.env)
         # root
-        data=proc.run(GET, '///')
+        data = proc.run(GET, '///')
         self.assertTrue('xml' in data)
-        data=proc.run(GET, '//./')
+        data = proc.run(GET, '//./')
         self.assertTrue('xml' in data)
         # results in /xml
-        data=proc.run(GET, '/xml//')
+        data = proc.run(GET, '/xml//')
         self.assertTrue('seishub' in data)
-        data=proc.run(GET, '//xml/')
+        data = proc.run(GET, '//xml/')
         self.assertTrue('seishub' in data)
-        data=proc.run(GET, '//////////////////////xml//////////////')
+        data = proc.run(GET, '//////////////////////xml//////////////')
         self.assertTrue('seishub' in data)
-        data=proc.run(GET, '/////////./////////////xml///////.////.///')
+        data = proc.run(GET, '/////////./////////////xml///////.////.///')
         self.assertTrue('seishub' in data)
         # results in /xml/seishub
-        data=proc.run(GET, '//////////////////////xml/////////////seishub/')
+        data = proc.run(GET, '//////////////////////xml/////////////seishub/')
         self.assertTrue('schema' in data)
-        data=proc.run(GET, '/////////////////xml///////.//////seishub////')
+        data = proc.run(GET, '/////////////////xml///////.//////seishub////')
         self.assertTrue('schema' in data)
-        data=proc.run(GET, '/////////////////xml/../xml////seishub////')
+        data = proc.run(GET, '/////////////////xml/../xml////seishub////')
         self.assertTrue('schema' in data)
 
 

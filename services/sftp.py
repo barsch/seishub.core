@@ -157,6 +157,8 @@ class InMemoryFile:
             return
         # check for resource
         proc = SFTPProcessor(self.env)
+        # set user id
+        proc.user = self.attrs['uid']
         try:
             # create new resource
             proc.run(PUT, self.filename, self.data)
@@ -275,6 +277,8 @@ class SFTPServiceProtocol:
         try:
             proc.run(HEAD, filename)
         except NotFoundError:
+            # set username
+            attrs['uid'] = self.avatar.username
             return InMemoryFile(self.env, filename, flags, attrs)
         except SeisHubError, e:
             raise SFTPError(FX_FAILURE, e.message)
@@ -344,6 +348,11 @@ class SFTPServiceProtocol:
                 continue
             attrs = obj.getMetadata()
             if attrs:
+                # process uid
+                try:
+                    attrs['uid'] = self.env.auth.getUser(attrs['uid']).uid
+                except:
+                    attrs['uid'] = 0
                 # return ids in system encoding
                 fsid = id.decode('utf-8').encode(sys.getfilesystemencoding())
                 filelist.append((fsid, attrs))

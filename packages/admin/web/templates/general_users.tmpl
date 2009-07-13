@@ -8,6 +8,10 @@
     <input type="text" size="20" name="id" value="$id" />
   </div>
   <div class="field">
+    <label>User UID</label><br />
+    <input type="text" size="20" name="uid" value="$uid" />
+  </div>
+  <div class="field">
     <label>Name</label><br />
     <input type="text" size="80" name="name" value="$name" />
   </div>
@@ -41,7 +45,14 @@
 #if $action=='edit'
 <h2>Edit user &quot;$id&quot;</h2>
 <form method="post" id="edit" action="">
-  <input type="hidden" name="id" value="$id" />
+  <div class="field">
+    <label>User ID</label><br />
+    <input type="text" size="80" name="id" value="$id" readonly="readonly" />
+  </div>
+  <div class="field">
+    <label>User UID</label><br />
+    <input type="text" size="80" name="uid" value="$uid" />
+  </div>
   <div class="field">
     <label>Name</label><br />
     <input type="text" size="80" name="name" value="$name" />
@@ -80,6 +91,7 @@
     <tr>
       <th></th>
       <th>User ID</th>
+      <th>User UID</th>
       <th>Name</th>
       <th>E-Mail</th>
       <th>Institution</th>
@@ -90,6 +102,7 @@
         <input type="radio" name="id" value="$user.id" />
       </td> 
       <td>$user.id</td>
+      <td>$user.uid</td>
       <td>$user.name</td>
       <td>
         #if $user.email

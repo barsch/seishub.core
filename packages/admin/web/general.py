@@ -127,6 +127,7 @@ class UsersPanel(Component):
         # default values
         result = {
             'id': '',
+            'uid': 1000,
             'name': '',
             'email': '',
             'institution': '',
@@ -147,6 +148,7 @@ class UsersPanel(Component):
         else:
             user = self.auth.getUser(id)
             data['id'] = user.id
+            data['uid'] = user.uid
             data['name'] = user.name
             data['email'] = user.email
             data['institution'] = user.institution
@@ -159,6 +161,10 @@ class UsersPanel(Component):
         """
         data = {}
         id = data['id'] = args.get('id', [''])[0]
+        try:
+            uid = data['uid'] = int(args.get('uid', [''])[0])
+        except:
+            uid = data['uid'] = 1000
         password = args.get('password', [''])[0]
         confirmation = args.get('confirmation', [''])[0]
         name = data['name'] = args.get('name', [''])[0]
@@ -172,7 +178,7 @@ class UsersPanel(Component):
             data['error'] = "Password and password confirmation are not equal!"
         else:
             try:
-                self.auth.addUser(id=id, name=name, password=password,
+                self.auth.addUser(id=id, name=name, password=password, uid=uid,
                                   email=email, institution=institution)
             except SeisHubError, e:
                 # password checks are made in self.auth.addUser method 
@@ -191,6 +197,10 @@ class UsersPanel(Component):
         """
         data = {}
         id = data['id'] = args.get('id', [''])[0]
+        try:
+            uid = data['uid'] = int(args.get('uid', [''])[0])
+        except:
+            uid = data['uid'] = 1000
         password = args.get('password', [''])[0]
         confirmation = args.get('confirmation', [''])[0]
         name = data['name'] = args.get('name', [''])[0]
@@ -205,7 +215,8 @@ class UsersPanel(Component):
         else:
             try:
                 self.auth.updateUser(id=id, name=name, password=password,
-                                     email=email, institution=institution)
+                                     uid=uid, email=email,
+                                     institution=institution)
             except SeisHubError, e:
                 # password checks are made in self.auth.addUser method 
                 data['error'] = str(e)

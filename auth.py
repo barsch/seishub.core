@@ -5,7 +5,7 @@ from seishub.defaults import MIN_PASSWORD_LENGTH
 from seishub.exceptions import NotFoundError, DuplicateObjectError, \
     SeisHubError
 from seishub.util.text import hash
-from sqlalchemy import Column, String, create_engine
+from sqlalchemy import Column, String, create_engine, Integer
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from twisted.cred import checkers, credentials, error
@@ -51,20 +51,22 @@ class User(UserBase):
     __tablename__ = 'users'
 
     id = Column(String, primary_key=True)
+    uid = Column(Integer)
     name = Column(String)
     password = Column(String)
     institution = Column(String)
     email = Column(String)
 
-    def __init__(self, id, name, password, institution='', email=''):
+    def __init__(self, id, name, password, uid=1000, institution='', email=''):
         self.id = id
+        self.uid = uid
         self.name = name
         self.password = password
         self.institution = institution
         self.email = email
 
     def __repr__(self):
-        return "<User('%s', '%s')>" % (self.id, self.name)
+        return "<User %s(%d): '%s')>" % (self.id, self.uid, self.name)
 
 
 class AuthenticationManager(object):
@@ -94,8 +96,8 @@ class AuthenticationManager(object):
                               "and passwort 'admin' has been automatically "
                               "created. You should change the password as "
                               "soon as possible.")
-            self.addUser('admin', 'Administrator', 'admin',
-                         checkPassword=False)
+            self.addUser(id='admin', name='Administrator', password='admin',
+                         uid=100, checkPassword=False)
         elif self.checkPassword('admin', 'admin'):
             self.env.log.warn("The administrative account is accessible via "
                               "the standard password! Please change this as "
@@ -109,7 +111,7 @@ class AuthenticationManager(object):
         if len(password) < min_length:
             raise SeisHubError("Password is way to short!")
 
-    def addUser(self, id, name, password, institution='', email='',
+    def addUser(self, id, name, password, uid=1000, institution='', email='',
                 checkPassword=True):
         """
         Adds an user.
@@ -118,7 +120,8 @@ class AuthenticationManager(object):
             raise DuplicateObjectError("User already exists!")
         if checkPassword:
             self._validatePassword(password)
-        user = User(id, name, hash(password), institution, email)
+        user = User(id=id, uid=uid, name=name, password=hash(password),
+                    institution=institution, email=email)
         session = self.Session()
         session.add(user)
         try:
@@ -161,7 +164,8 @@ class AuthenticationManager(object):
             session.rollback()
         return user
 
-    def updateUser(self, id, name='', password='', institution='', email=''):
+    def updateUser(self, id, name='', password='', uid=1000, institution='',
+                   email=''):
         """
         Modifies user information.
         """
@@ -175,6 +179,7 @@ class AuthenticationManager(object):
             user.password = hash(password)
         user.institution = institution
         user.email = email
+        user.uid = uid
         session.add(user)
         try:
             session.commit()

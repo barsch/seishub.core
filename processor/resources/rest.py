@@ -40,7 +40,7 @@ class RESTResource(Resource):
         meta = self.res.document.meta
         file_datetime = int(time.mktime(meta.datetime.timetuple()))
         file_size = meta.size
-        file_uid = meta.uid or 0
+        file_uid = meta.uid
         return {'permissions': 0100644,
                 'uid': file_uid,
                 'size': file_size,
@@ -91,23 +91,23 @@ class RESTResource(Resource):
         # return data
         return data
 
-    def render_POST(self, request):
+    def render_PUT(self, request):
         """
         Processes a resource modification request.
+
+        "The PUT method requests that the enclosed entity be stored under the 
+        supplied Request-URI. If the Request-URI does not point to an existing 
+        resource, and that URI is capable of being defined as a new resource by
+        the requesting user agent, the server can create the resource with that
+        URI. If a new resource is created, the origin server MUST inform the 
+        user agent via the 201 (Created) response. 
         
-        @see: U{http://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html#sec9.5}
+        If the resource could not be created or modified with the Request-URI, 
+        an appropriate error response SHOULD be given that reflects the nature 
+        of the problem." 
         
-        "The POST method is used to request that the origin server accept the 
-        entity enclosed in the request as a new subordinate of the resource 
-        identified by the Request-URI in the Request-Line.
-        
-        The action performed by the POST method might not result in a resource
-        that can be identified by a URI. In this case, either 200 (OK) or 204 
-        (No Content) is the appropriate response status, depending on whether 
-        or not the response includes an entity that describes the result. If a
-        resource has been created on the origin server, the response SHOULD be
-        201 (Created) and contain an entity which describes the status of the 
-        request and refers to the new resource, and a Location header." 
+        @see: U{http://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html#sec9.6}
+        @see: U{http://thoughtpad.net/alan-dean/http-headers-status.gif}
         
         Modifying a document always needs a valid path to a resource or uses a
         user defined mapping.
@@ -137,8 +137,10 @@ class RESTResource(Resource):
             else:
                 msg = "There is no stylesheet for requested format %s."
                 request.env.log.debug(msg % format)
+        # get uid
+        uid = request.getUser()
         # modify resource
-        request.env.catalog.modifyResource(self.res, data)
+        request.env.catalog.modifyResource(self.res, data, uid=uid)
         # resource successfully modified - set status code
         request.code = http.NO_CONTENT
         return ''
@@ -340,8 +342,8 @@ class RESTResourceTypeFolder(Folder):
         rlen = len(request.postpath)
         if request.method in [GET, HEAD] and rlen == 0:
             return self.render_GET(request)
-        elif request.method == PUT and rlen in [0, 1]:
-            return self.render_PUT(request)
+        elif request.method == POST and rlen in [0, 1]:
+            return self.render_POST(request)
         elif len(request.postpath) == 1:
             return self._processResource(request)
         elif request.method == GET and rlen >= 2:
@@ -372,8 +374,8 @@ class RESTResourceTypeFolder(Folder):
                                                   request.postpath[0],
                                                   revision=None)
         except NotFoundError:
-            if request.method == POST:
-                return self.render_PUT(request)
+            if request.method == PUT:
+                return self.render_POST(request)
             raise
         except:
             raise
@@ -398,23 +400,23 @@ class RESTResourceTypeFolder(Folder):
                                               revision=revision)
         return RESTResource(res)
 
-    def render_PUT(self, request):
+    def render_POST(self, request):
         """
         Create a new XML resource for this resource type.
         
-        "The PUT method requests that the enclosed entity be stored under the 
-        supplied Request-URI. If the Request-URI does not point to an existing 
-        resource, and that URI is capable of being defined as a new resource by
-        the requesting user agent, the server can create the resource with that
-        URI. If a new resource is created, the origin server MUST inform the 
-        user agent via the 201 (Created) response. 
+        "The POST method is used to request that the origin server accept the 
+        entity enclosed in the request as a new subordinate of the resource 
+        identified by the Request-URI in the Request-Line.
         
-        If the resource could not be created or modified with the Request-URI, 
-        an appropriate error response SHOULD be given that reflects the nature 
-        of the problem." 
+        The action performed by the POST method might not result in a resource
+        that can be identified by a URI. In this case, either 200 (OK) or 204 
+        (No Content) is the appropriate response status, depending on whether 
+        or not the response includes an entity that describes the result. If a
+        resource has been created on the origin server, the response SHOULD be
+        201 (Created) and contain an entity which describes the status of the 
+        request and refers to the new resource, and a Location header." 
         
-        @see: U{http://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html#sec9.6}
-        @see: U{http://thoughtpad.net/alan-dean/http-headers-status.gif}
+        @see: U{http://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html#sec9.5}
         """
         # SeisHub directory is not directly changeable
         if self.package_id == 'seishub':
@@ -426,7 +428,7 @@ class RESTResourceTypeFolder(Folder):
         else:
             name = None
         # set uid
-        uid = None
+        uid = request.getUser()
         # parse request headers for output/format options
         data = request.data
         formats = request.args.get('format', []) or \
