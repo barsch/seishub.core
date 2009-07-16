@@ -4,6 +4,7 @@ REST based resources.
 """
 
 from lxml import etree
+from obspy.core.util import UTCDateTime
 from seishub.exceptions import ForbiddenError, NotFoundError, SeisHubError, \
     NotAllowedError
 from seishub.processor.interfaces import IRESTResource, IRESTProperty, \
@@ -16,7 +17,6 @@ from seishub.util.text import isInteger
 from seishub.util.xml import addXMLDeclaration
 from twisted.web import http
 from zope.interface import implements
-import time
 
 
 class RESTResource(Resource):
@@ -38,7 +38,7 @@ class RESTResource(Resource):
 
     def getMetadata(self):
         meta = self.res.document.meta
-        file_datetime = int(time.mktime(meta.datetime.timetuple()))
+        file_datetime = int(UTCDateTime(meta.datetime).timestamp)
         file_size = meta.size
         file_uid = meta.uid
         return {'permissions': 0100644,
@@ -88,6 +88,16 @@ class RESTResource(Resource):
             else:
                 msg = "There is no stylesheet for requested format %s."
                 request.env.log.debug(msg % format)
+        # set last-modified time
+        dt = UTCDateTime(self.res.document.meta.getDatetime())
+        try:
+            request.setLastModified(dt.timestamp)
+        except:
+            pass
+#        # cache control - 10 seconds
+#        now = UTCDateTime()
+#        request.setHeader("Cache-Control", "max-age = 10")
+#        request.setHeader("Expires", http.datetimeToString(now.timestamp + 10))
         # return data
         return data
 

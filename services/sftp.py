@@ -88,6 +88,11 @@ class InMemoryFile:
             raise SFTPError(FX_FAILURE, e.message)
         except:
             raise
+        # set attributes
+        try:
+            self.attrs.update(result.getMetadata())
+        except:
+            pass
         if IRESTResource.providedBy(result):
             # some REST resource
             try:
@@ -175,7 +180,7 @@ class InMemoryFile:
         argument to L{openFile} or a L{Deferred} that is called back with same.
         """
         self.env.log.debugx("InMemoryFile.getAttrs()")
-        return {}
+        return self.attrs
 
     def setAttrs(self, attrs):
         """
@@ -510,10 +515,10 @@ class DirList:
         attrs['uid'] = s.st_uid = attrs.get('uid', 0)
         attrs['gid'] = s.st_gid = attrs.get('gid', DEFAULT_GID)
         attrs['size'] = s.st_size = attrs.get('size', 0)
-        attrs['atime'] = s.st_atime = int(attrs.get('atime',
-                                                    self.env.startup_time))
-        attrs['mtime'] = s.st_mtime = int(attrs.get('mtime',
-                                                    self.env.startup_time))
+        attrs['atime'] = s.st_atime = float(attrs.get('atime',
+                                            self.env.startup_time))
+        attrs['mtime'] = s.st_mtime = float(attrs.get('mtime',
+                                            self.env.startup_time))
         attrs['nlink'] = s.st_nlink = 1
         return (name, lsLine(name, s), attrs)
 
