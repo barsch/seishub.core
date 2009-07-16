@@ -118,6 +118,8 @@ class AuthenticationManager(object):
             self.env.log.warn("The administrative account is accessible via "
                               "the standard password! Please change this as "
                               "soon as possible!")
+        # clear guppy table at start-up
+        self.clearGuppy()
 
     def _validatePassword(self, password):
         """
@@ -261,3 +263,11 @@ class AuthenticationManager(object):
         except:
             session.rollback()
         return guppy
+
+    def clearGuppy(self):
+        session = self.Session()
+        session.query(Guppy).delete()
+        try:
+            session.commit()
+        except:
+            session.rollback()
