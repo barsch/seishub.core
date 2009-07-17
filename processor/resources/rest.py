@@ -4,7 +4,7 @@ REST based resources.
 """
 
 from lxml import etree
-from obspy.core.util import UTCDateTime
+from obspy.core import UTCDateTime
 from seishub.exceptions import ForbiddenError, NotFoundError, SeisHubError, \
     NotAllowedError
 from seishub.processor.interfaces import IRESTResource, IRESTProperty, \
