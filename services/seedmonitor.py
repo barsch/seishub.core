@@ -78,7 +78,7 @@ class SEEDFileSerializer(object):
             if d['network'] != '':
                 result['network_id'] = d['network']
         except Exception, e:
-            self.env.log.error('getFirstRecordHeaderInfo', str(e))
+            self.env.log.info('getFirstRecordHeaderInfo', str(e))
             pass
         # scan for gaps + overlaps
         try:
@@ -86,7 +86,7 @@ class SEEDFileSerializer(object):
             result['DQ_gaps'] = len([g for g in gap_list if g[6] > 0])
             result['DQ_overlaps'] = len(gap_list) - result['DQ_gaps']
         except Exception, e:
-            self.env.log.error('getGapList', str(e))
+            self.env.log.info('getGapList', str(e))
             pass
         # get start and end time
         try:
@@ -94,7 +94,7 @@ class SEEDFileSerializer(object):
             result['start_datetime'] = start.datetime
             result['end_datetime'] = end.datetime
         except Exception, e:
-            self.env.log.error('getStartAndEndTime', str(e))
+            self.env.log.info('getStartAndEndTime', str(e))
             pass
         # quality flags
         try:
@@ -109,7 +109,7 @@ class SEEDFileSerializer(object):
                 result['DQ_digital_filter_charging'] = data[6]
                 result['DQ_questionable_time_tag'] = data[7]
         except Exception, e:
-            self.env.log.error('getDataQualityFlagsCount', str(e))
+            self.env.log.info('getDataQualityFlagsCount', str(e))
             pass
         # timing quality
         try:
@@ -121,7 +121,7 @@ class SEEDFileSerializer(object):
             result['TQ_uq'] = data.get('upper_quantile', None)
             result['TQ_lq'] = data.get('lower_quantile', None)
         except Exception, e:
-            self.env.log.error('getTimingQuality', str(e))
+            self.env.log.info('getTimingQuality', str(e))
             pass
         return result
 
@@ -129,6 +129,8 @@ class SEEDFileSerializer(object):
         """
         Remove a file or all files with a given path from the database.
         """
+        if self.keep_files:
+            return
         sql_obj = miniseed_tab.delete()
         if file:
             sql_obj = sql_obj.where(sql.and_(miniseed_tab.c['file'] == file,
@@ -212,6 +214,8 @@ class SEEDFileSerializer(object):
                                                        'crawler_file_cap')
         self.focus = self.env.config.getbool('seedfilemonitor',
                                              'focus_on_recent_files')
+        self.keep_files = self.env.config.getbool('seedfilemonitor',
+                                                  'keep_files')
         # prepare file endings
         today = datetime.datetime.utcnow()
         yesterday = today - datetime.timedelta(1)
@@ -446,6 +450,8 @@ class SEEDFileMonitorService(service.MultiService):
         SEEDFILEMONITOR_CRAWLER_FILE_CAP, "Maximum files in watch list.")
     BoolOption('seedfilemonitor', 'focus_on_recent_files', True,
         "Scanner focuses on recent files.")
+    BoolOption('seedfilemonitor', 'keep_files', False,
+        "Clean-up database from missing files.")
 
     def __init__(self, env):
         self.env = env
