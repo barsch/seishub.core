@@ -235,7 +235,7 @@ class SSHServiceSession:
         pass
 
 
-class SFTPServiceAvatar(avatar.ConchUser):
+class SSHServiceAvatar(avatar.ConchUser):
 
     def __init__(self, username, env):
         avatar.ConchUser.__init__(self)
@@ -243,7 +243,7 @@ class SFTPServiceAvatar(avatar.ConchUser):
         self.env = env
         self.channelLookup.update({"session": session.SSHSession})
 
-components.registerAdapter(SSHServiceSession, SFTPServiceAvatar, ISession)
+components.registerAdapter(SSHServiceSession, SSHServiceAvatar, ISession)
 
 
 class SSHServiceRealm:
@@ -255,7 +255,7 @@ class SSHServiceRealm:
     def requestAvatar(self, avatarId, mind, *interfaces):
         if IConchUser in interfaces:
             logout = lambda: None
-            return IConchUser, SFTPServiceAvatar(avatarId, self.env), logout
+            return IConchUser, SSHServiceAvatar(avatarId, self.env), logout
         else:
             raise Exception("No supported interfaces found.")
 
