@@ -4,7 +4,7 @@ A HTTP/HTTPS server.
 """
 
 from seishub import __version__ as SEISHUB_VERSION
-from seishub.config import IntOption, BoolOption, Option
+from seishub.config import IntOption, BoolOption, Option, ListOption
 from seishub.defaults import HTTP_PORT, HTTPS_PORT, HTTPS_CERT_FILE, \
     HTTPS_PKEY_FILE, HTTP_LOG_FILE, HTTPS_LOG_FILE, ADMIN_THEME, DEFAULT_PAGES
 from seishub.exceptions import InternalServerError, ForbiddenError, \
@@ -49,6 +49,9 @@ class WebRequest(Processor, http.Request):
         Processor.__init__(self, self.env)
         http.Request.__init__(self, channel, queued)
         self.notifications = []
+        # fetch default pages configuration
+        self.default_pages = \
+            self.env.config.getlist('web', 'default_pages') or DEFAULT_PAGES
 
     def isAuthenticatedUser(self):
         """
@@ -113,9 +116,10 @@ class WebRequest(Processor, http.Request):
             data = result.render(self)
             if result.folderish:
                 # check for default page
-                for id in DEFAULT_PAGES:
+                for id in self.default_pages:
                     if id in data and not data[id].folderish:
-                        self.redirect(addBase(self.path, id))
+                        data = data[id].render(self)
+                        return self._renderFileResource(data)
                 return self._renderFolder(data)
             else:
                 return self._renderFileResource(data)
@@ -468,6 +472,10 @@ class WebService(service.MultiService):
     Option('web', 'https_pkey_file', HTTPS_PKEY_FILE, "Private key file.")
     Option('web', 'https_cert_file', HTTPS_CERT_FILE, "Certificate file.")
     Option('web', 'admin_theme', ADMIN_THEME, "Default administration theme.")
+    ListOption('web', 'default_pages', ','.join(DEFAULT_PAGES),
+        "Default pages.")
+#    Option('web', 'google_api_key', "ABQIAAAAIDhiU213jGUICTII1pgroxSm6VGAP" + \
+#        "p-deNb6gPN5c2KwQz-qtBQbZAUxnXbLVerGtrtmNRXZX-Fdog", "Google API key.")
 
     def __init__(self, env):
         self.env = env

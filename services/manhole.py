@@ -96,7 +96,7 @@ class ManholeService(TCPServer):
 
     BoolOption('manhole', 'autostart', MANHOLE_AUTOSTART,
         "Run service on start-up.")
-    IntOption('manhole', 'port', MANHOLE_PORT, "SSH port number.")
+    IntOption('manhole', 'port', MANHOLE_PORT, "Manhole port number.")
     Option('manhole', 'public_key_file', MANHOLE_PUBLIC_KEY, "Public RSA key.")
     Option('manhole', 'private_key_file', MANHOLE_PRIVATE_KEY,
         "Private RSA key.")

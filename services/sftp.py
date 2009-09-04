@@ -5,7 +5,7 @@ A SFTP server.
 
 from seishub.config import IntOption, Option, BoolOption
 from seishub.defaults import SFTP_AUTOSTART, SFTP_PORT, SFTP_PRIVATE_KEY, \
-    SFTP_PUBLIC_KEY, SFTP_LOG_FILE
+    SFTP_PUBLIC_KEY
 from seishub.exceptions import InternalServerError, ForbiddenError, \
     NotFoundError, SeisHubError
 from seishub.processor import Processor, PUT, DELETE, GET, MOVE, HEAD, \
@@ -240,21 +240,22 @@ class SFTPServiceProtocol:
         
         @param filename: a string representing the file to open.
         
-        @param flags: an integer of the flags to open the file with, ORed together.
-        The flags and their values are listed at the bottom of this file.
+        @param flags: an integer of the flags to open the file with, ORed 
+        together. The flags and their values are listed at the bottom of this 
+        file.
         
         @param attrs: a list of attributes to open the file with.  It is a
         dictionary, consisting of 0 or more keys.  The possible keys are::
         
-            size: the size of the file in bytes
-            uid: the user ID of the file as an integer
-            gid: the group ID of the file as an integer
-            permissions: the permissions of the file with as an integer.
-            the bit representation of this field is defined by POSIX.
-            atime: the access time of the file as seconds since the epoch.
-            mtime: the modification time of the file as seconds since the epoch.
-            ext_*: extended attributes.  The server is not required to
-            understand this, but it may.
+          size: the size of the file in bytes
+          uid: the user ID of the file as an integer
+          gid: the group ID of the file as an integer
+          permissions: the permissions of the file with as an integer.
+          the bit representation of this field is defined by POSIX.
+          atime: the access time of the file as seconds since the epoch.
+          mtime: the modification time of the file as seconds since the epoch.
+          ext_*: extended attributes.  The server is not required to
+          understand this, but it may.
         
         NOTE: there is no way to indicate text or binary files.  it is up
         to the SFTP client to deal with this.
@@ -565,10 +566,6 @@ class SFTPServiceFactory(SSHFactory):
         pub, priv = self._getCertificates()
         self.publicKeys = {'ssh-rsa': ssh.keys.Key.fromFile(pub)}
         self.privateKeys = {'ssh-rsa': ssh.keys.Key.fromFile(priv)}
-        # log file
-        log_file = env.config.get('sftp', 'log_file') or None
-        if not os.path.isabs(log_file):
-            log_file = os.path.join(self.env.config.path, log_file)
 
     def _getCertificates(self):
         """
@@ -634,7 +631,6 @@ class SFTPService(TCPServer):
     IntOption('sftp', 'port', SFTP_PORT, "SFTP port number.")
     Option('sftp', 'public_key_file', SFTP_PUBLIC_KEY, 'Public RSA key.')
     Option('sftp', 'private_key_file', SFTP_PRIVATE_KEY, 'Private RSA key.')
-    Option('sftp', 'log_file', SFTP_LOG_FILE, "SFTP access log file.")
 
     def __init__(self, env):
         self.env = env

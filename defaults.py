@@ -37,7 +37,6 @@ SFTP_AUTOSTART = True
 SFTP_PORT = 5021
 SFTP_PRIVATE_KEY = 'conf' + os.sep + 'sftp.private.key'
 SFTP_PUBLIC_KEY = 'conf' + os.sep + 'sftp.public.key'
-SFTP_LOG_FILE = 'logs' + os.sep + 'sftp.log'
 
 SEEDFILEMONITOR_AUTOSTART = False
 SEEDFILEMONITOR_CRAWLER_FILE_CAP = 1000
