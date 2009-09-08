@@ -11,8 +11,7 @@ class ServiceCommand(Component):
     """
     implements(ISSHCommand)
 
-    def getCommandId(self):
-        return 'service'
+    command_id = 'service'
 
     def executeCommand(self, request, args):
         services = service.IServiceCollection(self.env.app)
@@ -36,8 +35,7 @@ class ReindexCommand(Component):
     """
     implements(ISSHCommand)
 
-    def getCommandId(self):
-        return 'reindex'
+    command_id = 'reindex'
 
     def executeCommand(self, request, args):
         resourcetypes = self.env.registry.getAllPackagesAndResourceTypes()

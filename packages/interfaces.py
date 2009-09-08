@@ -39,7 +39,7 @@ class IMapper(IPackage):
         
         Single string representing a unique mapping URL.
         """)
-    
+
     def process_GET(request):
         """
         Process a GET request.
@@ -51,7 +51,7 @@ class IMapper(IPackage):
         
         If an error occurs it should raise a ProcessorError.
         """
-    
+
     def process_PUT(request):
         """
         Process a PUT request.
@@ -60,7 +60,7 @@ class IMapper(IPackage):
         new resource URL, otherwise it should raise a ProcessorError.
         """
     process_PUT.optional = 1
-    
+
     def process_POST(request):
         """
         Process a POST request.
@@ -70,7 +70,7 @@ class IMapper(IPackage):
         ProcessorError.
         """
     process_POST.optional = 1
-    
+
     def process_DELETE(request):
         """
         Process a DELETE request.
@@ -102,7 +102,7 @@ class IAdminPanel(Interface):
         A list of upper case role names, e.g. SEISHUB_ADMIN or CATALOG_WRITE. 
         Anonymous access will be allowed if this attribute is not defined.
         """)
-    
+
     def render(request):
         """
         Process a request for an administrative panel.
@@ -135,7 +135,7 @@ class IAdminStaticContent(Interface):
     """
     Extension point for adding static content to the administration interface.
     """
-    
+
     def getStaticContent():
         """
         Return a dict of static resources (such as css files, images, etc.).
@@ -146,19 +146,18 @@ class IAdminStaticContent(Interface):
         
         The 'abspath' is the absolute path to the directory containing the
         resources on the local file system.
-        """ 
+        """
 
 
 class ISSHCommand(Interface):
     """
     Interface for adding commands to the SSH service.
     """
-    
-    def getCommandId():
-        """
-        Return a command string.
-        """
-    
+
+    command_id = Attribute("""
+        The SSH command.
+        """)
+
     def executeCommand(args):
         """
         Process a command line given as an arrays of arguments and 
@@ -178,7 +177,7 @@ class ISQLView(Interface):
         Single string representing the name of this view - this id must match
         the SQL view name, e.g. v_baeume for the following example.
         """)
-    
+
     def createView():
         """
         Return a SQL SELECT statement for creating a SQL view.
@@ -241,7 +240,7 @@ class IProcessorIndex(Interface):
         
         Single string representing an unique label.
         """)
-    
+
     def eval(document):
         """
         Evaluate the index on the given resource.

@@ -33,10 +33,10 @@ class SSHServiceProtocol(recvline.HistoricRecvLine):
         self.env = avatar.env
         self.status = {}
         plugins = PackageManager.getComponents(ISSHCommand, None, self.env)
-        self.plugin_cmds = dict([(p.getCommandId().upper(), p)
+        self.plugin_cmds = dict([(p.command_id.upper(), p)
                                  for p in plugins
                                  if hasattr(p, 'executeCommand')
-                                 and hasattr(p, 'getCommandId')])
+                                 and hasattr(p, 'command_id')])
         self.buildin_cmds = [f[4:].upper() for f in dir(self) \
                              if f.startswith('cmd_')]
 
