@@ -158,10 +158,11 @@ class ISSHCommand(Interface):
         The SSH command.
         """)
 
-    def executeCommand(args):
+    def executeCommand(request, args):
         """
-        Process a command line given as an arrays of arguments and 
-        returns a list of strings.
+        Processes a command line.
+        
+        Request object and a list of arguments are given.
         """
 
 
