@@ -23,7 +23,7 @@ class Logger(object):
     emit log messages.
     """
 
-    Option('logging', 'log_level', 'DEBUG',
+    Option('seishub', 'log_level', 'DEBUG',
         """Level of verbosity in log.
 
         Should be one of (`ERROR`, `WARN`, `INFO`, `DEBUG`).""")
@@ -34,7 +34,7 @@ class Logger(object):
 
     def start(self):
         # log level
-        log_level = self.env.config.get('logging', 'log_level').upper()
+        log_level = self.env.config.get('seishub', 'log_level').upper()
         self.log_level = LOG_LEVELS.get(log_level, ERROR)
 
     def stop(self):

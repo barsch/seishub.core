@@ -44,7 +44,7 @@ class SeisHubEnvironmentTestCase(unittest.TestCase):
         unittest.TestCase.__init__(self, methodName)
         self.default_config = Configuration()
         #set a few standard settings
-        self.default_config.set('logging', 'log_level', 'OFF')
+        self.default_config.set('seishub', 'log_level', 'OFF')
         self.default_config.set('seishub', 'auth_uri', 'sqlite://')
         self.default_config.set('db', 'uri', USE_TEST_DB)
         self.default_config.set('db', 'verbose', VERBOSE_DATABASE)

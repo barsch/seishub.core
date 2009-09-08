@@ -36,7 +36,7 @@ class BasicPanel(Component):
                 self.config.set('web', 'admin_theme', args.get(option, [])[0])
             if 'log_level' in args:
                 log_level = (args.get('log_level', [LOG_LEVELS])[0]).upper()
-                self.config.set('logging', 'log_level', log_level)
+                self.config.set('seishub', 'log_level', log_level)
                 self.env.log.log_level = LOG_LEVELS.get(log_level, ERROR)
             self.config.save()
             data['info'] = "Options have been saved."
@@ -46,7 +46,7 @@ class BasicPanel(Component):
           'theme': self.config.get('web', 'admin_theme'),
           'themes': self.root.themes,
           'log_levels': dict([(v, k) for k, v in LOG_LEVELS.iteritems()]),
-          'log_level': self.config.get('logging', 'log_level'),
+          'log_level': self.config.get('seishub', 'log_level'),
         })
         return data
 
