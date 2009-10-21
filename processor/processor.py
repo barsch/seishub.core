@@ -97,7 +97,7 @@ class Processor:
         # check for valid methods
         if self.method not in ALLOWED_HTTP_METHODS:
             msg = 'HTTP %s is not implemented.' % self.method
-            raise NotImplementedError(msg)
+            raise SeisHubError(code=http.NOT_ALLOWED, message=msg)
         # read content
         self.content.seek(0, 0)
         self.data = self.content.read()
