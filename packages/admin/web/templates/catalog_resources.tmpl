@@ -90,6 +90,7 @@
       <th>Package</th>
       <th>Resourcetype</th>
       <th>Name</th>
+      <th>Last modified</th>
       <th>Document</th>
     </tr>
     #for $resource in $resources
@@ -100,9 +101,16 @@
       <td>$package_id</td>
       <td>$resourcetype_id</td>
       <td>$resource.name</td>
+      <td>$resource.metadata.datetime</td>
       <td>
         <a href="$resturl/xml/$package_id/$resourcetype_id/$resource.name">
           [XML]
+        </a>
+        <a href="$resturl/xml/$package_id/$resourcetype_id/$resource.name/.metadata">
+          [Metadata]
+        </a>
+        <a href="$resturl/xml/$package_id/$resourcetype_id/$resource.name/.index">
+          [Indexes]
         </a>
       </td>
     </tr>
