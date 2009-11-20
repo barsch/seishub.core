@@ -299,26 +299,9 @@ class DateTimeIndexElement(KeyIndexElement):
         return self._prepare_key(data)
 
     def _prepare_key(self, data):
-        data = data.replace("-", "")
-        data = data.replace("T", " ")
-        data = data.replace(":", "")
-        data = data.strip()
-        # some time information missing?
-        if len(data) < 15:
-            # defaulting some values
-            if len(data) == 8:
-                data += ' 000000'
-            elif len(data) == 11 and data[8] == ' ':
-                data += '0000'
-            elif len(data) == 13 and data[8] == ' ':
-                data += '00'
-        ms = 0
-        if '.' in data:
-            data, ms = data.split('.')
-            ms = int(ms.ljust(6, '0')[:6])
-        dt = datetime.strptime(data, DATETIME_ISO_FORMAT)
-        dt = dt.replace(microsecond=ms)
-        return dt
+        from obspy.core import UTCDateTime
+        dt = UTCDateTime(data)
+        return dt.datetime
 
 
 class DateIndexElement(KeyIndexElement):
