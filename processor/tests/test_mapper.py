@@ -27,7 +27,7 @@ class APackage(Component):
     A test package.
     """
     implements(IPackage)
-    
+
     package_id = 'mapper-test'
 
 
@@ -36,18 +36,18 @@ class TestMapper(Component):
     A test mapper.
     """
     implements(IMapper)
-    
+
     mapping_url = '/mapper-test/testmapping'
-    
+
     def process_GET(self, request):
         return "muh"
-    
+
     def process_PUT(self, request):
         pass
 
     def process_DELETE(self, request):
         pass
-    
+
     def process_POST(self, request):
         pass
 
@@ -57,9 +57,9 @@ class TestMapper2(Component):
     Another test mapper.
     """
     implements(IMapper)
-    
+
     mapping_url = '/mapper-test/testmapping2'
-    
+
     def process_GET(self, request):
         pass
 
@@ -69,9 +69,9 @@ class TestMapper3(Component):
     And one more test mapper.
     """
     implements(IMapper)
-    
+
     mapping_url = '/mapper-test/testmapping3'
-    
+
     def process_GET(self, request):
         pass
 
@@ -81,9 +81,9 @@ class TestMapper4(Component):
     And one more test mapper.
     """
     implements(IMapper)
-    
+
     mapping_url = '/testmapping4'
-    
+
     def process_GET(self, request):
         return u"MÜH"
 
@@ -93,9 +93,9 @@ class TestMapper5(Component):
     An unregistered mapper.
     """
     implements(IMapper)
-    
+
     mapping_url = '/mapper-test/testmapping5'
-    
+
     def process_GET(self, request):
         pass
 
@@ -111,10 +111,10 @@ class MapperTests(SeisHubEnvironmentTestCase):
         self.env.enableComponent(TestMapper3)
         self.env.enableComponent(TestMapper4)
         self.env.tree.update()
-        
+
     def tearDown(self):
         self.env.registry.db_deletePackage('mapper-test')
-    
+
     def test_checkRegisteredMappers(self):
         """
         Fetch mapper resource at different levels.
@@ -140,7 +140,7 @@ class MapperTests(SeisHubEnvironmentTestCase):
         # HEAD equals GET
         data = proc.run(HEAD, '/testmapping4')
         self.assertEquals(data, 'MÜH')
-    
+
     def test_dontReturnUnicodeFromMapper(self):
         """
         Unicodes returned from a mapper should be encoded into UTF-8 strings.
@@ -150,7 +150,7 @@ class MapperTests(SeisHubEnvironmentTestCase):
         self.assertFalse(isinstance(data, unicode))
         self.assertTrue(isinstance(data, basestring))
         self.assertEqual('MÜH', data)
-    
+
     def test_notAllowedMethods(self):
         """
         Not allowed methods should raise an error.
@@ -171,7 +171,7 @@ class MapperTests(SeisHubEnvironmentTestCase):
             self.fail("Expected SeisHubError")
         except SeisHubError, e:
             self.assertEqual(e.code, http.NOT_ALLOWED)
-    
+
     def test_notImplementedMethods(self):
         """
         Not implemented methods should raise an error.
@@ -181,12 +181,12 @@ class MapperTests(SeisHubEnvironmentTestCase):
             proc.run('MUH', '/testmapping4')
             self.fail("Expected SeisHubError")
         except SeisHubError, e:
-            self.assertEqual(e.code, http.NOT_IMPLEMENTED)
+            self.assertEqual(e.code, http.NOT_ALLOWED)
         try:
             proc.run('KUH', '/testmapping4')
             self.fail("Expected SeisHubError")
         except SeisHubError, e:
-            self.assertEqual(e.code, http.NOT_IMPLEMENTED)
+            self.assertEqual(e.code, http.NOT_ALLOWED)
 
 
 def suite():

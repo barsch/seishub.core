@@ -188,35 +188,6 @@ class ISQLView(Interface):
         """
 
 
-#class IIndexView(Interface):
-#    """
-#    Interface definition for a Index View.
-#    
-#    You really have to know what your doing if you are using this interface!
-#    """
-#    view_id = Attribute("""
-#        View ID.
-#        
-#        Single string representing the name of this view - this id must match
-#        the SQL view name, e.g. v_baeume for the following example.
-#        """)
-#    package_id = Attribute("""
-#        Defines the package ID of this index view.
-#        
-#        Single string representing the package ID.
-#        """)
-#    resourcetype_id = Attribute("""
-#        Defines the resourcetype ID of this index view.
-#        
-#        Single string representing the resource type ID.
-#        """)
-#    index_labels = Attribute("""
-#        A list of index names used for generation of the index view.
-#        
-#        List of strings.
-#        """)
-
-
 class IProcessorIndex(Interface):
     """
     Interface definition for a custom ProcessorIndex.

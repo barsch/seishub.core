@@ -47,6 +47,32 @@ class RESTResource(Resource):
                 'atime': file_datetime,
                 'mtime': file_datetime}
 
+    def _format(self, request, data):
+        """
+        Handles output/format conversion of content.
+        """
+        # parse request headers for output/format options
+        formats = request.args.get('format', []) or \
+                  request.args.get('output', [])
+        # handle output/format conversion
+        for format in formats:
+            # fetch a XSLT document objects
+            reg = request.env.registry
+            xslt = reg.stylesheets.get(package_id=self.package_id,
+                                       resourcetype_id=self.resourcetype_id,
+                                       type=format)
+            if len(xslt):
+                xslt = xslt[0]
+                data = xslt.transform(data)
+                # set additional content-type if given in XSLT
+                if xslt.content_type:
+                    request.setHeader('content-type',
+                                      xslt.content_type + '; charset=UTF-8')
+            else:
+                msg = 'There is no stylesheet "%s" for request %s.'
+                request.env.log.debug(msg % (format, request.path))
+        return data
+
     def render_GET(self, request):
         """
         Process a resource query request.
@@ -68,26 +94,8 @@ class RESTResource(Resource):
         # set XML declaration inclusive UTF-8 encoding string
         if not data.startswith('<xml'):
             data = addXMLDeclaration(data, 'utf-8')
-        # parse request headers for output/format options
-        formats = request.args.get('format', []) or \
-                  request.args.get('output', [])
         # handle output/format conversion
-        for format in formats:
-            # fetch a XSLT document objects
-            reg = request.env.registry
-            xslt = reg.stylesheets.get(package_id=self.package_id,
-                                       resourcetype_id=self.resourcetype_id,
-                                       type=format)
-            if len(xslt):
-                xslt = xslt[0]
-                data = xslt.transform(data)
-                # set additional content-type if given in XSLT
-                if xslt.content_type:
-                    request.setHeader('content-type',
-                                      xslt.content_type + '; charset=UTF-8')
-            else:
-                msg = "There is no stylesheet for requested format %s."
-                request.env.log.debug(msg % format)
+        data = self._format(request, data)
         # set last-modified time
         dt = UTCDateTime(self.res.document.meta.getDatetime())
         try:
@@ -131,22 +139,7 @@ class RESTResource(Resource):
         formats = request.args.get('format', []) or \
                   request.args.get('output', [])
         # handle output/format conversion
-        for format in formats:
-            # fetch a XSLT document objects
-            reg = request.env.registry
-            xslt = reg.stylesheets.get(package_id=self.package_id,
-                                       resourcetype_id=self.resourcetype_id,
-                                       type=format)
-            if len(xslt):
-                xslt = xslt[0]
-                data = xslt.transform(data)
-                # set additional content-type if given in XSLT
-                if xslt.content_type:
-                    request.setHeader('content-type',
-                                      xslt.content_type + '; charset=UTF-8')
-            else:
-                msg = "There is no stylesheet for requested format %s."
-                request.env.log.debug(msg % format)
+        data = self._format(request, data)
         # get uid
         uid = request.getUser()
         # modify resource

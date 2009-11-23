@@ -184,14 +184,14 @@ class XmlIndexTest(SeisHubEnvironmentTestCase):
         # ISO 8601 w/o minutes - defaults to :00:00
         idx = XmlIndex(self.rt1, "/station/creation_date",
                        index.DATETIME_INDEX)
-        timestr = dt4.strftime("%Y-%m-%d %H")
+        timestr = dt4.strftime("%Y-%m-%dT%H")
         doc = newXMLDocument(RAW_XML1 % (timestr, ""))
         res = idx.eval(doc, self.env)[0]
         self.assertEqual(res.key, dt4)
         # ISO 8601 w/o seconds - defaults to :00
         idx = XmlIndex(self.rt1, "/station/creation_date",
                        index.DATETIME_INDEX)
-        timestr = dt5.strftime("%Y-%m-%d %H:%M")
+        timestr = dt5.strftime("%Y-%m-%dT%H:%M")
         doc = newXMLDocument(RAW_XML1 % (timestr, ""))
         res = idx.eval(doc, self.env)[0]
         self.assertEqual(res.key, dt5)
@@ -224,13 +224,14 @@ class XmlIndexTest(SeisHubEnvironmentTestCase):
         doc = newXMLDocument(RAW_XML1 % (timestr, ""))
         res = idx.eval(doc, self.env)[0]
         self.assertEqual(res.key, dt)
-        # negative timestamp is not working
+        # negative timestamp works too
+        dt = datetime(1969, 12, 31, 23, 36, 39, 500000)
         idx = XmlIndex(self.rt1, "/station/creation_date",
                        index.TIMESTAMP_INDEX)
         timestr = "-5000.500"
         doc = newXMLDocument(RAW_XML1 % (timestr, ""))
-        res = idx.eval(doc, self.env)
-        self.assertFalse(res)
+        res = idx.eval(doc, self.env)[0]
+        self.assertEqual(res.key, dt)
 
     def test_DateIndex(self):
         """

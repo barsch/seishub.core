@@ -21,7 +21,7 @@ class ATestResource(Resource):
         Resource.__init__(self)
         self.is_leaf = True
         self.text = text
-    
+
     def render_GET(self, request):
         return 'Hello %s!' % self.text
 
@@ -37,7 +37,7 @@ class ResourceTreeTests(SeisHubEnvironmentTestCase):
         self.assertTrue(isinstance(data, dict))
         # check content
         self.assertTrue('xml' in data.keys())
-    
+
     def test_addChild(self):
         # add a few children with absolute path to resource tree
         self.env.tree.putChild('/test/muh/muh', ATestResource('maeh'))
@@ -71,7 +71,7 @@ class ResourceTreeTests(SeisHubEnvironmentTestCase):
         self.assertEquals('Hello again!', data)
         data = proc.run(GET, '/test/muh/muh')
         self.assertEquals('Hello maeh!', data)
-    
+
     def test_overwritingResourceTree(self):
         # add a few children with absolute path to resource tree
         self.env.tree.putChild('/test/muh/kuh/blub', ATestResource('World'))
@@ -86,7 +86,7 @@ class ResourceTreeTests(SeisHubEnvironmentTestCase):
         self.assertEqual(len(data), 1)
         data = proc.run(GET, '/test/muh')
         self.assertTrue(isinstance(data, basestring))
-    
+
     def test_invalidMethods(self):
         proc = Processor(self.env)
         for method in ['MUH', 'XXX', 'GETPUT']:
@@ -94,8 +94,8 @@ class ResourceTreeTests(SeisHubEnvironmentTestCase):
                 proc.run(method, '/')
                 self.fail("Expected SeisHubError")
             except SeisHubError, e:
-                self.assertEqual(e.code, http.NOT_IMPLEMENTED)
-    
+                self.assertEqual(e.code, http.NOT_ALLOWED)
+
     def test_forbiddenMethods(self):
         proc = Processor(self.env)
         for method in [POST, PUT, DELETE, MOVE]:
@@ -111,7 +111,7 @@ class ResourceTreeTests(SeisHubEnvironmentTestCase):
                 self.fail("Expected SeisHubError")
             except SeisHubError, e:
                 self.assertEqual(e.code, http.NOT_ALLOWED)
-    
+
     def test_someRESTResourceTypes(self):
         proc = Processor(self.env)
         result = proc.run(GET, '/')
@@ -119,7 +119,7 @@ class ResourceTreeTests(SeisHubEnvironmentTestCase):
         result = proc.run(GET, '/xml')
         self.assertTrue(isinstance(result.get('seishub'), RESTPackageFolder))
         result = proc.run(GET, '/xml/seishub')
-        self.assertTrue(isinstance(result.get('stylesheet'), 
+        self.assertTrue(isinstance(result.get('stylesheet'),
                                    RESTResourceTypeFolder))
 
 

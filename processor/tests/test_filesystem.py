@@ -14,8 +14,8 @@ import inspect
 
 
 SPECIAL = [
-    "Test !file", 
-    "Test '-'#$", 
+    "Test !file",
+    "Test '-'#$",
     "Test LongFilenamesWithMoreThan32Chars",
     "Test è or å,ä,ö",
     "Test üöäß"
@@ -30,10 +30,10 @@ class FileSystemTests(SeisHubEnvironmentTestCase):
         path = os.path.dirname(inspect.getsourcefile(self.__class__))
         fs_path = os.path.join(path, 'data', 'filesystem')
         self.env.tree = FileSystemResource(fs_path)
-    
+
     def tearDown(self):
         pass
-    
+
     def test_readFileSystemResourceWithSpecialChars(self):
         """
         Test to access folders and files with special chars.
@@ -56,7 +56,7 @@ class FileSystemTests(SeisHubEnvironmentTestCase):
             data = fh.read()
             fh.close()
             self.assertEquals(data, "MÜH")
-    
+
     def test_executeResourceScript(self):
         """
         Files with extension '.rpy' should be interpreted as Resource scripts.
@@ -65,7 +65,7 @@ class FileSystemTests(SeisHubEnvironmentTestCase):
         for method in [POST, PUT, DELETE, MOVE, GET]:
             data = proc.run(method, '/scripts/test.rpy')
             self.assertEquals('<html>%s</html>' % method, data)
-    
+
     def test_notImplementedMethods(self):
         """
         Not implemented methods should raise an error.
@@ -77,14 +77,14 @@ class FileSystemTests(SeisHubEnvironmentTestCase):
                 proc.run(method, '/')
                 self.fail("Expected SeisHubError")
             except SeisHubError, e:
-                self.assertEqual(e.code, http.NOT_IMPLEMENTED)
+                self.assertEqual(e.code, http.NOT_ALLOWED)
             # ResourceScript
             try:
                 proc.run(method, '/scripts/test.rpy')
                 self.fail("Expected SeisHubError")
             except SeisHubError, e:
-                self.assertEqual(e.code, http.NOT_IMPLEMENTED)
-    
+                self.assertEqual(e.code, http.NOT_ALLOWED)
+
     def test_notAllowedMethods(self):
         """
         Not allowed methods should raise an error.

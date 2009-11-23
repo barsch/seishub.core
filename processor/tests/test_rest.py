@@ -74,13 +74,13 @@ class RestTests(SeisHubEnvironmentTestCase):
                 proc.run(method, '')
                 self.fail("Expected SeisHubError")
             except SeisHubError, e:
-                self.assertEqual(e.code, http.NOT_IMPLEMENTED)
+                self.assertEqual(e.code, http.NOT_ALLOWED)
             # with trailing slash
             try:
                 proc.run(method, '/')
                 self.fail("Expected SeisHubError")
             except SeisHubError, e:
-                self.assertEqual(e.code, http.NOT_IMPLEMENTED)
+                self.assertEqual(e.code, http.NOT_ALLOWED)
 
     def test_notImplementedMethodsOnPackage(self):
         proc = Processor(self.env)
@@ -90,13 +90,13 @@ class RestTests(SeisHubEnvironmentTestCase):
                 proc.run(method, '/rest-test')
                 self.fail("Expected SeisHubError")
             except SeisHubError, e:
-                self.assertEqual(e.code, http.NOT_IMPLEMENTED)
+                self.assertEqual(e.code, http.NOT_ALLOWED)
             # with trailing slash
             try:
                 proc.run(method, '/rest-test/')
                 self.fail("Expected SeisHubError")
             except SeisHubError, e:
-                self.assertEqual(e.code, http.NOT_IMPLEMENTED)
+                self.assertEqual(e.code, http.NOT_ALLOWED)
 
     def test_notImplementedMethodsOnResourceType(self):
         proc = Processor(self.env)
@@ -106,13 +106,13 @@ class RestTests(SeisHubEnvironmentTestCase):
                 proc.run(method, '/rest-test/notvc')
                 self.fail("Expected SeisHubError")
             except SeisHubError, e:
-                self.assertEqual(e.code, http.NOT_IMPLEMENTED)
+                self.assertEqual(e.code, http.NOT_ALLOWED)
             # with trailing slash
             try:
                 proc.run(method, '/rest-test/notvc/')
                 self.fail("Expected SeisHubError")
             except SeisHubError, e:
-                self.assertEqual(e.code, http.NOT_IMPLEMENTED)
+                self.assertEqual(e.code, http.NOT_ALLOWED)
 
     def test_notImplementedMethodsOnResource(self):
         proc = Processor(self.env)
@@ -124,13 +124,13 @@ class RestTests(SeisHubEnvironmentTestCase):
                 proc.run(method, '/rest-test/notvc')
                 self.fail("Expected SeisHubError")
             except SeisHubError, e:
-                self.assertEqual(e.code, http.NOT_IMPLEMENTED)
+                self.assertEqual(e.code, http.NOT_ALLOWED)
             # with trailing slash
             try:
                 proc.run(method, '/rest-test/notvc/')
                 self.fail("Expected SeisHubError")
             except SeisHubError, e:
-                self.assertEqual(e.code, http.NOT_IMPLEMENTED)
+                self.assertEqual(e.code, http.NOT_ALLOWED)
         # delete resource
         proc.run(DELETE, '/rest-test/notvc/test.xml')
 
@@ -145,13 +145,13 @@ class RestTests(SeisHubEnvironmentTestCase):
                 proc.run(method, '/rest-test/vc/2')
                 self.fail("Expected SeisHubError")
             except SeisHubError, e:
-                self.assertEqual(e.code, http.NOT_IMPLEMENTED)
+                self.assertEqual(e.code, http.NOT_ALLOWED)
             # with trailing slash
             try:
                 proc.run(method, '/rest-test/vc/2/')
                 self.fail("Expected SeisHubError")
             except SeisHubError, e:
-                self.assertEqual(e.code, http.NOT_IMPLEMENTED)
+                self.assertEqual(e.code, http.NOT_ALLOWED)
         # delete resource
         proc.run(DELETE, '/rest-test/vc/test.xml')
 
