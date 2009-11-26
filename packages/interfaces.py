@@ -30,6 +30,35 @@ class IResourceType(IPackage):
         """)
 
 
+class IResourceFormater(Interface):
+    """
+    Interface definition for a format option of a resource.
+    """
+    package_id = Attribute("""
+        Defines the package ID of this index.
+        
+        Single string representing the package ID.
+        """)
+    resourcetype_id = Attribute("""
+        Defines the resourcetype ID of this index.
+        
+        Single string representing the resource type ID.
+        """)
+    format_id = Attribute("""
+        Defines all possible format IDs of the format/output argument.
+        
+        List of strings representing unique format ID's.
+        """)
+
+    def format(request, data, name):
+        """
+        Formats the resource.
+        
+        This function should returns a formated document and takes care of the
+        returned content type.
+        """
+
+
 class IMapper(IPackage):
     """
     General interface definition for a mapper resource.

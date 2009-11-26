@@ -139,6 +139,7 @@ class Environment(EnvironmentBase, ComponentManager):
         General update method after enabling/disabling components.
         """
         self.registry.mappers.update()
+        self.registry.formaters.update()
         self.tree.update()
         self.registry.processor_indexes.update()
         self.catalog.updateAllIndexViews()

@@ -68,9 +68,16 @@ class RESTResource(Resource):
                 if xslt.content_type:
                     request.setHeader('content-type',
                                       xslt.content_type + '; charset=UTF-8')
-            else:
-                msg = 'There is no stylesheet "%s" for request %s.'
-                request.env.log.debug(msg % (format, request.path))
+                continue
+            # search for a ResourceFormater class
+            cls = reg.formaters.get(package_id=self.package_id,
+                                    resourcetype_id=self.resourcetype_id,
+                                    format=format)
+            if cls:
+                return cls.format(request, data, self.res.name)
+            # else log error
+            msg = 'There is no output format "%s" for request %s.'
+            request.env.log.debug(msg % (format, request.path))
         return data
 
     def render_GET(self, request):
