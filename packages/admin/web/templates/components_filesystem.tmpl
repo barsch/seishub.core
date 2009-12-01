@@ -1,0 +1,46 @@
+<h1>FileSystem</h1>
+
+<h2>Add FileSystem</h2>
+<form method="post" enctype="multipart/form-data" id="add" action="">
+  <div class="field">
+    <label>URL</label><br />
+    <input type="text" size="80" name="url" value="$url" />
+  </div>
+  <div class="field">
+    <label>Server Path</label><br />
+    <input type="text" size="80" name="path" value="$path" />
+  </div>
+  <div class="button">
+    <input type="submit" value="Add" />
+  </div>
+</form>
+
+<br />
+<br />
+
+<h2>Overview FileSystem</h2>
+<form method="post" id="list" action="">
+  <table class="list">
+    <tr>
+      <th></th>
+      <th>URL</th>
+      <th>Server Path</th>
+    </tr>
+    #for ($path, $url) in $fs
+    <tr> 
+      <td>
+        <input type="checkbox" name="paths[]" 
+               value="$path" />
+      </td> 
+      <td>$url</td>
+      <td>$path</td>
+    </tr>
+    #end for
+  </table>
+
+  <div class="button">
+    <input type="submit" name="delete" value="Delete" />
+  </div>
+</form>
+
+
