@@ -54,7 +54,15 @@
       <td>$stylesheet.resourcetype.resourcetype_id</td>
       <td>$stylesheet.type</td>
       <td>
-        <a href="$resturl/xml/seishub/stylesheet/$stylesheet.getResource().name">[XSLT]</a>
+        <a href="$resturl/xml/seishub/stylesheet/$stylesheet.getResource().name">
+          [XSLT]
+        </a>
+        <a href="$resturl/xml/seishub/stylesheet/$stylesheet.getResource().name/.meta">
+          [Metadata]
+        </a>
+        <a href="$resturl/xml/seishub/stylesheet/$stylesheet.getResource().name/.index">
+          [Indexes]
+        </a>
       </td>
     </tr>
     #end for

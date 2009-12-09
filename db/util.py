@@ -98,31 +98,24 @@ class CustomJSONEncoder(json.JSONEncoder):
             return json.JSONEncoder.default(self, obj)
 
 
-def formatResults(request, results, count=None, limit=None, offset=0):
+def formatResults(request, results, count=None, limit=None, offset=0,
+                  build_url=False):
     """
     Fetches results from database and creates either a XML resource or a JSON 
     document. It also takes care of limit and offset requests.
     """
+    base_url = request.env.getRestUrl()
     # create stats
     stats = {}
     stats['firstResultPosition'] = offset
-    if isinstance(results, list):
-        stats['totalResultsReturned'] = len(results)
-    else:
-        try:
-            stats['totalResultsReturned'] = results.rowcount
-        except:
-            stats['totalResultsReturned'] = len([r for r in results])
-    if count:
-        stats['totalResultsAvailable'] = count
-    else:
-        stats['totalResultsAvailable'] = stats['totalResultsReturned']
     # get format
     formats = request.args.get('format', []) or request.args.get('output', [])
     if 'json' in formats:
         # build up JSON string
         data = stats
         data['Result'] = [dict(r) for r in results]
+        data['totalResultsReturned'] = len(data['Result'])
+        data['totalResultsAvailable'] = count or len(data['Result'])
         # generate correct header
         request.setHeader('content-type', 'application/json; charset=UTF-8')
         # create output
@@ -130,28 +123,53 @@ def formatResults(request, results, count=None, limit=None, offset=0):
                           cls=CustomJSONEncoder, indent=4)
     elif 'xhtml' in formats:
         # build up a XHTML table
-        xml = Element("table", border="1")
-        s = Sub(xml, "tr")
+        html = Element("html")
+        body = Sub(html, "body")
+        table = Sub(body, "table", border="1")
+        s = Sub(table, "tr")
         for key in results.keys:
             Sub(s, "th").text = str(key)
+        # build URL
+        if build_url:
+            Sub(s, "th").text = "URL"
         for result in results:
-            s = Sub(xml, "tr")
+            s = Sub(table, "tr")
             for value in result:
                 if value == None:
                     value = ''
                 Sub(s, "td").text = str(value)
+            # build URL
+            if not build_url:
+                continue
+            url = '/'.join([base_url, 'xml', result['package_id'],
+                            result['resourcetype_id'],
+                            result['resource_name']])
+            td = Sub(s, 'td')
+            Sub(td, 'a', href=url).text = url
         # generate correct header
         request.setHeader('content-type', 'text/html; charset=UTF-8')
-        return tostring(xml, method='html', encoding='utf-8')
+        return tostring(html, method='html', encoding='utf-8')
     else:
         # build up XML document
-        for key, value in stats.iteritems():
-            stats[key] = str(value)
-        xml = Element("ResultSet", **stats)
+        xml = Element("ResultSet")
+        i = 0
         for result in results:
+            i = i + 1
             s = Sub(xml, "Item")
             for (key, value) in dict(result).iteritems():
                 if value == None:
                     value = ''
                 Sub(s, key).text = str(value)
+            # build URL
+            if not build_url:
+                continue
+            Sub(s, 'url').text = '/'.join([base_url, 'xml',
+                                           result['package_id'],
+                                           result['resourcetype_id'],
+                                           result['resource_name']])
+        # add attributes to root node
+        stats['totalResultsReturned'] = i
+        stats['totalResultsAvailable'] = count or i
+        for key, value in stats.iteritems():
+            xml.set(key, str(value))
         return toString(xml)
