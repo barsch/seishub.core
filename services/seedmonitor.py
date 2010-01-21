@@ -38,8 +38,8 @@ import os
 
 
 try:
-    from obspy.mseed import libmseed
-    mseed = libmseed()
+    from obspy.mseed import LibMSEED
+    mseed = LibMSEED()
 except:
     mseed = None
 

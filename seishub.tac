@@ -9,13 +9,11 @@ from seishub.services.web import WebService
 from twisted.application import service
 #from seishub.services.heartbeat import HeartbeatService
 
-
-# setup our Environment
-env = Environment()
-
 # create application
 application = service.Application("SeisHub")
-env.app = application
+
+# setup our Environment
+env = Environment(application = application)
 
 # HTTP/HTTPS
 web_service = WebService(env)

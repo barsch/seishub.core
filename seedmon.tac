@@ -5,18 +5,17 @@ from seishub.services.seedmonitor import SEEDFileMonitorService
 from twisted.application import service
 
 
+# create application
+application = service.Application("SEEDMonitor")
+
 # setup our Environment
-env = EnvironmentBase(config_file='seedmon.ini')
+env = EnvironmentBase(id='seedmon', application = application)
 
 # set default values
 env.config.set('seedfilemonitor', 'autostart', True)
 env.config.set('seedfilemonitor', 'scanner_period', 0)
 env.config.set('seedfilemonitor', 'crawler_period', 0)
 env.config.save()
-
-# create application
-application = service.Application("SEEDMonitor")
-env.app = application
 
 # SEED File Monitor
 seedmonitor_service = SEEDFileMonitorService(env)

@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 
-from seishub.config import Option, IntOption
+from seishub.config import Option, BoolOption
 from seishub.core import ERROR, WARN, INFO, DEBUG, DEBUGX
 from twisted.python import log, logfile
 import os
 import traceback
+from glob import iglob
 
 
 LOG_LEVELS = {'OFF': 0,
@@ -27,9 +28,24 @@ class Logger(object):
         """Level of verbosity in log.
 
         Should be one of (`ERROR`, `WARN`, `INFO`, `DEBUG`).""")
+    BoolOption('seishub', 'clear_logs_on_startup', False,
+               "Clears logs at startup of SeisHub.")
 
-    def __init__(self, env, log_file=None):
+    def __init__(self, env):
         self.env = env
+        log_path = os.path.join(env.getSeisHubPath(), 'logs')
+        log_file = env.id
+        # clear log files
+        if env.config.getbool('seishub', 'clear_logs_on_startup'):
+            for file in iglob(os.path.join(log_path, log_file + '.*')):
+                try:
+                    os.remove(file)
+                except:
+                    pass
+        # new log file
+        log_fh = logfile.DailyLogFile(log_file + '.log', log_path)
+        env.app.setComponent(log.ILogObserver,
+                             log.FileLogObserver(log_fh).emit)
         self.start()
 
     def start(self):

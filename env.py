@@ -30,10 +30,13 @@ class EnvironmentBase(object):
     """
     Basic environment with logger, database and configuration handler.
     """
-    def __init__(self, config_file='seishub.ini'):
+    def __init__(self, id='seishub', config_file=None, application=None):
         """
         Initialize the SeisHub environment.
         """
+        # set application
+        self.app = application
+        self.id = id
         # check for python version
         if not sys.hexversion >= 0x2060000:
             print("ERROR: SeisHub needs at least Python 2.6 or higher in " +
@@ -47,7 +50,7 @@ class EnvironmentBase(object):
         if isinstance(config_file, Configuration):
             self.config = config_file
         else:
-            conf_file = os.path.join(path, 'conf', config_file)
+            conf_file = os.path.join(path, 'conf', id + '.ini')
             self.config = Configuration(conf_file)
         self.config.path = path
         self.config.hubs = {}
