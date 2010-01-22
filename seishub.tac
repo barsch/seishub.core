@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from seishub.env import Environment
-from seishub.services.seedmonitor import SEEDFileMonitorService
+from seishub.services.waveformindexer import WaveformIndexerService
 from seishub.services.sftp import SFTPService
 from seishub.services.ssh import SSHService
 from seishub.services.manhole import ManholeService
@@ -30,5 +30,5 @@ sftp_service = SFTPService(env)
 # Heart Beat
 #heartbeat_service = HeartbeatService(env)
 
-# SEED File Monitor
-seedmonitor_service = SEEDFileMonitorService(env)
+# Waveform Indexer
+waveformindexer_service = WaveformIndexerService(env)

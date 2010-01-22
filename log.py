@@ -31,21 +31,22 @@ class Logger(object):
     BoolOption('seishub', 'clear_logs_on_startup', False,
                "Clears logs at startup of SeisHub.")
 
-    def __init__(self, env):
+    def __init__(self, env, log_file):
         self.env = env
-        log_path = os.path.join(env.getSeisHubPath(), 'logs')
-        log_file = env.id
-        # clear log files
-        if env.config.getbool('seishub', 'clear_logs_on_startup'):
-            for file in iglob(os.path.join(log_path, log_file + '.*')):
-                try:
-                    os.remove(file)
-                except:
-                    pass
-        # new log file
-        log_fh = logfile.DailyLogFile(log_file + '.log', log_path)
-        env.app.setComponent(log.ILogObserver,
-                             log.FileLogObserver(log_fh).emit)
+        if log_file:
+            log_path = os.path.join(env.getSeisHubPath(), 'logs')
+            # clear log files
+            if env.config.getbool('seishub', 'clear_logs_on_startup'):
+                log_base = os.path.splitext(log_file)[0]
+                for file in iglob(os.path.join(log_path, log_base + '.*')):
+                    try:
+                        os.remove(file)
+                    except:
+                        pass
+            # new log file
+            daily_log_file = logfile.DailyLogFile(log_file, log_path)
+            env.app.setComponent(log.ILogObserver,
+                                 log.FileLogObserver(daily_log_file).emit)
         self.start()
 
     def start(self):
