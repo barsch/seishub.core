@@ -319,10 +319,6 @@ import multiprocessing
 #
 
 
-import time
-import random
-
-
 
 
 class WaveformFileCrawler:
@@ -369,6 +365,7 @@ class WaveformFileCrawler:
         """
         """
         self.patterns = self.env.config.getlist('waveformindexer', 'patterns')
+        print self.patterns
         paths = self.env.config.getlist('waveformindexer', 'paths')
         self.crawler_paths = [os.path.normcase(path) for path in paths]
         self.crawler_period = float(self.env.config.get('waveformindexer',
@@ -433,8 +430,6 @@ class WaveformFileCrawler:
         """
         Handles exactly one directory.
         """
-        msg = "Iterate"
-        self.env.log.info(msg)
         if not self.running:
             return
         if self.queue.full():
@@ -482,22 +477,29 @@ class WaveformFileCrawler:
             # skip file with wrong pattern
             if not self._hasPattern(file):
                 continue
+            self.env.log.debugx('2')
             # get file stats
             filepath = os.path.join(path, file)
+            self.env.log.debugx('3')
             try:
                 stats = os.stat(filepath)
             except Exception, e:
                 self.env.log.warn(str(e))
                 continue
+            self.env.log.debugx('4')
             # compare with database entries
             if file not in db_files:
+                self.env.log.debugx('5')
+
                 # file does not exists -> add file
+                self.env.log.debugx("Insert file '%s' ..." % filepath)
                 self.queue.put(('insert', [filepath]))
                 continue
             else:
                 # check modification time
                 if int(stats.st_mtime) != db_files[file]:
                     # modification time differs -> update file
+                    self.env.log.debugx("Update file '%s' ..." % filepath)
                     self.queue.put(('update', [filepath]))
                 # remove from database files
                 db_files.pop(file)
@@ -505,26 +507,12 @@ class WaveformFileCrawler:
             if not self.focus:
                 continue
             if file.endswith(self._today) or file.endswith(self._yesterday):
+                self.env.log.debugx("Update file '%s' ..." % filepath)
                 self.queue.put(('update', [filepath]))
         # remove remaining entries from database
         for file in db_files:
+            self.env.log.debugx("Delete file '%s' ..." % filepath)
             self._delete(path, file)
-
-
-logger = multiprocessing.log_to_stderr()
-
-
-def calculate(func, args, env):
-    time.sleep(0.5 * random.random())
-    logger.warning('Processed %s %s' % (func, args))
-
-
-def worker(i, input, env):
-    logger.warning('Start process ... %d' % i)
-    for func, args in iter(input.get, 'STOP'):
-        logger.warning('Process %d %s %s' % (i, func, args))
-        calculate(func, args, env)
-    logger.warning('Stop process ... %d' % i)
 
 
 class WaveformIndexerService(TimerService, WaveformFileCrawler):
@@ -557,9 +545,8 @@ class WaveformIndexerService(TimerService, WaveformFileCrawler):
         # service settings
         self.setName('WaveformIndexer')
         self.setServiceParent(env.app)
-        self.processes = None
-        self._start()
-        # start iterating
+        self.queue = env.queue
+        self.processes = env.processes
         TimerService.__init__(self, self.crawler_period, self.iterate)
 
     def privilegedStartService(self):
@@ -569,28 +556,7 @@ class WaveformIndexerService(TimerService, WaveformFileCrawler):
     def startService(self):
         if self.env.config.getbool('waveformindexer', 'autostart'):
             TimerService.startService(self)
-            if not self.processes:
-                self._start()
-
-    def _start(self):
-        # create file queue
-        self.queue = multiprocessing.Queue(self.queue_size)
-        # create worker processes
-        self.processes = []
-        for i in range(self.number_of_processes):
-            p = multiprocessing.Process(target=worker,
-                                        args=(i, self.queue, self.env))
-            p.start()
-            self.processes.append(p)
 
     def stopService(self):
-        for _p in self.processes:
-            self.queue.put('STOP')
-        while True:
-            if self.queue.empty():
-                break
-        for p in self.processes:
-            p.terminate()
-        self.processes = None
         if self.running:
             TimerService.stopService(self)
