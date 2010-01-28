@@ -6,6 +6,7 @@ The root resource of the whole resource tree.
 from seishub.processor.resources import RESTFolder, MapperResource, \
     FileSystemResource, AdminRootFolder, StaticFolder
 from seishub.util.path import splitPath
+import os
 
 
 class ResourceTree(StaticFolder):
@@ -61,7 +62,11 @@ class ResourceTree(StaticFolder):
             self.putChild(url, MapperResource(mapper_obj))
         # set all file system folder
         for url, path in self.env.config.options('fs'):
-            self.putChild(url, FileSystemResource(path))
+            if os.path.isdir(path):
+                self.putChild(url, FileSystemResource(path))
+            else:
+                msg = "Can't open %s" % path
+                self.env.log.warn(msg)
         # set Administration root folder
         res = AdminRootFolder(self.env, hidden=True)
         self.putChild('manage', res)

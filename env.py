@@ -26,10 +26,23 @@ import time
 from seishub.registry.registry import ComponentRegistry
 
 
-class EnvironmentBase(object):
+class Environment(ComponentManager):
     """
-    Basic environment with logger, database and configuration handler.
+    The one class to rule them all.
+    
+    Environment is the base class to handle configuration, XML catalog, 
+    database and logging access.
+    
+    A SeisHub environment consists of:
+        * a configuration handler env.config
+        * a XML catalog handler env.catalog
+        * a database handler env.db
+        * a logging handler env.log
+        * a package handler env.registry
+        * a user management handler env.auth
     """
+    Option('seishub', 'host', 'localhost', "Default host of this server.")
+
     def __init__(self, application=None, config_file="seishub.ini",
                  log_file="seishub.log"):
         """
@@ -60,6 +73,27 @@ class EnvironmentBase(object):
         self.initDefaultOptions()
         # set up DB handler
         self.db = DatabaseManager(self)
+        # set up component manager
+        ComponentManager.__init__(self)
+        self.compmgr = self
+        # initialize all default options
+        self.initDefaultOptions()
+        # set XML catalog
+        self.catalog = XmlCatalog(self)
+        # user and group management
+        self.auth = AuthenticationManager(self)
+        # load plug-ins
+        ComponentLoader(self)
+        # Package manager
+        # initialize ComponentRegistry after ComponentLoader(), as plug-ins 
+        # may provide registry objects
+        self.registry = ComponentRegistry(self)
+        # trigger auto installer
+        PackageInstaller.install(self)
+        # initialize the resource tree
+        self.tree = ResourceTree(self)
+        self.update()
+
 
     def getSeisHubPath(self):
         """
@@ -83,51 +117,6 @@ class EnvironmentBase(object):
                     self.log.info('Setting default value for [%s] %s = %s' \
                                   % (section, name, value))
                     self.config.save()
-
-
-class Environment(EnvironmentBase, ComponentManager):
-    """
-    The one class to rule them all.
-    
-    Environment is the base class to handle configuration, XML catalog, 
-    database and logging access.
-    
-    A SeisHub environment consists of:
-        * a configuration handler env.config
-        * a XML catalog handler env.catalog
-        * a database handler env.db
-        * a logging handler env.log
-        * a package handler env.registry
-        * a user management handler env.auth
-    """
-    Option('seishub', 'host', 'localhost', "Default host of this server.")
-
-    def __init__(self, **kwargs):
-        """
-        Initialize the SeisHub environment.
-        """
-        # set logger, configuration and database handler
-        EnvironmentBase.__init__(self, **kwargs)
-        # set up component manager
-        ComponentManager.__init__(self)
-        self.compmgr = self
-        # initialize all default options
-        self.initDefaultOptions()
-        # set XML catalog
-        self.catalog = XmlCatalog(self)
-        # user and group management
-        self.auth = AuthenticationManager(self)
-        # load plug-ins
-        ComponentLoader(self)
-        # Package manager
-        # initialize ComponentRegistry after ComponentLoader(), as plug-ins 
-        # may provide registry objects
-        self.registry = ComponentRegistry(self)
-        # trigger auto installer
-        PackageInstaller.install(self)
-        # initialize the resource tree
-        self.tree = ResourceTree(self)
-        self.update()
 
     def getRestUrl(self):
         """

@@ -30,12 +30,17 @@ from seishub.defaults import WAVEFORMINDEXER_CRAWLER_PERIOD, \
 from seishub.registry.defaults import miniseed_tab
 from sqlalchemy import sql
 from twisted.application.internet import TimerService #@UnresolvedImport
+from Queue import Empty as QueueEmpty, Full as QueueFull
 import copy
 import datetime
 import fnmatch
-import os
 import multiprocessing
+import os
+import pickle
 
+
+ACTION_INSERT = 0
+ACTION_UPDATE = 1
 
 ##XXX: remove
 #try:
@@ -237,39 +242,6 @@ import multiprocessing
 #        # set loop interval
 #        self._loop.interval = int(self.scanner_period)
 #
-#    def _insert(self, path, file, stats):
-#        """
-#        Add a new file into the database.
-#        """
-#        return
-#        result = _scan(path, file)
-#        sql_obj = miniseed_tab.insert().values(file=file, path=path,
-#                                               mtime=int(stats.st_mtime),
-#                                               size=stats.st_size, **result)
-#        try:
-#            self.db.execute(sql_obj)
-#            self.env.log.debugx('Inserting %s %s' % (path, file))
-#        except:
-#            pass
-#
-#    def _update(self, path, file, stats):
-#        """
-#        Modify a file in the database.
-#        """
-#        return
-#        result = _scan(path, file)
-#        sql_obj = miniseed_tab.update()
-#        sql_obj = sql_obj.where(miniseed_tab.c['file'] == file)
-#        sql_obj = sql_obj.where(miniseed_tab.c['path'] == path)
-#        sql_obj = sql_obj.values(mtime=int(stats.st_mtime), size=stats.st_size,
-#                                 **result)
-#        try:
-#            self.db.execute(sql_obj)
-#            self.env.log.debugx('Updating %s %s' % (path, file))
-#        except Exception, e:
-#            self.env.log.error(str(e))
-#            pass
-#
 #    def iterate(self):
 #        """
 #        Handles exactly one MiniSEED file.
@@ -328,6 +300,86 @@ class WaveformFileCrawler:
     This class scans periodically all given paths for waveform files and 
     collects them into a watch list.
     """
+
+    def _scan(self, trace):
+        """
+        Gets header, gaps and overlap information of given trace object.
+        """
+        result = {}
+        # get header
+        result['station'] = trace.stats.station
+        result['location'] = trace.stats.location
+        result['channel'] = trace.stats.channel
+        result['network'] = trace.stats.network
+        result['starttime'] = trace.stats.starttime.datetime
+        result['endtime'] = trace.stats.endtime.datetime
+        result['calib'] = trace.stats.calib
+        result['npts'] = trace.stats.npts
+        result['sampling_rate'] = trace.stats.sampling_rate
+        # quality flags
+#        try:
+#            data = mseed.getDataQualityFlagsCount(filepath)
+#            if data and len(data) == 8:
+#                result['DQ_amplifier_saturation'] = data[0]
+#                result['DQ_digitizer_clipping'] = data[1]
+#                result['DQ_spikes'] = data[2]
+#                result['DQ_glitches'] = data[3]
+#                result['DQ_missing_or_padded_data'] = data[4]
+#                result['DQ_telemetry_synchronization'] = data[5]
+#                result['DQ_digital_filter_charging'] = data[6]
+#                result['DQ_questionable_time_tag'] = data[7]
+#        except Exception, e:
+#            env.log.info('getDataQualityFlagsCount', str(e))
+#            pass
+#        # timing quality
+#        try:
+#            data = mseed.getTimingQuality(filepath)
+#            result['TQ_max'] = data.get('max', None)
+#            result['TQ_min'] = data.get('min', None)
+#            result['TQ_avg'] = data.get('average', None)
+#            result['TQ_median'] = data.get('median', None)
+#            result['TQ_uq'] = data.get('upper_quantile', None)
+#            result['TQ_lq'] = data.get('lower_quantile', None)
+#        except Exception, e:
+#            env.log.info('getTimingQuality', str(e))
+#            pass
+        return result
+
+
+    def _insert(self, path, file, stats, stream):
+        """
+        Add a new file into the database.
+        """
+        for trace in stream:
+            result = self._scan(trace)
+            sql_obj = miniseed_tab.insert().values(file=file, path=path,
+                                                   mtime=int(stats.st_mtime),
+                                                   size=stats.st_size,
+                                                   **result)
+            try:
+                self.db.execute(sql_obj)
+                self.env.log.debugx('Inserting %s %s' % (path, file))
+            except:
+                pass
+
+    def _update(self, path, file, stats, stream):
+        """
+        Modify a file in the database.
+        """
+        for trace in stream:
+            result = self._scan(trace)
+            sql_obj = miniseed_tab.update()
+            sql_obj = sql_obj.where(miniseed_tab.c['file'] == file)
+            sql_obj = sql_obj.where(miniseed_tab.c['path'] == path)
+            sql_obj = sql_obj.values(mtime=int(stats.st_mtime),
+                                     size=stats.st_size, **result)
+            try:
+                self.db.execute(sql_obj)
+                self.env.log.debugx('Updating %s %s' % (path, file))
+            except Exception, e:
+                self.env.log.error(str(e))
+                pass
+
     def _delete(self, path, file=None):
         """
         Remove a file or all files with a given path from the database.
@@ -365,7 +417,6 @@ class WaveformFileCrawler:
         """
         """
         self.patterns = self.env.config.getlist('waveformindexer', 'patterns')
-        print self.patterns
         paths = self.env.config.getlist('waveformindexer', 'paths')
         self.crawler_paths = [os.path.normcase(path) for path in paths]
         self.crawler_period = float(self.env.config.get('waveformindexer',
@@ -393,28 +444,6 @@ class WaveformFileCrawler:
                 return True
         return False
 
-    def reset(self):
-        """
-        Resets the crawler parameters.
-        """
-        self._updateCurrentConfiguration()
-        # get search paths
-        self._paths = []
-        self._roots = copy.copy(self.crawler_paths)
-        self._root = self._roots.pop()
-        # create walker
-        self._walker = os.walk(self._root, followlinks=True)
-        # set loop interval
-        self._loop.interval = max(int(self.crawler_period), 0.1)
-        # logging
-        self.env.log.debugx('Crawler restarted.')
-        msg = "Current watch list: %d files" % self.queue.qsize()
-        self.env.log.debugx(msg)
-        msg = "Crawler loop interval: %d s" % self._loop.interval
-        self.env.log.debugx(msg)
-        msg = "Crawling root '%s' ..." % self._root
-        self.env.log.debug(msg)
-
     def _selectAllPaths(self):
         """
         Query for all paths inside the database.
@@ -426,93 +455,160 @@ class WaveformFileCrawler:
             result = []
         return [path[0] for path in result]
 
+    def _processQueue(self):
+        try:
+            action, path, file, stats, stream = self.output_queue.get_nowait()
+        except QueueEmpty:
+            pass
+        else:
+            # unpickle stream 
+            stream = pickle.loads(stream)
+            if action == ACTION_INSERT:
+                self._insert(path, file, stats, stream)
+            else:
+                self._update(path, file, stats, stream)
+
+    def _resetWalker(self):
+        """
+        Resets the crawler parameters.
+        """
+        # update configuration
+        self._updateCurrentConfiguration()
+        # reset attributes
+        self._current_path = None
+        self._current_files = []
+        self._db_files_in_current_path = []
+        # get search paths for waveform crawler
+        self._paths = []
+        self._roots = copy.copy(self.crawler_paths)
+        self._root = self._roots.pop()
+        # create new walker
+        self._walker = os.walk(self._root, topdown=True, followlinks=True)
+        # set loop interval
+        self._loop.interval = max(float(self.crawler_period), 0.1)
+        # logging
+        self.env.log.debugx('Crawler restarted.')
+#        msg = "Current size of input queue: %d of %d files" % \
+#            (self.input_queue.qsize(), self.input_queue.maxsize)
+#        self.env.log.debugx(msg)
+#        msg = "Current size of output queue: %d of %d files" % \
+#            (self.output_queue.qsize(), self.output_queue.maxsize)
+#        self.env.log.debugx(msg)
+        msg = "Crawler loop interval: %.1f s" % self._loop.interval
+        self.env.log.debugx(msg)
+        self.env.log.debug("Crawling root '%s' ..." % self._root)
+
+    def _stepWalker(self):
+        """
+        Steps current walker object to the next directory.
+        """
+        # try to fetch next directory
+        try:
+            self._current_path, _ , self._current_files = self._walker.next()
+        except StopIteration:
+            # finished cycling through all directories in current walker
+            # remove remaining entries from database
+            for file in self._db_files_in_current_path:
+                self._delete(self._current_path, file)
+            # try get next crawler search path
+            try:
+                self._root = self._roots.pop()
+            except IndexError:
+                # a whole cycle has been done - check paths
+#                db_paths = self._selectAllPaths()
+#                for path in db_paths:
+#                    # skip existing paths
+#                    if path in self._paths:
+#                        continue
+#                    # remove the others
+#                    self._delete(path)
+                # reset everything
+                self._resetWalker()
+                return
+            # reset attributes
+            self._current_path = None
+            self._current_files = []
+            self._db_files_in_current_path = []
+            # create new walker
+            self._walker = os.walk(self._root, topdown=True, followlinks=True)
+            # logging
+            self.env.log.debug("Crawling root '%s' ..." % self._root)
+            return
+        # logging
+        self.env.log.debugx("Scanning path '%s' ..." % self._current_path)
+        # skip empty directories
+        if not self._current_files:
+            return
+        # get all database entries for current path
+        self._db_files_in_current_path = self._select(self._current_path)
+
     def iterate(self):
         """
         Handles exactly one directory.
         """
+        # skip if service is not running
+        # be aware that the processor pool is still active waiting for work
         if not self.running:
             return
-        if self.queue.full():
+        # skip if input queue is full
+        if self.input_queue.full():
             return
-        # walk next file
+        # try to finalize a single processed stream object from output queue
+        self._processQueue()
+        # check for files which could not put into queue yet
+        if self._not_yet_queued:
+            try:
+                self.input_queue.put_nowait(self._not_yet_queued)
+            except QueueFull:
+                # try later
+                return
+            self._not_yet_queued = None
+        # walk through directories and files
         try:
-            path, _, files = self._walker.next()
-        except StopIteration:
-            try:
-                # get next search path
-                self._root = self._roots.pop()
-                # create walker
-                self._walker = os.walk(self._root, followlinks=True)
-                # logging
-                msg = "Crawling root '%s' ..." % self._root
-                self.env.log.debug(msg)
-            except IndexError:
-                # a whole cycle has been done - check paths
-                db_paths = self._selectAllPaths()
-                for path in db_paths:
-                    # skip existing paths
-                    if path in self._paths:
-                        continue
-                    # remove the others
-                    self._delete(path)
-                # reset everything
-                self.reset()
-            return
+            file = self._current_files.pop(0)
         except AttributeError:
-            # first loop after initialization - call reset
-            self.reset()
+            # first loop ever after initialization - call reset
+            self._resetWalker()
+            self._stepWalker()
             return
-        msg = "Scanning path '%s' ..." % path
-        self.env.log.debugx(msg)
-        # skip empty directories
-        if not files:
+        except IndexError:
+            # file list is empty - jump into next directory
+            self._stepWalker()
             return
-        # update path list
-        if path not in self._paths:
-            self._paths.append(path)
-        # get all database entries for current path
-        db_files = self._select(path)
-        # check files
-        for file in files:
-            # skip file with wrong pattern
-            if not self._hasPattern(file):
-                continue
-            self.env.log.debugx('2')
-            # get file stats
-            filepath = os.path.join(path, file)
-            self.env.log.debugx('3')
+        # skip file with wrong pattern
+        if not self._hasPattern(file):
+            return
+        # process a single file
+        path = self._current_path
+        filepath = os.path.join(path, file)
+        # get file stats
+        try:
+            stats = os.stat(filepath)
+        except Exception, e:
+            self.env.log.warn(str(e))
+            return
+        # compare with database entries
+        if file not in self._db_files_in_current_path:
+            # file does not exists in database -> add file
+            args = (ACTION_INSERT, path, file, stats)
             try:
-                stats = os.stat(filepath)
-            except Exception, e:
-                self.env.log.warn(str(e))
-                continue
-            self.env.log.debugx('4')
-            # compare with database entries
-            if file not in db_files:
-                self.env.log.debugx('5')
-
-                # file does not exists -> add file
-                self.env.log.debugx("Insert file '%s' ..." % filepath)
-                self.queue.put(('insert', [filepath]))
-                continue
-            else:
-                # check modification time
-                if int(stats.st_mtime) != db_files[file]:
-                    # modification time differs -> update file
-                    self.env.log.debugx("Update file '%s' ..." % filepath)
-                    self.queue.put(('update', [filepath]))
-                # remove from database files
-                db_files.pop(file)
-            # recent file - add to watch list
-            if not self.focus:
-                continue
-            if file.endswith(self._today) or file.endswith(self._yesterday):
-                self.env.log.debugx("Update file '%s' ..." % filepath)
-                self.queue.put(('update', [filepath]))
-        # remove remaining entries from database
-        for file in db_files:
-            self.env.log.debugx("Delete file '%s' ..." % filepath)
-            self._delete(path, file)
+                self.input_queue.put_nowait(args)
+            except QueueFull:
+                self._not_yet_queued = args
+            return
+        # file is already in database
+        # -> compare modification times of current file with database entry
+        # -> remove from file list so it won't be deleted on database cleanup
+        db_file_mtime = self._db_files_in_current_path.pop(file)
+        if int(stats.st_mtime) == db_file_mtime:
+            return
+        # modification time differs -> update file
+        args = (ACTION_UPDATE, path, file, stats)
+        try:
+            self.input_queue.put_nowait(args)
+        except QueueFull:
+            self._not_yet_queued = args
+        return
 
 
 class WaveformIndexerService(TimerService, WaveformFileCrawler):
@@ -545,8 +641,11 @@ class WaveformIndexerService(TimerService, WaveformFileCrawler):
         # service settings
         self.setName('WaveformIndexer')
         self.setServiceParent(env.app)
-        self.queue = env.queue
-        self.processes = env.processes
+        # set queues
+        self.input_queue = env.queues[0]
+        self.output_queue = env.queues[1]
+        self._not_yet_queued = None
+        # start iterating
         TimerService.__init__(self, self.crawler_period, self.iterate)
 
     def privilegedStartService(self):

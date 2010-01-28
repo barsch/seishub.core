@@ -7,6 +7,7 @@ The Twisted Daemon: platform-independent interface.
 
 @author: Christopher Armstrong
 """
+from obspy.core import read
 from seishub.env import Environment
 from seishub.services.manhole import ManholeService
 from seishub.services.sftp import SFTPService
@@ -14,13 +15,13 @@ from seishub.services.ssh import SSHService
 from seishub.services.waveformindexer import WaveformIndexerService
 from seishub.services.web import WebService
 from twisted.application import service
-from twisted.python import log, usage
+from twisted.python import usage
 from twisted.python.runtime import platformType
+import logging
 import multiprocessing
-import random
+import os
+import pickle
 import sys
-import time
-
 
 
 if platformType == "win32":
@@ -35,18 +36,18 @@ __all__ = ['run']
 
 
 class SeisHubApplicationRunner(_SomeApplicationRunner):
-    def __init__(self, config, processes, queue):
+
+    def __init__(self, config, queues):
         _SomeApplicationRunner.__init__(self, config)
-        self.processes = processes
-        self.queue = queue
+        self.queues = queues
 
     def createOrGetApplication(self):
         # create application
         application = service.Application("SeisHub")
         # setup our Environment
         env = Environment(application=application)
-        env.processes = self.processes
-        env.queue = self.queue
+        # set queues
+        env.queues = self.queues
         # add services
         WebService(env)
         SSHService(env)
@@ -57,33 +58,32 @@ class SeisHubApplicationRunner(_SomeApplicationRunner):
         return application
 
 
-import logging
-logger = multiprocessing.log_to_stderr()
-logger.setLevel(logging.DEBUG)
-logger.warning('doomed')
-
-def calculate(func, args, env):
-    time.sleep(0.5 * random.random())
-    logger.warning('Processed %s %s' % (func, args))
-
-
-def worker(i, input, env):
-    logger.warning('Start process ... %d' % i)
-    for func, args in iter(input.get, 'STOP'):
-        logger.warning('Process %d %s %s' % (i, func, args))
-        calculate(func, args, env)
-    logger.warning('Stop process ... %d' % i)
+def worker(i, queues):
+    logger = multiprocessing.log_to_stderr()
+    logger.setLevel(logging.INFO)
+    logger.info('Starting process ... %d' % i)
+    (input_queue, output_queue) = queues
+    for action, path, file, stats in iter(input_queue.get, 'STOP'):
+        filepath = os.path.join(path, file)
+        try:
+            stream = read(str(filepath))
+            args = (action, path, file, stats, pickle.dumps(stream))
+            output_queue.put_nowait(args)
+        except Exception, e:
+            logger.info(str(e))
+    logger.info('Stopping process ... %d' % i)
 
 
-if __name__ == '__main__':
+def run():
     # create file queue and worker processes
-    queue = multiprocessing.Queue(20)
-    processes = []
-    for i in range(multiprocessing.cpu_count()):
-        p = multiprocessing.Process(target=worker, args=(i, queue, None))
+    NUMBER_OF_PROCESSORS = multiprocessing.cpu_count()
+    input_queue = multiprocessing.Queue(NUMBER_OF_PROCESSORS * 2)
+    output_queue = multiprocessing.Queue()
+    queues = (input_queue, output_queue)
+    for i in range(NUMBER_OF_PROCESSORS):
+        p = multiprocessing.Process(target=worker, args=(i, queues))
         p.daemon = True
         p.start()
-        processes.append(p)
     # parse config
     config = ServerOptions()
     try:
@@ -92,4 +92,8 @@ if __name__ == '__main__':
         print config
         print "%s: %s" % (sys.argv[0], ue)
     else:
-        SeisHubApplicationRunner(config, processes, queue).run()
+        SeisHubApplicationRunner(config, queues).run()
+
+
+if __name__ == '__main__':
+    run()
