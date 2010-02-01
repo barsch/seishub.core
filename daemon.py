@@ -69,7 +69,8 @@ def worker(i, queues):
         try:
             stream = read(str(filepath))
             sys.stdout.write(str(stream) + '\n')
-            args = (action, path, file, stats, pickle.dumps(stream))
+            del stream
+            args = (action, path, file, stats)
             output_queue.put_nowait(args)
         except Exception, e:
             logger.info(str(e))
@@ -77,6 +78,7 @@ def worker(i, queues):
 
 
 def run():
+
     # create file queue and worker processes
     NUMBER_OF_PROCESSORS = multiprocessing.cpu_count()
     input_queue = multiprocessing.Queue(NUMBER_OF_PROCESSORS * 2)

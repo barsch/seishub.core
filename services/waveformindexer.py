@@ -457,16 +457,16 @@ class WaveformFileCrawler:
 
     def _processQueue(self):
         try:
-            action, path, file, stats, stream = self.output_queue.get_nowait()
+            action, path, file, stats = self.output_queue.get_nowait()
         except QueueEmpty:
             pass
-        else:
+        #else:
             # unpickle stream 
-            stream = pickle.loads(stream)
-            if action == ACTION_INSERT:
-                self._insert(path, file, stats, stream)
-            else:
-                self._update(path, file, stats, stream)
+            #stream = pickle.loads(stream)
+            #if action == ACTION_INSERT:
+            #    self._insert(path, file, stats, stream)
+            #else:
+            #    self._update(path, file, stats, stream)
 
     def _resetWalker(self):
         """
