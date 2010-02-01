@@ -65,8 +65,10 @@ def worker(i, queues):
     (input_queue, output_queue) = queues
     for action, path, file, stats in iter(input_queue.get, 'STOP'):
         filepath = os.path.join(path, file)
+        sys.stdout.write(filepath + '\n')
         try:
             stream = read(str(filepath))
+            sys.stdout.write(str(stream) + '\n')
             args = (action, path, file, stats, pickle.dumps(stream))
             output_queue.put_nowait(args)
         except Exception, e:
