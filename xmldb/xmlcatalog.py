@@ -21,6 +21,7 @@ class XmlCatalog(object):
         self.env = env
         self.xmldb = XmlDbManager(env.db)
         self.index_catalog = XmlIndexCatalog(env.db, self.xmldb)
+        self.index_catalog.env = env
 
     def addResource(self, package_id, resourcetype_id, xml_data, uid=None,
                     name=None):

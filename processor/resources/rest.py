@@ -267,7 +267,7 @@ class RESTProperty(Resource):
                                                   self.resourcetype_id,
                                                   self.name,
                                                   self.revision)
-            # dictionary of indexes 
+            # dictionary of indexes
             index_dict = request.env.catalog.getIndexData(res)
             # create a XML document
             root = etree.Element("seishub")

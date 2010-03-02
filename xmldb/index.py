@@ -9,6 +9,7 @@ from seishub.xmldb.resource import XmlDocument
 from twisted.python import log
 import sys
 from seishub.registry.package import ResourceTypeWrapper
+from obspy.core import UTCDateTime
 
 
 TEXT_INDEX = 0
@@ -293,13 +294,17 @@ class DateTimeIndexElement(KeyIndexElement):
     db_table = defaults.index_datetime_tab
 
     def _filter_key(self, data):
-        data = data.strip()
-        if self.index.options:
-            return datetime.strptime(data, self.index.options)
+        if isinstance(data, UTCDateTime):
+            return data.datetime
+        elif isinstance(data, datetime):
+            return data
+        else:
+            data = data.strip()
+            if self.index.options:
+                return datetime.strptime(data, self.index.options)
         return self._prepare_key(data)
 
     def _prepare_key(self, data):
-        from obspy.core import UTCDateTime
         dt = UTCDateTime(data)
         return dt.datetime
 

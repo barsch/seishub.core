@@ -513,7 +513,7 @@ class XmlIndexCatalog(DbStorage, _QueryProcessor, _IndexView):
                                             resourcetype_id=resourcetype_id)
         elements = []
         for xmlindex in xmlindex_list:
-            temp = xmlindex.eval(resource.document)
+            temp = xmlindex.eval(resource.document, self.env)
             elements.extend(temp)
         for el in elements:
             try:

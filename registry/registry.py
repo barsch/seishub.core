@@ -650,7 +650,7 @@ class ProcessorIndexRegistry(object):
         rt = self.env.registry.db_getResourceType(cls.package_id,
                                                   cls.resourcetype_id)
         clsname = cls.__module__ + '.' + cls.__name__
-        idx = index.XmlIndex(resourcetype=rt, xpath="",
+        idx = index.XmlIndex(resourcetype=rt, xpath=cls.label,
                              type=index.PROCESSOR_INDEX,
                              options=clsname,
                              label=cls.label)
@@ -660,8 +660,9 @@ class ProcessorIndexRegistry(object):
         try:
             self.register(cls)
         except DuplicateObjectError, e:
-            msg = "Skipping processor index %s: Index already exists.\n%s"
-            self.env.log.info(msg % (cls, e))
+            msg = "Skipping ProcessorIndex /%s/%s - %s\n"
+            self.env.log.debug(msg % (cls.package_id,
+                                      cls.resourcetype_id, cls))
             return
 
     def _disableProcessorIndex(self, cls):
