@@ -248,22 +248,17 @@ class XmlCatalog(object):
 
     def getIndexData(self, resource):
         """
-        Return indexed data for a given Resource or XMLDocument as dictionary.
+        Return indexed data for a given Resource as dictionary.
         
-        @param resource: resource or document
-        @type resource: L{seishub.xmldb.interfaces.IResource} or
-                        L{seishub.xmldb.interfaces.IXmlDocument}
+        @param resource: resource
+        @type resource: L{seishub.xmldb.interfaces.IResource}
         """
-        if IResource.providedBy(resource):
-            doc = resource.document
-        elif IXmlDocument.providedBy(resource):
-            doc = resource
-        else:
-            msg = "getIndexData: Resource or XmlDocument expected. Got a %s."
+        if not IResource.providedBy(resource):
+            msg = "getIndexData: Resource expected. Got a %s."
             raise TypeError(msg % type(resource))
         # sanity check: document should have an id, else no data can be found
-        assert doc._id
-        elements = self.index_catalog.dumpIndexByDocument(doc._id)
+        assert resource.document._id
+        elements = self.index_catalog.dumpIndexByResource(resource)
         values = {}
         for element in elements:
             values.setdefault(element.index.label, {})

@@ -529,14 +529,19 @@ class XmlIndexCatalog(DbStorage, _QueryProcessor, _IndexView):
         """
         return self.pickup(xmlindex._getElementCls(), index=xmlindex)
 
-    def dumpIndexByDocument(self, document_id):
+    def dumpIndexByResource(self, resource):
         """
-        Return all IndexElements indexed for the specified document.
+        Return all IndexElements indexed for the specified resource.
         """
+        xmlindexes = self.getIndexes(
+            package_id=resource.package._package_id,
+            resourcetype_id=resource.resourcetype._resourcetype_id)
         elements = list()
-        for cls in type_classes.values():
-            el = self.pickup(cls, document={'_id':document_id})
-            if el and el[0].document._id == document_id:
+        for xmlindex in xmlindexes:
+            el = self.pickup(xmlindex._getElementCls(),
+                             document={'_id': resource.document._id},
+                             index=xmlindex)
+            if el and el[0].document._id == resource.document._id:
                 elements.extend(el)
         return elements
 
