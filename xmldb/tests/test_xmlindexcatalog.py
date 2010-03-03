@@ -2,7 +2,7 @@
 
 from seishub.exceptions import DuplicateObjectError, NotFoundError
 from seishub.test import SeisHubEnvironmentTestCase
-from seishub.xmldb.index import XmlIndex, DATETIME_INDEX
+from seishub.xmldb.index import XmlIndex, DATETIME_INDEX, FLOAT_INDEX
 from seishub.xmldb.resource import Resource, newXMLDocument
 from seishub.xmldb.xpath import XPathQuery
 import inspect
@@ -271,20 +271,19 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         self.xmldb.addResource(res)
         index1 = XmlIndex(self.rt1, "/station/station_code", label='idx1')
         index2 = XmlIndex(self.rt1, "/station/XY/paramXY", label='idx2')
+        index3 = XmlIndex(self.rt1, "/station/test_date", FLOAT_INDEX)
         self.catalog.registerIndex(index1)
         self.catalog.registerIndex(index2)
-
-        #index3 = XmlIndex(self.rt1, "/station/test_date", FLOAT_INDEX)
-        #self.catalog.registerIndex(index3)
-
+        self.catalog.registerIndex(index3)
         # index resource
         r = self.catalog.indexResource(res)
-        #el = self.catalog.dumpIndex(index1)
-        self.assertEquals(len(r), 4)
+        self.assertEquals(len(r), 5)
+        # dump first index
         el = self.catalog.dumpIndex(index1)
         self.assertEquals(len(el), 1)
         self.assertEquals(el[0].key, "GENF")
         self.assertEquals(el[0].document.data, res.document.data)
+        # dump second index
         el = self.catalog.dumpIndex(index2)
         self.assertEqual(len(el), 3)
         keys = ["0", "2.5", "99"]
@@ -292,25 +291,28 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
             assert e.key in keys
             keys.remove(e.key)
             self.assertEquals(e.document.data, res.document.data)
-
-        # dumpIndexByDocument
-        el = self.catalog.dumpIndexByDocument(res.document._id)
-        self.assertEqual(len(el), 4)
+        # dumpIndexByResource
+        el = self.catalog.dumpIndexByResource(res)
+        self.assertEqual(len(el), 5)
         self.assertEquals(el[0].key, "GENF")
         self.assertEquals(el[0].document.data, res.document.data)
         self.assertEquals(el[0].index.xpath, "/station/station_code")
-        self.assertEquals(el[1].key, "2.5")
+        self.assertTrue(el[1].key in ["0", "2.5", "99"])
         self.assertEquals(el[1].document.data, res.document.data)
         self.assertEquals(el[1].index.xpath, "/station/XY/paramXY")
-        self.assertEquals(el[2].key, "0")
+        self.assertTrue(el[2].key in ["0", "2.5", "99"])
         self.assertEquals(el[2].document.data, res.document.data)
         self.assertEquals(el[2].index.xpath, "/station/XY/paramXY")
-        self.assertEquals(el[3].key, "99")
+        self.assertTrue(el[3].key in ["0", "2.5", "99"])
         self.assertEquals(el[3].document.data, res.document.data)
         self.assertEquals(el[3].index.xpath, "/station/XY/paramXY")
+        self.assertEquals(el[4].key, 20081212010102.125)
+        self.assertEquals(el[4].document.data, res.document.data)
+        self.assertEquals(el[4].index.xpath, "/station/test_date")
         # clean up
         self.catalog.deleteIndex(index1)
         self.catalog.deleteIndex(index2)
+        self.catalog.deleteIndex(index3)
         self.xmldb.deleteResource(res)
 
     def test_indexResourceWithGrouping(self):

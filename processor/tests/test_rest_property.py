@@ -179,8 +179,6 @@ class RestPropertyTests(SeisHubEnvironmentTestCase):
         self.assertTrue('<label2>' in data)
         self.assertTrue('<value>2008-09-12 12:12:13.123987</value>' in data)
         # should be there exactly once
-        # XXX: getIndexData returns two values - one for datetime index and
-        # one for timestamp index, which both read from the same index table
         self.assertEqual(data.count('2008-09-12 12:12:13.123987'), 1)
         # remove resource
         proc.run(DELETE, '/property-test/notvc2/test.xml')

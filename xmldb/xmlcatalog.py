@@ -4,7 +4,7 @@ from seishub.exceptions import InvalidParameterError, NotFoundError, \
     InvalidObjectError
 from seishub.util.xml import applyMacros
 from seishub.xmldb.index import XmlIndex, TEXT_INDEX, INDEX_TYPES
-from seishub.xmldb.interfaces import IResource, IXmlDocument
+from seishub.xmldb.interfaces import IResource
 from seishub.xmldb.resource import Resource, newXMLDocument
 from seishub.xmldb.xmldbms import XmlDbManager
 from seishub.xmldb.xmlindexcatalog import XmlIndexCatalog
