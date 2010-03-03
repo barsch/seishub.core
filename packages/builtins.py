@@ -4,6 +4,7 @@ from seishub.core import Component, implements
 from seishub.packages.installer import registerStylesheet, registerIndex
 from seishub.packages.interfaces import IPackage, IResourceType, IMapper
 import os
+from seishub.util import toJSON
 
 
 class SeisHubPackage(Component):
@@ -57,5 +58,13 @@ class XPathMapper(Component):
     mapping_url = '/xpath'
 
     def process_GET(self, request):
-        import pdb; pdb.set_trace()
-        return ""
+        # get resources
+        resources = self.env.catalog.query(request.path[6:], full=True)
+        # get indexed data
+        result = {}
+        for resource in resources:
+            data = self.env.catalog.getIndexData(resource)
+            result[str(resource)] = data
+        # generate correct header 
+        request.setHeader('content-type', 'application/json; charset=UTF-8')
+        return toJSON(result)
