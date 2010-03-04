@@ -5,6 +5,8 @@ from seishub.packages.installer import registerStylesheet, registerIndex
 from seishub.packages.interfaces import IPackage, IResourceType, IMapper
 import os
 from seishub.util import toJSON
+from seishub.xmldb.xpath import XPathQuery
+from seishub.db.util import formatResults
 
 
 class SeisHubPackage(Component):
@@ -61,10 +63,21 @@ class XPathMapper(Component):
         # get resources
         resources = self.env.catalog.query(request.path[6:], full=True)
         # get indexed data
-        result = {}
+        results = []
         for resource in resources:
             data = self.env.catalog.getIndexData(resource)
-            result[str(resource)] = data
-        # generate correct header 
-        request.setHeader('content-type', 'application/json; charset=UTF-8')
-        return toJSON(result)
+            data['package_id']=resource.package._id
+            data['resourcetype_id']=resource.resourcetype._id
+            data['document_id']=resource.document._id
+            data['resource_name']=str(resource._name)
+            results.append(data)
+        # fetch arguments
+        try:
+            limit = int(request.args0.get('limit'))
+            offset = int(request.args0.get('offset', 0))
+        except:
+            limit = None
+            offset = 0
+        # generate output
+        return formatResults(request, results, count=len(results), limit=limit,
+                             offset=offset)

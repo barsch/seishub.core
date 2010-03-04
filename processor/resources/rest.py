@@ -17,6 +17,7 @@ from seishub.util.text import isInteger
 from seishub.util.xml import addXMLDeclaration
 from twisted.web import http
 from zope.interface import implements
+from seishub import __version__ as SEISHUB_VERSION
 
 
 class RESTResource(Resource):
@@ -270,16 +271,18 @@ class RESTProperty(Resource):
             # dictionary of indexes
             index_dict = request.env.catalog.getIndexData(res)
             # create a XML document
-            root = etree.Element("seishub")
+            root = etree.Element("seishub", version=SEISHUB_VERSION)
+            sub1 = etree.SubElement(root, "resource", url=res.getURL())
+            sub2 = etree.SubElement(sub1, "index")
             for label, values_dict in index_dict.iteritems():
-                sub = etree.SubElement(root, label)
+                sub3 = etree.SubElement(sub2, label)
                 for _pos, values in values_dict.iteritems():
                     for value in values:
                         if not value:
                             continue
                         if not isinstance(value, basestring):
                             value = unicode(value)
-                        etree.SubElement(sub, "value").text = value
+                        etree.SubElement(sub3, "value").text = value
             data = etree.tostring(root, pretty_print=True, encoding='utf-8')
             format_prefix = 'index'
         elif property == '.meta':
@@ -290,18 +293,20 @@ class RESTProperty(Resource):
             meta = res.document.meta
             revision = str(res.document.revision)
             # create a XML document
-            root = etree.Element("seishub")
-            etree.SubElement(root, "package").text = self.package_id
-            etree.SubElement(root, "resourcetype").text = self.resourcetype_id
-            etree.SubElement(root, "name").text = self.name
-            etree.SubElement(root, "document_id").text = str(res.document._id)
-            etree.SubElement(root, "resource_id").text = str(res._id)
-            etree.SubElement(root, "revision").text = revision
-            etree.SubElement(root, "uid").text = unicode(meta.uid)
-            etree.SubElement(root, "datetime").text = \
+            root = etree.Element("seishub", version=SEISHUB_VERSION)
+            sub1 = etree.SubElement(root, "resource", url=res.getURL())
+            sub2 = etree.SubElement(sub1, "meta")
+            etree.SubElement(sub2, "package").text = self.package_id
+            etree.SubElement(sub2, "resourcetype").text = self.resourcetype_id
+            etree.SubElement(sub2, "name").text = self.name
+            etree.SubElement(sub2, "document_id").text = str(res.document._id)
+            etree.SubElement(sub2, "resource_id").text = str(res._id)
+            etree.SubElement(sub2, "revision").text = revision
+            etree.SubElement(sub2, "uid").text = unicode(meta.uid)
+            etree.SubElement(sub2, "datetime").text = \
                 unicode(meta.datetime.isoformat())
-            etree.SubElement(root, "size").text = unicode(meta.size)
-            etree.SubElement(root, "hash").text = unicode(meta.hash)
+            etree.SubElement(sub2, "size").text = unicode(meta.size)
+            etree.SubElement(sub2, "hash").text = unicode(meta.hash)
             data = etree.tostring(root, pretty_print=True, encoding='utf-8')
             format_prefix = 'meta'
         else:
