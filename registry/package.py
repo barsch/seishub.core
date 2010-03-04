@@ -85,15 +85,6 @@ class ResourceTypeWrapper(Serializable):
     resourcetype_id = property(getResourcetype_id, setResourcetype_id, 
                                "unique package id (string)")
     
-#    def getPackageId(self):
-#        return self._package_id
-#    
-#    def setPackageId(self, data):
-#        self._package_id = data
-#        #self._package_id = validate_id(data)
-#        
-#    package_id = property(getPackageId, setPackageId, "Package id")
-
     def getPackage(self):
         return self._package
     
@@ -131,56 +122,25 @@ class ResourceTypeWrapper(Serializable):
 
 class Alias(Serializable):
     db_table = alias_tab
-    db_mapping = {'resourcetype':Relation(ResourceTypeWrapper, 
-                                             'resourcetype_id'),
-                  'package':Relation(PackageWrapper, 'package_id'),
-                  'name':'name',
-                  'expr':'expr'
-                  }
+    db_mapping = {'url':'url', 'expr':'expr'}
     
-    def __init__(self, package = PackageWrapper(), 
-                 resourcetype = ResourceTypeWrapper(),
-                 name = None, expr = None):
+    def __init__(self, url = None, expr = None):
         super(Serializable, self).__init__()
-        self.package = package
-        self.resourcetype = resourcetype
-        self.name = name
+        self.url = url
         self.expr = expr
     
     def __str__(self):
-        return to_uri(self.package.package_id, 
-                      self.resourcetype.resourcetype_id) + '/@' + self.name
+        return self._url
+
+    def getURL(self):
+        return self._url
     
-    def getResourceType(self):
-        return self._resourcetype
-     
-    def setResourceType(self, data):
-        if data and not IResourceTypeWrapper.providedBy(data):
-            raise TypeError("%s is not an IResourceTypeWrapper" % str(data))
-        self._resourcetype = data
-        
-    resourcetype = db_property(getResourceType, setResourceType, 
-                               "Resource type", attr = '_resourcetype')
-    
-    def getPackage(self):
-        return self._package
-    
-    def setPackage(self, data):
-        if data and not IPackageWrapper.providedBy(data):
-            raise TypeError("%s is not an IPackageWrapper" % str(data))
-        self._package = data
-        
-    package = db_property(getPackage, setPackage, "Package", attr = '_package')
-    
-    def getName(self):
-        return self._name
-    
-    def setName(self, data):
+    def setURL(self, data):
         if data is not None and not isinstance(data, basestring):
-            raise TypeError("Invalid alias name, String expected: %s" % data)
-        self._name = validate_id(data)
+            raise TypeError("Invalid alias URL, String expected: %s" % data)
+        self._url = data
         
-    name = property(getName, setName, "Name of the alias")
+    url = property(getURL, setURL, "URL of the alias")
     
     def getExpr(self):
         return self._expr
@@ -195,8 +155,7 @@ class Alias(Serializable):
     
     def getQuery(self):
         """return query string"""
-        return to_xpath_query(self.package.package_id, 
-                              self.resourcetype.resourcetype_id, self._expr)
+        return self._expr
 
 
 class DocBase(Serializable):

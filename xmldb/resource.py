@@ -239,12 +239,6 @@ class Resource(Serializable):
 
     name = property(getName, setName, "Alphanumeric name (optional)")
 
-    def getURL(self):
-        name = self.getName()
-        pid = self.getPackage().package_id
-        rid = self.getResourceType().resourcetype_id
-        return "/xml/%s/%s/%s" % (pid, rid, name)
-
 
 def newXMLDocument(data, id=None, uid=None):
     """

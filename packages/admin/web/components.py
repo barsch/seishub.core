@@ -293,7 +293,7 @@ class FileSystemPanel(Component):
     def _deleteFilesystem(self, paths):
         for path in paths:
             try:
-                self.config.delete('fs', path)
+                self.config.remove('fs', path)
                 self.config.save()
             except Exception, e:
                 self.log.info("Error deleting file system entry point", e)
@@ -302,66 +302,58 @@ class FileSystemPanel(Component):
         return {'info': "Shared file system entry point has been deleted."}
 
 
-#class AliasesPanel(Component):
-#    """
-#    List all aliases and add new ones.
-#    """
-#    implements(IAdminPanel)
-#    
-#    template = 'templates' + os.sep + 'components_aliases.tmpl'
-#    panel_ids = ('components', 'Components', 'edit-aliases', 'Aliases')
-#    has_roles = ['COMPONENT_ALIASES']
-#    
-#    def render(self, request):
-#        packages = self.env.registry.getPackageIds()
-#        resourcetypes = self.env.registry.getAllPackagesAndResourceTypes()
-#        
-#        data  = {
-#            'aliases': {},
-#            'error': '',
-#            'alias': '',
-#            'xpath': '',
-#            'sql': '',
-#            'packages': packages,
-#            'resourcetypes': resourcetypes,
-#            'resturl': self.env.getRestUrl(),
-#        }
-#        if request.method=='POST':
-#            args = request.args
-#            package_id = args.get('package_id',[''])[0]
-#            resourcetype_id = args.get('resourcetype_id',[''])[0]
-#            alias = args.get('alias',[''])[0]
-#            xpath = args.get('xpath',[''])[0]
-#            if 'add' in args.keys() and xpath and alias:
-#                data.update(self._addAlias(package_id, resourcetype_id, 
-#                                           alias, xpath))
-#            elif 'delete' in args.keys() and 'alias[]' in args.keys():
-#                data.update(self._deleteAliases(args.get('alias[]',[])))
-#        # fetch all aliases
-#        data['aliases'] = self.env.registry.aliases
-#        return data
-#    
-#    def _deleteAliases(self, aliases=[]):
-#        for alias in aliases:
-#            try:
-#                self.env.registry.aliases.delete(uri = alias)
-#            except Exception, e:
-#                self.log.error("Error deleting an alias", e)
-#                return {'error': ("Error deleting an alias", e)}
-#        return {'info': "Alias has been deleted."}
-#    
-#    def _addAlias(self, package_id, resourcetype_id, alias, xpath):
-#        try:
-#            self.env.registry.aliases.register(package_id, 
-#                                               resourcetype_id, 
-#                                               alias, 
-#                                               xpath)
-#        except Exception, e:
-#            self.log.error("Error generating an alias", e)
-#            return {'error': ("Error generating an alias", e)}
-#        return {'info': "Alias has been added."}
-#
-#
+class AliasesPanel(Component):
+    """
+    List all aliases and add new ones.
+    """
+    implements(IAdminPanel)
+    
+    template = 'templates' + os.sep + 'components_aliases.tmpl'
+    panel_ids = ('components', 'Components', 'edit-aliases', 'Aliases')
+    has_roles = ['COMPONENT_ALIASES']
+    
+    def render(self, request):
+        data  = {
+            'aliases': {},
+            'error': '',
+            'alias': '',
+            'xpath': '',
+            'resturl': self.env.getRestUrl(),
+        }
+        if request.method=='POST':
+            args = request.args
+            alias = args.get('alias',[''])[0]
+            xpath = args.get('xpath',[''])[0]
+            if 'add' in args.keys() and xpath and alias:
+                data.update(self._addAlias(alias, xpath))
+            elif 'delete' in args.keys() and 'alias[]' in args.keys():
+                data.update(self._deleteAliases(args.get('alias[]',[])))
+        # fetch all aliases
+        data['aliases'] = self.env.registry.aliases.get()
+        return data
+    
+    def _deleteAliases(self, aliases=[]):
+        for alias in aliases:
+            try:
+                self.env.registry.aliases.delete(id = alias)
+            except Exception, e:
+                self.log.error("Error deleting an alias", e)
+                return {'error': ("Error deleting an alias", e)}
+        self.env.tree.update()
+        return {'info': "Alias has been deleted."}
+    
+    def _addAlias(self, alias, xpath):
+        if not alias.startswith('/'):
+            alias = '/' + alias
+        try:
+            self.env.registry.aliases.register(alias, xpath)
+        except Exception, e:
+            self.log.error("Error generating an alias", e)
+            return {'error': ("Error generating an alias", e)}
+        self.env.tree.update()
+        return {'info': "Alias has been added."}
+
+
 #class QuickinstallerPanel(Component):
 #    """
 #    Manage components.

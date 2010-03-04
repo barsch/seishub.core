@@ -54,7 +54,7 @@ class IResourceFormater(Interface):
         """
         Formats the resource.
         
-        This function should returns a formated document and takes care of the
+        This function should return a formated document and takes care of the
         returned content type.
         """
 

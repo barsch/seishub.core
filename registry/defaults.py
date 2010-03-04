@@ -61,14 +61,9 @@ stylesheet_tab = Table(DEFAULT_PREFIX + STYLESHEET_TABLE, metadata,
 
 alias_tab = Table(DEFAULT_PREFIX + ALIAS_TABLE, metadata,
     Column('id', Integer, primary_key=True, autoincrement=True),
-    Column('package_id', Integer,
-           ForeignKey(DEFAULT_PREFIX + PACKAGES_TABLE + '.id'),
-           nullable=False),
-    Column('resourcetype_id', Integer,
-           ForeignKey(DEFAULT_PREFIX + RESOURCETYPES_TABLE + '.id')),
-    Column('name', Text, nullable=False),
+    Column('url', Text, nullable=False),
     Column('expr', Text, nullable=False),
-    UniqueConstraint('package_id', 'resourcetype_id', 'name'),
+    UniqueConstraint('url'),
     useexisting=True,
 )
 

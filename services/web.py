@@ -287,11 +287,14 @@ class WebRequest(Processor, http.Request):
                 size = ''
             else:
                 size = ' size="%d"' % (obj.getMetadata().get('size', 0))
-#            # id may be unicode object -> create an UTF-8 encoded string
+            # id may be unicode object -> create an UTF-8 encoded string
             if isinstance(id, unicode):
                 id = id.encode('utf-8')
             # we need to make the URL web safe
-            url = urllib.quote(addBase(self.path, id))
+            if not hasattr(obj, 'url'):
+                url = urllib.quote(addBase(self.path, id))
+            else:
+                url = obj.url
             data += RESOURCELIST_NODE % (tag, category, size, url, id, tag)
         data = str(RESOURCELIST_ROOT % (str(self.env.getRestUrl()), data))
         # set default content type to XML

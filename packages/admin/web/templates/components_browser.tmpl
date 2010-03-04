@@ -57,7 +57,7 @@
               for (var i=0; i<items.length; i++) {
                 var item = items[i];
                 var text = decodeURIComponent(item.substr(item.lastIndexOf('/')+1));
-                if (element=='resource' || element=='alias' || element=='file') {
+                if (element=='resource' || element=='file') {
                   var tmp = new YAHOO.widget.TextNode({label:text, target:"_blank"}, node, false);
                   tmp.href = "$resturl" + item;
                   tmp.title = item;

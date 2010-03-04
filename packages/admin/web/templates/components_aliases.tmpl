@@ -2,39 +2,19 @@
 
 <p><i>
   Aliases are shortcuts to very specific XPath-like
-  queries. An alias is always linked to a package and optional to a
-  resource type. The result of an alias is a list of unique resources.
+  queries. The result of an alias is a list of unique resources.
 </i></p>
 
 <h2>Add new alias</h2>
 <form method="post" id="add" action="">
-  <div class="field-left">
-    <label>Package</label><br />
-    <select name="package_id" id="package_id" onchange="changePackage()">
-       #for $p in $packages
-       <option value="$p">$p</option>
-       #end for
-    </select>
-  </div>
   <div class="field">
-    <label>Resource Type (optional)</label><br />
-    <select name="resourcetype_id" id="resourcetype_id">
-      <option value="">-</option>
-    </select>
-  </div>
-  <div class="field">
-    <label>Alias URL</label><br />
+    <label>Alias URI</label><br />
     <input type="text" size="80" name="alias" value="$alias" />
   </div>
   <div class="field">
     <label>XPath Query</label><br />
     <textarea name="xpath" rows="5" cols="80">$xpath</textarea>
   </div>
-  <div class="field">
-    <label>SQL Query</label><br />
-    <textarea name="sql" rows="5" cols="80">$sql</textarea>
-  </div>
-  
   <div class="button">
     <input type="submit" name="add" value="Add" />
   </div>
@@ -48,22 +28,18 @@
   <table class="list">
     <tr>
       <th></th>
-      <th>Package</th>
-      <th>Resource Type</th>
-      <th>Alias URL</th>
+      <th>Alias URI</th>
       <th>XPath</th>
       <th>Result</th>
     </tr>
     #for $alias in $aliases
     <tr> 
       <td>
-        <input type="checkbox" name="alias[]" value="$alias" />
+        <input type="checkbox" name="alias[]" value="$alias._id" />
       </td> 
-      <td>$alias.package.package_id</td>
-      <td>$alias.resourcetype.resourcetype_id</td>
-      <td>$alias.name</td>
+      <td>$alias.url</td>
       <td>$alias.expr</td>
-      <td><a href="$resturl$alias">[XML]</a></td>
+      <td><a href="$resturl$alias.url?format=xhtml">[XML]</a></td>
     </tr>
     #end for
   </table>
@@ -72,39 +48,3 @@
     <input type="submit" name="delete" value="Delete" />
   </div>
 </form>
-
-
-<script type="text/javascript">
-/* <![CDATA[ */
-
-    var resourcetypes = new Array();
-    #for $p in $packages
-    resourcetypes['$p'] = $resourcetypes[$p];
-    #end for
-
-    function changePackage()
-    {
-        var ps = document.getElementById('package_id');
-        if (ps.selectedIndex)
-        {
-            var package_id = ps.options[ps.selectedIndex].value;
-        }
-        else
-        {
-            var package_id = ps.options[0].value;
-        }
-        var selectbox = document.getElementById('resourcetype_id');
-        selectbox.options.length = 0;
-        var emptylink = new Option('-', '');
-        selectbox.options[0] = emptylink;
-        for (var i=0; i<resourcetypes[package_id].length; i++)
-        {
-            var link = resourcetypes[package_id][i];
-            var addme = new Option(link, link);
-            selectbox.options[i+1] = addme;
-        }
-    }
-    changePackage();
-
-/* ]]> */
-</script>

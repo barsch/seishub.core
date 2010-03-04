@@ -5,7 +5,7 @@ from seishub.db.orm import DbStorage, DbError, DB_LIKE
 from seishub.exceptions import InvalidParameterError, SeisHubError, \
     NotFoundError, InvalidObjectError, DuplicateObjectError
 from seishub.registry.defaults import resourcetypes_tab, packages_tab
-from seishub.xmldb.defaults import document_tab, resource_tab
+from seishub.xmldb.defaults import document_tab, resource_tab, document_meta_tab
 from seishub.xmldb.index import XmlIndex, type_classes
 from seishub.xmldb.interfaces import IXPathQuery, IResource, IXmlIndex
 from seishub.xmldb.xpath import XPathQuery
@@ -348,16 +348,12 @@ class _QueryProcessor(object):
         limit = query.getLimit()
         offset = query.getOffset()
         q = select([document_tab.c['id'].label("document_id"),
+                    document_tab.c['revision'].label("revision"),
                     packages_tab.c['name'].label("package_id"),
                     resourcetypes_tab.c['name'].label("resourcetype_id"),
                     resource_tab.c['name'].label("resource_name")],
                    use_labels=True).distinct()
-        #xpath = '/'.join(location_path[2:])
         pkg, rt = location_path[0:2]
-        # XXX: check if this is needed, requires indexation of rootnode
-        #xmlindex_list = [self.findIndex([pkg, rt], xpath)]
-        #q, joins = self._joinIndexes(xmlindex_list, q)
-        #joins = self._join_on_resourcetype(pkg, rt, joins)
         joins = self._join_on_resourcetype(pkg, rt)
         if predicates:
             q, joins, w = self._process_predicates(predicates, q, joins)

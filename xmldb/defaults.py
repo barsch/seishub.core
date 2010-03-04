@@ -12,8 +12,6 @@ DOCUMENT_TABLE = 'document'
 DOCUMENT_META_TABLE = 'document_meta'
 INDEX_TABLE = 'index'
 INDEX_DEF_TABLE = 'index_def'
-METADATA_TABLE = 'meta'
-METADATA_DEF_TABLE = 'meta_def'
 RESOURCE_TABLE = 'resource'
 
 
@@ -56,21 +54,6 @@ resource_tab = Table(DEFAULT_PREFIX + RESOURCE_TABLE, metadata,
                           DEFAULT_PREFIX + RESOURCE_TABLE + ')')
            ),
     UniqueConstraint('resourcetype_id', 'name'),
-    useexisting=True,
-)
-
-resource_meta_def_tab = Table(DEFAULT_PREFIX + METADATA_DEF_TABLE, metadata,
-    Column('id', Integer, primary_key=True, autoincrement=True),
-    Column('name', Text),
-    Column('type', Text),
-    # Column('maxcount', Integer),
-    useexisting=True,
-)
-
-resource_meta_tab = Table(DEFAULT_PREFIX + METADATA_TABLE, metadata,
-    Column('resource_id', Integer),
-    Column('metadata_id', Integer),
-    Column('value', Text),
     useexisting=True,
 )
 

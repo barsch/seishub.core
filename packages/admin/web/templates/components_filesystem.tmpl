@@ -26,11 +26,11 @@
       <th>URL</th>
       <th>Server Path</th>
     </tr>
-    #for ($path, $url) in $fs
+    #for ($url, $path) in $fs
     <tr> 
       <td>
         <input type="checkbox" name="paths[]" 
-               value="$path" />
+               value="$url" />
       </td> 
       <td>$url</td>
       <td>$path</td>

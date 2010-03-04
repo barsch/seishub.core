@@ -462,55 +462,20 @@ class AliasRegistry(RegistryBase):
     _registry = list()
     cls = Alias
 
-    def _split_uri(self, uri):
-        args = list(from_uri(uri))
-        if args[2].startswith('@'):
-            args[2] = args[2][1:]
-        return args
-
-    def register(self, package_id, resourcetype_id, name, expr, limit=None,
-                 order_by=None):
-        package, resourcetype = self.registry.objects_from_id(package_id,
-                                                              resourcetype_id)
-        o = self.cls(package, resourcetype, name, expr)
+    def register(self, uri, expr):
+        o = self.cls(uri, expr)
         self.store(o)
         return True
 
-    def get(self, package_id=None, resourcetype_id=None,
-            name=None, expr=None, limit=None, order_by=None,
-            uri=None):
+    def get(self, uri=None, expr=None):
         """
-        Get a single alias by either (package_id, resourcetype_id, name), by 
-        expression, or by unique uri.
-        Get multiple aliases by (package_id, resourcetype_id) or by package_id.
+        Get a single alias by either by expression or by unique uri.
         """
-        if uri:
-            package_id, resourcetype_id, name = self._split_uri(uri)
-        keys = {'name':name,
-                'expr':expr}
-        if package_id:
-            keys['package'] = {'package_id' : package_id}
-            keys['resourcetype'] = DB_NULL
-            if resourcetype_id:
-                keys['resourcetype'] = {'resourcetype_id' : resourcetype_id}
-        objs = self.pickup(self.cls, **keys)
+        objs = self.pickup(self.cls, uri=uri, expr=expr)
         return objs
 
-    def delete(self, package_id=None, resourcetype_id=None, name=None,
-               uri=None):
-        if uri:
-            package_id, resourcetype_id, name = self._split_uri(uri)
-        package, resourcetype = self.registry.objects_from_id(package_id, resourcetype_id)
-        null = list()
-        if package:
-            null = ['resourcetype_id']
-        if name:
-            name = str(name)
-        self.drop(self.cls,
-                  package=package,
-                  resourcetype=resourcetype,
-                  name=name,
-                  _null=null)
+    def delete(self, id):
+        self.drop(self.cls, _id=id)
         return True
 
 
