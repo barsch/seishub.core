@@ -84,7 +84,7 @@ class ResourceTree(StaticFolder):
         res = self.children['manage'].children['welcome']
         self.putChild('welcome', res)
         self.env.log.info('ResourceTree has been updated.')
-        # set yui components
-        res = self.children['manage'].children['yui']
+        # set yui2 components
+        res = self.children['manage'].children['yui2']
         res.hidden = True
-        self.putChild('yui', res)
+        self.putChild('yui2', res)

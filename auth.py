@@ -69,22 +69,6 @@ class User(Base):
         return "<User %s(%d): '%s')>" % (self.id, self.uid, self.name)
 
 
-class Guppy(Base):
-    """
-    A guppy object.
-    """
-    __tablename__ = 'guppy'
-
-    timestamp = Column(DateTime, primary_key=True)
-    size = Column(Integer)
-    count = Column(Integer)
-
-    def __init__(self, timestamp, size, count):
-        self.timestamp = timestamp
-        self.size = size
-        self.count = count
-
-
 class AuthenticationManager(object):
     """
     The Authentication Manager.
@@ -118,8 +102,6 @@ class AuthenticationManager(object):
             self.env.log.warn("The administrative account is accessible via "
                               "the standard password! Please change this as "
                               "soon as possible!")
-        # clear guppy table at start-up
-        self.clearGuppy()
 
     def _validatePassword(self, password):
         """
@@ -239,35 +221,3 @@ class AuthenticationManager(object):
         """
         self.refresh()
         return (PasswordDictChecker(self.env),)
-
-#XXX: should go out of auth - needs refactoring!
-
-    def addGuppy(self, timestamp, size, count):
-        """
-        Adds a guppy entry.
-        """
-        guppy = Guppy(timestamp=timestamp, size=size, count=count)
-        session = self.Session()
-        session.add(guppy)
-        try:
-            session.commit()
-        except Exception, e:
-            session.rollback()
-            raise SeisHubError(str(e))
-
-    def getGuppy(self, number=10):
-        session = self.Session()
-        guppy = session.query(Guppy).order_by(Guppy.timestamp).limit(number)
-        try:
-            session.commit()
-        except:
-            session.rollback()
-        return guppy
-
-    def clearGuppy(self):
-        session = self.Session()
-        session.query(Guppy).delete()
-        try:
-            session.commit()
-        except:
-            session.rollback()

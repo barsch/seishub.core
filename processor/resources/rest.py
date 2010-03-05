@@ -156,11 +156,9 @@ class RESTResource(Resource):
             raise ForbiddenError(msg)
         # parse request headers for output/format options
         data = request.data
-        formats = request.args.get('format', []) or \
-                  request.args.get('output', [])
         # handle output/format conversion
         data = self._format(request, data)
-        # get uid
+        # get UID
         uid = request.getUser()
         # modify resource
         request.env.catalog.modifyResource(self.res, data, uid=uid)

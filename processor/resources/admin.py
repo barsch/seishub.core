@@ -239,7 +239,7 @@ class AdminRootFolder(StaticFolder):
         Register all static content.
         """
         # register default static content
-        for id in ['images', 'css', 'js', 'yui']:
+        for id in ['images', 'css', 'js', 'yui2']:
             path = os.path.join(self.statics_dir, id)
             self.putChild(id, FileSystemResource(path, public=True))
         # favicon

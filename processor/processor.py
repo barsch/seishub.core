@@ -13,7 +13,7 @@ handled by raising a SeisHubError instance.
 """
 
 from StringIO import StringIO
-from seishub.exceptions import SeisHubError, NotFoundError, NotImplementedError
+from seishub.exceptions import SeisHubError, NotFoundError
 from seishub.util.path import splitPath
 from twisted.web import http
 import urllib
