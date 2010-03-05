@@ -59,7 +59,8 @@ class Logger(object):
             log.removeObserver(l)
 
     def _formatMessage(self, level, msg, showTraceback):
-        msg = '%6s  %s' % (level + ':', msg)
+        if level:
+            msg = '%6s  %s' % (level + ':', msg)
         log.msg(msg, isError=True)
         if showTraceback:
             log.msg(traceback.format_exc(), isError=True)
@@ -96,3 +97,6 @@ class Logger(object):
         if self.log_level < DEBUGX:
             return
         self._formatMessage('XXX', msg, showTraceback)
+
+    def log(self, msg, showTraceback=False):
+        self._formatMessage('', msg, showTraceback)

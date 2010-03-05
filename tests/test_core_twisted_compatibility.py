@@ -640,15 +640,6 @@ class ProxyForInterfaceTests(twisted_unittest.TestCase):
             proxy.__name__.split('.')[-1],
             "IProxiedInterface)")
 
-
-    def test_provides(self):
-        """
-        The resulting proxy provides the Interface that it proxies.
-        """
-        proxy = proxyForInterface(IProxiedInterface)
-        self.assertTrue(IProxiedInterface.providedBy(proxy))
-
-
     def test_proxyDescriptorGet(self):
         """
         _ProxyDescriptor's __get__ method should return the appropriate

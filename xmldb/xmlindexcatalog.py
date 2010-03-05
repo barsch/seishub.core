@@ -331,7 +331,7 @@ class _QueryProcessor(object):
         results['ordered'] = ordered
         return results
 
-    def query(self, query):
+    def query(self, query, compact=False):
         """
         Query the catalog.
         
@@ -347,26 +347,31 @@ class _QueryProcessor(object):
         order_by = query.getOrderBy() or list()
         limit = query.getLimit()
         offset = query.getOffset()
-        q = select([document_tab.c['id'].label("document_id"),
-                    document_tab.c['revision'].label("revision"),
-                    packages_tab.c['name'].label("package_id"),
-                    resourcetypes_tab.c['name'].label("resourcetype_id"),
-                    resource_tab.c['name'].label("resource_name")],
-                   use_labels=True).distinct()
+        # package and resource type
+        columns = [document_tab.c['id'].label("document_id")]
+        if not compact:
+            # add additional columns 
+            columns.extend([
+                document_tab.c['revision'].label("revision"),
+                packages_tab.c['name'].label("package_id"),
+                resourcetypes_tab.c['name'].label("resourcetype_id"),
+                resource_tab.c['name'].label("resource_name")
+            ])
+        query = select(columns, use_labels=True, distinct=True)
         pkg, rt = location_path[0:2]
         joins = self._join_on_resourcetype(pkg, rt)
         if predicates:
-            q, joins, w = self._process_predicates(predicates, q, joins)
+            query, joins, w = self._process_predicates(predicates, query,
+                                                       joins)
             if w:
-                q = q.where(w)
+                query = query.where(w)
         if order_by:
-            q, joins = self._process_order_by(order_by, q, joins)
-        else:
-            q = q.order_by(document_tab.c['id'])
+            query, joins = self._process_order_by(order_by, query, joins)
         if joins:
-            q = q.select_from(joins)
-        q = q.limit(limit).offset(offset)
-        res = self._db.execute(q)
+            query = query.select_from(joins)
+        if limit or offset:
+            query = query.limit(limit).offset(offset)
+        res = self._db.execute(query)
         results = self._process_results(res)
         res.close()
         return results

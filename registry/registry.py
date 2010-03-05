@@ -9,7 +9,6 @@ from seishub.packages.interfaces import IPackage, IResourceType, IMapper, \
 from seishub.registry.package import Alias, Schema, Stylesheet, PackageWrapper, \
     ResourceTypeWrapper
 from seishub.registry.util import RegistryListProxy
-from seishub.util.text import from_uri
 from seishub.xmldb import index
 from zope.interface.verify import verifyClass
 
@@ -467,15 +466,15 @@ class AliasRegistry(RegistryBase):
         self.store(o)
         return True
 
-    def get(self, uri=None, expr=None):
+    def get(self, **kwargs):
         """
-        Get a single alias by either by expression or by unique uri.
+        Get a single alias by either by expression or by unique URI.
         """
-        objs = self.pickup(self.cls, uri=uri, expr=expr)
+        objs = self.pickup(self.cls, **kwargs)
         return objs
 
-    def delete(self, id):
-        self.drop(self.cls, _id=id)
+    def delete(self, uri):
+        self.drop(self.cls, uri=uri)
         return True
 
 
@@ -624,7 +623,7 @@ class ProcessorIndexRegistry(object):
     def _enableProcessorIndex(self, cls):
         try:
             self.register(cls)
-        except DuplicateObjectError, e:
+        except DuplicateObjectError:
             msg = "Skipping ProcessorIndex /%s/%s - %s\n"
             self.env.log.debug(msg % (cls.package_id,
                                       cls.resourcetype_id, cls))

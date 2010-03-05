@@ -344,7 +344,8 @@ class TimestampIndexElement(KeyIndexElement):
     db_table = defaults.index_datetime_tab
 
     def _filter_key(self, data):
-        return datetime.fromtimestamp(float(data))
+        data = data.strip()
+        return UTCDateTime(float(data)).datetime
 
 
 type_classes = {

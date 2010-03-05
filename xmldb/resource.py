@@ -1,15 +1,14 @@
 # -*- coding: utf-8 -*-
 
 from seishub.core import implements
-
-from seishub.exceptions import InvalidParameterError
 from seishub.db.orm import Serializable, Relation, db_property, LazyAttribute
-from seishub.util.xmlwrapper import IXmlDoc, XmlTreeDoc
-from seishub.util.text import validate_id
-from seishub.util.xml import toUnicode, parseXMLDeclaration, addXMLDeclaration
-from seishub.util.text import hash
+from seishub.exceptions import InvalidParameterError
 from seishub.registry.package import ResourceTypeWrapper
-from seishub.xmldb.defaults import resource_tab, document_tab, document_meta_tab
+from seishub.util.text import hash, validate_id
+from seishub.util.xml import toUnicode, parseXMLDeclaration, addXMLDeclaration
+from seishub.util.xmlwrapper import IXmlDoc, XmlTreeDoc
+from seishub.xmldb.defaults import resource_tab, document_tab, \
+    document_meta_tab
 from seishub.xmldb.interfaces import IResource, IXmlDocument, IDocumentMeta
 
 
@@ -25,12 +24,13 @@ class DocumentMeta(Serializable):
 
     db_table = document_meta_tab
 
-    db_mapping = {'_id':'id',
-                  'uid':'uid',
-                  'datetime':'datetime',
-                  'size':'size',
-                  'hash':'hash'
-                  }
+    db_mapping = {
+        '_id':'id',
+        'uid':'uid',
+        'datetime':'datetime',
+        'size':'size',
+        'hash':'hash'
+    }
 
     def __init__(self, uid=None, datetime=None, size=None, hash=None):
         self.uid = uid
@@ -76,8 +76,11 @@ class DocumentMeta(Serializable):
 
 
 class XmlDocument(Serializable):
-    """auto-parsing xml resource, 
-    given xml data gets validated and parsed on resource creation"""
+    """
+    Auto-parsing XML resource.
+
+    Given xml data gets validated and parsed on resource creation.
+    """
 
     implements (IXmlDocument)
 
@@ -242,9 +245,9 @@ class Resource(Serializable):
 
 def newXMLDocument(data, id=None, uid=None):
     """
-    Returns a new XmlDocument object. 
-    
-    Data will be converted to unicode and a possible XML declaration will be 
+    Returns a new XmlDocument object.
+
+    Data will be converted to unicode and a possible XML declaration will be
     removed. Use this method whenever you wish to create a XmlDocument 
     manually!
     """

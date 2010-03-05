@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from datetime import datetime
+from obspy.core import UTCDateTime
 from seishub.exceptions import SeisHubError
 from seishub.test import SeisHubEnvironmentTestCase
 from seishub.xmldb import index
@@ -209,26 +210,26 @@ class XmlIndexTest(SeisHubEnvironmentTestCase):
         Tests indexing of timestamps.
         """
         # w/ microseconds
-        dt = datetime(2008, 10, 23, 11, 53, 12, 54000)
+        dt = UTCDateTime(2008, 10, 23, 11, 53, 12, 54000)
         idx = XmlIndex(self.rt1, "/station/creation_date",
                        index.TIMESTAMP_INDEX)
-        timestr = "%10.6f" % (time.mktime(dt.timetuple()) + dt.microsecond / 1e6)
+        timestr = "%f" % dt.timestamp
         doc = newXMLDocument(RAW_XML1 % (timestr, ""))
         res = idx.eval(doc, self.env)[0]
         self.assertEqual(res.key, dt)
         # w/o microseconds
-        dt = datetime(2008, 10, 23, 11, 53, 12)
+        dt = UTCDateTime(2008, 10, 23, 11, 53, 12)
         idx = XmlIndex(self.rt1, "/station/creation_date",
                        index.TIMESTAMP_INDEX)
-        timestr = "%d" % (time.mktime(dt.timetuple()))
+        timestr = "%f" % dt.timestamp
         doc = newXMLDocument(RAW_XML1 % (timestr, ""))
         res = idx.eval(doc, self.env)[0]
         self.assertEqual(res.key, dt)
         # negative timestamp works too
-        dt = datetime(1969, 12, 31, 23, 36, 39, 500000)
+        dt = UTCDateTime(1969, 12, 31, 23, 36, 39, 500000)
         idx = XmlIndex(self.rt1, "/station/creation_date",
                        index.TIMESTAMP_INDEX)
-        timestr = "-5000.500"
+        timestr = "%f" % dt.timestamp
         doc = newXMLDocument(RAW_XML1 % (timestr, ""))
         res = idx.eval(doc, self.env)[0]
         self.assertEqual(res.key, dt)

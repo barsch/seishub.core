@@ -11,7 +11,6 @@ RESOURCETYPES_TABLE = 'resourcetypes'
 SCHEMA_TABLE = 'schemas'
 STYLESHEET_TABLE = 'stylesheets'
 ALIAS_TABLE = 'aliases'
-MINISEED_TABLE = 'miniseed'
 
 
 packages_tab = Table(DEFAULT_PREFIX + PACKAGES_TABLE, metadata,
@@ -61,43 +60,8 @@ stylesheet_tab = Table(DEFAULT_PREFIX + STYLESHEET_TABLE, metadata,
 
 alias_tab = Table(DEFAULT_PREFIX + ALIAS_TABLE, metadata,
     Column('id', Integer, primary_key=True, autoincrement=True),
-    Column('url', Text, nullable=False),
+    Column('uri', Text, nullable=False),
     Column('expr', Text, nullable=False),
-    UniqueConstraint('url'),
+    UniqueConstraint('uri'),
     useexisting=True,
 )
-
-miniseed_tab = Table(DEFAULT_PREFIX + MINISEED_TABLE, metadata,
-    Column('id', Integer, primary_key=True, autoincrement=True),
-    Column('file', Text, nullable=False),
-    Column('path', Text, nullable=False, index=True),
-    Column('mtime', Integer, nullable=False),
-    Column('size', Integer, nullable=False),
-    Column('network_id', Text, nullable=True, index=True),
-    Column('station_id', Text, nullable=True, index=True),
-    Column('location_id', Text, nullable=True, index=True),
-    Column('channel_id', Text, nullable=True, index=True),
-    Column('start_datetime', DateTime, nullable=True),
-    Column('end_datetime', DateTime, nullable=True),
-    Column('DQ_gaps', Integer, nullable=True),
-    Column('DQ_overlaps', Integer, nullable=True),
-    Column('DQ_amplifier_saturation', Integer, nullable=True),
-    Column('DQ_digitizer_clipping', Integer, nullable=True),
-    Column('DQ_spikes', Integer, nullable=True),
-    Column('DQ_glitches', Integer, nullable=True),
-    Column('DQ_missing_or_padded_data', Integer, nullable=True),
-    Column('DQ_telemetry_synchronization', Integer, nullable=True),
-    Column('DQ_digital_filter_charging', Integer, nullable=True),
-    Column('DQ_questionable_time_tag', Integer, nullable=True),
-    Column('TQ_min', Numeric, nullable=True),
-    Column('TQ_avg', Numeric, nullable=True),
-    Column('TQ_max', Numeric, nullable=True),
-    Column('TQ_lq', Numeric, nullable=True),
-    Column('TQ_median', Numeric, nullable=True),
-    Column('TQ_uq', Numeric, nullable=True),
-    UniqueConstraint('file', 'path'),
-    useexisting=True,
-)
-Index('idx_' + DEFAULT_PREFIX + MINISEED_TABLE + '_net_sta_cha',
-      miniseed_tab.c.network_id, miniseed_tab.c.station_id,
-      miniseed_tab.c.channel_id)

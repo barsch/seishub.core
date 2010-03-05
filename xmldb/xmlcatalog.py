@@ -297,7 +297,6 @@ class XmlCatalog(object):
         @param full: If True, picks the resource objects for the results
         @return: Either a list of Resource objects, or a dict
         """
-        # XXX: query by metadata?
         query = applyMacros(query)
         q = XPathQuery(query)
         results = self.index_catalog.query(q)

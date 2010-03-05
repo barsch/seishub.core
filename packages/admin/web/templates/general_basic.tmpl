@@ -37,6 +37,15 @@
     </select>
   </div>
   
+  <div class="field">
+    <label>Clear Logs on Startup</label><br />
+    <input name="clear_logs_on_startup" type="checkbox" 
+      #if $clear_logs_on_startup
+           checked="checked" 
+      #end if 
+      />
+  </div>
+  
   <div class="button">
     <input type="submit" value="Save" />
   </div>

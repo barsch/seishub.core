@@ -152,37 +152,37 @@ RAW_XML = """<station rel_uri="bern">
 class PackageRegistryTest(SeisHubEnvironmentTestCase):
     def setUp(self):
         self.env.registry.db_registerPackage('testpackage0', '1.0')
-        self.env.registry.db_registerResourceType('testpackage0', 'weapon',   
+        self.env.registry.db_registerResourceType('testpackage0', 'weapon',
                                                   '1.0')
-        self.env.registry.db_registerResourceType('testpackage0', 'armor',   
+        self.env.registry.db_registerResourceType('testpackage0', 'armor',
                                                   '1.0')
-    
+
     def tearDown(self):
         self.env.registry.db_deleteResourceType('testpackage0', 'weapon')
         self.env.registry.db_deleteResourceType('testpackage0', 'armor')
         self.env.registry.db_deletePackage('testpackage0')
-    
+
     def test_split_uri(self):
         reg = self.env.registry.stylesheets
-        self.assertEqual(reg._split_uri('/package/resourcetype/type'), 
+        self.assertEqual(reg._split_uri('/package/resourcetype/type'),
                          ('package', 'resourcetype', 'type'))
-        self.assertEqual(reg._split_uri('/package/type'), 
+        self.assertEqual(reg._split_uri('/package/type'),
                          ('package', None, 'type'))
         reg = self.env.registry.schemas
-        self.assertEqual(reg._split_uri('/package/resourcetype/type'), 
+        self.assertEqual(reg._split_uri('/package/resourcetype/type'),
                          ('package', 'resourcetype', 'type'))
-        self.assertEqual(reg._split_uri('/package/resourcetype'), 
+        self.assertEqual(reg._split_uri('/package/resourcetype'),
                          ('package', 'resourcetype', None))
-    
+
     def test_InMemoryRegistry(self):
         packages = self.env.registry.getPackageIds()
         for p in packages:
             assert self.env.registry.getPackage(p).package_id == p
             resourcetypes = self.env.registry.getResourceTypeIds(p)
             for rt in resourcetypes:
-                rt_object = self.env.registry.getResourceType(p ,rt)
+                rt_object = self.env.registry.getResourceType(p , rt)
                 assert rt_object.resourcetype_id == rt
-    
+
     def test_DatabaseRegistry(self):
         # register a package
         self.env.registry.db_registerPackage('db_registered_package', '1.0')
@@ -195,7 +195,7 @@ class PackageRegistryTest(SeisHubEnvironmentTestCase):
         # register a resourcetype
         self.env.registry.db_registerPackage('db_registered_package', '1.0')
         self.env.registry.db_registerResourceType('db_registered_package',
-                                                  'db_regsitered_resourcetype',  
+                                                  'db_regsitered_resourcetype',
                                                   '1.0', True)
         restype = self.env.registry.db_getResourceTypes('db_registered_package',
                                                'db_regsitered_resourcetype')[0]
@@ -206,8 +206,8 @@ class PackageRegistryTest(SeisHubEnvironmentTestCase):
         # try to delete package although resourcetype belonging to package is
         # still there
         # XXX: fails with sqlite
-        self.assertRaises(SeisHubError, 
-                          self.env.registry.db_deletePackage, 
+        self.assertRaises(SeisHubError,
+                          self.env.registry.db_deletePackage,
                           'db_registered_package')
         self.env.registry.db_deleteResourceType('db_registered_package',
                                                 'db_regsitered_resourcetype')
@@ -215,17 +215,17 @@ class PackageRegistryTest(SeisHubEnvironmentTestCase):
                                                   'db_regsitered_resourcetype')
         assert restype == list()
         self.env.registry.db_deletePackage('db_registered_package')
-        
+
         # XXX: check deletion constraint with schemas/aliases/stylesheets/catalog objects
-    
+
     def test_SchemaRegistry(self):
-        self.env.registry.schemas.register('testpackage0', 'weapon', 'xsd', 
+        self.env.registry.schemas.register('testpackage0', 'weapon', 'xsd',
                                            TEST_SCHEMA)
-        self.env.registry.schemas.register('testpackage0', 'armor', 'xsd', 
+        self.env.registry.schemas.register('testpackage0', 'armor', 'xsd',
                                            TEST_SCHEMA)
-        
-        schema = self.env.registry.schemas.get(package_id = 'testpackage0',
-                                               resourcetype_id = 'weapon')
+
+        schema = self.env.registry.schemas.get(package_id='testpackage0',
+                                               resourcetype_id='weapon')
         self.assertEqual(schema[0].package.package_id, 'testpackage0')
         self.assertEqual(schema[0].resourcetype.resourcetype_id, 'weapon')
         self.assertEqual(schema[0].type, 'xsd')
@@ -244,10 +244,10 @@ class PackageRegistryTest(SeisHubEnvironmentTestCase):
         self.assertEqual(res.package.package_id, 'seishub')
         self.assertEqual(res.resourcetype.resourcetype_id, 'schema')
         # schema without resourcetype is not allowed
-        self.assertRaises(SeisHubError, self.env.registry.schemas.register, 
+        self.assertRaises(SeisHubError, self.env.registry.schemas.register,
                           'testpackage0', None, 'xsd', TEST_SCHEMA)
         # get schemas for package 'testpackage0'        
-        schemas = self.env.registry.schemas.get(package_id = 'testpackage0')
+        schemas = self.env.registry.schemas.get(package_id='testpackage0')
         self.assertEqual(len(schemas), 2)
         self.assertEqual(schemas[0].package.package_id, 'testpackage0')
         self.assertEqual(schemas[0].resourcetype.resourcetype_id, 'weapon')
@@ -257,13 +257,13 @@ class PackageRegistryTest(SeisHubEnvironmentTestCase):
         self.assertEqual(schemas[1].type, 'xsd')
         # get by URI
         # no schemas with package testpackage0 and resourcetype xsd
-        schemas = self.env.registry.schemas.get(uri = '/testpackage0/xsd')
+        schemas = self.env.registry.schemas.get(uri='/testpackage0/xsd')
         self.assertEqual(len(schemas), 0)
         # one schemas with package testpackage0 and resourcetype weapon
-        schemas = self.env.registry.schemas.get(uri = '/testpackage0/weapon')
+        schemas = self.env.registry.schemas.get(uri='/testpackage0/weapon')
         self.assertEqual(len(schemas), 1)
         # one schemas with package testpackage0, resourcetype weapon and type xsd
-        schemas = self.env.registry.schemas.get(uri =\
+        schemas = self.env.registry.schemas.get(uri=\
                                                 '/testpackage0/weapon/xsd')
         self.assertEqual(len(schemas), 1)
         # get all
@@ -273,41 +273,41 @@ class PackageRegistryTest(SeisHubEnvironmentTestCase):
         self.env.registry.schemas.delete(schema[0].package.package_id,
                                          schema[0].resourcetype.resourcetype_id,
                                          schema[0].type)
-        schema = self.env.registry.schemas.get(package_id = 'testpackage0')
+        schema = self.env.registry.schemas.get(package_id='testpackage0')
         self.assertEqual(len(schema), 1)
         self.assertEqual(schema[0].resourcetype.resourcetype_id, 'armor')
         # delete by URI
-        self.env.registry.schemas.delete(uri = '/testpackage0/armor')
-        schema = self.env.registry.schemas.get(package_id = 'testpackage0')
+        self.env.registry.schemas.delete(uri='/testpackage0/armor')
+        schema = self.env.registry.schemas.get(package_id='testpackage0')
         self.assertEqual(len(schema), 0)
 
     def test_StylesheetRegistry(self):
         # with resourcetype
-        self.env.registry.stylesheets.register('testpackage0', 'weapon', 
+        self.env.registry.stylesheets.register('testpackage0', 'weapon',
                                                'xhtml', TEST_STYLESHEET)
         # without resourcetype
-        self.env.registry.stylesheets.register('testpackage0', None, 
+        self.env.registry.stylesheets.register('testpackage0', None,
                                                'xhtml', TEST_STYLESHEET)
         stylesheet = self.env.registry.stylesheets.get\
                                                     (package_id='testpackage0',
-                                                    resourcetype_id = 'weapon')
+                                                    resourcetype_id='weapon')
         self.assertEqual(len(stylesheet), 1)
         self.assertEqual(stylesheet[0].package.package_id, 'testpackage0')
         self.assertEqual(stylesheet[0].resourcetype.resourcetype_id, 'weapon')
         self.assertEqual(stylesheet[0].type, 'xhtml')
         self.assertEquals(stylesheet[0].content_type, 'application/json')
-        stylesheet_nort = self.env.registry.stylesheets.get(package_id =\
+        stylesheet_nort = self.env.registry.stylesheets.get(package_id=\
                                                             'testpackage0')
         self.assertEqual(len(stylesheet_nort), 1)
         self.assertEqual(stylesheet_nort[0].package.package_id, 'testpackage0')
         self.assertEqual(stylesheet_nort[0].resourcetype.resourcetype_id, None)
         # transformations
-        res_list = Resource(document = newXMLDocument(TEST_RESLIST))
-        self.assertEquals(stylesheet[0].transform(res_list), 
-                          '{"mapping":["/seishub/schema/browser"],"resource"'+\
+        res_list = Resource(document=newXMLDocument(TEST_RESLIST))
+        self.assertEquals(stylesheet[0].transform(res_list),
+                          '{"mapping":["/seishub/schema/browser"],"resource"' + \
                           ':["/seishub/schema/3","/seishub/schema/4"],}')
         self.assertEquals(stylesheet[0].transform(TEST_RESLIST),
-                          '{"mapping":["/seishub/schema/browser"],"resource"'+\
+                          '{"mapping":["/seishub/schema/browser"],"resource"' + \
                           ':["/seishub/schema/3","/seishub/schema/4"],}')
         # get stylesheet resource
         res = stylesheet[0].resource
@@ -322,57 +322,37 @@ class PackageRegistryTest(SeisHubEnvironmentTestCase):
                                     )
         stylesheet = self.env.registry.stylesheets.get\
                                                     (package_id='testpackage0',
-                                                    resourcetype_id = 'weapon')
+                                                    resourcetype_id='weapon')
         self.assertEqual(len(stylesheet), 0)
         self.env.registry.stylesheets.delete('testpackage0', None, 'xhtml')
-        stylesheet_nort = self.env.registry.stylesheets.get(package_id =\
+        stylesheet_nort = self.env.registry.stylesheets.get(package_id=\
                                                             'testpackage0')
         self.assertEqual(len(stylesheet_nort), 0)
-    
+
     def test_AliasRegistry(self):
-        self.env.registry.aliases.register('testpackage0', 'weapon', 
-                                           'arch1', 
-                                           '/weapon[./name = Bogen]')
-        alias = self.env.registry.aliases.get(package_id = 'testpackage0',
-                                              resourcetype_id = 'weapon',
-                                              name = 'arch1')
-        self.assertEqual(len(alias), 1)
-        self.assertEqual(alias[0].package.package_id, 'testpackage0')
-        self.assertEqual(alias[0].resourcetype.resourcetype_id, 'weapon')
-        self.assertEqual(alias[0].expr, '/weapon[./name = Bogen]')
-        self.assertEqual(alias[0].getQuery(), 
-                         '/testpackage0/weapon/weapon[./name = Bogen]')
+        self.env.registry.aliases.register('arch1', '/weapon[./name = Bogen]')
+        self.env.registry.aliases.register('arch2', '/*[./name = Bogen]')
         # get by URI
-        alias = self.env.registry.aliases.get(uri='/testpackage0/weapon/arch1')
+        alias = self.env.registry.aliases.get(uri='arch1')
         self.assertEqual(len(alias), 1)
-        self.assertEqual(alias[0].package.package_id, 'testpackage0')
-        self.assertEqual(alias[0].resourcetype.resourcetype_id, 'weapon')
+        self.assertEqual(alias[0].uri, 'arch1')
         self.assertEqual(alias[0].expr, '/weapon[./name = Bogen]')
-        self.assertEqual(alias[0].getQuery(), 
-                         '/testpackage0/weapon/weapon[./name = Bogen]')
-        self.env.registry.aliases.register('testpackage0', None, 
-                                           'arch2', 
-                                           '/*[./name = Bogen]')
-        alias = self.env.registry.aliases.get(package_id = 'testpackage0')
-        self.assertEqual(len(alias),1)
-        self.assertEqual(alias[0].package.package_id, 'testpackage0')
-        self.assertEqual(alias[0].resourcetype.resourcetype_id, None)
+        # get by expression 
+        alias = self.env.registry.aliases.get(expr='/*[./name = Bogen]')
+        self.assertEqual(len(alias), 1)
+        self.assertEqual(alias[0].uri, 'arch2')
         self.assertEqual(alias[0].expr, '/*[./name = Bogen]')
-        self.assertEqual(alias[0].getQuery(), 
-                         '/testpackage0/*/*[./name = Bogen]')
         # get all
-        all = self.env.registry.aliases
+        all = self.env.registry.aliases.get()
         assert len(all) >= 2
         # delete
-        self.env.registry.aliases.delete('testpackage0', 'weapon', 'arch1')
-        alias = self.env.registry.aliases.get(package_id = 'testpackage0',
-                                              resourcetype_id = 'weapon',
-                                              name = 'arch1')
+        self.env.registry.aliases.delete('arch1')
+        alias = self.env.registry.aliases.get(uri='arch1')
         self.assertEquals(alias, list())
-        self.env.registry.aliases.delete('testpackage0', '', 'arch2')
-        alias = self.env.registry.aliases.get(package_id = 'testpackage0')
+        self.env.registry.aliases.delete('arch2')
+        alias = self.env.registry.aliases.get()
         self.assertEquals(alias, list())
-        
+
     def test_addInvalidSchema(self):
         """
         Adding an invalid schema should be catched if registering the schema.
@@ -381,11 +361,11 @@ class PackageRegistryTest(SeisHubEnvironmentTestCase):
         self.env.registry.db_registerPackage("test-catalog")
         self.env.registry.db_registerResourceType("test-catalog", "schema")
         # register a schema
-        self.assertRaises(InvalidObjectError, 
-                          self.env.registry.schemas.register, 
+        self.assertRaises(InvalidObjectError,
+                          self.env.registry.schemas.register,
                           'test-catalog', 'schema', 'XMLSchema', "<invalid>")
         # add a resource and try to validate
-        self.env.catalog.addResource("test-catalog", "schema", RAW_XML, 
+        self.env.catalog.addResource("test-catalog", "schema", RAW_XML,
                                      name="muh.xml")
         # remove everything
         self.env.registry.db_deleteResourceType("test-catalog", "schema")

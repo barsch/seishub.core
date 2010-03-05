@@ -94,7 +94,6 @@ class Environment(ComponentManager):
         self.tree = ResourceTree(self)
         self.update()
 
-
     def getSeisHubPath(self):
         """
         Returns the absolute root path to the SeisHub directory.

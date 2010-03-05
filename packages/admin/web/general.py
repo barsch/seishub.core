@@ -4,11 +4,13 @@ General configuration panels for the web-based administration service.
 """
 
 from seishub.core import Component, implements
+from seishub.db import DEFAULT_POOL_SIZE, DEFAULT_MAX_OVERFLOW
 from seishub.defaults import DEFAULT_COMPONENTS
 from seishub.exceptions import SeisHubError
 from seishub.log import LOG_LEVELS, ERROR
 from seishub.packages.interfaces import IAdminPanel
 from seishub.util.text import getFirstSentence
+from sqlalchemy import create_engine
 from twisted.application import service
 from twisted.internet import reactor
 import inspect
@@ -27,27 +29,90 @@ class BasicPanel(Component):
     has_roles = ['SEISHUB_ADMIN']
 
     def render(self, request):
-        data = {}
+        data = {
+            'log_levels': dict([(v, k) for k, v in LOG_LEVELS.iteritems()]),
+            'themes': self.root.themes
+        }
         if request.method == 'POST':
-            args = request.args
-            for option in ('host', 'description'):
-                self.config.set('seishub', option, args.get(option, [])[0])
-            for option in ('theme',):
-                self.config.set('web', 'admin_theme', args.get(option, [])[0])
-            if 'log_level' in args:
-                log_level = (args.get('log_level', [LOG_LEVELS])[0]).upper()
-                self.config.set('seishub', 'log_level', log_level)
-                self.env.log.log_level = LOG_LEVELS.get(log_level, ERROR)
+            host = request.args0.get('host', 'localhost')
+            description = request.args0.get('description', '')
+            log_level = request.args0.get('log_level', 'ERROR').upper()
+            clearlogs = request.args0.get('clear_logs_on_startup', False)
+            theme = request.args0.get('theme', 'magic')
+            self.config.set('seishub', 'host', host)
+            self.config.set('seishub', 'description', description)
+            self.config.set('seishub', 'log_level', log_level)
+            self.config.set('seishub', 'clear_logs_on_startup', clearlogs)
+            self.config.set('web', 'admin_theme', theme)
             self.config.save()
+            if self.env.log.log_level != LOG_LEVELS.get(log_level, ERROR):
+                self.env.log.log("Setting log level to %s" % log_level)
+                self.env.log.log_level = LOG_LEVELS.get(log_level, ERROR)
             data['info'] = "Options have been saved."
         data.update({
           'host': self.config.get('seishub', 'host'),
           'description': self.config.get('seishub', 'description'),
           'theme': self.config.get('web', 'admin_theme'),
-          'themes': self.root.themes,
-          'log_levels': dict([(v, k) for k, v in LOG_LEVELS.iteritems()]),
           'log_level': self.config.get('seishub', 'log_level'),
+          'clear_logs_on_startup':
+                self.config.getbool('seishub', 'clear_logs_on_startup')
         })
+        return data
+
+
+class BasicDBPanel(Component):
+    """
+    Database configuration.
+    """
+    implements(IAdminPanel)
+
+    template = 'templates' + os.sep + 'general_db.tmpl'
+    panel_ids = ('admin', 'General', 'basic-db', 'Database Settings')
+    has_roles = ['SEISHUB_ADMIN']
+
+    def render(self, request):
+        db = self.db
+        data = {
+          'db': db,
+          'uri': self.config.get('db', 'uri'),
+          'pool_size': self.config.getint('db', 'pool_size'),
+          'max_overflow': self.config.getint('db', 'max_overflow'),
+        }
+        if db.engine.name == 'sqlite':
+            data['info'] = ("SQLite Database enabled!", "A SQLite database "
+                            "should never be used in a productive "
+                            "environment!<br />Instead try to use any "
+                            "supported database listed at "
+                            "<a href='http://www.sqlalchemy.org/trac/wiki/"
+                            "DatabaseNotes'>http://www.sqlalchemy.org/trac/"
+                            "wiki/DatabaseNotes</a>.")
+        if request.method == 'POST':
+            uri = request.args0.get('uri', '')
+            pool_size = request.args0.get('pool_size' , DEFAULT_POOL_SIZE)
+            max_overflow = request.args0.get('max_overflow',
+                                             DEFAULT_MAX_OVERFLOW)
+            verbose = request.args0.get('verbose', False)
+            self.config.set('db', 'verbose', verbose)
+            self.config.set('db', 'pool_size', pool_size)
+            self.config.set('db', 'max_overflow', max_overflow)
+            data['uri'] = uri
+            try:
+                engine = create_engine(uri)
+                engine.connect()
+            except:
+                data['error'] = ("Could not connect to database %s" % uri,
+                                 "Please make sure the database URI has " + \
+                                 "the correct syntax: dialect://user:" + \
+                                 "password@host:port/dbname.")
+            else:
+                self.config.set('db', 'uri', uri)
+                data['info'] = ("Connection to database was successful",
+                                "You have to restart SeisHub in order to " + \
+                                "see any changes at the database settings.")
+            self.config.save()
+        data['verbose'] = self.config.getbool('db', 'verbose')
+        data['pool_size'] = self.config.getint('db', 'pool_size')
+        data['max_overflow'] = self.config.getint('db', 'max_overflow')
         return data
 
 

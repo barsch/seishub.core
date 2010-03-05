@@ -176,7 +176,7 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         catalog.deleteResource(res1)
         catalog.deleteResource(res2)
 
-    def testIResourceManager(self):
+    def test_IResourceManager(self):
         # add / get / delete a resource
         catalog = self.env.catalog
         res = catalog.addResource(PID1, RID1, RAW_XML, uid='testuser',

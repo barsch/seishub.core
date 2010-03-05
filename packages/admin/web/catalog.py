@@ -4,10 +4,9 @@ Catalog and database related administration panels.
 """
 
 from seishub.core import Component, implements
-from seishub.db import DEFAULT_PREFIX, DEFAULT_POOL_SIZE, DEFAULT_MAX_OVERFLOW
+from seishub.db import DEFAULT_PREFIX
 from seishub.exceptions import SeisHubError, InvalidParameterError
 from seishub.packages.interfaces import IAdminPanel
-from sqlalchemy import create_engine #@UnresolvedImport
 import os
 import pprint
 import time
@@ -15,62 +14,6 @@ import time
 
 LIMITS = {'10': 10, '100': 100, '1000': 1000, '10000': 10000,
           'unlimited': None}
-
-
-class BasicPanel(Component):
-    """
-    Database configuration.
-    """
-    implements(IAdminPanel)
-
-    template = 'templates' + os.sep + 'catalog_db_basic.tmpl'
-    panel_ids = ('catalog', 'Catalog', 'db-basic', 'Database Settings')
-    has_roles = ['CATALOG_ADMIN']
-
-    def render(self, request):
-        db = self.db
-        data = {
-          'db': db,
-          'uri': self.config.get('db', 'uri'),
-          'pool_size': self.config.getint('db', 'pool_size'),
-          'max_overflow': self.config.getint('db', 'max_overflow'),
-        }
-        if db.engine.name == 'sqlite':
-            data['info'] = ("SQLite Database enabled!", "A SQLite database "
-                            "should never be used in a productive "
-                            "environment!<br />Instead try to use any "
-                            "supported database listed at "
-                            "<a href='http://www.sqlalchemy.org/trac/wiki/"
-                            "DatabaseNotes'>http://www.sqlalchemy.org/trac/"
-                            "wiki/DatabaseNotes</a>.")
-        if request.method == 'POST':
-            uri = request.args.get('uri', [''])[0]
-            pool_size = request.args.get('pool_size' , [DEFAULT_POOL_SIZE])[0]
-            max_overflow = request.args.get('max_overflow',
-                                            [DEFAULT_MAX_OVERFLOW])[0]
-            verbose = request.args.get('verbose', [False])[0]
-            self.config.set('db', 'verbose', verbose)
-            self.config.set('db', 'pool_size', pool_size)
-            self.config.set('db', 'max_overflow', max_overflow)
-            data['uri'] = uri
-            try:
-                engine = create_engine(uri)
-                engine.connect()
-            except:
-                data['error'] = ("Could not connect to database %s" % uri,
-                                 "Please make sure the database URI has " + \
-                                 "the correct syntax: dialect://user:" + \
-                                 "password@host:port/dbname.")
-            else:
-                self.config.set('db', 'uri', uri)
-                data['info'] = ("Connection to database was successful",
-                                "You have to restart SeisHub in order to " + \
-                                "see any changes at the database settings.")
-            self.config.save()
-        data['verbose'] = self.config.getbool('db', 'verbose')
-        data['pool_size'] = self.config.getint('db', 'pool_size')
-        data['max_overflow'] = self.config.getint('db', 'max_overflow')
-        return data
 
 
 class DatabaseQueryPanel(Component):

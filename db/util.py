@@ -53,7 +53,7 @@ def querySingleColumn(request, table, column, **kwargs):
     except:
         limit = None
         offset = 0
-    oncl = sql.and_(1 == 1)
+    oncl = None
     if kwargs:
         for key, value in kwargs.iteritems():
             if value:
@@ -96,6 +96,35 @@ class CustomJSONEncoder(json.JSONEncoder):
             return float(obj)
         else:
             return json.JSONEncoder.default(self, obj)
+
+
+def formatORMResults(request, query):
+    """
+    """
+    base_url = request.env.getRestUrl()
+    # limits or offset
+    try:
+        limit = int(request.args0.get('limit'))
+        query = query.limit(limit)
+    except:
+        pass
+    offset = int(request.args0.get('offset', 0))
+    query = query.offset(offset)
+    # get format
+    formats = request.args.get('format', []) or request.args.get('output', [])
+    if 'json' in formats:
+        pass
+    elif 'xhtml' in formats:
+        pass
+    else:
+        # build up XML document
+        xml = Element("seishub")
+        for result in query:
+            for key in result.keys():
+                value = getattr(result, key, '')
+                Sub(xml, key).text = str(value)
+        return toString(xml)
+
 
 
 def formatResults(request, results, count=None, limit=None, offset=0,
