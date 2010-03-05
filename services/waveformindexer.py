@@ -53,7 +53,7 @@ class WaveformIndexerService(TimerService, WaveformFileCrawler):
         self.output_queue = env.queues[2]
         # config
         import os
-        path = os.path.normpath('C:\\Users\\barsch\\Workspace\\seishub\\trunk\\data')
+        path = os.path.normpath('/opt/seishub/seishub/data')
         self.paths = {path:['*.*']}
         # start iterating
         TimerService.__init__(self, self.crawler_period, self.iterate)

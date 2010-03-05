@@ -69,9 +69,9 @@ class ResourceTree(StaticFolder):
                 self.env.log.warn(msg)
         # set all aliases
         for alias in self.env.registry.aliases.get():
-            url = alias.getURL()
             expr = alias.getExpr()
-            self.putChild(url, AliasResource(url, expr))
+            uri = alias.getURI()
+            self.putChild(uri, AliasResource(expr))
         # set Administration root folder
         res = AdminRootFolder(self.env, hidden=True)
         self.putChild('manage', res)

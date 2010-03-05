@@ -11,7 +11,7 @@ class AliasResource(Resource):
     """
     Processor handler of a alias resource.
     """
-    def __init__(self, url, expr, **kwargs):
+    def __init__(self, expr, **kwargs):
         Resource.__init__(self, **kwargs)
         self.is_leaf = True
         self.folderish = True

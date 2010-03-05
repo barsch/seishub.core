@@ -35,11 +35,11 @@
     #for $alias in $aliases
     <tr> 
       <td>
-        <input type="checkbox" name="alias[]" value="$alias._id" />
+        <input type="checkbox" name="alias[]" value="$alias.uri" />
       </td> 
-      <td>$alias.url</td>
+      <td>$alias.uri</td>
       <td>$alias.expr</td>
-      <td><a href="$resturl$alias.url?format=xhtml">[XML]</a></td>
+      <td><a href="$resturl$alias.uri?format=xhtml">[XML]</a></td>
     </tr>
     #end for
   </table>

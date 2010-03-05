@@ -335,7 +335,7 @@ class AliasesPanel(Component):
     def _deleteAliases(self, aliases=[]):
         for alias in aliases:
             try:
-                self.env.registry.aliases.delete(id = alias)
+                self.env.registry.aliases.delete(uri = alias)
             except Exception, e:
                 self.log.error("Error deleting an alias", e)
                 return {'error': ("Error deleting an alias", e)}
