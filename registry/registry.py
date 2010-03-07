@@ -47,8 +47,9 @@ class ComponentRegistry(DbStorage):
         """
         pkg = self.getComponents(IPackage, package_id)
         if not pkg:
-            raise SeisHubError(("Package with id '%s' not found. Make sure " + \
-                               "the package has been enabled.") % (package_id))
+            msg = "Package with id '%s' not found. " % (package_id)
+            msg += "Make sure the package has been enabled."
+            raise SeisHubError(msg)
         return pkg[0]
 
     def getPackageIds(self):

@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 
 from seishub.core import Component, implements
-from seishub.processor.resources.rest import RESTResource
+from seishub.db.util import formatResults
 from seishub.packages.installer import registerStylesheet, registerIndex
 from seishub.packages.interfaces import IPackage, IResourceType, IMapper
+from seishub.processor.resources.rest import RESTResource
 import os
 
 
@@ -46,3 +47,34 @@ class SchemaResource(Component):
 
     package_id = 'seishub'
     resourcetype_id = 'schema'
+
+
+class XPathMapper(Component):
+    """ 
+    A mapper to directly query XPath expressions. 
+    """
+    implements(IMapper)
+
+    package_id = 'seishub'
+    mapping_url = '/xpath'
+
+    def process_GET(self, request):
+        if len(request.path) < 7:
+            return {}
+        xpath = request.path[6:]
+        # get resources
+        try:
+            resources = self.env.catalog.query(xpath, full=True)
+        except:
+            return {}
+        # get indexed data 
+        results = []
+        for resource in resources:
+            data = self.env.catalog.getIndexData(resource)
+            data['package_id'] = resource.package._id
+            data['resourcetype_id'] = resource.resourcetype._id
+            data['document_id'] = resource.document._id
+            data['resource_name'] = str(resource._name)
+            results.append(data)
+        # generate output 
+        return formatResults(request, results, count=len(results))

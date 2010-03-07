@@ -7,7 +7,6 @@ from seishub.test import SeisHubEnvironmentTestCase
 from seishub.xmldb import index
 from seishub.xmldb.index import NumericIndexElement, XmlIndex
 from seishub.xmldb.resource import XmlDocument, newXMLDocument
-import time
 import unittest
 
 

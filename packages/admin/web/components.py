@@ -200,7 +200,7 @@ class IndexesPanel(Component):
     def _reindexIndexes(self, data):
         for id in data.get('index[]', [None]):
             try:
-                self.env.catalog.reindexIndex(index_id=int(id))
+                self.env.catalog.reindexIndex(_id=int(id))
             except Exception, e:
                 self.log.error("Error reindexing index", e)
                 data['error'] = {'error': ("Error reindexing index", e)}
@@ -225,7 +225,7 @@ class IndexesPanel(Component):
     def _deleteIndexes(self, data):
         for id in data.get('index[]', [None]):
             try:
-                self.catalog.deleteIndex(index_id=int(id))
+                self.catalog.deleteIndex(_id=int(id))
             except Exception, e:
                 self.log.error("Error removing index", e)
                 data['error'] = {'error': ("Error removing index", e)}
@@ -307,41 +307,41 @@ class AliasesPanel(Component):
     List all aliases and add new ones.
     """
     implements(IAdminPanel)
-    
+
     template = 'templates' + os.sep + 'components_aliases.tmpl'
     panel_ids = ('components', 'Components', 'edit-aliases', 'Aliases')
     has_roles = ['COMPONENT_ALIASES']
-    
+
     def render(self, request):
-        data  = {
+        data = {
             'aliases': {},
             'error': '',
             'alias': '',
             'xpath': '',
             'resturl': self.env.getRestUrl(),
         }
-        if request.method=='POST':
+        if request.method == 'POST':
             args = request.args
-            alias = args.get('alias',[''])[0]
-            xpath = args.get('xpath',[''])[0]
+            alias = args.get('alias', [''])[0]
+            xpath = args.get('xpath', [''])[0]
             if 'add' in args.keys() and xpath and alias:
                 data.update(self._addAlias(alias, xpath))
             elif 'delete' in args.keys() and 'alias[]' in args.keys():
-                data.update(self._deleteAliases(args.get('alias[]',[])))
+                data.update(self._deleteAliases(args.get('alias[]', [])))
         # fetch all aliases
         data['aliases'] = self.env.registry.aliases.get()
         return data
-    
+
     def _deleteAliases(self, aliases=[]):
         for alias in aliases:
             try:
-                self.env.registry.aliases.delete(uri = alias)
+                self.env.registry.aliases.delete(uri=alias)
             except Exception, e:
                 self.log.error("Error deleting an alias", e)
                 return {'error': ("Error deleting an alias", e)}
         self.env.tree.update()
         return {'info': "Alias has been deleted."}
-    
+
     def _addAlias(self, alias, xpath):
         if not alias.startswith('/'):
             alias = '/' + alias

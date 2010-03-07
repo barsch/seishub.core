@@ -82,8 +82,7 @@ def run():
     except:
         number_of_cpus = multiprocessing.cpu_count()
     # hard code preview path
-    import seishub
-    src_path = inspect.getsourcefile(seishub)
+    src_path = inspect.getsourcefile(Environment)
     path = os.path.dirname(os.path.dirname(src_path))
     preview_path = os.path.join(path, 'db', 'preview')
     # create queues

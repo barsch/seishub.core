@@ -233,11 +233,11 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
 
     def test_getIndexes(self):
         # get all indexes
-        l = self.env.catalog.getIndexes('testpackage')
+        l = self.env.catalog.getIndexes(package_id='testpackage')
         self.assertEqual(len(l), 2)
         self.assertEqual(str(l[0]), "/testpackage/station" + IDX1)
         self.assertEqual(str(l[1]), "/testpackage/testml" + IDX2)
-        l = self.env.catalog.getIndexes('degenesis')
+        l = self.env.catalog.getIndexes(package_id='degenesis')
         self.assertEqual(len(l), 1)
         self.assertEqual(str(l[0]), "/degenesis/weapon" + IDX3)
         # by package
@@ -265,7 +265,7 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         self.assertEqual(len(l), 0)
 
     def test_query(self):
-        """XXX: problem with limit clauses on resultsets containing indexes with multiple values per document.
+        """
         """
         # set up
         self.env.catalog.reindexIndex(self.idx1)
@@ -273,7 +273,7 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         self.env.catalog.reindexIndex(idx4)
         idx5 = self.env.catalog.registerIndex(PID1, RID2, '5', IDX5, "boolean")
         self.env.catalog.reindexIndex(idx5)
-
+        #
         res1 = self.env.catalog.query('/testpackage/station/station ' + \
                                       'order by XY/paramXY asc limit 2',
                                       full=True)
@@ -282,33 +282,23 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         self.assertEqual(res1[0].document._id, self.res2.document._id)
         self.assertEqual(res1[1]._id, self.res1._id)
         self.assertEqual(res1[1].document._id, self.res1.document._id)
-
-        # XXX: using limit here may lead to confusing results!!!
+        # using limit
+        res1 = self.env.catalog.query('/testpackage/station/station limit 1')
+        self.assertEqual(len(res1['ordered']), 1)
+        self.assertEqual(res1['ordered'][0], self.res1.document._id)
+        #
         res1 = self.env.catalog.query('/testpackage/station/station ' + \
                                       'order by XY/paramXY asc')
         self.assertEqual(len(res1['ordered']), 2)
         self.assertEqual(res1['ordered'][0], self.res2.document._id)
         self.assertEqual(res1['ordered'][1], self.res1.document._id)
-        idx_data = res1[self.res2.document._id]['/testpackage/station' + IDX1]
-        idx_data.sort()
-        self.assertEqual(idx_data, [u'0', u'111.5', u'2.5',
-                                    u'2110.5', u'99', u'cblah'])
-        idx_data = res1[self.res1.document._id]['/testpackage/station' + IDX1]
-        idx_data.sort()
-        self.assertEqual(idx_data, ['11.5', '20.5', 'blah'])
-
+        #
         res1 = self.env.catalog.query('/testpackage/station/station ' + \
                                       'order by XY/paramXY asc limit 2')
         self.assertEqual(len(res1['ordered']), 2)
         self.assertEqual(res1['ordered'][0], self.res2.document._id)
         self.assertEqual(res1['ordered'][1], self.res1.document._id)
-        idx_data = res1[self.res2.document._id]['/testpackage/station' + IDX1]
-        idx_data.sort()
-        self.assertEqual(idx_data, ['0', '2.5', '99'])
-        idx_data = res1[self.res1.document._id]['/testpackage/station' + IDX1]
-        idx_data.sort()
-        self.assertEqual(idx_data, ['11.5', '20.5', 'blah'])
-
+        #
         res3 = self.env.catalog.query('/testpackage/*/*', full=True)
         self.assertEqual(len(res3), 3)
         self.assertEqual(res3[0]._id, self.res1._id)
@@ -317,18 +307,18 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         self.assertEqual(res3[1].document._id, self.res2.document._id)
         self.assertEqual(res3[2]._id, self.res3._id)
         self.assertEqual(res3[2].document._id, self.res3.document._id)
-        # XXX: not supported yet ?
-        res4 = self.env.catalog.query('/testpackage/*/station')
-        self.assertEqual(res4, [self.res1.document._id,
-                                self.res2.document._id])
-        res5 = self.env.catalog.query('/testpackage/testml/testml',
-                                      full=True)
+        #
+        res4 = self.env.catalog.query('/testpackage/*/station', full=True)
+        self.assertEqual(res4[0].document._id, self.res1.document._id)
+        self.assertEqual(res4[1].document._id, self.res2.document._id)
+        #
+        res5 = self.env.catalog.query('/testpackage/testml/testml', full=True)
         self.assertEqual(len(res5), 1)
         self.assertEqual(res5[0]._id, self.res3._id)
         self.assertEqual(res5[0].document._id, self.res3.document._id)
         # clean up
-        self.env.catalog.removeIndex(idx4)
-        self.env.catalog.removeIndex(idx5)
+        self.env.catalog.deleteIndex(idx4)
+        self.env.catalog.deleteIndex(idx5)
 
     def test_indexRevision(self):
         """
@@ -359,7 +349,7 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         index_dict = self.env.catalog.getIndexData(res)
         self.assertEqual(index_dict, {u'lat': {0: [u'50.23200']}})
         # get index directly from catalog for revision 2
-        # XXX: older revison do not have any indexed values
+        # older revison do not have any indexed values
         # this behaviour may change later
         res = self.env.catalog.getResource("test-catalog", "index", "muh.xml", 2)
         index_dict = self.env.catalog.getIndexData(res)

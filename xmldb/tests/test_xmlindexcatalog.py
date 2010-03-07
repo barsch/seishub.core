@@ -180,9 +180,9 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
                          "%Y/%m", label='test')
         self.catalog.registerIndex(index)
 
-        res = self.catalog.getIndexes(self.rt1.package.package_id,
-                                      self.rt1.resourcetype_id,
-                                      "/station/XY/paramXY")[0]
+        res = self.catalog.getIndexes(package_id=self.rt1.package.package_id,
+                                      resourcetype_id=self.rt1.resourcetype_id,
+                                      xpath="/station/XY/paramXY")[0]
         self.assertEquals(res.resourcetype.resourcetype_id,
                           self.rt1.resourcetype_id)
         self.assertEquals(res.xpath, "/station/XY/paramXY")
@@ -199,14 +199,14 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         """
         index = XmlIndex(self.rt1, "/station/XY/paramXY", label='test')
         self.catalog.registerIndex(index)
-        res = self.catalog.getIndexes(self.rt1.package.package_id,
-                                      self.rt1.resourcetype_id,
-                                      "/station/XY/paramXY")
+        res = self.catalog.getIndexes(package_id=self.rt1.package.package_id,
+                                      resourcetype_id=self.rt1.resourcetype_id,
+                                      xpath="/station/XY/paramXY")
         self.assertEquals(len(res), 1)
         self.catalog.deleteIndex(index)
-        res = self.catalog.getIndexes(self.rt1.package.package_id,
-                                      self.rt1.resourcetype_id,
-                                      "/station/XY/paramXY")
+        res = self.catalog.getIndexes(package_id=self.rt1.package.package_id,
+                                      resourcetype_id=self.rt1.resourcetype_id,
+                                      xpath="/station/XY/paramXY")
         self.assertEquals(len(res), 0)
 
     def test_getIndexes(self):
@@ -387,6 +387,21 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         self.assertEqual(len(res['ordered']), 2)
         self.assertTrue(self.res1.document._id in res)
         self.assertTrue(self.res2.document._id in res)
+        # all resources of package testpackage, resourcetype 'station', limit 1
+        q = "/testpackage/station/* limit 1"
+        res = self.catalog.query(XPathQuery(q))
+        self.assertEqual(len(res['ordered']), 1)
+        self.assertTrue(self.res1.document._id in res)
+        # all resources of package testpackage, resourcetype station, offset 1
+        q = "/testpackage/station/* offset 1"
+        res = self.catalog.query(XPathQuery(q))
+        self.assertEqual(len(res['ordered']), 1)
+        self.assertTrue(self.res2.document._id in res)
+        # all resources of package testpackage, resourcetype station, offset 1
+        q = "/testpackage/station/* limit 1,1"
+        res = self.catalog.query(XPathQuery(q))
+        self.assertEqual(len(res['ordered']), 1)
+        self.assertTrue(self.res2.document._id in res)
         # all resources of package testpackage
         q = "/testpackage/*/*"
         res = self.catalog.query(XPathQuery(q))
@@ -500,18 +515,22 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
               "limit 3"
         so2 = "/sortordertests/sotest[sortorder/int1] " + \
               "order by sortorder/int2 asc, " + \
-              "sortorder/str2 desc limit 5"
+              "sortorder/str2 desc limit 5,2"
         so3 = "/sortordertests/sotest order by sortorder/int2 desc, " + \
               "sortorder/str2 desc limit 3"
-        res2 = self.catalog.query(XPathQuery(so1))
-        res3 = self.catalog.query(XPathQuery(so2))
-        res4 = self.catalog.query(XPathQuery(so3))
+        so4 = "/sortordertests/sotest[sortorder/int1] " + \
+              "order by sortorder/int2 asc, " + \
+              "sortorder/str2 desc limit 5 offset 2"
+        res1 = self.catalog.query(XPathQuery(so1))
+        res2 = self.catalog.query(XPathQuery(so2))
+        res3 = self.catalog.query(XPathQuery(so3))
+        res4 = self.catalog.query(XPathQuery(so4))
 
-        self.assertEqual(res2['ordered'], res_ids[:3])
+        self.assertEqual(res1['ordered'], res_ids[:3])
         res_ids.reverse()
-        self.assertEqual(res3['ordered'], [res_ids[0], res_ids[3], res_ids[4],
-                               res_ids[1], res_ids[2]])
-        self.assertEqual(res4['ordered'], [res_ids[1], res_ids[2], res_ids[0]])
+        self.assertEqual(res2['ordered'], [res_ids[4], res_ids[1], res_ids[2]])
+        self.assertEqual(res3['ordered'], [res_ids[1], res_ids[2], res_ids[0]])
+        self.assertEqual(res4['ordered'], [res_ids[4], res_ids[1], res_ids[2]])
 
         #======================================================================
         # queries w/ not(...)

@@ -19,7 +19,7 @@ class PackageInstaller(object):
     version. To find out about updated packages and resourcetypes use 
     the getUpdated() method.
     """
-    
+
     @staticmethod
     def _install_package(env, p):
         if hasattr(p, 'version'):
@@ -27,7 +27,7 @@ class PackageInstaller(object):
         else:
             version = ''
         env.registry.db_registerPackage(p.package_id, version)
-    
+
     @staticmethod
     def _install_resourcetype(env, rt):
         if hasattr(rt, 'version'):
@@ -42,7 +42,7 @@ class PackageInstaller(object):
                                              rt.resourcetype_id,
                                              version,
                                              version_control)
-    
+
     @staticmethod
     def _install_pre_registered(env, o):
         package_id = o.package_id
@@ -60,11 +60,11 @@ class PackageInstaller(object):
                     msg = msg % (package_id, resourcetype_id, filename)
                     env.log.debug(msg)
                     continue
-                msg = "Registering Schema /%s/%s - %s ..." 
+                msg = "Registering Schema /%s/%s - %s ..."
                 env.log.info(msg % (package_id, resourcetype_id, filename))
                 try:
                     data = file(filename, 'r').read()
-                    env.registry.schemas.register(package_id, resourcetype_id, 
+                    env.registry.schemas.register(package_id, resourcetype_id,
                                                   type, data, name)
                 except Exception, e:
                     env.log.warn(e)
@@ -74,18 +74,18 @@ class PackageInstaller(object):
                 filename = entry['filename']
                 name = filename.split(os.sep)[-1]
                 # check, if already there
-                if env.registry.stylesheets.get(package_id, resourcetype_id, 
+                if env.registry.stylesheets.get(package_id, resourcetype_id,
                                                 type):
                     msg = "Skipping Stylesheet /%s/%s - %s"
-                    env.log.debug(msg % (package_id, resourcetype_id, 
+                    env.log.debug(msg % (package_id, resourcetype_id,
                                          filename))
                     continue
-                msg = "Registering Stylesheet /%s/%s - %s ..." 
+                msg = "Registering Stylesheet /%s/%s - %s ..."
                 env.log.info(msg % (package_id, resourcetype_id, filename))
                 try:
                     data = file(filename, 'r').read()
-                    env.registry.stylesheets.register(package_id, 
-                                                      resourcetype_id, type, 
+                    env.registry.stylesheets.register(package_id,
+                                                      resourcetype_id, type,
                                                       data, name)
                 except Exception, e:
                     env.log.warn(e)
@@ -109,21 +109,22 @@ class PackageInstaller(object):
         if hasattr(o, '_registry_indexes') and resourcetype_id:
             for entry in o._registry_indexes:
                 # check, if already there
-                if env.catalog.getIndexes(package_id, resourcetype_id, 
+                if env.catalog.getIndexes(package_id=package_id,
+                                          resourcetype_id=resourcetype_id,
                                           **entry):
                     msg = "Skipping XMLIndex /%s/%s - %s"
-                    env.log.debug(msg % (package_id, resourcetype_id, 
+                    env.log.debug(msg % (package_id, resourcetype_id,
                                          entry['xpath']))
                     continue
-                msg = "Registering XMLIndex /%s/%s - %s ..." 
-                env.log.info(msg % (package_id, resourcetype_id, 
+                msg = "Registering XMLIndex /%s/%s - %s ..."
+                env.log.info(msg % (package_id, resourcetype_id,
                                     entry['xpath']))
                 try:
                     env.catalog.registerIndex(package_id, resourcetype_id,
                                               **entry)
                 except Exception, e:
                     env.log.warn(e)
-    
+
     @staticmethod
     def _pre_register(*args, **kwargs):
         """
@@ -147,9 +148,9 @@ class PackageInstaller(object):
             kwargs['filename'] = os.path.join(os.path.dirname(
                                            frame.f_code.co_filename), filename)
         locals_.setdefault('_registry' + reg, []).append(kwargs)
-    
+
     @staticmethod
-    def install(env, package_id = None):
+    def install(env, package_id=None):
         """
         Auto install all known packages.
         
@@ -175,12 +176,12 @@ class PackageInstaller(object):
                 try:
                     PackageInstaller._install_package(env, fs_package)
                 except Exception, e:
-                    env.log.warn(("Registration of package with id '%s' "+\
+                    env.log.warn(("Registration of package with id '%s' " + \
                                   "failed. (%s)") % (p, e))
                     continue
             # (re)install package specific objects
             PackageInstaller._install_pre_registered(env, fs_package)
-            
+
             # install new resourcetypes for package p
             for rt in env.registry.getResourceTypes(p):
                 db_rt = env.registry.db_getResourceTypes(p, rt.resourcetype_id)
@@ -188,15 +189,15 @@ class PackageInstaller(object):
                     try:
                         PackageInstaller._install_resourcetype(env, rt)
                     except Exception, e:
-                        env.log.warn(("Registration of resourcetype "+\
-                                      "with id '%s' in package '%s'"+\
+                        env.log.warn(("Registration of resourcetype " + \
+                                      "with id '%s' in package '%s'" + \
                                       " failed. (%s)") % \
                                       (rt.resourcetype_id, p, e))
                         continue
                 # (re)install resourcetype specific objects
                 PackageInstaller._install_pre_registered(env, rt)
         env.log.info("Components have been updated.")
-    
+
     @staticmethod
     def cleanup(env):
         """
@@ -225,13 +226,13 @@ class PackageInstaller(object):
 
 
 registerSchema = lambda filename, type: \
-                    PackageInstaller._pre_register('_schemas', 
-                                                   type = type,
-                                                   filename = filename)
+                    PackageInstaller._pre_register('_schemas',
+                                                   type=type,
+                                                   filename=filename)
 registerStylesheet = lambda filename, type: \
-                    PackageInstaller._pre_register('_stylesheets', 
-                                                   type = type,
-                                                   filename = filename)
+                    PackageInstaller._pre_register('_stylesheets',
+                                                   type=type,
+                                                   filename=filename)
 #registerAlias = lambda name, expr, limit = None, order_by = None: \
 #                    PackageInstaller._pre_register('_aliases',
 #                                                   name = name,
@@ -240,7 +241,7 @@ registerStylesheet = lambda filename, type: \
 #                                                   order_by = order_by)
 registerIndex = lambda label, xpath, type = 'text', options = None: \
                     PackageInstaller._pre_register('_indexes',
-                                                   label = label,
-                                                   xpath = xpath,
-                                                   type = type,
-                                                   options = options)
+                                                   label=label,
+                                                   xpath=xpath,
+                                                   type=type,
+                                                   options=options)

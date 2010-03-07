@@ -5,7 +5,7 @@ from seishub.db.orm import DbStorage, DbError, DB_LIKE
 from seishub.exceptions import InvalidParameterError, SeisHubError, \
     NotFoundError, InvalidObjectError, DuplicateObjectError
 from seishub.registry.defaults import resourcetypes_tab, packages_tab
-from seishub.xmldb.defaults import document_tab, resource_tab, document_meta_tab
+from seishub.xmldb.defaults import document_tab, resource_tab
 from seishub.xmldb.index import XmlIndex, type_classes
 from seishub.xmldb.interfaces import IXPathQuery, IResource, IXmlIndex
 from seishub.xmldb.xpath import XPathQuery
@@ -30,13 +30,12 @@ class _IndexView(object):
         resourcetype_id = resourcetype.resourcetype_id
         name = '/%s/%s' % (package_id, resourcetype_id)
         # fetches all indexes of this resource type
-        xmlindex_list = self.getIndexes(package_id, resourcetype_id)
+        xmlindex_list = self.getIndexes(package_id=package_id,
+                                        resourcetype_id=resourcetype_id)
         if not xmlindex_list:
             return
         # create index view
         query, joins = self._createIndexView(xmlindex_list[::-1])
-        if not query:
-            return
         query = query.select_from(joins)
         self._db_manager.createView(name, util.compileStatement(query))
         self._db_manager.env.log.debug("Updating IndexView %s ..." % name)
@@ -47,9 +46,11 @@ class _IndexView(object):
         """
         # sanity checks
         if not isinstance(xmlindex_list, list):
-            return
+            msg = "Parameter xmlindex_list must be a list of XMLIndex objects."
+            raise InvalidParameterError(msg)
         if len(xmlindex_list) < 1:
-            return
+            msg = "Parameter xmlindex_list may not be empty."
+            raise InvalidParameterError(msg)
         id = xmlindex_list[0].resourcetype._id
         package_id = xmlindex_list[0].resourcetype.package.package_id
         resourcetype_id = xmlindex_list[0].resourcetype.resourcetype_id
@@ -179,7 +180,9 @@ class _QueryProcessor(object):
 
     def _join_on_index(self, idx, joins=None, method="outerjoin",
                        complement=False):
-        join = getattr(joins or document_tab, method)
+        if joins == None:
+            joins = document_tab
+        join = getattr(joins, method)
         idx_tab = idx._getElementCls().db_table.alias()
         if complement:
             # if complement is set, return all rows NOT corresponding to the
@@ -194,7 +197,7 @@ class _QueryProcessor(object):
 
     def _join_on_resourcetype(self, package, resourcetype, joins=None):
         oncl = (resource_tab.c['id'] == document_tab.c['resource_id'])
-        if not joins:
+        if joins == None:
             joins = document_tab.join(resource_tab, onclause=oncl)
         else:
             joins = joins.join(resource_tab, onclause=oncl)
@@ -214,6 +217,8 @@ class _QueryProcessor(object):
         
         The column name correspond to the label of the XMLIndex object.
         """
+        if joins == None:
+            joins = document_tab
         grouping = False
         # look for grouping elements
         for idx in xmlindex_list:
@@ -230,7 +235,7 @@ class _QueryProcessor(object):
             idx_id = int(idx._id)
             # add keyval to selected columns and name it with index label
             q.append_column(idx_tab.c['keyval'].label(keyval_label))
-            join = getattr(joins or document_tab, "outerjoin")
+            join = getattr(joins, "outerjoin")
             if not grouping or (idx_gp not in gp_paths):
                 # either we don't group at all or this is the first time we 
                 # got a grouping element
@@ -367,8 +372,7 @@ class _QueryProcessor(object):
                 query = query.where(w)
         if order_by:
             query, joins = self._process_order_by(order_by, query, joins)
-        if joins:
-            query = query.select_from(joins)
+        query = query.select_from(joins)
         if limit or offset:
             query = query.limit(limit).offset(offset)
         res = self._db.execute(query)
@@ -394,10 +398,7 @@ class XmlIndexCatalog(DbStorage, _QueryProcessor, _IndexView):
         """
         Refreshs the index cache.
         """
-        self._cache = {'package_id':{}, 'resourcetype_id':{}, 'xpath':{},
-                       'group_path':{}, 'type':{}, 'options':{}, '_id':{},
-                       'label':{}
-                       }
+        self._cache = {}
         # get all indexes
         indexes = self.pickup(XmlIndex)
         for idx in indexes:
@@ -407,23 +408,13 @@ class XmlIndexCatalog(DbStorage, _QueryProcessor, _IndexView):
         """
         Adds a given XMLIndex to the index cache.
         """
-        for attr in self._cache:
-            key = getattr(xmlindex, attr)
-            if not key:
-                continue
-            if not key in self._cache[attr]:
-                self._cache[attr][key] = set([xmlindex])
-            else:
-                self._cache[attr][key].add(xmlindex)
+        self._cache[xmlindex._id] = xmlindex
 
     def _deleteFromCache(self, xmlindex):
         """
         Deletes a given XMLIndex from the index cache.
         """
-        for attr in self._cache:
-            key = getattr(xmlindex, attr)
-            if key in self._cache[attr]:
-                self._cache[attr][key].discard(xmlindex)
+        self._cache.pop(xmlindex._id, None)
 
     def registerIndex(self, xmlindex):
         """
@@ -439,7 +430,8 @@ class XmlIndexCatalog(DbStorage, _QueryProcessor, _IndexView):
         except Exception, e:
             msg = "Error registering an index: %s"
             raise SeisHubError(msg % str(xmlindex), e)
-        #self._addToCache(xmlindex)
+        # cache
+        self._addToCache(xmlindex)
         # refresh index view
         self.updateIndexView(xmlindex)
         return xmlindex
@@ -454,26 +446,41 @@ class XmlIndexCatalog(DbStorage, _QueryProcessor, _IndexView):
         resourcetype = xmlindex.resourcetype
         self.flushIndex(xmlindex)
         self.drop(XmlIndex, _id=xmlindex._id)
-        #self._deleteFromCache(xmlindex)
+        # cache
+        self._deleteFromCache(xmlindex)
         # refresh index view
         self.updateIndexView(resourcetype)
 
-    def getIndexes(self, package_id=None, resourcetype_id=None,
-                   xpath=None, group_path=None, type=None,
-                   options=None, index_id=None, label=None):
+    def getIndexes(self, *args, **kwargs):
         """
         Return a list of all applicable XMLIndex objects.
         """
-        res = self.pickup(XmlIndex,
-                          resourcetype={'package':{'package_id':package_id},
-                                          'resourcetype_id':resourcetype_id},
-                          label=label,
-                          xpath=xpath,
-                          group_path=group_path,
-                          type=type,
-                          options=options,
-                          _id=index_id)
-        return res
+        if args:
+            msg = "XmlIndexCatalog.getIndexes() should be called with keywords"
+            raise DeprecationWarning(msg)
+        xmlindex_list = []
+        for id, xmlindex in self._cache.iteritems():
+            flag = True
+            for key, value in kwargs.iteritems():
+                if value == None:
+                    continue
+                if not hasattr(xmlindex, key):
+                    continue
+                if getattr(xmlindex, key) != value:
+                    flag = False
+            if flag:
+                xmlindex_list.append(xmlindex)
+        return xmlindex_list
+#        res = self.pickup(XmlIndex,
+#                          resourcetype={'package':{'package_id':package_id},
+#                                          'resourcetype_id':resourcetype_id},
+#                          label=label,
+#                          xpath=xpath,
+#                          group_path=group_path,
+#                          type=type,
+#                          options=options,
+#                          _id=index_id)
+#        return res
 #        index_sets = list()
 #        arglist = {'package_id':package_id, 
 #                   'resourcetype_id':resourcetype_id, 'xpath':xpath, 
@@ -540,7 +547,7 @@ class XmlIndexCatalog(DbStorage, _QueryProcessor, _IndexView):
             el = self.pickup(xmlindex._getElementCls(),
                              document={'_id': resource.document._id},
                              index=xmlindex)
-            if el and el[0].document._id == resource.document._id:
+            if el:
                 elements.extend(el)
         return elements
 

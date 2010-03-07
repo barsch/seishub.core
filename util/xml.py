@@ -139,7 +139,7 @@ def applyMacros(query):
     """
     # remove line breaks
     query = ' '.join(query.splitlines()).strip()
-    if query[0] != '{':
+    if not query.startswith('{'):
         return query
     # split macro section {} from actual query
     macros, query = query.split('}', 1)

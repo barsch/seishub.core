@@ -93,6 +93,10 @@ class Environment(ComponentManager):
         # initialize the resource tree
         self.tree = ResourceTree(self)
         self.update()
+        # XSLT transformation parameters
+        self.xslt_params = {
+            'google_api_key': self.config.get('web', 'google_api_key', '')
+        }
 
     def getSeisHubPath(self):
         """

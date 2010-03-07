@@ -151,10 +151,16 @@ class XmlStylesheet(object):
         self.content_type = root.xpath('.//xsl:output/@media-type',
                                        namespaces=root.nsmap)
 
-    def transform(self, xmltree_doc, **kwargs):
+    def transform(self, xmltree_doc, xslt_params={}):
         if not IXmlDoc.providedBy(xmltree_doc):
             raise DoesNotImplement(IXmlDoc)
-        result_tree = self.transform_func(xmltree_doc.getXml_doc(), **kwargs)
+        params = {}
+        for key, value in xslt_params.iteritems():
+            if isinstance(value, basestring):
+                params[key] = etree.XSLT.strparam(value)
+            else:
+                params[key] = str(value)
+        result_tree = self.transform_func(xmltree_doc.getXml_doc(), **params)
         return result_tree
 
 
@@ -262,6 +268,7 @@ class XmlTreeDoc(XmlDoc):
         else:
             nodes = list()
         return nodes
+
 
 def toString(xml_obj, method='xml'):
     """

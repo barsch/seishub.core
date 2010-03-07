@@ -250,7 +250,7 @@ class Stylesheet(DocBase):
 
     content_type = property(getContentType, None, "content-type (readonly)")
 
-    def transform(self, resource):
+    def transform(self, resource, xslt_params={}):
         """Transform a given Resource with the stylesheet.
         @type resource: IResource or basestring 
         @return: Transformed xml data as a string
@@ -259,4 +259,4 @@ class Stylesheet(DocBase):
             doc = resource.document.xml_doc
         else:
             doc = seishub.xmldb.resource.newXMLDocument(resource).xml_doc
-        return str(self.parsed_doc.transform(doc))
+        return str(self.parsed_doc.transform(doc, xslt_params))

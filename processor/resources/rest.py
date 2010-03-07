@@ -76,7 +76,8 @@ class RESTResource(Resource):
                                        type=format)
             if len(xslt):
                 xslt = xslt[0]
-                data = xslt.transform(data)
+                # transform
+                data = xslt.transform(data, request.env.xslt_params)
                 # set additional content-type if given in XSLT
                 if xslt.content_type:
                     request.setHeader('content-type',
@@ -299,7 +300,6 @@ class RESTProperty(Resource):
                                                   self.name,
                                                   self.revision)
             meta = res.document.meta
-            revision = str(res.document.revision)
             # create a XML document
             root = etree.Element("seishub")
             etree.SubElement(root, "package").text = self.package_id
@@ -307,7 +307,8 @@ class RESTProperty(Resource):
             etree.SubElement(root, "name").text = self.name
             etree.SubElement(root, "document_id").text = str(res.document._id)
             etree.SubElement(root, "resource_id").text = str(res._id)
-            etree.SubElement(root, "revision").text = revision
+            etree.SubElement(root, "revision").text = \
+                str(res.document.revision)
             etree.SubElement(root, "uid").text = unicode(meta.uid)
             etree.SubElement(root, "datetime").text = \
                 unicode(meta.datetime.isoformat())
@@ -495,8 +496,9 @@ class RESTResourceTypeFolder(Folder):
         for res in res_list:
             temp[res.name] = RESTResource(res)
         # indexes
-        for id in request.env.catalog.getIndexes(self.package_id,
-                                                 self.resourcetype_id):
+        xmlindex_list = request.env.catalog.getIndexes(
+            package_id=self.package_id, resourcetype_id=self.resourcetype_id)
+        for id in xmlindex_list:
             temp[str(id)] = XMLIndex()
         return temp
 

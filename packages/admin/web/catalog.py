@@ -164,7 +164,8 @@ class CatalogQueryPanel(Component):
 
     def render(self, request):
         data = {
-            'query': '/seishub/*',
+            'query': '/seishub/stylesheet order by media-type ASC ' + \
+                     'limit 2 offset 5',
             'result': '',
             'rows': '',
             'clock': "%0.6f" % 0

@@ -24,7 +24,7 @@ class IDbEnabled(Interface):
         """
         @param db: database engine
         """
-        
+
     def getDb():
         """
         @return: database engine
@@ -36,7 +36,7 @@ class ISerializable(Interface):
     Object providing functionality for serialization.
     """
     _id = Attribute("Unique id of Serializable object.")
-        
+
 
 
 class IRelation(Interface):
@@ -77,7 +77,7 @@ class DB_LIMIT(object):
     maximal, minimal or having a fixed value for the given attribute in a 
     x-to-many relation.
     """
-    def __init__(self, attr, type = 'max', value = None):
+    def __init__(self, attr, type='max', value=None):
         """
         @param attr: name of the attribute to be minimized/maximized/fixed
         @param type: 'max'|'min'|'fixed'
@@ -86,7 +86,7 @@ class DB_LIMIT(object):
         self.attr = attr
         self.type = type
         self.value = value
-        
+
 
 class DB_LIKE(object):
     """
@@ -110,16 +110,16 @@ class DbEnabled(object):
     Mixin providing access to a sqlalchemy database manager.
     """
     implements(IDbEnabled)
-    
+
     def __init__(self, db):
         self.setDb(db.engine)
-    
+
     def setDb(self, db):
         self._db = db
-    
+
     def getDb(self):
         return self._db
-    
+
     db = property(getDb, setDb, "Database engine")
 
 
@@ -137,13 +137,13 @@ class DbStorage(DbEnabled):
         * lazy 'to-many' relations not yet supported
         * DB_LIMIT on children of lazy 'to-one' relations not yet supported
     """
-    def __init__(self, db, debug = False):
+    def __init__(self, db, debug=False):
         DbEnabled.__init__(self, db)
         self.debug = debug
-    
+
     def _is_sqlite(self):
         return str(self._db.url).startswith('sqlite')
-    
+
     def _to_kwargs(self, o):
         d = dict()
         cls = o.__class__
@@ -158,8 +158,8 @@ class DbStorage(DbEnabled):
                 if value:
                     assert isinstance(value, col.cls)
                     if not value._id:
-                        raise DbError('A related object could not be '+\
-                                      'located in the database. %s: %s' %\
+                        raise DbError('A related object could not be ' + \
+                                      'located in the database. %s: %s' % \
                                       (type(value), str(value)))
                     value = value._id
                 col = col.name
@@ -177,9 +177,9 @@ class DbStorage(DbEnabled):
                     continue
             d[col] = value
         return d
-    
+
     def _where_clause(self, table, map, values):
-        cl = ClauseList(operator = "AND")
+        cl = ClauseList(operator="AND")
         for key, val in values.iteritems():
             if key not in map.keys():
                 continue
@@ -194,23 +194,23 @@ class DbStorage(DbEnabled):
                         assert len(o) == 1 # sanity check
                         val = o[0]._id
                     except IndexError:
-                        raise DbError('A related object could not be '+\
-                                      'located in the database. %s: %s' %\
+                        raise DbError('A related object could not be ' + \
+                                      'located in the database. %s: %s' % \
                                       (col.cls, str(val)))
-                elif isinstance(val, col.cls): 
+                elif isinstance(val, col.cls):
                     # related object was included, use it's id 
                     val = val._id
                 elif val == DB_NULL:
                     val = None
                 elif val:
-                    raise DbError("Invalid value for key '%s': %s" %\
+                    raise DbError("Invalid value for key '%s': %s" % \
                                   (str(col.name), str(val)))
                 col = col.name
             cl.append(table.c[col] == val)
         return cl
-    
-    def _generate_query(self, q, table, mapping, params, joins = list(), 
-                        order_by = dict()):
+
+    def _generate_query(self, q, table, mapping, params, joins=list(),
+                        order_by=dict()):
         params = params or dict()
         for attr, col in mapping.iteritems():
             value = params.get(attr, None)
@@ -229,10 +229,10 @@ class DbStorage(DbEnabled):
             if IRelation.providedBy(col) and not value is DB_NULL:
                 #(value is DB_NULL or isinstance(value, DB_LIMIT)): 
                 # Object relation
-                if col.lazy and not value and attr not in order_by.keys(): 
+                if col.lazy and not value and attr not in order_by.keys():
                     # skip lazy relations, if not needed for a where clause
                     continue
-                if isinstance(value, col.cls) and hasattr(value, '_id'): 
+                if isinstance(value, col.cls) and hasattr(value, '_id'):
                     # if there is an object of correct type included with the 
                     # query, providing an id, use that id instead
                     # TODO: instead of using the id it would be more common to
@@ -273,22 +273,22 @@ class DbStorage(DbEnabled):
                         if value.type == 'fixed':
                             # select rows with given value only
                             q = q.where(rel_tab.c[limit_col] == value.value)
-                        else: 
+                        else:
                             # select rows where limit_col is maximal / minimal 
                             rel_tabA = rel_tab.alias()
                             if value.type == 'max':
                                 cl = rel_tab.c[limit_col] < rel_tabA.c[limit_col]
                             else:
                                 cl = rel_tab.c[limit_col] > rel_tabA.c[limit_col]
-                            joins.append([rel_tabA, 
-                                         [and_(rel_col == rel_tabA.c[relname], 
+                            joins.append([rel_tabA,
+                                         [and_(rel_col == rel_tabA.c[relname],
                                                cl)
                                          ]])
                             q = q.where(rel_tabA.c[relname] == None)
                         value = None
-                    q, joins = self._generate_query(q, rel_tab, 
-                                                    col.cls.db_mapping, 
-                                                    value, joins, 
+                    q, joins = self._generate_query(q, rel_tab,
+                                                    col.cls.db_mapping,
+                                                    value, joins,
                                                     rel_order_by)
             elif value == DB_NULL:
                 q = q.where(table.c[colname] == None)
@@ -300,9 +300,9 @@ class DbStorage(DbEnabled):
             if not ILazyAttribute.providedBy(col) and not \
                 (IRelation.providedBy(col) and col.relation_type == 'to-many'):
                     q.append_column(table.c[colname])
-                
+
         return q, joins
-    
+
     def _generate_objs(self, cls, result, objs):
         table = cls.db_table
         values = dict()
@@ -328,11 +328,11 @@ class DbStorage(DbEnabled):
                     if col.lazy:
                         values[attr] = col.cls()
                         if rel_id:
-                            values[attr] = DbObjectProxy(self, col.cls, 
-                                                         _id = rel_id)
+                            values[attr] = DbObjectProxy(self, col.cls,
+                                                         _id=rel_id)
                     else:
                         # use the object of type col.cls that was created last
-                        rel_o = self._generate_objs(col.cls, 
+                        rel_o = self._generate_objs(col.cls,
                                                     result, objs)[col.cls]
                         if rel_o:
                             values[attr] = rel_o[-1]
@@ -342,14 +342,14 @@ class DbStorage(DbEnabled):
                     values[attr] = list()
                     for o in rel_o:
                         rel_attr = o.__getattribute__(col.name + '_id')
-                        if rel_attr and rel_attr == cur_id: 
+                        if rel_attr and rel_attr == cur_id:
                             values[attr].append(o)
             elif ILazyAttribute.providedBy(col): # lazy attribute
                 values[attr] = DbAttributeProxy(self, col, table, {'id':
                                                 result[str(table) + '_id']})
             else:
                 values[attr] = result[str(table) + '_' + col]
-        
+
         # check if object has already been created
         for o in objs[cls]:
             if values['_id'] == o._id:
@@ -363,8 +363,8 @@ class DbStorage(DbEnabled):
             new_obj.__setattr__(key, val)
         objs[cls].append(new_obj)
         return objs
-                
-    
+
+
     def _get_children(self, obj):
         objs = list()
         to_many = list()
@@ -380,13 +380,13 @@ class DbStorage(DbEnabled):
         # add child objects last which correspond to a 'to-many' relation
         objs.extend(to_many)
         return objs
-    
-    def _order_by(self, q, table, mapping, order_by = dict()):
+
+    def _order_by(self, q, table, mapping, order_by=dict()):
         for col, direction in order_by.iteritems():
 #             tables in ORDER BY clause also have to be in FROM clause
 #            q.outerjoin(table)
             if isinstance(direction, dict):
-                q = self._order_by(q, mapping[col].cls.db_table, 
+                q = self._order_by(q, mapping[col].cls.db_table,
                                    mapping[col].cls.db_mapping, direction)
                 continue
             if direction.lower() == 'asc':
@@ -394,15 +394,15 @@ class DbStorage(DbEnabled):
             else:
                 q = q.order_by(table.c[col].desc())
         return q
-    
+
     def _to_list(self, l):
         if l is None:
             return list()
         return l
-    
+
     def to_sql_like(self, expr):
         return expr.replace('*', '%')
-        
+
     def store(self, *objs, **kwargs):
         """
         Store a (list of) Serializable object(s) into specified DB table  
@@ -413,7 +413,7 @@ class DbStorage(DbEnabled):
                             stored, default is False.
         @type cascading:    bool
         """
-        if hasattr(self,'debug') and self.debug:
+        if hasattr(self, 'debug') and self.debug:
             start = time.time()
         cascading = kwargs.get('cascading', False)
         update = kwargs.get('update', False)
@@ -426,7 +426,7 @@ class DbStorage(DbEnabled):
         conn = db.connect()
         txn = conn.begin()
         try:
-            for o in objs: 
+            for o in objs:
                 if not ISerializable.providedBy(o):
                     raise DoesNotImplement(ISerializable)
                 table = o.db_table
@@ -448,11 +448,11 @@ class DbStorage(DbEnabled):
             raise
         finally:
             conn.close()
-        if hasattr(self,'debug') and self.debug:
-            print "DBUTIL: Stored %i objects in %s seconds." %\
-                  (len(objs), time.time()-start)
+        if hasattr(self, 'debug') and self.debug:
+            print "DBUTIL: Stored %i objects in %s seconds." % \
+                  (len(objs), time.time() - start)
         return True
-    
+
     def update(self, *objs, **kwargs):
         """
         Update a (list of) Serializable object(s).
@@ -467,7 +467,7 @@ class DbStorage(DbEnabled):
         """
         kwargs['update'] = True
         self.store(*objs, **kwargs)
-        
+
 
     def pickup(self, cls, **keys):
         """
@@ -492,7 +492,7 @@ class DbStorage(DbEnabled):
         attribute_name = None will be ignored:
             - attribute_name = DB_NULL
         """
-        if hasattr(self,'debug') and self.debug:
+        if hasattr(self, 'debug') and self.debug:
             start = time.time()
         if not ISerializable.implementedBy(cls):
             raise DoesNotImplement(ISerializable)
@@ -502,17 +502,17 @@ class DbStorage(DbEnabled):
         table = cls.db_table
         map = cls.db_mapping
         # generate query
-        q = table.select(use_labels = True)
-        q, join_list = self._generate_query(q, table, map, keys, 
-                                            order_by = order_by,
-                                            joins = list())
+        q = table.select(use_labels=True)
+        q, join_list = self._generate_query(q, table, map, keys,
+                                            order_by=order_by,
+                                            joins=list())
         if join_list and len(join_list) >= 2:
             left_tab = join_list[0][1][0]
-            joins = left_tab.outerjoin(join_list[1][0], 
-                                       onclause = or_(*join_list[1][1]))
+            joins = left_tab.outerjoin(join_list[1][0],
+                                       onclause=or_(*join_list[1][1]))
             del join_list[:2]
             for j in join_list:
-                joins = joins.outerjoin(j[0], onclause = or_(*j[1]))
+                joins = joins.outerjoin(j[0], onclause=or_(*j[1]))
             q = q.select_from(joins)
         q = self._order_by(q, table, map, order_by)
         q = q.offset(offset).limit(limit)
@@ -529,11 +529,11 @@ class DbStorage(DbEnabled):
         objs = {cls:list()}
         for res in results:
             objs = self._generate_objs(cls, res, objs)
-        if hasattr(self,'debug') and self.debug:
-            print "DBUTIL: Loaded %i object(-tree)s in %s seconds." %\
-                  (len(objs[cls]), time.time()-start)
+        if hasattr(self, 'debug') and self.debug:
+            print "DBUTIL: Loaded %i object(-tree)s in %s seconds." % \
+                  (len(objs[cls]), time.time() - start)
         return self._to_list(objs[cls])
-    
+
     def drop(self, cls, **keys):
         """
         Delete object with given keys from database.
@@ -547,7 +547,7 @@ class DbStorage(DbEnabled):
         Use DB_NULL as value to force a column to be None, 
         attribute_name = None will be ignored.
         """
-        if hasattr(self,'debug') and self.debug:
+        if hasattr(self, 'debug') and self.debug:
             start = time.time()
         table = cls.db_table
         map = cls.db_mapping
@@ -576,14 +576,14 @@ class DbStorage(DbEnabled):
             if not result.rowcount:
                 ret *= False
             txn.commit()
-        except:
+        except Exception:
             txn.rollback()
             raise
         finally:
             conn.close()
-        if hasattr(self,'debug') and self.debug:
-            print "DBUTIL: Deletion completed in %s seconds." %\
-                  (time.time()-start)
+        if hasattr(self, 'debug') and self.debug:
+            print "DBUTIL: Deletion completed in %s seconds." % \
+                  (time.time() - start)
         return ret
 
 
@@ -599,24 +599,24 @@ class Serializable(object):
     The db_mapping attribute is a dict of the following structure:
     db_mapping = {'attribute name' : 'name of column in db_table', ... }
     """
-    
+
     implements(ISerializable)
-    
+
     db_mapping = dict()
-    
+
     def __init__(self, *args, **kwargs):
         # TODO: remove?
         self._id = None
-    
+
     def _getId(self):
         try:
             return self._serializable_id
         except:
             return None
-    
+
     def _setId(self, id):
         if id and not (isinstance(id, int) or isinstance(id, long)):
-            raise TypeError("Id has to be integer or long. Got a %s." %\
+            raise TypeError("Id has to be integer or long. Got a %s." % \
                             str(type(id)))
         self._serializable_id = id
         # set backreference ids:
@@ -630,25 +630,25 @@ class Serializable(object):
                 for o in objs:
                     rel_attr = col.name + '_id'
                     o.__setattr__(rel_attr, id)
-    
+
     _id = property(_getId, _setId, 'Internal id (integer)')
 
 
 class DbObjectProxy(object):
     implements(IDbObjectProxy)
-    
+
     def __init__(self, db_storage, cls, **kwargs):
         self.db_storage = db_storage
         cls.db_mapping.setdefault('_id', 'id')
         self.cls = cls
         self.kwargs = kwargs
         directlyProvides(self, list(implementedBy(cls)))
-    
+
     def get(self):
         try:
             return self.db_storage.pickup(self.cls, **self.kwargs)[0]
         except IndexError:
-            raise DbError('A related object could not be located in '+\
+            raise DbError('A related object could not be located in ' + \
                           'the database. %s: %s' % (self.cls, self.kwargs))
 
 
@@ -659,13 +659,13 @@ class DbAttributeProxy(object):
     @param keyargs: attribute dict uniquely identifying the object
     """
     implements(IDbAttributeProxy)
-    
+
     def __init__(self, db_storage, attr, table, keyargs):
         self.db_storage = db_storage
         self.attr_name = attr.name
         self.table = table
         self.keyargs = keyargs
-    
+
     def get(self):
         w = ClauseList()
         for k in self.keyargs.keys():
@@ -676,7 +676,7 @@ class DbAttributeProxy(object):
             assert len(res) <= 1 # sanity check
             return res[0][self.attr_name]
         except IndexError:
-            raise DbError('An error occurred while getting related object ' +\
+            raise DbError('An error occurred while getting related object ' + \
                           'data "%s": %s' % (self.attr_name, self.keyargs))
 
 
@@ -690,7 +690,7 @@ class db_property(property):
     def __init__(self, *args, **kwargs):
         self.attr = kwargs.pop('attr', None)
         property.__init__(self, *args, **kwargs)
-    
+
     def __get__(self, obj, objtype):
         if not self.attr:
             return property.__get__(self, obj, objtype)
@@ -701,7 +701,7 @@ class db_property(property):
            IDbAttributeProxy.providedBy(data):
             obj.__setattr__(self.attr, data.get())
         return property.__get__(self, obj, objtype)
-    
+
     def __set__(self, obj, value):
         if IDbAttributeProxy.providedBy(value):
             obj.__setattr__(self.attr, value)
@@ -724,9 +724,9 @@ class Relation(object):
     'to-many' in the referee's table.
     """
     implements(IRelation)
-    
-    def __init__(self, cls, name, lazy = True, cascading_delete = False,
-                 relation_type = 'to-one'):
+
+    def __init__(self, cls, name, lazy=True, cascading_delete=False,
+                 relation_type='to-one'):
         self.cls = cls
         self.name = name
         self.lazy = lazy
@@ -746,6 +746,6 @@ class LazyAttribute(object):
     @param name: name of the database column holding attribute data 
     """
     implements(ILazyAttribute)
-    
+
     def __init__(self, name):
         self.name = name

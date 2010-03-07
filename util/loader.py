@@ -43,12 +43,12 @@ class ComponentLoader(object):
             pkg_resources.working_set.add(d)
 
         for dist, e in errors.iteritems():
-            self.env.log.error('Skipping egg "%s": %s' % (dist, e))
+            self.env.log.warn('Skipping egg "%s": %s' % (dist, e))
 
         for entry in pkg_resources.iter_entry_points(entry_point):
             self.env.log.debug('Initialize egg %s ...' % (entry.module_name))
             try:
                 entry.load()
             except Exception, e:
-                self.env.log.error('Skipping egg "%s": %s' % (entry.name, e))
+                self.env.log.warn('Skipping egg "%s": %s' % (entry.name, e))
         self.env.log.info('Plug-ins have been initialized.')

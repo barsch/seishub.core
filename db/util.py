@@ -5,7 +5,7 @@ Database related utilities.
 
 
 from decimal import Decimal
-from lxml.etree import Element, SubElement as Sub, tostring
+from lxml.etree import Element, SubElement, tostring
 from seishub.util.xmlwrapper import toString
 from sqlalchemy import sql, Table
 import datetime
@@ -98,10 +98,13 @@ class CustomJSONEncoder(json.JSONEncoder):
             return json.JSONEncoder.default(self, obj)
 
 
-def formatORMResults(request, query):
+def formatORMResults(request, query, count=None, build_url=False):
     """
     """
     base_url = request.env.getRestUrl()
+    # create stats
+    stats = {}
+    stats['totalResultsAvailable'] = query.count()
     # limits or offset
     try:
         limit = int(request.args0.get('limit'))
@@ -110,19 +113,74 @@ def formatORMResults(request, query):
         pass
     offset = int(request.args0.get('offset', 0))
     query = query.offset(offset)
+    stats['firstResultPosition'] = offset
+    stats['totalResultsReturned'] = query.count()
     # get format
     formats = request.args.get('format', []) or request.args.get('output', [])
     if 'json' in formats:
-        pass
-    elif 'xhtml' in formats:
-        pass
-    else:
-        # build up XML document
-        xml = Element("seishub")
+        # build up JSON string
+        data = stats
+        data['Result'] = []
         for result in query:
+            temp = {}
             for key in result.keys():
                 value = getattr(result, key, '')
-                Sub(xml, key).text = str(value)
+                temp[key] = str(value)
+            data['Result'].append(temp)
+        # add attributes to root node
+        for key, value in stats.iteritems():
+            data[key] = str(value)
+        # generate correct header
+        request.setHeader('content-type', 'application/json; charset=UTF-8')
+        # create output
+        return json.dumps({'ResultSet': data}, cls=CustomJSONEncoder, indent=4)
+    elif 'xhtml' in formats:
+        # build up a XHTML table
+        html = Element("html")
+        body = SubElement(html, "body")
+        table = SubElement(body, "table", border="1")
+        sub = SubElement(table, "tr")
+        for key in query._entities:
+            SubElement(sub, "th").text = str(key._result_label)
+        # build URL
+        if build_url:
+            SubElement(sub, "th").text = "URL"
+        for result in query:
+            sub = SubElement(table, "tr")
+            for key in result.keys():
+                value = getattr(result, key, '')
+                if value == None:
+                    value = ''
+                SubElement(sub, "td").text = str(value)
+            # build URL
+            if not build_url:
+                continue
+            url = '/'.join([base_url, 'xml', result['package_id'],
+                            result['resourcetype_id'],
+                            result['resource_name']])
+            td = SubElement(sub, 'td')
+            SubElement(td, 'a', href=url).text = url
+        # generate correct header
+        request.setHeader('content-type', 'text/html; charset=UTF-8')
+        return tostring(html, method='html', encoding='utf-8')
+    else:
+        # build up XML document
+        xml = Element("ResultSet")
+        for result in query:
+            sub = SubElement(xml, "Item")
+            for key in result.keys():
+                value = getattr(result, key, '')
+                SubElement(sub, key).text = str(value)
+            # build URL
+            if not build_url:
+                continue
+            SubElement(sub, 'url').text = '/'.join([base_url, 'xml',
+                                                    result['package_id'],
+                                                    result['resourcetype_id'],
+                                                    result['resource_name']])
+        # add attributes to root node
+        for key, value in stats.iteritems():
+            xml.set(key, str(value))
         return toString(xml)
 
 
@@ -148,33 +206,32 @@ def formatResults(request, results, count=None, limit=None, offset=0,
         # generate correct header
         request.setHeader('content-type', 'application/json; charset=UTF-8')
         # create output
-        return json.dumps({'ResultSet': data},
-                          cls=CustomJSONEncoder, indent=4)
+        return json.dumps({'ResultSet': data}, cls=CustomJSONEncoder, indent=4)
     elif 'xhtml' in formats:
         # build up a XHTML table
         html = Element("html")
-        body = Sub(html, "body")
-        table = Sub(body, "table", border="1")
-        s = Sub(table, "tr")
+        body = SubElement(html, "body")
+        table = SubElement(body, "table", border="1")
+        sub = SubElement(table, "tr")
         for key in results.keys:
-            Sub(s, "th").text = str(key)
+            SubElement(sub, "th").text = str(key)
         # build URL
         if build_url:
-            Sub(s, "th").text = "URL"
+            SubElement(sub, "th").text = "URL"
         for result in results:
-            s = Sub(table, "tr")
+            sub = SubElement(table, "tr")
             for value in result:
                 if value == None:
                     value = ''
-                Sub(s, "td").text = str(value)
+                SubElement(sub, "td").text = str(value)
             # build URL
             if not build_url:
                 continue
             url = '/'.join([base_url, 'xml', result['package_id'],
                             result['resourcetype_id'],
                             result['resource_name']])
-            td = Sub(s, 'td')
-            Sub(td, 'a', href=url).text = url
+            td = SubElement(sub, 'td')
+            SubElement(td, 'a', href=url).text = url
         # generate correct header
         request.setHeader('content-type', 'text/html; charset=UTF-8')
         return tostring(html, method='html', encoding='utf-8')
@@ -184,18 +241,18 @@ def formatResults(request, results, count=None, limit=None, offset=0,
         i = 0
         for result in results:
             i = i + 1
-            s = Sub(xml, "Item")
+            sub = SubElement(xml, "Item")
             for (key, value) in dict(result).iteritems():
                 if value == None:
                     value = ''
-                Sub(s, key).text = str(value)
+                SubElement(sub, key).text = str(value)
             # build URL
             if not build_url:
                 continue
-            Sub(s, 'url').text = '/'.join([base_url, 'xml',
-                                           result['package_id'],
-                                           result['resourcetype_id'],
-                                           result['resource_name']])
+            SubElement(sub, 'url').text = '/'.join([base_url, 'xml',
+                                                    result['package_id'],
+                                                    result['resourcetype_id'],
+                                                    result['resource_name']])
         # add attributes to root node
         stats['totalResultsReturned'] = i
         stats['totalResultsAvailable'] = count or i

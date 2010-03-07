@@ -41,38 +41,38 @@ class ProcessorIndexTestResourcetype(Component):
 
 class TestIndex(Component):
     implements(IProcessorIndex)
-    
+
     package_id = 'processorindextest'
     resourcetype_id = 'testtype'
     type = index.FLOAT_INDEX
     label = 'testindex'
-    
+
     def eval(self, document):
-        return [1,2,3]
+        return [1, 2, 3]
 
 
 class ProcessorIndexTest(SeisHubEnvironmentTestCase):
     def setUp(self):
         self.env.enableComponent(ProcessorIndexTestPackage)
         self.env.enableComponent(ProcessorIndexTestResourcetype)
-    
+
     def tearDown(self):
         self.env.disableComponent(ProcessorIndexTestPackage)
         self.env.disableComponent(ProcessorIndexTestResourcetype)
-    
+
     def test_registerProcessorIndex(self):
         self.env.enableComponent(TestIndex)
         indexes = self.env.catalog.index_catalog.getIndexes(
-                     'processorindextest', 'testtype')
+            package_id='processorindextest', resourcetype_id='testtype')
         self.assertEqual(len(indexes), 1)
         idx = indexes[0]
-        self.assertEqual(idx.resourcetype.package.package_id, 
+        self.assertEqual(idx.resourcetype.package.package_id,
                          'processorindextest')
         self.assertEqual(idx.resourcetype.resourcetype_id, 'testtype')
         self.assertEqual(idx.type, index.PROCESSOR_INDEX)
-        self.assertEqual(idx.options, TestIndex.__module__ + '.' +\
+        self.assertEqual(idx.options, TestIndex.__module__ + '.' + \
                          TestIndex.__name__)
-        
+
         test_doc = newXMLDocument(RAW_XML1)
         res = idx.eval(test_doc, self.env)
         self.assertEqual(len(res), 3)

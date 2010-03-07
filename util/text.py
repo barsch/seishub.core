@@ -85,7 +85,6 @@ def validate_id(str):
     id_pt = """^[A-Za-z0-9]       # leading character
     [A-Za-z0-9_.-]*$              # alphanumeric or '_','.','-'
     """
-    # XXX: not here!
     if str is None:
         return None
     # encode to bytestring first

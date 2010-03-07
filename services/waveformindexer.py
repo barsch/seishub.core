@@ -13,6 +13,7 @@ from seishub.config import BoolOption, ListOption, Option
 from seishub.defaults import WAVEFORMINDEXER_CRAWLER_PERIOD, \
     WAVEFORMINDEXER_AUTOSTART
 from twisted.application.internet import TimerService #@UnresolvedImport
+import os
 
 
 class WaveformIndexerService(TimerService, WaveformFileCrawler):
@@ -52,8 +53,7 @@ class WaveformIndexerService(TimerService, WaveformFileCrawler):
         self.work_queue = env.queues[1]
         self.output_queue = env.queues[2]
         # config
-        import os
-        path = os.path.normpath('/opt/seishub/seishub/data')
+        path = os.path.normpath(os.path.join(env.getSeisHubPath(), 'data'))
         self.paths = {path:['*.*']}
         # start iterating
         TimerService.__init__(self, self.crawler_period, self.iterate)

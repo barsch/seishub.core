@@ -202,20 +202,16 @@ class XmlCatalog(object):
                             xpath=xpath, type=type, options=options,
                             group_path=group_path)
         xmlindex = self.index_catalog.registerIndex(xmlindex)
-        # update index view
-        self.index_catalog.updateIndexView(xmlindex)
         return xmlindex
 
-    def deleteIndex(self, xmlindex=None, index_id=None):
+    def deleteIndex(self, xmlindex=None, _id=None):
         """
         Remove an index using either a XMLIndex object or a index id.
         """
-        if index_id:
-            xmlindex = self.getIndexes(index_id=index_id)[0]
+        if _id:
+            xmlindex = self.getIndexes(_id=_id)[0]
         resourcetype = xmlindex.resourcetype
         self.index_catalog.deleteIndex(xmlindex)
-        # update index view via resourcetype
-        self.index_catalog.updateIndexView(resourcetype)
 
     def deleteAllIndexes(self, package_id, resourcetype_id=None):
         """
@@ -227,8 +223,8 @@ class XmlCatalog(object):
             self.deleteIndex(xmlindex)
 
     def getIndexes(self, package_id=None, resourcetype_id=None,
-                   xpath=None, group_path=None, type="text",
-                   options=None, index_id=None, label=None):
+                   xpath=None, group_path=None, type=None,
+                   options=None, _id=None, label=None):
         """
         Return a list of all applicable XMLIndex objects.
         """
@@ -236,14 +232,15 @@ class XmlCatalog(object):
         if xpath and '#' in xpath:
             group_path, temp = xpath.split('#', 1)
             xpath = '/'.join([group_path, temp])
-        type = INDEX_TYPES.get(type.lower(), TEXT_INDEX)
+        if type:
+            type = INDEX_TYPES.get(type.lower(), TEXT_INDEX)
         return self.index_catalog.getIndexes(package_id=package_id,
                                              resourcetype_id=resourcetype_id,
                                              xpath=xpath,
                                              group_path=group_path,
                                              type=type,
                                              options=options,
-                                             index_id=index_id,
+                                             _id=_id,
                                              label=label)
 
     def getIndexData(self, resource):
@@ -305,24 +302,17 @@ class XmlCatalog(object):
         return [self.xmldb.getResource(document_id=id)
                 for id in results['ordered']]
 
-    def updateIndexView(self, package_id, resourcetype_id):
-        """
-        """
-        xmlindex = self.getIndexes(package_id=package_id,
-                                   resourcetype_id=resourcetype_id)[0]
-        return self.index_catalog.updateIndexView(xmlindex)
-
     def updateAllIndexViews(self):
         """
+        Updates all IndexViews.
         """
         xmlindex_list = self.getIndexes()
-        ids = []
+        rts = {}
         for xmlindex in xmlindex_list:
-            if xmlindex.resourcetype._id not in ids:
-                ids.append(xmlindex.resourcetype._id)
-                self.index_catalog.updateIndexView(xmlindex)
-            else:
-                xmlindex_list.remove(xmlindex)
+            if xmlindex.resourcetype._id not in rts:
+                rts[xmlindex.resourcetype._id] = xmlindex.resourcetype
+        for rt in rts.values():
+            self.index_catalog.updateIndexView(rt)
         self.env.log.info("IndexViews have been updated.")
 
     def getAllResourceNames(self, package_id, resourcetype_id, limit=100,
@@ -334,12 +324,12 @@ class XmlCatalog(object):
                                                             resourcetype_id)
         return self.xmldb.getAllResourceNames(resourcetype, limit, ordered)
 
-    def reindexIndex(self, xmlindex=None, index_id=None):
+    def reindexIndex(self, xmlindex=None, _id=None):
         """
         Reindex all resources by a given XMLIndex object.
         """
-        if index_id:
-            xmlindex = self.getIndexes(index_id=index_id)[0]
+        if _id:
+            xmlindex = self.getIndexes(_id=_id)[0]
         return self.index_catalog.reindexIndexes([xmlindex])
 
     def reindexResourceType(self, package_id, resourcetype_id):

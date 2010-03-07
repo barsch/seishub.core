@@ -70,8 +70,6 @@ class RestrictedXPathQueryParser(object):
     _logical_ops = ['and', 'or']
     _relational_ops = ['=', '<', '>', '<=', '>=', '!=']
 
-    _grammar = None
-
     def __init__(self):
         self.parser = self.createParser()
         self._init_parser()
@@ -127,11 +125,6 @@ class RestrictedXPathQueryParser(object):
     def createParser(self):
         """This function returns a parser for the RestrictedXpathQuery grammar.
         """
-        # XXX: caching !
-#        if RestrictedXPathQueryParser._grammar:
-#            self.setParseActions()
-#            return RestrictedXPathQueryParser._grammar.parseString
-
         # xml standard tokens (see: http://www.w3.org/TR/REC-xml)
         xmlNameStartChar = pp.alphas + ":" + "_" + \
                            pp.srange("[\u00C0-\u00D6]") + \
@@ -149,11 +142,6 @@ class RestrictedXPathQueryParser(object):
         xmlNameChar = xmlNameStartChar + "-" + "." + pp.nums + \
                       unichr(0xB7) + pp.srange("[\u0300-\u036F]") + \
                       pp.srange("[\u203F-\u2040]")
-#            
-#        NCNameStartChar = Letter | '_' 
-#        NCName = NCNameStartChar + pp.ZeroOrMore(NCNameChar)
-#        xmlNameTest = '*' | NCName + ':' + '*' | QName
-
         # custom tokens
         wildcard = pp.Literal(self.WILDCARD)        # node wildcard operator
         sep = pp.Literal(self.SEP)                  # path separator
@@ -186,6 +174,7 @@ class RestrictedXPathQueryParser(object):
         asc = pp.CaselessKeyword('asc')
         desc = pp.CaselessKeyword('desc')
         limit = pp.CaselessKeyword('limit')
+        offset = pp.CaselessKeyword('offset')
 
         # flags
         tinyFlag = pp.CaselessKeyword('t')
@@ -213,9 +202,6 @@ class RestrictedXPathQueryParser(object):
         resourcetype_id = (pp.Word(pp.alphanums) | wildcard).\
                           setResultsName('resourcetype_id').\
                           setParseAction(self.evalResourcetype_id).suppress()
-#        rootnode = (ndName | wildcard).\
-#                   setResultsName('rootnode').\
-#                   setParseAction(self.evalRootnode).suppress()
 
         locationStep = (sep.suppress() + (ndName | wildcard)).\
                        setResultsName('locationStep', True)
@@ -223,7 +209,6 @@ class RestrictedXPathQueryParser(object):
                    sep.suppress() + resourcetype_id + \
                    pp.ZeroOrMore(locationStep)).\
                    setParseAction(self.evalLocationSteps)
-        # sep.suppress() + rootnode +\
 
         # predicate expression
         pexpr = pp.Forward().setParseAction(self.remove_list)
@@ -240,10 +225,10 @@ class RestrictedXPathQueryParser(object):
         limitExpr = limit + pp.Word(pp.nums).setResultsName('limit') + \
                     pp.Optional(',' + pp.Word(pp.nums).\
                                 setResultsName('offset'))
+        offsetExpr = offset + pp.Word(pp.nums).setResultsName('offset')
         obItem = (pathExpr + pp.Optional(asc | desc, 'asc')).\
                  setResultsName('order_by', listAllMatches=True)
-        orderByExpr = orderBy + pp.delimitedList(obItem, ',') + \
-                      pp.Optional(limitExpr)
+        orderByExpr = orderBy + pp.delimitedList(obItem, ',')
 
         # query
         predicates = (pstart + pexpr + pend).setResultsName('predicates')
@@ -252,14 +237,12 @@ class RestrictedXPathQueryParser(object):
                 location + \
                 pp.Optional(predicates) + \
                 pp.Optional(orderByExpr) + \
+                pp.Optional(limitExpr) + \
+                pp.Optional(offsetExpr) + \
                 pp.StringEnd()
-        RestrictedXPathQueryParser._grammar = query
         return query.parseString
 
     def setAttributes(self, parsed):
-#        location_steps = parsed.get('locationStep')
-#        if isinstance(location_steps, pp.ParseResults):
-#            self.location_steps = [ls[0] for ls in location_steps.asList()]
         predicates = parsed.get('predicates')
         if isinstance(predicates, pp.ParseResults):
             self.predicates = predicates.asList()
@@ -310,10 +293,6 @@ class XPathQuery(RestrictedXPathQueryParser):
         return location_path
 
     def getPredicates(self):
-        # TODO: sometimes there's an unneeded additional [ ] wrapped around
-        # predicates ?
-#        if self.predicates and len(self.predicates) == 1: 
-#            return self.predicates[0]
         return self.predicates
 
     def getOrderBy(self):

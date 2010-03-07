@@ -1,64 +1,64 @@
 .icon {
-    display: block;
-    height: 14px;
-    padding-left: 20px;
+  display: block;
+  height: 14px;
+  padding-left: 20px;
 }
 
 .icon-package {
-    background: transparent url(../../yui2/assets/treeview-sprite.png) 0 0px no-repeat;
+  background: transparent url(/yui2/assets/treeview-sprite.png) 0 0px no-repeat;
 }
 
 .icon-resourcetype {
-    background: transparent url(../../yui2/assets/treeview-sprite.png) 0 -14px
-        no-repeat;
+  background: transparent url(/yui2/assets/treeview-sprite.png) 0 -14px
+  no-repeat;
 }
 
 .icon-resource {
-    background: transparent url(../../yui2/assets/treeview-sprite.png) 0 -28px
-        no-repeat;
+  background: transparent url(/yui2/assets/treeview-sprite.png) 0 -28px
+  no-repeat;
 }
 
 .icon-mapping {
-    background: transparent url(../../yui2/assets/treeview-sprite.png) 0 -42px
-        no-repeat;
+  background: transparent url(/yui2/assets/treeview-sprite.png) 0 -42px
+  no-repeat;
 }
 
 .icon-index {
-    background: transparent url(../../yui2/assets/treeview-sprite.png) 0 -56px
-        no-repeat;
+  background: transparent url(/yui2/assets/treeview-sprite.png) 0 -56px
+  no-repeat;
 }
 
 .icon-alias {
-    background: transparent url(../../yui2/assets/treeview-sprite.png) 0 -70px
-        no-repeat;
+  background: transparent url(/yui2/assets/treeview-sprite.png) 0 -70px
+  no-repeat;
 }
 
 .icon-property {
-    background: transparent url(../../yui2/assets/treeview-sprite.png) 0 -84px
-        no-repeat;
+  background: transparent url(/yui2/assets/treeview-sprite.png) 0 -84px
+  no-repeat;
 }
 
 .icon-file {
-    background: transparent url(../../yui2/assets/treeview-sprite.png) 0 -98px
-        no-repeat;
+  background: transparent url(/yui2/assets/treeview-sprite.png) 0 -98px
+  no-repeat;
 }
 
 .icon-folder {
-    background: transparent url(../../yui2/assets/treeview-sprite.png) 0 -112px
-        no-repeat;
+  background: transparent url(/yui2/assets/treeview-sprite.png) 0 -112px
+  no-repeat;
 }
 
 .icon-mapping-folder {
-    background: transparent url(../../yui2/assets/treeview-sprite.png) 0 -126px
-        no-repeat;
+  background: transparent url(/yui2/assets/treeview-sprite.png) 0 -126px
+  no-repeat;
 }
 
 .icon-xmlroot {
-    background: transparent url(../../yui2/assets/treeview-sprite.png) 0 -140px
-        no-repeat;
+  background: transparent url(/yui2/assets/treeview-sprite.png) 0 -140px
+  no-repeat;
 }
 
 .htmlnodelabel {
-    padding-left: 20px;
-    color: gray;
+  padding-left: 20px;
+  color: gray;
 }

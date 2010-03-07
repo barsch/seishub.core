@@ -15,8 +15,7 @@ from seishub.processor.interfaces import IFileSystemResource, IResource, \
 from seishub.util.path import addBase
 from seishub.util.text import isInteger
 from twisted.application import service
-from twisted.application.internet import SSLServer #@UnresolvedImport
-from twisted.application.internet import TCPServer #@UnresolvedImport
+from twisted.application.internet import SSLServer, TCPServer
 from twisted.internet import threads, defer, ssl
 from twisted.python.failure import Failure
 from twisted.web import http, server, static
@@ -477,8 +476,7 @@ class WebService(service.MultiService):
     Option('web', 'admin_theme', ADMIN_THEME, "Default administration theme.")
     ListOption('web', 'default_pages', ','.join(DEFAULT_PAGES),
         "Default pages.")
-#    Option('web', 'google_api_key', "ABQIAAAAIDhiU213jGUICTII1pgroxSm6VGAP" + \
-#        "p-deNb6gPN5c2KwQz-qtBQbZAUxnXbLVerGtrtmNRXZX-Fdog", "Google API key.")
+    Option('web', 'google_api_key', '', "Google API key.")
 
     def __init__(self, env):
         self.env = env
