@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from seishub.config import Option, BoolOption
-from seishub.core import ERROR, WARN, INFO, DEBUG, DEBUGX
+from seishub.core import ERROR, WARN, INFO, DEBUG
 from twisted.python import log, logfile
 import os
 import traceback
@@ -12,8 +12,7 @@ LOG_LEVELS = {'OFF': 0,
               'ERROR': ERROR,
               'WARN': WARN,
               'INFO': INFO,
-              'DEBUG': DEBUG,
-              'DEBUGX': DEBUGX}
+              'DEBUG': DEBUG}
 
 
 class Logger(object):
@@ -60,7 +59,7 @@ class Logger(object):
 
     def _formatMessage(self, level, msg, showTraceback):
         if level:
-            msg = '%6s  %s' % (level + ':', msg)
+            msg = '%s: %s' % (level, msg)
         log.msg(msg, isError=True)
         if showTraceback:
             log.msg(traceback.format_exc(), isError=True)
@@ -92,11 +91,6 @@ class Logger(object):
         if self.log_level < DEBUG:
             return
         self._formatMessage('DEBUG', msg, showTraceback)
-
-    def debugx(self, msg, showTraceback=False):
-        if self.log_level < DEBUGX:
-            return
-        self._formatMessage('XXX', msg, showTraceback)
 
     def log(self, msg, showTraceback=False):
         self._formatMessage('', msg, showTraceback)

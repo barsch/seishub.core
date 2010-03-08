@@ -25,7 +25,7 @@ class WaveformIndexerService(TimerService, WaveformFileCrawler):
     BoolOption('waveformindexer', 'autostart', WAVEFORMINDEXER_AUTOSTART,
         "Enable service on start-up.")
     ListOption('waveformindexer', 'paths', 'data=*.*',
-            "List of file paths to scan for.")
+        "List of file paths to scan for.")
     Option('waveformindexer', 'crawler_period',
         WAVEFORMINDEXER_CRAWLER_PERIOD, "Path check interval in seconds.")
     BoolOption('waveformindexer', 'skip_dots', True,
@@ -52,23 +52,30 @@ class WaveformIndexerService(TimerService, WaveformFileCrawler):
         self.input_queue = env.queues[0]
         self.work_queue = env.queues[1]
         self.output_queue = env.queues[2]
+        self.log_queue = env.queues[3]
         # search paths
         paths = env.config.getlist('waveformindexer', 'paths')
         self.paths = {}
         for path in paths:
+            # strip patterns
             if '=' in path:
                 path, patterns = path.split('=')
                 if ' ' in patterns:
-                    patterns=patterns.split(' ')
+                    patterns = patterns.split(' ')
+                else:
+                    patterns = [patterns.strip()]
             else:
                 patterns = ['*.*']
-            if not os.path.isdir(path):
+            # relative path
+            if not os.path.isabs(path):
                 temp = os.path.join(env.getSeisHubPath(), path)
                 if not os.path.isdir(temp):
-                   msg = "Skipping non-existing waveform path %s ..."
-                   self.env.log.warn(msg % temp)
-                   continue
+                    msg = "Skipping non-existing waveform path %s ..."
+                    self.env.log.warn(msg % temp)
+                    continue
                 path = temp
+            # norm path name
+            path = os.path.normpath(path)
             self.paths[path] = patterns
         # start iterating
         TimerService.__init__(self, self.crawler_period, self.iterate)

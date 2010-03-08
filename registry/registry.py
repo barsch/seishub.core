@@ -593,6 +593,7 @@ class ProcessorIndexRegistry(object):
         """
         Refresh all ProcessorIndexes.
         """
+        self.env.log.debug("Updating ProcessorIndexes ...")
         all = PackageManager.getClasses(IProcessorIndex)
         for cls in all:
             if self.env.isComponentEnabled(cls):
@@ -625,7 +626,7 @@ class ProcessorIndexRegistry(object):
         try:
             self.register(cls)
         except DuplicateObjectError:
-            msg = "Skipping ProcessorIndex /%s/%s - %s\n"
+            msg = "Skipping ProcessorIndex /%s/%s - %s"
             self.env.log.debug(msg % (cls.package_id,
                                       cls.resourcetype_id, cls))
             return
@@ -644,12 +645,12 @@ class ResourceFormaterRegistry(object):
 
     def __init__(self, env):
         self.env = env
-        self.update()
 
     def update(self):
         """
         Refresh the ResourceFormater registry.
         """
+        self.env.log.debug("Updating ResourceFormaters ...")
         self._dict = dict()
         all = PackageManager.getClasses(IResourceFormater)
         for cls in all:

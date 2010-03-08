@@ -135,8 +135,8 @@ class Environment(ComponentManager):
         """
         self.registry.mappers.update()
         self.registry.formaters.update()
-        self.tree.update()
         self.registry.processor_indexes.update()
+        self.tree.update()
         self.catalog.updateAllIndexViews()
         self.registry.sqlviews.update()
 

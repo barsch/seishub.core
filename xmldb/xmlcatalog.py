@@ -305,6 +305,7 @@ class XmlCatalog(object):
         """
         Updates all IndexViews.
         """
+        self.env.log.debug("Updating IndexViews ...")
         xmlindex_list = self.getIndexes()
         rts = {}
         for xmlindex in xmlindex_list:

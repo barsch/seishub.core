@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from seishub.core import implements
 
-from seishub.util import pyparsing as pp
+import pyparsing as pp
 from seishub.exceptions import InvalidParameterError
 from seishub.xmldb.interfaces import IXPathQuery
 

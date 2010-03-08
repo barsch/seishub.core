@@ -90,10 +90,11 @@ def run():
     in_queue = manager.dict()
     work_queue = manager.list()
     out_queue = manager.list()
-    queues = (in_queue, work_queue, out_queue)
+    log_queue = manager.list()
+    queues = (in_queue, work_queue, out_queue, log_queue)
     # create processes
     for i in range(number_of_cpus):
-        args = (i, in_queue, work_queue, out_queue, preview_path)
+        args = (i, in_queue, work_queue, out_queue, log_queue, preview_path)
         p = multiprocessing.Process(target=worker, args=args)
         p.daemon = True
         p.start()

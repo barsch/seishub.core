@@ -231,8 +231,12 @@ class WebRequest(Processor, http.Request):
                 #sending, not the full size of the on-server entity.
                 fsize = end - int(start)
                 self.setHeader('content-length', str(fsize))
-        # start the file transfer
-        static.FileTransfer(fp, fsize, self)
+                # start the file transfer
+                sp = static.SingleRangeStaticProducer(self, fp, start, fsize)
+                sp.start()
+        else:
+            sp = static.NoRangeStaticProducer(self, fp)
+            sp.start()
         # and make sure the connection doesn't get closed
         return server.NOT_DONE_YET
 

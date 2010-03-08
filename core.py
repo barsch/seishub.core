@@ -30,7 +30,6 @@ ERROR = 1
 WARN = 5
 INFO = 10
 DEBUG = 20
-DEBUGX = 30
 
 
 class ComponentMeta(type):

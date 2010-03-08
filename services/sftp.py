@@ -69,7 +69,7 @@ class InMemoryFile:
 
     def __init__(self, env, filename, flags, attrs={}):
         self.env = env
-        self.env.log.debugx("InMemoryFile.init(%s, %s, %s)" % (repr(filename),
+        self.env.log.debug("InMemoryFile.init(%s, %s, %s)" % (repr(filename),
                                                                repr(flags),
                                                                repr(attrs)))
         self.filename = filename
@@ -123,7 +123,7 @@ class InMemoryFile:
         returned may less than this.  For normal disk files, however,
         this should read the requested number (up to the end of the file).
         """
-        self.env.log.debugx("InMemoryFile.readChunk(%s, %s)" % (repr(offset),
+        self.env.log.debug("InMemoryFile.readChunk(%s, %s)" % (repr(offset),
                                                                 repr(length)))
         self.data.seek(offset)
         return self.data.read(length)
@@ -138,7 +138,7 @@ class InMemoryFile:
         @param offset: an integer that is the index to start from in the file.
         @param data: a string that is the data to write.
         """
-        self.env.log.debugx("InMemoryFile.writeChunk(%s, %d)" % (repr(offset),
+        self.env.log.debug("InMemoryFile.writeChunk(%s, %d)" % (repr(offset),
                                                                  len(data)))
         self.data.seek(offset)
         self.data.write(data)
@@ -150,7 +150,7 @@ class InMemoryFile:
         This method returns nothing if the close succeeds immediately, or a
         Deferred that is called back when the close succeeds.
         """
-        self.env.log.debugx("InMemoryFile.close() - %s" % (self.filename))
+        self.env.log.debug("InMemoryFile.close() - %s" % (self.filename))
         # create file
         self.data.seek(0)
         # write file after close
@@ -179,7 +179,7 @@ class InMemoryFile:
         This method returns a dictionary in the same format as the attrs
         argument to L{openFile} or a L{Deferred} that is called back with same.
         """
-        self.env.log.debugx("InMemoryFile.getAttrs()")
+        self.env.log.debug("InMemoryFile.getAttrs()")
         return self.attrs
 
     def setAttrs(self, attrs):
@@ -192,7 +192,7 @@ class InMemoryFile:
         @param attrs: a dictionary in the same format as the attrs argument to
         L{openFile}.
         """
-        self.env.log.debugx("InMemoryFile.setAttrs(%s)" % (repr(attrs)))
+        self.env.log.debug("InMemoryFile.setAttrs(%s)" % (repr(attrs)))
         return
 
 
@@ -230,7 +230,7 @@ class SFTPServiceProtocol:
 
         @param path: the path to convert as a string.
         """
-        self.env.log.debugx("realPath(%s)" % (repr(path)))
+        self.env.log.debug("realPath(%s)" % (repr(path)))
         path = self.webSafe(path)
         return absPath(path)
 
@@ -264,7 +264,7 @@ class SFTPServiceProtocol:
         Alternatively, it can return a L{Deferred} that will be called back
         with the object.
         """
-        self.env.log.debugx("openFile(%s, %s, %s)" % (repr(filename),
+        self.env.log.debug("openFile(%s, %s, %s)" % (repr(filename),
                                                       repr(flags),
                                                       repr(attrs)))
         # lockup filename in utf-8
@@ -322,7 +322,7 @@ class SFTPServiceProtocol:
         
         @param path: the directory to open.
         """
-        self.env.log.debugx("openDirectory(%s)" % (repr(path)))
+        self.env.log.debug("openDirectory(%s)" % (repr(path)))
         # lockup filename in utf-8
         path = self.webSafe(path)
         # query the directory via SFTP processor
@@ -376,7 +376,7 @@ class SFTPServiceProtocol:
         and return attributes for the real path at the base.  If it is False,
         return attributes for the specified path.
         """
-        self.env.log.debugx("openDirectory(%s, %s)" % (repr(path),
+        self.env.log.debug("openDirectory(%s, %s)" % (repr(path),
                                                        repr(followLinks)))
         # lockup filename in utf-8
         path = self.webSafe(path)
@@ -405,7 +405,7 @@ class SFTPServiceProtocol:
         @param attrs: a dictionary in the same format as the attrs argument to
         L{openFile}.
         """
-        self.env.log.debugx("setAttrs(%s, %s)" % (repr(path), repr(attrs)))
+        self.env.log.debug("setAttrs(%s, %s)" % (repr(path), repr(attrs)))
         return
 
     def removeFile(self, filename):
@@ -417,7 +417,7 @@ class SFTPServiceProtocol:
         
         @param filename: the name of the file as a string.
         """
-        self.env.log.debugx("removeFile(%s)" % (filename))
+        self.env.log.debug("removeFile(%s)" % (filename))
         # lockup filename in utf-8
         filename = self.webSafe(filename)
         # query the directory via SFTP processor
@@ -442,7 +442,7 @@ class SFTPServiceProtocol:
         @param oldpath: the current location of the file.
         @param newpath: the new file name.
         """
-        self.env.log.debugx("renameFile(%s, %s)" % (oldpath, newpath))
+        self.env.log.debug("renameFile(%s, %s)" % (oldpath, newpath))
         # lockup filename in utf-8
         oldpath = self.webSafe(oldpath)
         # query the directory via SFTP processor
@@ -499,7 +499,7 @@ class SFTPServiceProtocol:
 class DirList:
     def __init__(self, env, iter):
         self.env = env
-        self.env.log.debugx("DirList.__init__(%s)" % (repr(iter)))
+        self.env.log.debug("DirList.__init__(%s)" % (repr(iter)))
         self.iter = iter
 
     def __iter__(self):
