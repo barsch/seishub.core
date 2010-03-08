@@ -60,7 +60,7 @@ class RestrictedXPathQueryParser(object):
     
     pexpr            ::= (func | relExpr | parExpr) [logOp (pexpr | parExpr)]*
     predicates       ::= pstart pexpr pend
-    query = [tinyFlag] location [predicates]
+    query = location [predicates]
     """
 
     SEP = '/'
@@ -82,7 +82,6 @@ class RestrictedXPathQueryParser(object):
         self.order_by = None
         self.limit = None
         self.offset = None
-        self.tiny = False
 
     def evalPackage_id(self, s, loc, tokens):
         self.package_id = tokens[0]
@@ -176,9 +175,6 @@ class RestrictedXPathQueryParser(object):
         limit = pp.CaselessKeyword('limit')
         offset = pp.CaselessKeyword('offset')
 
-        # flags
-        tinyFlag = pp.CaselessKeyword('t')
-
         # operators
         eqOp = pp.Literal('==').setParseAction(pp.replaceWith("=")) | \
                pp.Literal('=')
@@ -196,10 +192,10 @@ class RestrictedXPathQueryParser(object):
         notFunc = pp.CaselessKeyword('not')
 
         # location step
-        package_id = (pp.Word(pp.alphanums) | wildcard).\
+        package_id = (pp.Word(pp.alphanums + "-") | wildcard).\
                      setResultsName('package_id').\
                      setParseAction(self.evalPackage_id).suppress()
-        resourcetype_id = (pp.Word(pp.alphanums) | wildcard).\
+        resourcetype_id = (pp.Word(pp.alphanums + "-") | wildcard).\
                           setResultsName('resourcetype_id').\
                           setParseAction(self.evalResourcetype_id).suppress()
 
@@ -221,25 +217,28 @@ class RestrictedXPathQueryParser(object):
         notExpr = pp.Group(notFunc + parExpr)
         pexpr << (notExpr | pp.Group(relExpr) | parExpr) + \
                  pp.Optional(logOp + (pp.Group(pexpr) | parExpr))
+
         # order by clause
-        limitExpr = limit + pp.Word(pp.nums).setResultsName('limit') + \
-                    pp.Optional(',' + pp.Word(pp.nums).\
-                                setResultsName('offset'))
-        offsetExpr = offset + pp.Word(pp.nums).setResultsName('offset')
         obItem = (pathExpr + pp.Optional(asc | desc, 'asc')).\
                  setResultsName('order_by', listAllMatches=True)
         orderByExpr = orderBy + pp.delimitedList(obItem, ',')
 
+        # limit and offset
+        limitExpr = limit + pp.Word(pp.nums).setResultsName('limit') + \
+                    pp.Optional(',' + \
+                                pp.Word(pp.nums).setResultsName('offset'))
+        offsetExpr = offset + pp.Word(pp.nums).setResultsName('offset')
+
         # query
         predicates = (pstart + pexpr + pend).setResultsName('predicates')
         query = pp.StringStart() + \
-                pp.Optional(tinyFlag).setResultsName('tinyFlag') + \
                 location + \
                 pp.Optional(predicates) + \
                 pp.Optional(orderByExpr) + \
                 pp.Optional(limitExpr) + \
                 pp.Optional(offsetExpr) + \
                 pp.StringEnd()
+
         return query.parseString
 
     def setAttributes(self, parsed):
@@ -255,7 +254,6 @@ class RestrictedXPathQueryParser(object):
         offset = parsed.get('offset')
         if isinstance(offset, basestring):
             self.offset = int(offset)
-        self.tiny = bool(parsed.get('tinyFlag'))
         return parsed
 
     def parse(self, expr):
@@ -303,6 +301,3 @@ class XPathQuery(RestrictedXPathQueryParser):
 
     def getOffset(self):
         return self.offset
-
-    def isTiny(self):
-        return self.tiny

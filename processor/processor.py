@@ -68,7 +68,7 @@ class Processor:
         self.prepath = []
         self.postpath = []
         self.method = method
-        self.path = path
+        self.path = str(path)
         if content:
             self.content = content
         if received_headers:

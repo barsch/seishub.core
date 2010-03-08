@@ -393,7 +393,7 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         self.assertEqual(len(res['ordered']), 1)
         self.assertTrue(self.res1.document._id in res)
         # all resources of package testpackage, resourcetype station, offset 1
-        q = "/testpackage/station/* offset 1"
+        q = "/testpackage/station/* limit 1 offset 1"
         res = self.catalog.query(XPathQuery(q))
         self.assertEqual(len(res['ordered']), 1)
         self.assertTrue(self.res2.document._id in res)
@@ -514,23 +514,29 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
               "order by sortorder/int1 desc " + \
               "limit 3"
         so2 = "/sortordertests/sotest[sortorder/int1] " + \
-              "order by sortorder/int2 asc, " + \
-              "sortorder/str2 desc limit 5,2"
-        so3 = "/sortordertests/sotest order by sortorder/int2 desc, " + \
-              "sortorder/str2 desc limit 3"
-        so4 = "/sortordertests/sotest[sortorder/int1] " + \
-              "order by sortorder/int2 asc, " + \
-              "sortorder/str2 desc limit 5 offset 2"
+              "order by sortorder/int1 desc " + \
+              "offset 2"
+        so3 = "/sortordertests/sotest[sortorder/int1] " + \
+              "order by sortorder/int2 asc, sortorder/str2 desc " + \
+              "limit 5,2"
+        so4 = "/sortordertests/sotest " + \
+              "order by sortorder/int2 desc, sortorder/str2 desc " + \
+              "limit 3"
+        so5 = "/sortordertests/sotest[sortorder/int1] " + \
+              "order by sortorder/int2 asc, sortorder/str2 desc " + \
+              "limit 5 offset 2"
         res1 = self.catalog.query(XPathQuery(so1))
         res2 = self.catalog.query(XPathQuery(so2))
         res3 = self.catalog.query(XPathQuery(so3))
         res4 = self.catalog.query(XPathQuery(so4))
+        res5 = self.catalog.query(XPathQuery(so5))
 
         self.assertEqual(res1['ordered'], res_ids[:3])
+        self.assertEqual(res2['ordered'], res_ids[2:])
         res_ids.reverse()
-        self.assertEqual(res2['ordered'], [res_ids[4], res_ids[1], res_ids[2]])
-        self.assertEqual(res3['ordered'], [res_ids[1], res_ids[2], res_ids[0]])
-        self.assertEqual(res4['ordered'], [res_ids[4], res_ids[1], res_ids[2]])
+        self.assertEqual(res3['ordered'], [res_ids[4], res_ids[1], res_ids[2]])
+        self.assertEqual(res4['ordered'], [res_ids[1], res_ids[2], res_ids[0]])
+        self.assertEqual(res5['ordered'], [res_ids[4], res_ids[1], res_ids[2]])
 
         #======================================================================
         # queries w/ not(...)

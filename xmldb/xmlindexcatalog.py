@@ -1,15 +1,16 @@
 # -*- coding: utf-8 -*-
 
 from seishub.db import util
-from seishub.db.orm import DbStorage, DbError, DB_LIKE
+from seishub.db.orm import DbStorage, DbError
 from seishub.exceptions import InvalidParameterError, SeisHubError, \
     NotFoundError, InvalidObjectError, DuplicateObjectError
 from seishub.registry.defaults import resourcetypes_tab, packages_tab
-from seishub.xmldb.defaults import document_tab, resource_tab
+from seishub.xmldb.defaults import document_tab, resource_tab, \
+    document_meta_tab
 from seishub.xmldb.index import XmlIndex, type_classes
 from seishub.xmldb.interfaces import IXPathQuery, IResource, IXmlIndex
-from seishub.xmldb.xpath import XPathQuery
 from seishub.xmldb.resource import Resource, XmlDocument
+from seishub.xmldb.xpath import XPathQuery
 from sqlalchemy import select, sql, literal
 from zope.interface.exceptions import DoesNotImplement
 
@@ -97,56 +98,47 @@ class _QueryProcessor(object):
     Mixin for XMLIndexCatalog providing query processing.
     """
 
-    def _raiseIndexNotFound(self, query_base, expr):
-        msg = "Error processing query. No index found for: %s"
-        idx_str = '/' + '/'.join(map(str, query_base)) + expr or ''
-        raise NotFoundError(msg % idx_str)
-
-    def _replace_wildcards(self, expr):
-        """
-        Replace the xpath wildcards '*' with SQL wildcards '%'
-        """
-        return expr.replace('*', '%')
-
-    def findIndex(self, query_base, expr=None):
+    def findIndex(self, package_id, resourcetype_id, expr):
         """
         Tries to find a fitting index for [package, resourcetype] and
         the given xpath expr or label.
         """
-        idx = None
         # try via label if only one single node is given:
         if not '/' in expr:
-            idx = self.getIndexes(package_id=query_base[0],
-                                  resourcetype_id=query_base[1],
+            idx = self.getIndexes(package_id=package_id,
+                                  resourcetype_id=resourcetype_id,
                                   label=expr)
             if idx:
                 return idx[0]
         # still there: multiple nodes or no label found
-        if expr:
-            expr = '/' + expr
+        expr = '/' + expr
         if '*' in expr:
-            # XXX: workaround until the cache supports wildcard expressions
-            idx = self.pickup(XmlIndex,
-                        resourcetype={'package':{'package_id':query_base[0]},
-                                        'resourcetype_id':query_base[1]},
-                        xpath=DB_LIKE(self._replace_wildcards(expr)))
-            if idx:
-                return idx[0]
-        idx = self.getIndexes(package_id=query_base[0],
-                              resourcetype_id=query_base[1],
+            expr_list = expr.split('/')
+            len_expr_list = len(expr_list)
+            xmlindex_list = self.getIndexes(package_id=package_id,
+                                            resourcetype_id=resourcetype_id)
+            for xmlindex in xmlindex_list:
+                xpath_list = xmlindex.xpath.split('/')
+                if len(xpath_list) != len_expr_list:
+                    continue
+                # join both lists
+                zipped = zip(xpath_list, expr_list)
+                # check if something does not fit
+                if False in [z[0] == z[1] for z in zipped if '*' not in z]:
+                    continue
+                # return first fitting xmlindex
+                return xmlindex
+        # try via xpath
+        idx = self.getIndexes(package_id=package_id,
+                              resourcetype_id=resourcetype_id,
                               xpath=expr)
         if idx:
             return idx[0]
         # still there: no index found
         if hasattr(expr, 'value'):
             expr = expr.value
-        raise self._raiseIndexNotFound(query_base, expr)
-
-    def _isLogOp(self, p):
-        return p[1] in XPathQuery._logical_ops
-
-    def _isRelOp(self, p):
-        return p[1] in XPathQuery._relational_ops
+        msg = "Error processing query. No index found for: /%s/%s%s"
+        raise NotFoundError(msg % (package_id, resourcetype_id, expr))
 
     def _applyOp(self, op, left, right, complement=False):
         # create sqlalchemy clauses from string operators
@@ -195,22 +187,6 @@ class _QueryProcessor(object):
         joins = join(idx_tab, onclause=oncl)
         return joins, idx_tab
 
-    def _join_on_resourcetype(self, package, resourcetype, joins=None):
-        oncl = (resource_tab.c['id'] == document_tab.c['resource_id'])
-        if joins == None:
-            joins = document_tab.join(resource_tab, onclause=oncl)
-        else:
-            joins = joins.join(resource_tab, onclause=oncl)
-        oncl = resourcetypes_tab.c['id'] == resource_tab.c['resourcetype_id']
-        if resourcetype:
-            oncl = sql.and_(oncl, resourcetypes_tab.c['name'] == resourcetype)
-        joins = joins.join(resourcetypes_tab, onclause=oncl)
-        oncl = resourcetypes_tab.c['package_id'] == packages_tab.c['id']
-        if package:
-            oncl = sql.and_(oncl, packages_tab.c['name'] == package)
-        joins = joins.join(packages_tab, onclause=oncl)
-        return joins
-
     def _joinIndexes(self, xmlindex_list, q, joins=None):
         """
         Joins all given indexes by document_id and optional grouping elements.
@@ -255,7 +231,7 @@ class _QueryProcessor(object):
             joins = join(idx_tab, onclause=oncl)
         return q, joins
 
-    def _process_predicates(self, p, q, joins=None, complement=False):
+    def _process_predicates(self, p, query, joins=None, complement=False):
         w = None
         if len(p) == 3:
             # binary expression
@@ -264,11 +240,11 @@ class _QueryProcessor(object):
             r = p[2]
             if op in XPathQuery._relational_ops:
                 # relational operator, l is a path expression => find an index
-                lidx = self.findIndex([l[0], l[1]], l[2])
+                lidx = self.findIndex(l[0], l[1], l[2])
                 joins, ltab = self._join_on_index(lidx, joins,
                                                   complement=complement)
                 if isinstance(r, list): # joined path query
-                    ridx = self.findIndex([r[0], r[1]], r[2])
+                    ridx = self.findIndex(r[0], r[1], r[2])
                     joins, rtab = self._join_on_index(ridx, joins,
                                                       complement=complement)
                     w = ltab.c['keyval'] == rtab.c['keyval']
@@ -276,42 +252,46 @@ class _QueryProcessor(object):
                     w = self._applyOp(op, ltab.c['keyval'], lidx.prepareKey(r))
             else:
                 # logical operator
-                q, joins, lw = self._process_predicates(l, q, joins,
-                                                       complement=complement)
-                q, joins, rw = self._process_predicates(r, q, joins,
-                                                       complement=complement)
+                query, joins, lw = \
+                    self._process_predicates(l, query, joins,
+                                             complement=complement)
+                query, joins, rw = \
+                    self._process_predicates(r, query, joins,
+                                             complement=complement)
                 w = self._applyOp(op, lw, rw, complement)
         elif len(p) == 2:
             # function
             func = p[0]
             expr = p[1]
-            q, joins, w = self._applyFunc(func, expr, q, joins)
+            query, joins, w = self._applyFunc(func, expr, query, joins)
         else:
             # unary expression => require node existence
-            idx = self.findIndex([p[0][0], p[0][1]], p[0][2])
+            idx = self.findIndex(p[0][0], p[0][1], p[0][2])
             joins, idx_tab = self._join_on_index(idx, joins,
                                                  complement=complement)
             w = (idx_tab.c['keyval'] != None)
-        return q, joins, w
+        return query, joins, w
 
-    def _process_order_by(self, order_by, q, joins=None):
+    def _process_order_by(self, order_by, query, joins=None):
         for ob in order_by:
             # an order_by element is of the form: 
             # [[package, resourcetype, xpath], direction]
-            idx = self.findIndex([ob[0][0], ob[0][1]], ob[0][2])
+            idx = self.findIndex(ob[0][0], ob[0][1], ob[0][2])
             idx_name = str(idx)
             # if idx is already in selected columns, no need to join
-            if not idx_name in q.columns:
+            if not idx_name in query.columns:
                 joins, idx_tab = self._join_on_index(idx, joins)
-                col = idx_tab.c['keyval']
-                q.append_column(col)
+                col = idx_tab.c['keyval'].label(idx_name)
+                # add column to result
+                query.append_column(col)
             else:
-                col = q.columns[idx_name]
-            o = col.asc()
+                col = query.columns[idx_name]
             if ob[1] == "desc":
                 o = col.desc()
-            q = q.order_by(o)
-        return q, joins
+            else:
+                o = col.asc()
+            query = query.order_by(o)
+        return query, joins
 
     def _process_results(self, res):
         ordered = list()
@@ -336,45 +316,64 @@ class _QueryProcessor(object):
         results['ordered'] = ordered
         return results
 
-    def query(self, query, compact=False):
+    def query(self, xpath):
         """
         Query the catalog.
         
-        @param query: xpath query to be performed
-        @type query: L{seishub.xmldb.interfaces.IXPathQuery}
-        @return: result set containing uris of resources this query applies to
+        @param xpath: xpath query to be performed
+        @type xpath: L{seishub.xmldb.interfaces.IXPathQuery}
+        @return: result set containing uris of resources this xpath applies to
         @rtype: list of strings
         """
-        if not IXPathQuery.providedBy(query):
+        if not IXPathQuery.providedBy(xpath):
             raise DoesNotImplement(IXPathQuery)
-        location_path = query.getLocationPath()
-        predicates = query.getPredicates()
-        order_by = query.getOrderBy() or list()
-        limit = query.getLimit()
-        offset = query.getOffset()
-        # package and resource type
-        columns = [document_tab.c['id'].label("document_id")]
-        if not compact:
-            # add additional columns 
-            columns.extend([
-                document_tab.c['revision'].label("revision"),
-                packages_tab.c['name'].label("package_id"),
-                resourcetypes_tab.c['name'].label("resourcetype_id"),
-                resource_tab.c['name'].label("resource_name")
-            ])
-        query = select(columns, use_labels=True, distinct=True)
+        # evaluate XPath query
+        location_path = xpath.getLocationPath()
+        predicates = xpath.getPredicates()
+        order_by = xpath.getOrderBy() or list()
+        limit = xpath.getLimit()
+        offset = xpath.getOffset()
+        # default columns: document_id, package, resourcetype, resource_name,
+        # size, uid, datetime
+        columns = [document_tab.c['id'].label("document_id"),
+                   packages_tab.c['name'].label("package_id"),
+                   resourcetypes_tab.c['name'].label("resourcetype_id"),
+                   resource_tab.c['name'].label("resource_name"),
+                   document_tab.c['revision'].label("revision"),
+                   document_meta_tab.c['size'].label('meta_size'),
+                   document_meta_tab.c['uid'].label('meta_uid'),
+                   document_meta_tab.c['datetime'].label('meta_datetime')]
         pkg, rt = location_path[0:2]
-        joins = self._join_on_resourcetype(pkg, rt)
+        # join default columns
+        oncl = (resource_tab.c['id'] == document_tab.c['resource_id'])
+        joins = document_tab.join(resource_tab, onclause=oncl)
+        oncl = resourcetypes_tab.c['id'] == resource_tab.c['resourcetype_id']
+        if rt:
+            oncl = sql.and_(oncl, resourcetypes_tab.c['name'] == rt)
+        joins = joins.join(resourcetypes_tab, onclause=oncl)
+        oncl = resourcetypes_tab.c['package_id'] == packages_tab.c['id']
+        if pkg:
+            oncl = sql.and_(oncl, packages_tab.c['name'] == pkg)
+        joins = joins.join(packages_tab, onclause=oncl)
+        oncl = (document_tab.c['id'] == document_meta_tab.c['id'])
+        joins = joins.join(document_meta_tab, onclause=oncl)
+        # parse predicates
+        query = select(columns, use_labels=True, distinct=True)
         if predicates:
             query, joins, w = self._process_predicates(predicates, query,
                                                        joins)
             if w:
                 query = query.where(w)
+        # order by
         if order_by:
             query, joins = self._process_order_by(order_by, query, joins)
         query = query.select_from(joins)
-        if limit or offset:
-            query = query.limit(limit).offset(offset)
+        # limit and offset
+        if limit:
+            query = query.limit(limit)
+        if offset:
+            query = query.offset(offset)
+        # query
         res = self._db.execute(query)
         results = self._process_results(res)
         res.close()
@@ -462,7 +461,7 @@ class XmlIndexCatalog(DbStorage, _QueryProcessor, _IndexView):
         for id, xmlindex in self._cache.iteritems():
             flag = True
             for key, value in kwargs.iteritems():
-                if value == None:
+                if value == None or value == '*':
                     continue
                 if not hasattr(xmlindex, key):
                     continue
@@ -471,40 +470,6 @@ class XmlIndexCatalog(DbStorage, _QueryProcessor, _IndexView):
             if flag:
                 xmlindex_list.append(xmlindex)
         return xmlindex_list
-#        res = self.pickup(XmlIndex,
-#                          resourcetype={'package':{'package_id':package_id},
-#                                          'resourcetype_id':resourcetype_id},
-#                          label=label,
-#                          xpath=xpath,
-#                          group_path=group_path,
-#                          type=type,
-#                          options=options,
-#                          _id=index_id)
-#        return res
-#        index_sets = list()
-#        arglist = {'package_id':package_id, 
-#                   'resourcetype_id':resourcetype_id, 'xpath':xpath, 
-#                   'group_path':group_path, 'type':type, 'options':options, 
-#                   '_id':index_id, 'label':label}
-#        for key, value in arglist.iteritems():
-#            if not value:
-#                continue
-#            idx = self._cache[key].get(value, set())
-#            if not idx:
-#                return list()
-#            index_sets.append(idx)
-#        if not index_sets:
-#            # return all
-#            try:
-#                return [list(val)[0] for val in self._cache['_id'].values()]
-#            except:
-#                b=1
-#                import pdb;pdb.set_trace()
-#                a=1
-#        indexes = index_sets.pop(0).copy()
-#        for idxs in index_sets:
-#            indexes.intersection_update(idxs)
-#        return list(indexes)
 
     def indexResource(self, resource, xmlindex_list=None):
         """

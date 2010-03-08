@@ -9,19 +9,19 @@ import unittest
 class XPathQueryParserTest(SeisHubEnvironmentTestCase):
     def setUp(self):
         self.parser = RestrictedXPathQueryParser()
-        
+
     def tearDown(self):
         del self.parser
-        
+
     def testInvalid(self):
         queries = ["/testtype[./element1]",
                    "/package[./element1]",
                    "/pkg/rt[rootnode/child[blah]]",
                    "[/rootnode/child]",
                    ]
-        _ = [self.assertRaises(InvalidParameterError, self.parser.parse, q) 
+        _ = [self.assertRaises(InvalidParameterError, self.parser.parse, q)
              for q in queries]
-        
+
     def testLocationStepOnly(self):
         queries = ['/package/resourcetype',
                    '/package/*',
@@ -36,7 +36,7 @@ class XPathQueryParserTest(SeisHubEnvironmentTestCase):
         self.parser.parse(queries[2])
         self.assertEqual(self.parser.package_id, '*')
         self.assertEqual(self.parser.resourcetype_id, '*')
-        
+
     def testKeyLessQuery(self):
         queries = ['/pid/rid[rn/attr]',
                    '/pid/rid[rn/node/./attr]',
@@ -45,9 +45,9 @@ class XPathQueryParserTest(SeisHubEnvironmentTestCase):
                    '/pid/rid[rn/@attr]',
                    '/pid/rid[rn/./@attr]',
                    '/pid/rid[rn/./node/@attr]',
-                   '/seismology/station[xseed/volume_index_control_header/' +\
+                   '/seismology/station[xseed/volume_index_control_header/' + \
                      'volume_identifier/beginning_time]',
-                   '/seismology/station[*/volume_index_control_header/' +\
+                   '/seismology/station[*/volume_index_control_header/' + \
                      'volume_identifier/beginning_time]'
                    ]
         results = [[['pid', 'rid', 'rn/attr']],
@@ -57,15 +57,15 @@ class XPathQueryParserTest(SeisHubEnvironmentTestCase):
                    [['pid', 'rid', 'rn/@attr']],
                    [['pid', 'rid', 'rn/@attr']],
                    [['pid', 'rid', 'rn/node/@attr']],
-                   [['seismology', 'station', 
-                     'xseed/volume_index_control_header/volume_identifier/'+\
+                   [['seismology', 'station',
+                     'xseed/volume_index_control_header/volume_identifier/' + \
                      'beginning_time']],
-                   [['seismology', 'station', 
-                     '*/volume_index_control_header/volume_identifier/'+\
+                   [['seismology', 'station',
+                     '*/volume_index_control_header/volume_identifier/' + \
                      'beginning_time']]
                    ]
         res = [self.parser.parse(q) for q in queries]
-        for i,r in enumerate(res):
+        for i, r in enumerate(res):
             self.assertEqual(r.predicates.asList(), results[i])
 
     def testSingleKeyQuery(self):
@@ -94,9 +94,9 @@ class XPathQueryParserTest(SeisHubEnvironmentTestCase):
                    [['pid', 'rid', 'rn/attr'], '=', '-1.5']
                    ]
         res = [self.parser.parse(q) for q in queries]
-        for i,r in enumerate(res):
+        for i, r in enumerate(res):
             self.assertEqual(r.predicates.asList(), results[i])
-          
+
     def testSingleKeyNamespaceQuery(self):
         queries = ['/pid/rid[rn/ns:attr = "blah"]',
                    '/pid/rid[rn/node/ns:attr = "blah"]',
@@ -109,7 +109,7 @@ class XPathQueryParserTest(SeisHubEnvironmentTestCase):
                    [['pid', 'rid', 'ns:rn/attr'], '=', 'blah']
                    ]
         res = [self.parser.parse(q) for q in queries]
-        for i,r in enumerate(res):
+        for i, r in enumerate(res):
             self.assertEqual(r.predicates.asList(), results[i])
 
     def testRelationalOperators(self):
@@ -124,7 +124,7 @@ class XPathQueryParserTest(SeisHubEnvironmentTestCase):
         res = [(self.parser.parse(q), t) for q, t in queries.iteritems()]
         for r, t in res:
             self.assertEqual(r.predicates[1], t)
-          
+
     def testLogicalOperators(self):
         queries = ['/pid/rid[rn/attr1 = "blah" and rn/attr2 = "bluh"]',
                    '/pid/rid[rn/attr1 = "blah" or rn/attr2 = "bluh"]',
@@ -135,15 +135,15 @@ class XPathQueryParserTest(SeisHubEnvironmentTestCase):
 
     def testMultipleKeyQuery(self):
         queries = ['/pid/rid[rn/attr1 = "blah" and rn/attr2 = "bluh"]',
-                   '/pid/rid[rn/attr1 = "blah" and (rn/attr2 = "bluh" or'+\
+                   '/pid/rid[rn/attr1 = "blah" and (rn/attr2 = "bluh" or' + \
                    ' rn/attr2 = "bloh")]',
-                   '/pid/rid[(rn/attr1 = "blah" and rn/attr2 = "bluh") or '+\
+                   '/pid/rid[(rn/attr1 = "blah" and rn/attr2 = "bluh") or ' + \
                    'rn/attr2 = "bloh"]',
-                   '/pid/rid[(rn/attr1 = "blah" and rn/attr2 = "bluh") or '+\
+                   '/pid/rid[(rn/attr1 = "blah" and rn/attr2 = "bluh") or ' + \
                    'rn/attr2 = "bloh"]',
-                   '/pid/rid[rn/attr1 = "blah" and (rn/attr2 = "bluh" and '+\
+                   '/pid/rid[rn/attr1 = "blah" and (rn/attr2 = "bluh" and ' + \
                    '(rn/attr2 = "bloh" or rn/attr3 = "moep"))]',
-                   '/package/rt[station/lat>49 and station/lat<56 and '+\
+                   '/package/rt[station/lat>49 and station/lat<56 and ' + \
                    'station/lon=22.51200]'
                    ]
         results = [[[['pid', 'rid', 'rn/attr1'], '=', 'blah'], 'and',
@@ -166,23 +166,23 @@ class XPathQueryParserTest(SeisHubEnvironmentTestCase):
                        [['package', 'rt', 'station/lon'], '=', '22.51200']]]
                    ]
         res = [self.parser.parse(q) for q in queries]
-        for i,r in enumerate(res):
+        for i, r in enumerate(res):
             self.assertEqual(r.predicates.asList(), results[i])
-       
+
     def testJoinedPathQuery(self):
         queries = ['/pid/rid[rn/node1 = rn/node2]',
                    '/pid/rid[rn/node1 = ./rn/node2/@id]',
                    '/pid/rid[rn/node1 = ../rt2/*/node2]',
                    ]
         res = [self.parser.parse(q) for q in queries]
-        results = [[['pid', 'rid', 'rn/node1'], '=', 
+        results = [[['pid', 'rid', 'rn/node1'], '=',
                     ['pid', 'rid', 'rn/node2']],
-                   [['pid', 'rid', 'rn/node1'], '=', 
+                   [['pid', 'rid', 'rn/node1'], '=',
                     ['pid', 'rid', 'rn/node2/@id']],
-                   [['pid', 'rid', 'rn/node1'], '=', 
+                   [['pid', 'rid', 'rn/node1'], '=',
                     ['pid', 'rt2', '*/node2']]
                    ]
-        for i,r in enumerate(res):
+        for i, r in enumerate(res):
             self.assertEqual(r.predicates.asList(), results[i])
 
     def testOrderByLimitOffsetQuery(self):
@@ -195,24 +195,24 @@ class XPathQueryParserTest(SeisHubEnvironmentTestCase):
                    '/pid/rid order by rn/node1/@id',
                    '/pid/rid order by ./rn/node1/node2',
                    '/pid/rid order by rn/node1/@id limit 5,10',
-                   '/pid/rid[rn/node1 = "blah"] order by rn/node2, '+\
+                   '/pid/rid[rn/node1 = "blah"] order by rn/node2, ' + \
                    'rn/node3/@id desc limit 5,10',
                    ]
-        results = [[[[['pid', 'rid', 'rn/node1'], 'asc']],'',''],
-                   [[[['pid', 'rid', 'rn/node1'], 'asc']],'',''],
-                   [[[['pid', 'rid', 'rn/node1'], 'desc']],'',''],
-                   [[[['pid', 'rid', 'rn/node1'], 'desc'], 
-                     [['pid', 'rid', 'rn/node2'], 'asc']],'',''],
-                   [[[['pid', 'rid', 'rn/node1'], 'asc']],'5',''],
-                   [[[['pid', 'rid', 'rn/node1'], 'asc']],'5','10'],
-                   [[[['pid', 'rid', 'rn/node1/@id'], 'asc']],'',''],
-                   [[[['pid', 'rid', 'rn/node1/node2'], 'asc']],'',''],
-                   [[[['pid', 'rid', 'rn/node1/@id'], 'asc']],'5','10'],
-                   [[[['pid', 'rid', 'rn/node2'], 'asc'], 
-                     [['pid', 'rid', 'rn/node3/@id'], 'desc']],'5','10']
+        results = [[[[['pid', 'rid', 'rn/node1'], 'asc']], '', ''],
+                   [[[['pid', 'rid', 'rn/node1'], 'asc']], '', ''],
+                   [[[['pid', 'rid', 'rn/node1'], 'desc']], '', ''],
+                   [[[['pid', 'rid', 'rn/node1'], 'desc'],
+                     [['pid', 'rid', 'rn/node2'], 'asc']], '', ''],
+                   [[[['pid', 'rid', 'rn/node1'], 'asc']], '5', ''],
+                   [[[['pid', 'rid', 'rn/node1'], 'asc']], '5', '10'],
+                   [[[['pid', 'rid', 'rn/node1/@id'], 'asc']], '', ''],
+                   [[[['pid', 'rid', 'rn/node1/node2'], 'asc']], '', ''],
+                   [[[['pid', 'rid', 'rn/node1/@id'], 'asc']], '5', '10'],
+                   [[[['pid', 'rid', 'rn/node2'], 'asc'],
+                     [['pid', 'rid', 'rn/node3/@id'], 'desc']], '5', '10']
                    ]
         res = [self.parser.parse(q) for q in queries]
-        for i,r in enumerate(res):
+        for i, r in enumerate(res):
             self.assertEqual(r.order_by.asList(), results[i][0])
             self.assertEqual(r.limit, results[i][1])
             self.assertEqual(r.offset, results[i][2])
@@ -235,21 +235,21 @@ class XPathQueryParserTest(SeisHubEnvironmentTestCase):
                    ['*', 'node'],
                    ['*', 'node'],
                    ['rn', 'node', ['pid', 'rid', 'rn/node/@id'], '=', 'abc'],
-                   ['rn', 'node', 
+                   ['rn', 'node',
                     ['pid', 'rid', 'rn/othernode/@id'], '=', 'abc'],
-                   ['rn', 'node', 
+                   ['rn', 'node',
                     ['pid', 'rid', 'otherroot/node/@id'], '=', 'abc'],
-                   ['rn', 'node', 
+                   ['rn', 'node',
                     ['pid', 'otherrt', 'rn/node/@id'], '=', 'abc'],
-                   ['rn', 'node', 
+                   ['rn', 'node',
                     ['otherpkg', '*', '*/node/@id'], '=', 'abc'],
-                   ['rn', 'node', 
+                   ['rn', 'node',
                     ['otherpkg', '*', '*/node/../@id'], '=', 'abc'],
-                   ['rn', 'node', 
+                   ['rn', 'node',
                     ['otherpkg', 'rt', '*/node/../@id'], '=', 'abc']
                    ]
         res = [self.parser.parse(q) for q in queries]
-        for i,r in enumerate(res):
+        for i, r in enumerate(res):
             self.assertEqual(r.asList(), results[i])
 
     def testNotFunction(self):
@@ -264,24 +264,23 @@ class XPathQueryParserTest(SeisHubEnvironmentTestCase):
         for r in res:
             self.assertTrue(len(r.predicates) <= 3)
 
-     
+
 class XPathQueryTest(SeisHubEnvironmentTestCase):
     def testXPathQuery(self):
-        q = "/testpackage/testtype[./rootnode/element1/element2 = 'blub' " +\
-            "and rootnode/./element1/@id <= 5] "+\
-            "order by rootnode/element1/element2 desc, rootnode/element3 asc"+\
+        q = "/testpackage/testtype[./rootnode/element1/element2 = 'blub' " + \
+            "and rootnode/./element1/@id <= 5] " + \
+            "order by rootnode/element1/element2 desc, rootnode/element3 asc" + \
             " limit 10,20"
         query = XPathQuery(q)
         self.assertEqual(query.getLocationPath(), ['testpackage', 'testtype'])
-        self.assertEqual(query.getOrderBy(), [[['testpackage', 'testtype', 
-                                              'rootnode/element1/element2'], 
+        self.assertEqual(query.getOrderBy(), [[['testpackage', 'testtype',
+                                              'rootnode/element1/element2'],
                                               'desc'],
-                                              [['testpackage', 'testtype', 
+                                              [['testpackage', 'testtype',
                                                'rootnode/element3'], 'asc']])
         self.assertEqual(query.getLimit(), 10)
         self.assertEqual(query.getOffset(), 20)
-        self.assertEqual(query.isTiny(), False)
-        
+
     def testLocationPath(self):
         q = "/pkg/rt/rootnode"
         query = XPathQuery(q)
@@ -292,11 +291,11 @@ class XPathQueryTest(SeisHubEnvironmentTestCase):
         q = "/pkg/rt/rootnode/node2/node1"
         query = XPathQuery(q)
         self.assertEqual(query.getLocationPath(), q.split('/')[1:])
-        
+
 #    test_expr = "/testpackage/testtype/rootnode[./element1/element2 = 'blub' and ./element1/@id <= 5]"
 #    wildcard_expr = "/*/*/rootnode[./element1/element2 = 'blub']"
 #    join_expr = "/seispkg/network/*[../event/*/station = ../network/*/station and ./@id = ../station/*/@id and ../event/*/datetime = yesterday]"
-        
+
 def suite():
     suite = unittest.TestSuite()
     # suite.addTest(unittest.makeSuite(XpathTest, 'test'))

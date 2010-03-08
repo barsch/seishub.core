@@ -210,7 +210,6 @@ class XmlCatalog(object):
         """
         if _id:
             xmlindex = self.getIndexes(_id=_id)[0]
-        resourcetype = xmlindex.resourcetype
         self.index_catalog.deleteIndex(xmlindex)
 
     def deleteAllIndexes(self, package_id, resourcetype_id=None):

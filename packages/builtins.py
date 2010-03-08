@@ -4,7 +4,6 @@ from seishub.core import Component, implements
 from seishub.db.util import formatResults
 from seishub.packages.installer import registerStylesheet, registerIndex
 from seishub.packages.interfaces import IPackage, IResourceType, IMapper
-from seishub.processor.resources.rest import RESTResource
 import os
 
 

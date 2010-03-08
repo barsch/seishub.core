@@ -191,14 +191,9 @@ class RestGETTests(SeisHubEnvironmentTestCase):
         # check content
         self.assertTrue('test.xml' in data)
         self.assertTrue('test2.xml' in data)
-        # check documents -> must not be a list
-        self.assertFalse(isinstance(data['test.xml'].res.document, list))
-        self.assertFalse(isinstance(data['test2.xml'].res.document, list))
         # check revisions
-        self.assertEquals(data['test.xml'].res.document.revision, 3)
-        self.assertEquals(data['test2.xml'].res.document.revision, 2)
-        self.assertEquals(data['test.xml'].render_GET(proc), XML_DOC2 % 33)
-        self.assertEquals(data['test2.xml'].render_GET(proc), XML_DOC2 % 222)
+        self.assertEquals(data['test.xml'].revision, 3)
+        self.assertEquals(data['test2.xml'].revision, 2)
         # delete resource
         data = proc.run(DELETE, '/get-test/vc/test.xml')
         data = proc.run(DELETE, '/get-test/vc/test2.xml')

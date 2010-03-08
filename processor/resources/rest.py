@@ -37,28 +37,32 @@ class RESTResource(Resource):
             self.name = res['resource_name']
             self.revision = res['revision']
             self.res = None
+            self.meta = res
         else:
             self.package_id = res.package.package_id
             self.resourcetype_id = res.resourcetype.resourcetype_id
             self.name = res.name
             self.revision = res.document.revision
             self.res = res
+            meta = self.res.document.meta
+            self.meta = {
+                'meta_size':meta.size,
+                'meta_uid':meta.uid,
+                'meta_datetime':meta.datetime
+            }
         # set url
         self.url = "/xml/%s/%s/%s" % (self.package_id, self.resourcetype_id,
                                       self.name)
 
     def getMetadata(self):
-        if not self.res:
-            return {'permissions': 0100644}
-        meta = self.res.document.meta
-        file_datetime = int(UTCDateTime(meta.datetime).timestamp)
-        file_size = meta.size
-        file_uid = meta.uid
-        return {'permissions': 0100644,
-                'uid': file_uid,
-                'size': file_size,
-                'atime': file_datetime,
-                'mtime': file_datetime}
+        temp = int(UTCDateTime(self.meta['meta_datetime']).timestamp)
+        return {
+            'permissions': 0100644,
+            'uid': self.meta['meta_uid'],
+            'size': self.meta['meta_size'],
+            'atime': temp,
+            'mtime': temp
+        }
 
     def _format(self, request, data):
         """
@@ -491,10 +495,10 @@ class RESTResourceTypeFolder(Folder):
         """
         temp = {}
         # resources
-        res_list = request.env.catalog.getAllResources(self.package_id,
-                                                       self.resourcetype_id)
-        for res in res_list:
-            temp[res.name] = RESTResource(res)
+        xpath = "/%s/%s" % (self.package_id, self.resourcetype_id)
+        res_dict = request.env.catalog.query(xpath)
+        for id in res_dict['ordered']:
+            temp[res_dict[id]['resource_name']] = RESTResource(res_dict[id])
         # indexes
         xmlindex_list = request.env.catalog.getIndexes(
             package_id=self.package_id, resourcetype_id=self.resourcetype_id)

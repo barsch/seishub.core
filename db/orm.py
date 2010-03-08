@@ -88,23 +88,6 @@ class DB_LIMIT(object):
         self.value = value
 
 
-class DB_LIKE(object):
-    """
-    Pass this object to pickup(...) as a value, to select all objects where
-    a parameter is LIKE the given value.
-    Use '%' as wildcard.
-    """
-    def __init__(self, value):
-        """
-        @param attr: name of the attribute to be minimized/maximized/fixed
-        @param type: 'max'|'min'|'fixed'
-        @param value: if type == 'fixed', value to be taken by attribute
-        """
-        if not isinstance(value, basestring):
-            raise ValueError("DB_LIKE: String expected!")
-        self.value = value
-
-
 class DbEnabled(object):
     """
     Mixin providing access to a sqlalchemy database manager.
@@ -292,8 +275,6 @@ class DbStorage(DbEnabled):
                                                     rel_order_by)
             elif value == DB_NULL:
                 q = q.where(table.c[colname] == None)
-            elif isinstance(value, DB_LIKE):
-                q = q.where(table.c[colname].like(value.value))
             elif value:
                 q = q.where(table.c[colname] == value)
             # don't read lazy attribute columns
