@@ -89,23 +89,19 @@ class PackageInstaller(object):
                                                       data, name)
                 except Exception, e:
                     env.log.warn(e)
-#        if hasattr(o, '_registry_aliases'):
-#            for entry in o._registry_aliases:
-#                # check, if already there
-#                if env.registry.aliases.get(package_id, resourcetype_id, 
-#                                            **entry):
-#                    msg = "'%s': Skipping alias '%s'."
-#                    env.log.debug(msg % (package_id, entry))
-#                    continue
-#                try:
-#                    env.registry.aliases.register(package_id, resourcetype_id,
-#                                                  **entry)
-#                    msg = "'%s': Registered alias '%s'."
-#                    env.log.info(msg % (package_id, entry))
-#                except Exception, e:
-#                    msg = "Registration of alias failed: %s/%s/@%s (%s)"
-#                    env.log.warn(msg % (package_id, resourcetype_id, 
-#                                        entry['name'], e))
+        if hasattr(o, '_registry_aliases'):
+            for entry in o._registry_aliases:
+                # check, if already there
+                if env.registry.aliases.get(**entry):
+                    msg = "Skipping Alias %s"
+                    env.log.debug(msg % (entry['uri']))
+                    continue
+                msg = "Registering Alias %s ..."
+                env.log.info(msg % (entry['uri']))
+                try:
+                    env.registry.aliases.register(**entry)
+                except Exception, e:
+                    env.log.warn(e)
         if hasattr(o, '_registry_indexes') and resourcetype_id:
             for entry in o._registry_indexes:
                 # check, if already there
@@ -233,12 +229,10 @@ registerStylesheet = lambda filename, type: \
                     PackageInstaller._pre_register('_stylesheets',
                                                    type=type,
                                                    filename=filename)
-#registerAlias = lambda name, expr, limit = None, order_by = None: \
-#                    PackageInstaller._pre_register('_aliases',
-#                                                   name = name,
-#                                                   expr = expr,
-#                                                   limit = limit,
-#                                                   order_by = order_by)
+registerAlias = lambda uri, expr: \
+                    PackageInstaller._pre_register('_aliases',
+                                                   uri=uri,
+                                                   expr=expr)
 registerIndex = lambda label, xpath, type = 'text', options = None: \
                     PackageInstaller._pre_register('_indexes',
                                                    label=label,
