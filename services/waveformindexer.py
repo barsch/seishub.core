@@ -25,7 +25,7 @@ class WaveformIndexerService(TimerService, WaveformFileCrawler):
     BoolOption('waveformindexer', 'autostart', WAVEFORMINDEXER_AUTOSTART,
         "Enable service on start-up.")
     ListOption('waveformindexer', 'paths', 'data=*.*',
-        "List of file paths to scan for.")
+            "List of file paths to scan for.")
     Option('waveformindexer', 'crawler_period',
         WAVEFORMINDEXER_CRAWLER_PERIOD, "Path check interval in seconds.")
     BoolOption('waveformindexer', 'skip_dots', True,
@@ -52,9 +52,24 @@ class WaveformIndexerService(TimerService, WaveformFileCrawler):
         self.input_queue = env.queues[0]
         self.work_queue = env.queues[1]
         self.output_queue = env.queues[2]
-        # config
-        path = os.path.normpath(os.path.join(env.getSeisHubPath(), 'data'))
-        self.paths = {path:['*.*']}
+        # search paths
+        paths = env.config.getlist('waveformindexer', 'paths')
+        self.paths = {}
+        for path in paths:
+            if '=' in path:
+                path, patterns = path.split('=')
+                if ' ' in patterns:
+                    patterns=patterns.split(' ')
+            else:
+                patterns = ['*.*']
+            if not os.path.isdir(path):
+                temp = os.path.join(env.getSeisHubPath(), path)
+                if not os.path.isdir(temp):
+                   msg = "Skipping non-existing waveform path %s ..."
+                   self.env.log.warn(msg % temp)
+                   continue
+                path = temp
+            self.paths[path] = patterns
         # start iterating
         TimerService.__init__(self, self.crawler_period, self.iterate)
 
