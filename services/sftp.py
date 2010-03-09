@@ -12,12 +12,12 @@ from seishub.processor import Processor, PUT, DELETE, GET, MOVE, HEAD, \
     getChildForRequest
 from seishub.processor.interfaces import IFileSystemResource, IStatical, \
     IResource, IScriptResource, IRESTResource, IXMLIndex, IAdminResource
-from seishub.util.ls import lsLine
 from seishub.util.path import absPath
 from twisted.application.internet import TCPServer #@UnresolvedImport
 from twisted.conch import avatar, ssh
-from twisted.conch.ssh.factory import SSHFactory
 from twisted.conch.interfaces import ISFTPFile, ISFTPServer, IConchUser
+from twisted.conch.ls import lsLine
+from twisted.conch.ssh.factory import SSHFactory #@UnresolvedImport
 from twisted.conch.ssh.filetransfer import SFTPError, FX_FILE_ALREADY_EXISTS, \
     FX_FAILURE, FX_OP_UNSUPPORTED, FXF_READ, FXF_WRITE, FX_NO_SUCH_FILE
 from twisted.cred import portal
@@ -26,8 +26,6 @@ from zope.interface import implements
 import StringIO
 import os
 import sys
-#XXX:http://twistedmatrix.com/trac/ticket/3503
-#from twisted.conch.ls import lsLine
 
 
 __all__ = ['SFTPService']

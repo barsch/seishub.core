@@ -5,7 +5,7 @@ from seishub.defaults import MIN_PASSWORD_LENGTH
 from seishub.exceptions import NotFoundError, DuplicateObjectError, \
     SeisHubError
 from seishub.util.text import hash
-from sqlalchemy import Column, String, create_engine, Integer, DateTime
+from sqlalchemy import Column, String, create_engine, Integer
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from twisted.cred import checkers, credentials, error

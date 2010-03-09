@@ -3,7 +3,7 @@
 from seishub.db import DEFAULT_PREFIX
 from seishub.db.manager import meta as metadata
 from sqlalchemy import Table, Column, ForeignKey, UniqueConstraint, Integer, \
-    Text, Boolean, DateTime, Numeric, Index
+    Text, Boolean
 
 
 PACKAGES_TABLE = 'packages'

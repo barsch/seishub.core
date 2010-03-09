@@ -11,22 +11,16 @@ from seishub.services.web import WebService
 from twisted.application import service
 from twisted.python import usage
 from twisted.python.runtime import platformType
-import inspect
-#import logging
 import multiprocessing
-import os
 import sys
-
-
-#logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
 
 if platformType == "win32":
     from twisted.scripts._twistw import ServerOptions, \
-        WindowsApplicationRunner as _SomeApplicationRunner
+        WindowsApplicationRunner as _SomeApplicationRunner #@UnresolvedImport
 else:
     from twisted.scripts._twistd_unix import ServerOptions, \
-        UnixApplicationRunner as _SomeApplicationRunner
+        UnixApplicationRunner as _SomeApplicationRunner #@UnresolvedImport
 
 
 __all__ = ['run']
@@ -81,10 +75,6 @@ def run():
         number_of_cpus = int(config['number_of_cpus'])
     except:
         number_of_cpus = multiprocessing.cpu_count()
-    # hard code preview path
-    src_path = inspect.getsourcefile(Environment)
-    path = os.path.dirname(os.path.dirname(src_path))
-    preview_path = os.path.join(path, 'db', 'preview')
     # create queues
     manager = multiprocessing.Manager()
     in_queue = manager.dict()
@@ -94,7 +84,7 @@ def run():
     queues = (in_queue, work_queue, out_queue, log_queue)
     # create processes
     for i in range(number_of_cpus):
-        args = (i, in_queue, work_queue, out_queue, log_queue, preview_path)
+        args = (i, in_queue, work_queue, out_queue, log_queue)
         p = multiprocessing.Process(target=worker, args=args)
         p.daemon = True
         p.start()
