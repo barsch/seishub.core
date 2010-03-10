@@ -86,8 +86,7 @@ class AuthenticationManager(object):
                                           'auth.db')
         engine = create_engine(uri, encoding='utf-8', convert_unicode=True)
         # Define and create user table
-        metadata = Base.metadata
-        metadata.create_all(engine, checkfirst=True)
+        Base.metadata.create_all(engine, checkfirst=True)
         self.Session = sessionmaker(bind=engine)
         self.refresh()
         # add admin if no account exists and check for the default password

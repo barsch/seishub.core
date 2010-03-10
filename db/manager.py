@@ -38,8 +38,7 @@ class DatabaseManager(object):
             DEFAULT_POOL_SIZE
         self.engine = self._getEngine()
         self._initDb()
-        Session = sessionmaker(bind=self.engine)
-        self.session = Session
+        self.session = sessionmaker(bind=self.engine)
         self.env.log.info('DB connection pool started')
 
     def _initDb(self):

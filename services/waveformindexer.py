@@ -27,23 +27,19 @@ class WaveformIndexerService(TimerService, WaveformFileCrawler):
     ListOption('waveformindexer', 'paths', 'data=*.*',
         "List of file paths to scan for.")
     Option('waveformindexer', 'crawler_period',
-        WAVEFORMINDEXER_CRAWLER_PERIOD, "Path check interval in seconds.")
+        WAVEFORMINDEXER_CRAWLER_PERIOD, "Poll interval for file crawler in" + \
+        " seconds.")
     BoolOption('waveformindexer', 'skip_dots', True,
-        "Scanner focuses on recent files.")
+        "Skips paths or files starting with a dot.")
     BoolOption('waveformindexer', 'cleanup', False,
-        "Clean-up database from missing files.")
+        "Clean database from non-existing files or paths if activated, but" + \
+        " will skip all paths marked as archived in the database.")
 
     def __init__(self, env):
         self.env = env
         # connect to database
-        metadata = Base.metadata
-        metadata.create_all(self.env.db.engine, checkfirst=True)
-        self.session = self.env.db.session()
-        # options
-        self.skip_dots = env.config.getbool('waveformindexer', 'skip_dots')
-        self.cleanup = env.config.getbool('waveformindexer', 'cleanup')
-        self.crawler_period = float(env.config.get('waveformindexer',
-                                                   'crawler_period'))
+        Base.metadata.create_all(self.env.db.engine, checkfirst=True)
+        self.session = self.env.db.session
         self.log = self.env.log
         # service settings
         self.setName('WaveformIndexer')
@@ -53,32 +49,33 @@ class WaveformIndexerService(TimerService, WaveformFileCrawler):
         self.work_queue = env.queues[1]
         self.output_queue = env.queues[2]
         self.log_queue = env.queues[3]
-        # search paths
-        paths = env.config.getlist('waveformindexer', 'paths')
-        self.paths = {}
-        for path in paths:
-            # strip patterns
-            if '=' in path:
-                path, patterns = path.split('=')
-                if ' ' in patterns:
-                    patterns = patterns.split(' ')
-                else:
-                    patterns = [patterns.strip()]
-            else:
-                patterns = ['*.*']
-            # relative path
-            if not os.path.isabs(path):
-                temp = os.path.join(env.getSeisHubPath(), path)
-                if not os.path.isdir(temp):
-                    msg = "Skipping non-existing waveform path %s ..."
-                    self.env.log.warn(msg % temp)
-                    continue
-                path = temp
-            # norm path name
-            path = os.path.normpath(path)
-            self.paths[path] = patterns
+        # set initial options
+        self.update()
         # start iterating
+        self.crawler_period = float(self.env.config.get('waveformindexer',
+                                    'crawler_period'))
         TimerService.__init__(self, self.crawler_period, self.iterate)
+
+    def update(self):
+        # options
+        self.skip_dots = self.env.config.getbool('waveformindexer',
+                                                 'skip_dots')
+        self.cleanup = self.env.config.getbool('waveformindexer', 'cleanup')
+        # search paths
+        paths = self.env.config.getlist('waveformindexer', 'paths')
+        paths = self._preparePaths(paths)
+        for path in paths.keys():
+            # avoid absolute paths
+            if os.path.isabs(path):
+                path = os.path.relpath(path, self.env.getSeisHubPath())
+            # check path
+            if not os.path.isdir(path):
+                msg = "Skipping non-existing waveform path %s ..."
+                self.env.log.warn(msg % path)
+                # remove path
+                paths.pop(path, True)
+                continue
+        self.paths = paths
 
     def privilegedStartService(self):
         if self.env.config.getbool('waveformindexer', 'autostart'):
