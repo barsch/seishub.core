@@ -8,7 +8,7 @@
   
   <div class="field">
     <label>Description</label><br />
-    <textarea name="description" cols="80" rows="5">$description</textarea>
+    <textarea name="description" cols="80" rows="3">$description</textarea>
   </div>
   
   <div class="field">
@@ -23,13 +23,7 @@
       #end for
     </select>
   </div>
-  
-  <div class="field">
-    <label>Google API Key</label><br />
-    <input name="google_api_key" size="80" type="text" 
-           value="$google_api_key" />
-  </div>
-  
+
   <div class="field">
     <label>Log Level</label><br />
     <select name="log_level">
@@ -50,6 +44,12 @@
            checked="checked" 
       #end if 
       />
+  </div>
+  
+  <div class="field">
+    <label>Google API Key</label><br />
+    <input name="google_api_key" size="80" type="text" 
+           value="$google_api_key" />
   </div>
   
   <div class="button">

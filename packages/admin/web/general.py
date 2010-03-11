@@ -64,14 +64,14 @@ class BasicPanel(Component):
         return data
 
 
-class BasicDBPanel(Component):
+class DatabasePanel(Component):
     """
     Database configuration.
     """
     implements(IAdminPanel)
 
-    template = 'templates' + os.sep + 'general_db.tmpl'
-    panel_ids = ('admin', 'General', 'basic-db', 'Database Settings')
+    template = 'templates' + os.sep + 'general_database.tmpl'
+    panel_ids = ('admin', 'General', 'database', 'Database')
     has_roles = ['SEISHUB_ADMIN']
 
     def render(self, request):
@@ -127,7 +127,7 @@ class ConfigPanel(Component):
     implements(IAdminPanel)
 
     template = 'templates' + os.sep + 'general_config.tmpl'
-    panel_ids = ('admin', 'General', 'config', 'Config')
+    panel_ids = ('admin', 'General', 'ini', 'seishub.ini')
     has_roles = ['SEISHUB_ADMIN']
 
     def render(self, request):

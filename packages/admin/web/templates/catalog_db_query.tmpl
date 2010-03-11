@@ -9,11 +9,15 @@
   
   <div class="button">
     <h3>SQL Tables</h3>
-    #for $table in [v for v in $tables if not v.endswith('index')]
+    #for $table in [v for v in $tables if not v.endswith('_index') and not 'waveform' in v]
     <input type="submit" name="table" value="$table.replace($prefix, '')" />
     #end for
     <br /><br />
-    #for $table in [v for v in $tables if v.endswith('index')]
+    #for $table in [v for v in $tables if not v.endswith('_index') and 'waveform' in v]
+    <input type="submit" name="table" value="$table.replace($prefix, '')" />
+    #end for
+    <br /><br />
+    #for $table in [v for v in $tables if v.endswith('index') and not 'waveform' in v]
     <input type="submit" name="table" value="$table.replace($prefix, '')" />
     #end for
     <br /><br />
