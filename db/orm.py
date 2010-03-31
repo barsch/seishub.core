@@ -3,13 +3,14 @@
 The database object-relational mapping (ORM) class.
 """
 
-import time
-from zope.interface import implements, Interface, directlyProvides, \
-                           implementedBy, Attribute
-from zope.interface.exceptions import DoesNotImplement
 from sqlalchemy import select, Text, or_, and_
 from sqlalchemy.exceptions import IntegrityError, NoSuchColumnError
+from sqlalchemy.sql import operators
 from sqlalchemy.sql.expression import ClauseList
+from zope.interface import implements, Interface, directlyProvides, \
+    implementedBy, Attribute
+from zope.interface.exceptions import DoesNotImplement
+import time
 
 
 class DbError(Exception):
@@ -162,7 +163,8 @@ class DbStorage(DbEnabled):
         return d
 
     def _where_clause(self, table, map, values):
-        cl = ClauseList(operator="AND")
+        cl = ClauseList(operator=operators.and_)
+        cl.append(1)
         for key, val in values.iteritems():
             if key not in map.keys():
                 continue
@@ -414,7 +416,12 @@ class DbStorage(DbEnabled):
                 kwargs = self._to_kwargs(o)
                 if not update or not o._id:
                     r = conn.execute(table.insert(), **kwargs)
-                    o._id = r.last_inserted_ids()[0]
+                    try:
+                        # SQLAlchemy >= 0.6.x
+                        o._id = r.inserted_primary_key[0]
+                    except:
+                        # SQLAlchemy < 0.6.x
+                        o._id = r.last_inserted_ids()[0]
                 else:
                     w = (table.c[o.db_mapping['_id']] == o._id)
                     r = conn.execute(table.update(w), **kwargs)

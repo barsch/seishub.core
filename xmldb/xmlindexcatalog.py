@@ -362,7 +362,7 @@ class _QueryProcessor(object):
         if predicates:
             query, joins, w = self._process_predicates(predicates, query,
                                                        joins)
-            if w:
+            if w is not None:
                 query = query.where(w)
         # order by
         if order_by:
