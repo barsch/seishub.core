@@ -61,15 +61,17 @@ class _IndexView(object):
                 continue
             msg = "XmlIndex objects must be from the same resource type."
             raise InvalidParameterError(msg)
-        columns = [document_tab.c['id'].label("document_id")]
+        columns = [document_tab.c['id'].label("document_id"),
+                   document_meta_tab.c['datetime'].label("document_last_modified")]
+        joins = document_tab.c['id']==document_meta_tab.c['id']
         if not compact:
             # add also columns package_id and resourcetype_id and resource_name 
             columns.extend([
                 literal(package_id).label("package_id"),
                 literal(resourcetype_id).label("resourcetype_id"),
-                resource_tab.c['name'].label("resource_name")
+                resource_tab.c['name'].label("resource_name"),
             ])
-        query = select(columns, distinct=True)
+        query = select(columns, joins, distinct=True)
         # add recursive all given indexes
         query, joins = self._joinIndexes(xmlindex_list, query)
         # join over resource
@@ -78,7 +80,7 @@ class _IndexView(object):
         # joins over resource type
         oncl = sql.and_(
             resourcetypes_tab.c['id'] == resource_tab.c['resourcetype_id'],
-            resourcetypes_tab.c['id'] == xmlindex.resourcetype._id
+            resourcetypes_tab.c['id'] == xmlindex.resourcetype._id,
         )
         joins = joins.join(resourcetypes_tab, onclause=oncl)
         return query, joins
