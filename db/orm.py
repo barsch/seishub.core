@@ -164,7 +164,6 @@ class DbStorage(DbEnabled):
 
     def _where_clause(self, table, map, values):
         cl = ClauseList(operator=operators.and_)
-        cl.append(1)
         for key, val in values.iteritems():
             if key not in map.keys():
                 continue
@@ -560,7 +559,10 @@ class DbStorage(DbEnabled):
                     for r in res:
                         ret *= self.drop(rel.cls, **{relkey:r[0]})
             # delete parent
-            result = conn.execute(table.delete(w))
+            if w.clauses:
+                result = conn.execute(table.delete(w))
+            else:
+                result = conn.execute(table.delete())
             if not result.rowcount:
                 ret *= False
             txn.commit()
