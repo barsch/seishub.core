@@ -248,7 +248,7 @@ class RESTResource(Resource):
             msg = "SeisHub resources may not be deleted directly."
             raise ForbiddenError(msg)
         # create a backup entry into the global trash folder
-        if request.env.config.get_bool('seishub', 'use_trash_folder', True):
+        if request.env.config.getbool('seishub', 'use_trash_folder', False):
             data = self._getData(request)
             path = os.path.join(request.env.getSeisHubPath(), 'trash',
                                 self.package_id, self.resourcetype_id)

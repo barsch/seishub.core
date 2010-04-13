@@ -616,14 +616,7 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         self.catalog.updateIndexView(self.idx1)
         sql = 'SELECT * FROM "/testpackage/station"'
         res = self.env.db.engine.execute(sql).fetchall()
-        self.assertEquals(res, [(6, u'testpackage', u'station', u'RAW_XML1',
-                                 1, None, u'50.23200', u'12.51200'),
-                                (7, u'testpackage', u'station', u'RAW_XML2',
-                                 1, u'0', u'55.23200', u'22.51200'),
-                                (7, u'testpackage', u'station', u'RAW_XML2',
-                                 1, u'2.5', u'55.23200', u'22.51200'),
-                                (7, u'testpackage', u'station', u'RAW_XML2',
-                                 1, u'99', u'55.23200', u'22.51200')])
+        self.assertEquals([i[0] for i in res], [6, 7, 7, 7])
         self.catalog.dropIndexView(self.idx1)
         sql = 'SELECT * FROM "/testpackage/station"'
         self.assertRaises(Exception, self.env.db.engine.execute, sql)
