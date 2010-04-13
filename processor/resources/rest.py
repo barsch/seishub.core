@@ -17,7 +17,6 @@ from seishub.util.text import isInteger
 from seishub.util.xml import addXMLDeclaration
 from twisted.web import http
 from zope.interface import implements
-import os
 
 
 class RESTResource(Resource):
@@ -99,19 +98,6 @@ class RESTResource(Resource):
             request.env.log.debug(msg % (format, request.path))
         return data
 
-    def _getData(self, request):
-        """
-        Fetch document from database.
-        """
-        data = self.res.document.data
-        # ensure we return a UTF-8 encoded string not an Unicode object 
-        if isinstance(data, unicode):
-            data = data.encode('utf-8')
-        # set XML declaration inclusive UTF-8 encoding string 
-        if not data.startswith('<xml'):
-            data = addXMLDeclaration(data, 'utf-8')
-        return data
-
     def render_GET(self, request):
         """
         Process a resource query request.
@@ -126,7 +112,13 @@ class RESTResource(Resource):
         U{http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.4.1}
         for all possible error codes.
         """
-        data = self._getData(request)
+        data = self.res.document.data
+        # ensure we return a UTF-8 encoded string not an Unicode object 
+        if isinstance(data, unicode):
+            data = data.encode('utf-8')
+        # set XML declaration inclusive UTF-8 encoding string 
+        if not data.startswith('<xml'):
+            data = addXMLDeclaration(data, 'utf-8')
         # handle output/format conversion
         data = self._format(request, data)
         # set last-modified time
@@ -247,20 +239,6 @@ class RESTResource(Resource):
         if self.package_id == 'seishub':
             msg = "SeisHub resources may not be deleted directly."
             raise ForbiddenError(msg)
-        # create a backup entry into the global trash folder
-        if request.env.config.getbool('seishub', 'use_trash_folder', False):
-            data = self._getData(request)
-            path = os.path.join(request.env.getSeisHubPath(), 'trash',
-                                self.package_id, self.resourcetype_id)
-            if not os.path.exists(path):
-                os.makedirs(path)
-            file = os.path.join(path, self.name)
-            try:
-                fp = open(file, 'wb')
-                fp.write(data)
-                fp.close()
-            except:
-                pass
         # delete resource
         request.env.catalog.deleteResource(self.res)
         # resource deleted - set status code

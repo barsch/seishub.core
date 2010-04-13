@@ -9,6 +9,8 @@ from seishub.xmldb.resource import Resource, newXMLDocument
 from seishub.xmldb.xmldbms import XmlDbManager
 from seishub.xmldb.xmlindexcatalog import XmlIndexCatalog
 from seishub.xmldb.xpath import XPathQuery
+import os
+from seishub.util.xml import addXMLDeclaration
 
 
 class XmlCatalog(object):
@@ -74,6 +76,27 @@ class XmlCatalog(object):
         """
         if resource_id:
             resource = self.xmldb.getResource(id=resource_id)
+        # create backup entry into the global trash folder
+        if self.env.config.getbool('seishub', 'use_trash_folder', False):
+            data = resource.document.data
+            # ensure we return a UTF-8 encoded string not an Unicode object 
+            if isinstance(data, unicode):
+                data = data.encode('utf-8')
+            # set XML declaration inclusive UTF-8 encoding string 
+            if not data.startswith('<xml'):
+                data = addXMLDeclaration(data, 'utf-8')
+            path = os.path.join(self.env.getSeisHubPath(), 'data', 'trash',
+                                resource.package.package_id,
+                                resource.resourcetype.resourcetype_id)
+            if not os.path.exists(path):
+                os.makedirs(path)
+            file = os.path.join(path, resource.name)
+            try:
+                fp = open(file, 'wb')
+                fp.write(data)
+                fp.close()
+            except:
+                pass
         # remove indexed data:
         self.index_catalog.flushResource(resource)
         res = self.xmldb.deleteResource(resource)

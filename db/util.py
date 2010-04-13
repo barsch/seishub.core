@@ -184,7 +184,6 @@ def formatORMResults(request, query, count=None, build_url=False):
         return toString(xml)
 
 
-
 def formatResults(request, results, count=None, limit=None, offset=0,
                   build_url=False):
     """
@@ -213,7 +212,7 @@ def formatResults(request, results, count=None, limit=None, offset=0,
         body = SubElement(html, "body")
         table = SubElement(body, "table", border="1")
         sub = SubElement(table, "tr")
-        for key in results.keys:
+        for key in results.keys():
             SubElement(sub, "th").text = str(key)
         # build URL
         if build_url:
