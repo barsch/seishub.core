@@ -7,7 +7,7 @@ and logging access.
 """
 
 from seishub.auth import AuthenticationManager
-from seishub.config import Configuration, Option, _TRUE_VALUES
+from seishub.config import Configuration, Option, _TRUE_VALUES, BoolOption
 from seishub.core import ComponentManager
 from seishub.db.manager import DatabaseManager
 from seishub.defaults import DEFAULT_COMPONENTS, HTTP_PORT
@@ -42,6 +42,7 @@ class Environment(ComponentManager):
         * a user management handler env.auth
     """
     Option('seishub', 'host', 'localhost', "Default host of this server.")
+    BoolOption('seishub', 'use_trash_folder', False, "Mode deleted resources into a trash folder.")
 
     def __init__(self, application=None, config_file="seishub.ini",
                  log_file="seishub.log"):
