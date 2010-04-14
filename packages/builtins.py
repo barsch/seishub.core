@@ -27,7 +27,9 @@ class StylesheetResource(Component):
     resourcetype_id = 'stylesheet'
 
     registerStylesheet('xslt' + os.sep + 'index_xhtml.xslt', 'index.xhtml')
+    registerStylesheet('xslt' + os.sep + 'index_json.xslt', 'index.json')
     registerStylesheet('xslt' + os.sep + 'meta_xhtml.xslt', 'meta.xhtml')
+    registerStylesheet('xslt' + os.sep + 'meta_json.xslt', 'meta.json')
     registerStylesheet('xslt' + os.sep + 'resourcelist_xhtml.xslt',
                        'resourcelist.xhtml',)
     registerStylesheet('xslt' + os.sep + 'resourcelist_json.xslt',
