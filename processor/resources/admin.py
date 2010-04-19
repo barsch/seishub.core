@@ -35,7 +35,12 @@ class AdminPanel(Resource):
 
     def render(self, request):
         # content
-        data = self.panel.render(request)
+        try:
+            # use render() method
+            data = self.panel.render(request)
+        except:
+            # no render() method
+            data = {}
         if request.finished:
             return ""
         # main page
@@ -216,9 +221,8 @@ class AdminRootFolder(StaticFolder):
                 self.env.log.warn(msg)
                 continue
             if not hasattr(panel, 'render'):
-                msg = 'Method render() missing in %s' % panel
-                self.env.log.warn(msg)
-                continue
+                msg = 'Method render() missing in %s.' % panel
+                self.env.log.info(msg)
             # set default values
             if not hasattr(panel, 'public'):
                 panel.public = False

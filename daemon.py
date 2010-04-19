@@ -8,16 +8,8 @@ from seishub.services.ssh import SSHService
 from seishub.services.web import WebService
 from twisted.application import service
 from twisted.python import usage
-from twisted.python.runtime import platformType
+from twisted.scripts.twistd import _SomeApplicationRunner, ServerOptions
 import sys
-
-
-if platformType == "win32":
-    from twisted.scripts._twistw import ServerOptions, \
-        WindowsApplicationRunner as _SomeApplicationRunner #@UnresolvedImport
-else:
-    from twisted.scripts._twistd_unix import ServerOptions, \
-        UnixApplicationRunner as _SomeApplicationRunner #@UnresolvedImport
 
 
 __all__ = ['run']

@@ -111,7 +111,7 @@ class ComponentizedTestCase(twisted_unittest.TestCase):
     def testMultiAdapter(self):
         c = CComp()
         co1 = c.getComponent(ITest)
-        co2 = c.getComponent(ITest2)
+        _co2 = c.getComponent(ITest2)
         co3 = c.getComponent(ITest3)
         co4 = c.getComponent(ITest4)
         assert co4 == None
@@ -593,7 +593,7 @@ class ProxyForInterfaceTests(twisted_unittest.TestCase):
         """
         yayable = Yayable()
         yayable.ifaceAttribute = None
-        proxy = proxyForInterface(IProxiedInterface)(yayable)
+        _proxy = proxyForInterface(IProxiedInterface)(yayable)
         del proxy.ifaceAttribute
         self.assertFalse(hasattr(yayable, 'ifaceAttribute'))
 

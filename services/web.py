@@ -15,7 +15,7 @@ from seishub.processor.interfaces import IFileSystemResource, IResource, \
 from seishub.util.path import addBase
 from seishub.util.text import isInteger
 from twisted.application import service
-from twisted.application.internet import SSLServer, TCPServer
+from twisted.application.internet import SSLServer, TCPServer  #@UnresolvedImport
 from twisted.internet import threads, defer, ssl
 from twisted.python.failure import Failure
 from twisted.web import http, server, static
