@@ -5,7 +5,7 @@
 <form method="post" enctype="multipart/form-data" id="add" action="">
   <div class="field-left">
     <label>Package</label><br />
-    <select name="package_id" id="package_id" onchange="changePackage('add');">
+    <select name="package_id" id="package_id_add" onchange="changePackage('add');">
       #for $p in $packages
       #if $resourcetypes[$p]
       <option value="$p"
@@ -19,8 +19,8 @@
   </div>
   <div class="field">
     <label>Resource Type</label><br />
-    <select name="resourcetype_id" id="resourcetype_id">
-      <option></option>
+    <select name="resourcetype_id" id="resourcetype_id_add">
+      <option>empty</option>
     </select>
   </div>
 
@@ -43,7 +43,8 @@
 <form method="post" id="list" action="">
   <div class="field-left">
     <label>Package</label><br />
-    <select name="package_id" id="package_id" onchange="changePackage('list');">
+    <select name="package_id" id="package_id_list" 
+            onchange="changePackage('list');">
       #for $p in $packages
       #if $resourcetypes[$p]
       <option value="$p"
@@ -57,8 +58,8 @@
   </div>
   <div class="field-left">
     <label>Resource Type</label><br />
-    <select name="resourcetype_id" id="resourcetype_id">
-      <option></option>
+    <select name="resourcetype_id" id="resourcetype_id_list">
+      <option>empty</option>
     </select>
   </div>
   <div class="field">
@@ -75,10 +76,11 @@
   </div>
   
   <div class="button">
-    <input type="submit" name="filter" value="Filter" />
+    <input type="submit" name="filter" value="Filter" /><br />
+    
+    <br />
   </div>
   
-  <br />
   
   <p>
     $rows rows<br />
@@ -132,9 +134,9 @@
     
     function changePackage(form_id)
     {
-      var form = document.getElementById(form_id)
-      var selectbox = form.resourcetype_id
-      var package_id = form.package_id.value;
+      var form = document.getElementById(form_id);
+      var selectbox = document.getElementById('resourcetype_id_' + form_id);
+      var package_id = document.getElementById('package_id_' + form_id).value;
       selectbox.options.length = 0;
       for (var i=0;i<resourcetypes[package_id].length;i++)
       {

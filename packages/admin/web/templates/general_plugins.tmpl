@@ -18,10 +18,12 @@
              checked="checked"
              disabled="disabled"
         #end if 
-             name="" value="" />
+             name="somename" value="somevalue" />
       <span>
         <strong>$plugin</strong><br />
+        #if $plugins.get($plugin).get('description')
         <i>$plugins.get($plugin).get('description')</i><br />
+        #end if
       </span>
     </dt>
     <dd class="close">

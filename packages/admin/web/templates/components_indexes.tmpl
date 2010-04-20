@@ -4,7 +4,8 @@
 <form method="post" id="add" action="">
   <div class="field-left">
     <label>Package</label><br />
-    <select name="package_id" id="package_id" onchange="changePackage('add');">
+    <select name="package_id" id="package_id_add" 
+            onchange="changePackage('add');">
       #for $p in $packages
       #if $resourcetypes[$p]
       <option value="$p"
@@ -18,8 +19,8 @@
   </div>
   <div class="field-left">
     <label>Resource Type</label><br />
-    <select name="resourcetype_id" id="resourcetype_id">
-      <option></option>
+    <select name="resourcetype_id" id="resourcetype_id_add">
+      <option>empty</option>
     </select>
   </div>
   <div class="field">
@@ -55,7 +56,8 @@
 <form method="post" id="list" action="">
   <div class="field-left">
     <label>Package</label><br />
-    <select name="package_id" id="package_id" onchange="changePackage('list');">
+    <select name="package_id" id="package_id_list" 
+            onchange="changePackage('list');">
       #for $p in $packages
       #if $resourcetypes[$p]
       <option value="$p"
@@ -69,18 +71,18 @@
   </div>
   <div class="field">
     <label>Resource Type</label><br />
-    <select name="resourcetype_id" id="resourcetype_id">
-      <option></option>
+    <select name="resourcetype_id" id="resourcetype_id_list">
+      <option>empty</option>
     </select>
   </div>
   
   <div class="button">
     <input type="submit" name="filter" value="Filter" />
     <input type="submit" name="reindex-all" value="Reindex All" 
-           onClick="return confirm('Are you sure you want to reindex all? This may take a while.')" />
+           onclick="return confirm('Are you sure you want to reindex all? This may take a while.')" />
+    <br />
+    <br />
   </div>
-  
-  <br />
 
   <table class="list">
     <tr>
@@ -114,7 +116,7 @@
     <input type="button" value="Select all" onclick="checkAllIndexes() "/> 
     <input type="button" value="Select none" onclick="uncheckAllIndexes() "/> 
     <input type="submit" name="reindex" value="Reindex"
-           onClick="return confirm('Are you sure you want to reindex? This may take a while.')" />
+           onclick="return confirm('Are you sure you want to reindex? This may take a while.')" />
     <input type="submit" name="delete" value="Delete" />
   </div>
 </form>
@@ -130,9 +132,9 @@
     
     function changePackage(form_id)
     {
-      var form = document.getElementById(form_id)
-      var selectbox = form.resourcetype_id
-      var package_id = form.package_id.value;
+      var form = document.getElementById(form_id);
+      var selectbox = document.getElementById('resourcetype_id_' + form_id);
+      var package_id = document.getElementById('package_id_' + form_id).value;
       selectbox.options.length = 0;
       for (var i=0;i<resourcetypes[package_id].length;i++)
       {
