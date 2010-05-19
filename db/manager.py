@@ -124,7 +124,7 @@ class DatabaseManager(object):
         Drop a SQL view by its name.
         """
         sql = 'DROP VIEW "%s"' % name
-        if self.engine.name == 'postgres':
+        if self.engine.name.startswith('postgres'):
             sql += ' CASCADE';
         try:
             self.engine.execute(sql)
@@ -148,7 +148,7 @@ class DatabaseManager(object):
             sql = "SELECT name from sqlite_master WHERE type='view';"
             temp = self.engine.execute(sql).fetchall()
             return [id[0] for id in temp]
-        elif self.engine.name == 'postgres':
+        elif self.engine.name.startswith('postgres'):
             sql = """SELECT viewname FROM pg_views 
                      WHERE schemaname 
                      NOT IN('information_schema', 'pg_catalog');"""
@@ -160,7 +160,7 @@ class DatabaseManager(object):
         """
         Returns the size of a database table or view.
         """
-        if self.engine.name == 'postgres':
+        if self.engine.name.startswith('postgres'):
             sql = "SELECT pg_relation_size('%s');" % name
             result = self.engine.execute(sql).fetchall()[0]
             return result[0]
@@ -170,7 +170,7 @@ class DatabaseManager(object):
         """
         Returns the size of the whole database.
         """
-        if self.engine.name == 'postgres':
+        if self.engine.name.startswith('postgres'):
             # XXX:
             sql = "SELECT pg_database_size('%s');" % self.engine.url.database
             result = self.engine.execute(sql).fetchall()[0]

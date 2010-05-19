@@ -32,7 +32,7 @@ def compileStatement(stmt, bind=None, params={}, **kwargs):
     for id, value in d.iteritems():
         s = s.replace('[[[' + id + ']]]', repr(value))
     # this omits an annoying warning
-    if bind.engine.name == 'postgres':
+    if bind.engine.name.startswith('postgres'):
         s = s.replace('%%', '%')
     return s
 
