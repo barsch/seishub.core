@@ -6,7 +6,7 @@ REST based resources.
 from lxml import etree
 from obspy.core import UTCDateTime
 from seishub.exceptions import ForbiddenError, NotFoundError, SeisHubError, \
-    NotAllowedError
+    NotAllowedError, UnauthorizedError
 from seishub.processor.interfaces import IRESTResource, IRESTProperty, \
     IXMLIndex
 from seishub.processor.processor import MAXIMAL_URL_LENGTH, PUT, GET, HEAD, \
@@ -98,6 +98,19 @@ class RESTResource(Resource):
             request.env.log.debug(msg % (format, request.path))
         return data
 
+    def _checkPermissions(self, request, permissions=755):
+        # authenticate
+        uid = request.getUser()
+        doc_uid = self.meta['meta_uid']
+        if not doc_uid:
+            return
+        if uid == doc_uid:
+            return
+        # check permission for local user
+        user = request.env.auth.getUser(uid)
+        if user.permissions < permissions:
+            raise UnauthorizedError()
+
     def render_GET(self, request):
         """
         Process a resource query request.
@@ -112,6 +125,7 @@ class RESTResource(Resource):
         U{http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.4.1}
         for all possible error codes.
         """
+        self._checkPermissions(request, 755)
         data = self.res.document.data
         # ensure we return a UTF-8 encoded string not an Unicode object 
         if isinstance(data, unicode):
@@ -155,6 +169,7 @@ class RESTResource(Resource):
         Modifying a document always needs a valid path to a resource or uses a
         user defined mapping.
         """
+        self._checkPermissions(request, 777)
         # SeisHub directory is not directly changeable
         if self.package_id == 'seishub':
             msg = "SeisHub resources may not be modified directly."
@@ -178,6 +193,7 @@ class RESTResource(Resource):
         @see: 
         U{http://msdn.microsoft.com/en-us/library/aa142926(EXCHG.65).aspx}
         """
+        self._checkPermissions(request, 777)
         # seishub directory is not directly changeable
         if self.package_id == 'seishub':
             msg = "SeisHub resources may not be moved directly."
@@ -235,6 +251,7 @@ class RESTResource(Resource):
         Deleting a document always needs a valid path to a resource or may use 
         a user defined mapping.
         """
+        self._checkPermissions(request, 777)
         # resource in SeisHub directory are not directly removable
         if self.package_id == 'seishub':
             msg = "SeisHub resources may not be deleted directly."

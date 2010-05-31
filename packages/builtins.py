@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+"""
+Standard packages required by SeisHub.
+"""
 
 from seishub.core import Component, implements
 from seishub.db.util import formatResults

@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+"""
+General commands for the SSH administration service.
+"""
 
 from seishub.core import Component, implements
 from seishub.packages.interfaces import ISSHCommand

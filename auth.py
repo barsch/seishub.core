@@ -56,14 +56,17 @@ class User(Base):
     password = Column(String)
     institution = Column(String)
     email = Column(String)
+    permissions = Column(Integer)
 
-    def __init__(self, id, name, password, uid=1000, institution='', email=''):
+    def __init__(self, id, name, password, uid=1000, institution='', email='',
+                 permissions=755):
         self.id = id
         self.uid = uid
         self.name = name
         self.password = password
         self.institution = institution
         self.email = email
+        self.permissions = permissions
 
     def __repr__(self):
         return "<User %s(%d): '%s')>" % (self.id, self.uid, self.name)
@@ -96,7 +99,7 @@ class AuthenticationManager(object):
                               "created. You should change the password as "
                               "soon as possible.")
             self.addUser(id='admin', name='Administrator', password='admin',
-                         uid=100, checkPassword=False)
+                         uid=100, permissions=777, checkPassword=False)
         elif self.checkPassword('admin', 'admin'):
             self.env.log.warn("The administrative account is accessible via "
                               "the standard password! Please change this as "
@@ -111,7 +114,7 @@ class AuthenticationManager(object):
             raise SeisHubError("Password is way to short!")
 
     def addUser(self, id, name, password, uid=1000, institution='', email='',
-                checkPassword=True):
+                permissions=755, checkPassword=True):
         """
         Adds an user.
         """
@@ -120,7 +123,8 @@ class AuthenticationManager(object):
         if checkPassword:
             self._validatePassword(password)
         user = User(id=id, uid=uid, name=name, password=hash(password),
-                    institution=institution, email=email)
+                    institution=institution, email=email,
+                    permissions=permissions)
         session = self.Session()
         session.add(user)
         try:
@@ -164,7 +168,7 @@ class AuthenticationManager(object):
         return user
 
     def updateUser(self, id, name='', password='', uid=1000, institution='',
-                   email=''):
+                   email='', permissions=755):
         """
         Modifies user information.
         """
@@ -179,6 +183,7 @@ class AuthenticationManager(object):
         user.institution = institution
         user.email = email
         user.uid = uid
+        user.permissions = permissions
         session.add(user)
         try:
             session.commit()

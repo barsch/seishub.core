@@ -31,6 +31,26 @@
     <label>Institution</label><br />
     <input type="text" size="80" name="institution" value="$institution" />
   </div>
+  <div class="field">
+    <label>Permissions</label><br />
+    <select name="permissions">
+      <option value="777" 
+        #if $permissions==777
+        selected="selected"
+        #end if
+        >RW</option>
+      <option value="755" 
+        #if $permissions==755
+        selected="selected"
+        #end if
+        >R-</option>
+      <option value="700" 
+        #if $permissions==700
+        selected="selected"
+        #end if
+        >--</option>
+    </select>
+  </div>
   <div class="button">
     <input type="submit" name="add" value="Add" />
     <input type="submit" name="cancel" value="Cancel" />
@@ -73,6 +93,26 @@
     <label>Institution</label><br />
     <input type="text" size="80" name="institution" value="$institution" />
   </div>
+  <div class="field">
+    <label>Permissions</label><br />
+    <select name="permissions">
+      <option value="777" 
+        #if $permissions==777
+        selected="selected"
+        #end if
+        >RW</option>
+      <option value="755" 
+        #if $permissions==755
+        selected="selected"
+        #end if
+        >R-</option>
+      <option value="700" 
+        #if $permissions==700
+        selected="selected"
+        #end if
+        >--</option>
+    </select>
+  </div>
   <div class="button">
     <input type="submit" name="edit" value="Save" />
     <input type="submit" name="cancel" value="Cancel" />
@@ -95,6 +135,7 @@
       <th>Name</th>
       <th>E-Mail</th>
       <th>Institution</th>
+      <th>Global Permissions</th>
     </tr>
     #for $user in $users
     <tr> 
@@ -110,6 +151,17 @@
         #end if
       </td>
       <td>$user.institution</td>
+      <td>
+        #if $user.permissions==777
+        RW
+        #elif $user.permissions==755
+        R-
+        #elif $user.permissions==700
+        -
+        #else
+        Unknown ($user.permissions)
+        #end if
+      </td>
     </tr>
     #end for
   </table>

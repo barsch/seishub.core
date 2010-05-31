@@ -200,6 +200,7 @@ class UsersPanel(Component):
             'name': '',
             'email': '',
             'institution': '',
+            'permissions': 755,
             'users': self.auth.users,
             'action': ''
         }
@@ -221,6 +222,7 @@ class UsersPanel(Component):
             data['name'] = user.name
             data['email'] = user.email
             data['institution'] = user.institution
+            data['permissions'] = user.permissions
             data['action'] = 'edit'
         return data
 
@@ -239,6 +241,10 @@ class UsersPanel(Component):
         name = data['name'] = args.get('name', [''])[0]
         email = data['email'] = args.get('email', [''])[0]
         institution = data['institution'] = args.get('institution', [''])[0]
+        try:
+            permissions = int(args.get('permissions', [''])[0])
+        except:
+            permissions = 755
         if not id:
             data['error'] = "No user id given."
         elif not name:
@@ -248,7 +254,8 @@ class UsersPanel(Component):
         else:
             try:
                 self.auth.addUser(id=id, name=name, password=password, uid=uid,
-                                  email=email, institution=institution)
+                                  email=email, institution=institution,
+                                  permissions=permissions)
             except SeisHubError, e:
                 # password checks are made in self.auth.addUser method 
                 data['error'] = str(e)
@@ -275,6 +282,10 @@ class UsersPanel(Component):
         name = data['name'] = args.get('name', [''])[0]
         email = data['email'] = args.get('email', [''])[0]
         institution = data['institution'] = args.get('institution', [''])[0]
+        try:
+            permissions = int(args.get('permissions', [''])[0])
+        except:
+            permissions = 755
         if not id:
             data['error'] = "No user id given."
         elif not name:
@@ -285,7 +296,8 @@ class UsersPanel(Component):
             try:
                 self.auth.updateUser(id=id, name=name, password=password,
                                      uid=uid, email=email,
-                                     institution=institution)
+                                     institution=institution,
+                                     permissions=permissions)
             except SeisHubError, e:
                 # password checks are made in self.auth.addUser method 
                 data['error'] = str(e)
@@ -317,36 +329,6 @@ class UsersPanel(Component):
             else:
                 data = {'info': "User has been deleted."}
         return data
-
-
-#class RolesPanel(Component):
-#    """
-#    Administration of roles.
-#    """
-#    implements(IAdminPanel)
-#    
-#    template = 'templates' + os.sep + 'general_roles.tmpl'
-#    panel_ids = ('admin', 'General', 'permission-roles', 'Roles')
-#    has_roles = ['SEISHUB_ADMIN']
-#    
-#    def render(self, request):
-#        data = {}
-#        return data
-#
-#
-#class GroupsPanel(Component):
-#    """
-#    Administration of groups.
-#    """
-#    implements(IAdminPanel)
-#    
-#    template = 'templates' + os.sep + 'general_roles.tmpl'
-#    panel_ids = ('admin', 'General', 'permission-groups', 'Groups')
-#    has_roles = ['SEISHUB_ADMIN']
-#    
-#    def render(self, request):
-#        data = {}
-#        return data
 
 
 class PluginsPanel(Component):
