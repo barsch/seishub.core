@@ -176,6 +176,10 @@ def suite():
     return suite
 
 
-if __name__ == '__main__':
+def runtests():
     doctest.testmod(sys.modules[__name__])
     unittest.main(defaultTest='suite')
+
+
+if __name__ == '__main__':
+    runtests()

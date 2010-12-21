@@ -46,16 +46,23 @@ class Environment(ComponentManager):
                "Mode deleted resources into a trash folder.")
 
     def __init__(self, application=None, config_file="seishub.ini",
-                 log_file="seishub.log"):
+                 log_file="seishub.log", create=None):
         """
         Initialize the SeisHub environment.
         """
         # set application
         self.app = application
-        # check for python version
+        # check Python version
         if not sys.hexversion >= 0x2060000:
             print("ERROR: SeisHub needs at least Python 2.6 or higher in " +
                   "order to run.")
+            exit()
+        if not sys.hexversion <= 0x3000000:
+            print("ERROR: SeisHub is not yet compatible with Python 3.x.")
+            exit()
+        # check if new environment must be created
+        if create:
+            self.create(create)
             exit()
         # get SeisHub path
         path = self.getSeisHubPath()
@@ -99,6 +106,25 @@ class Environment(ComponentManager):
         self.xslt_params = {
             'google_api_key': self.config.get('web', 'google_api_key', '')
         }
+
+    def create(self, path):
+        """
+        Creates a new SeisHub environment in given path.
+        """
+        # create the directory structure
+        if not os.path.exists(path):
+            os.mkdir(path)
+        print("Creating new SeisHub instance in %s" % path)
+        os.mkdir(os.path.join(path, 'bin'))
+        os.mkdir(os.path.join(path, 'conf'))
+        os.mkdir(os.path.join(path, 'data'))
+        os.mkdir(os.path.join(path, 'db'))
+        os.mkdir(os.path.join(path, 'logs'))
+        os.mkdir(os.path.join(path, 'plugins'))
+        # create configuration file
+        config_file = os.path.join(path, 'conf', 'seishub.ini')
+        self.config = Configuration(config_file)
+        self.initDefaultOptions()
 
     def getSeisHubPath(self):
         """
@@ -262,3 +288,7 @@ class Environment(ComponentManager):
             if pattern == modulename.lower():
                 return state
         return False
+
+
+def admin(*args, **kwargs):
+    print "admin", args, kwargs

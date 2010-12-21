@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from seishub.config import IntOption
+from seishub.config import IntOption, Option
 from seishub.defaults import MIN_PASSWORD_LENGTH
 from seishub.exceptions import NotFoundError, DuplicateObjectError, \
     SeisHubError
@@ -78,6 +78,7 @@ class AuthenticationManager(object):
     """
     IntOption('seishub', 'min_password_length', MIN_PASSWORD_LENGTH,
         "Minimum password length.")
+    Option('seishub', 'auth_uri', '', "Authentication database string.")
 
     passwords = {}
     users = []
@@ -85,8 +86,8 @@ class AuthenticationManager(object):
     def __init__(self, env):
         self.env = env
         # fetch db uri - this is an option primary for the test cases
-        uri = 'sqlite:///' + os.path.join(self.env.config.path, 'db',
-                                          'auth.db')
+        uri = self.env.config.get('seishub', 'auth_uri') or \
+            'sqlite://' + os.path.join(self.env.config.path, 'db', 'auth.db')
         engine = create_engine(uri, encoding='utf-8', convert_unicode=True)
         # Define and create user table
         Base.metadata.create_all(engine, checkfirst=True)
