@@ -33,7 +33,7 @@ class Logger(object):
     def __init__(self, env, log_file):
         self.env = env
         if log_file:
-            log_path = os.path.join(env.getSeisHubPath(), 'logs')
+            log_path = os.path.join(env.getInstancePath(), 'logs')
             # clear log files
             if env.config.getbool('seishub', 'clear_logs_on_startup'):
                 log_base = os.path.splitext(log_file)[0]

@@ -12,27 +12,34 @@ from twisted.scripts.twistd import _SomeApplicationRunner, ServerOptions
 import sys
 
 
-__all__ = ['run']
+__all__ = ['run', 'createApplication']
+
+
+def createApplication(path, log_file=None, create=False):
+    # create application
+    application = service.Application("SeisHub")
+    # setup our Environment
+    env = Environment(path, application=application, log_file=log_file,
+                      create=create)
+    # add services
+    WebService(env)
+    SSHService(env)
+    ManholeService(env)
+    SFTPService(env)
+    #HeartbeatService(env)
+    return application
 
 
 class SeisHubApplicationRunner(_SomeApplicationRunner):
-
+    """
+    """
     def __init__(self, config, log_file):
         _SomeApplicationRunner.__init__(self, config)
         self.log_file = log_file
+        self.config = config
 
     def createOrGetApplication(self):
-        # create application
-        application = service.Application("SeisHub")
-        # setup our Environment
-        env = Environment(application=application, log_file=self.log_file)
-        # add services
-        WebService(env)
-        SSHService(env)
-        ManholeService(env)
-        SFTPService(env)
-        #HeartbeatService(env)
-        return application
+        return createApplication(self.config.get('rundir'), self.log_file)
 
 
 def run():

@@ -87,7 +87,8 @@ class AuthenticationManager(object):
         self.env = env
         # fetch db uri - this is an option primary for the test cases
         uri = self.env.config.get('seishub', 'auth_uri') or \
-            'sqlite://' + os.path.join(self.env.config.path, 'db', 'auth.db')
+            'sqlite:///' + os.path.join(self.env.getInstancePath(), 'db',
+                                        'auth.db')
         engine = create_engine(uri, encoding='utf-8', convert_unicode=True)
         # Define and create user table
         Base.metadata.create_all(engine, checkfirst=True)

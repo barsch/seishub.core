@@ -10,7 +10,8 @@ from seishub.auth import AuthenticationManager
 from seishub.config import Configuration, Option, _TRUE_VALUES, BoolOption
 from seishub.core import ComponentManager
 from seishub.db.manager import DatabaseManager
-from seishub.defaults import DEFAULT_COMPONENTS, HTTP_PORT
+from seishub.defaults import DEFAULT_COMPONENTS, HTTP_PORT, WIN_DEBUG, \
+    BASH_START, BASH_STOP, BASH_DEBUG
 from seishub.log import Logger
 from seishub.packages.installer import PackageInstaller
 from seishub.processor import ResourceTree
@@ -45,13 +46,14 @@ class Environment(ComponentManager):
     BoolOption('seishub', 'use_trash_folder', False,
                "Mode deleted resources into a trash folder.")
 
-    def __init__(self, application=None, config_file="seishub.ini",
+    def __init__(self, path, application=None, config_file="seishub.ini",
                  log_file="seishub.log", create=None):
         """
         Initialize the SeisHub environment.
         """
         # set application
         self.app = application
+        self._path = path
         # check Python version
         if not sys.hexversion >= 0x2060000:
             print("ERROR: SeisHub needs at least Python 2.6 or higher in " +
@@ -62,10 +64,7 @@ class Environment(ComponentManager):
             exit()
         # check if new environment must be created
         if create:
-            self.create(create)
-            exit()
-        # get SeisHub path
-        path = self.getSeisHubPath()
+            self.create(path)
         # set a start up timestamp
         self.startup_time = int(time.time())
         # set configuration handler
@@ -106,10 +105,13 @@ class Environment(ComponentManager):
         self.xslt_params = {
             'google_api_key': self.config.get('web', 'google_api_key', '')
         }
+        # check if new environment has beene created
+        if create:
+            exit()
 
     def create(self, path):
         """
-        Creates a new SeisHub environment in given path.
+        Creates a new SeisHub environment.
         """
         # create the directory structure
         if not os.path.exists(path):
@@ -121,17 +123,33 @@ class Environment(ComponentManager):
         os.mkdir(os.path.join(path, 'db'))
         os.mkdir(os.path.join(path, 'logs'))
         os.mkdir(os.path.join(path, 'plugins'))
-        # create configuration file
-        config_file = os.path.join(path, 'conf', 'seishub.ini')
-        self.config = Configuration(config_file)
-        self.initDefaultOptions()
+        # create maintenance scripts
+        fh = open(os.path.join(path, 'bin', 'debug.bat'), 'wt')
+        fh.write(WIN_DEBUG % (sys.executable, path))
+        fh.close()
+        fh = open(os.path.join(path, 'bin', 'debug.sh'), 'wt')
+        fh.write(BASH_DEBUG % (sys.executable, path))
+        fh.close()
+        fh = open(os.path.join(path, 'bin', 'start.sh'), 'wt')
+        fh.write(BASH_START % (sys.executable, path))
+        fh.close()
+        fh = open(os.path.join(path, 'bin', 'stop.sh'), 'wt')
+        fh.write(BASH_STOP % (path))
+        fh.close()
 
-    def getSeisHubPath(self):
+    def getPackagePath(self):
         """
-        Returns the absolute root path to the SeisHub directory.
+        Returns the absolute root path to the SeisHub module directory.
         """
-        src_path = inspect.getsourcefile(self.__class__)
+        import seishub
+        src_path = inspect.getsourcefile(seishub)
         return os.path.dirname(os.path.dirname(src_path))
+
+    def getInstancePath(self):
+        """
+        Returns the absolute root path to the SeisHub instance directory.
+        """
+        return self._path
 
     def initDefaultOptions(self):
         """
@@ -288,7 +306,3 @@ class Environment(ComponentManager):
             if pattern == modulename.lower():
                 return state
         return False
-
-
-def admin(*args, **kwargs):
-    print "admin", args, kwargs

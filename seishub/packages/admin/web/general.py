@@ -53,6 +53,7 @@ class BasicPanel(Component):
                 self.env.log.log_level = LOG_LEVELS.get(log_level, ERROR)
             data['info'] = "Options have been saved."
         data.update({
+          'instance': self.config.path,
           'host': self.config.get('seishub', 'host'),
           'description': self.config.get('seishub', 'description'),
           'theme': self.config.get('web', 'admin_theme'),
@@ -152,7 +153,8 @@ class LogsPanel(Component):
     has_roles = ['SEISHUB_ADMIN']
 
     def render(self, request):
-        log_file = os.path.join(self.env.config.path, 'logs', 'seishub.log')
+        log_file = os.path.join(self.env.getInstancePath(), 'logs',
+                                'seishub.log')
         try:
             fh = open(log_file, 'r')
             logs = fh.readlines()

@@ -64,13 +64,13 @@ class DatabaseManager(object):
             filepart = filename.split('/')
             # it is a plain filename without sub directories
             if len(filepart) == 1:
-                self.uri = 'sqlite:///' + os.path.join(self.env.config.path,
-                                                       'db', filename)
+                self.uri = 'sqlite:///' + \
+                    os.path.join(self.env.getInstancePath(), 'db', filename)
                 return self._getSQLiteEngine()
             # there is a db sub directory given in front of the filename
             if len(filepart) == 2 and filepart[0] == 'db':
-                self.uri = 'sqlite:///' + os.path.join(self.env.config.path,
-                                                       filename)
+                self.uri = 'sqlite:///' + \
+                    os.path.join(self.env.getInstancePath(), filename)
                 return self._getSQLiteEngine()
             # check if it is a full absolute file path
             if os.path.isdir(os.path.dirname(filename)):

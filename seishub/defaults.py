@@ -38,13 +38,42 @@ SFTP_PORT = 5021
 SFTP_PRIVATE_KEY = 'conf' + os.sep + 'sftp.private.key'
 SFTP_PUBLIC_KEY = 'conf' + os.sep + 'sftp.public.key'
 
-HEARTBEAT_AUTOSTART = False
+HEARTBEAT_AUTOSTART = True
 HEARTBEAT_CHECK_PERIOD = 20
 HEARTBEAT_CHECK_TIMEOUT = 15
-HEARTBEAT_HUBS = ['192.168.1.108', '192.168.1.109']
+HEARTBEAT_HUBS = []
 HEARTBEAT_UDP_PORT = 43278
 
 MANHOLE_AUTOSTART = False
 MANHOLE_PORT = 5002
 MANHOLE_PRIVATE_KEY = 'conf' + os.sep + 'manhole.private.key'
 MANHOLE_PUBLIC_KEY = 'conf' + os.sep + 'manhole.public.key'
+
+WIN_DEBUG = """@echo off
+set PYTHON=%s
+set INSTANCE=%s
+
+"%%PYTHON%%" -m seishub.daemon -no -d "%%INSTANCE%%"
+"""
+
+BASH_DEBUG = """#!/bin/bash
+PYTHON=%s
+INSTANCE=%s
+
+"$PYTHON" -m seishub.daemon -no -d "$INSTANCE"
+"""
+
+BASH_START = """#!/bin/bash
+PYTHON=%s
+INSTANCE=%s
+PID="$INSTANCE\seishub.pid"
+
+"$PYTHON" -m seishub.daemon -d "$INSTANCE" --pidfile="$PID"
+"""
+
+BASH_STOP = """#!/bin/bash
+INSTANCE=%s
+PID="$INSTANCE\seishub.pid"
+
+kill `cat $PID`
+"""

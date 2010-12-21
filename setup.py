@@ -26,10 +26,8 @@ SeisHub installer
 """
 
 from setuptools import find_packages, setup
-import distribute_setup
 import os
-distribute_setup.use_setuptools()
-
+import sys
 
 # check Python version
 if not sys.hexversion >= 0x2060000:
@@ -92,13 +90,16 @@ setup(
         'obspy.arclink',
         'obspy.db',
     ],
+     dependency_links=[
+        "https://svn.obspy.org/obspy.db/trunk#egg=obspy.db-dev"
+    ],
     download_url="https://svn.geophysik.uni-muenchen.de/svn/seishub/trunk/seishub#egg=seishub-dev",
     include_package_data=True,
     test_suite="seishub.tests.suite",
     entry_points={
         'console_scripts': [
-            'seishub-runtests = seishub.test:runtests',
-            'seishub-admin = seishub.env:admin',
+            'seishub-runtests = seishub.scripts.runtests:main',
+            'seishub-admin = seishub.scripts.admin:main',
         ],
     },
 )

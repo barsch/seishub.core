@@ -154,7 +154,7 @@ class SeisHubEnvironmentTestCase(unittest.TestCase):
         self.__tearDown()
 
 
-def suite():
+def getSuite():
     """
     This methods calls all test suites.
     """
@@ -176,10 +176,6 @@ def suite():
     return suite
 
 
-def runtests():
-    doctest.testmod(sys.modules[__name__])
-    unittest.main(defaultTest='suite')
-
-
 if __name__ == '__main__':
-    runtests()
+    doctest.testmod(sys.modules[__name__])
+    unittest.main(module='seishub.test', defaultTest='getSuite')

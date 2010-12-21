@@ -157,11 +157,11 @@ class AdminRootFolder(StaticFolder):
         self.env = env
         self.category = 'admin'
         # default template dir
-        self.template_dir = os.path.join(self.env.config.path,
+        self.template_dir = os.path.join(self.env.getPackagePath(),
                                          'seishub', 'packages', 'admin',
                                          'web', 'templates')
         # default template dir
-        self.statics_dir = os.path.join(self.env.config.path,
+        self.statics_dir = os.path.join(self.env.getPackagePath(),
                                         'seishub', 'packages', 'admin',
                                         'web', 'statics')
         # register themes, panels and static content

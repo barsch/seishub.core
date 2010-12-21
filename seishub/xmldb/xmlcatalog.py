@@ -85,7 +85,7 @@ class XmlCatalog(object):
             # set XML declaration inclusive UTF-8 encoding string 
             if not data.startswith('<xml'):
                 data = addXMLDeclaration(data, 'utf-8')
-            path = os.path.join(self.env.getSeisHubPath(), 'data', 'trash',
+            path = os.path.join(self.env.getInstancePath(), 'data', 'trash',
                                 resource.package.package_id,
                                 resource.resourcetype.resourcetype_id)
             if not os.path.exists(path):
