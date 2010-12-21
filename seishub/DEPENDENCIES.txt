@@ -1,0 +1,26 @@
+Required
+========
+
+Python      2.6.x
+Twisted     >=10.0.0
+Cheetah     >=2.4.1
+sqlalchemy  >=0.5.8
+PyOpenSSL
+lxml
+pycrypto
+pyasn1
+pyparsing
+obspy.core
+
+zope.interface (will be installed with Twisted)
+pywin32 (required for running on a Windows platform)
+
+Optional
+========
+obspy.mseed
+obspy.gse2
+obspy.seishub
+obspy.imaging
+obspy.xseed
+obspy.arclink
+obspy.db (https://svn.geophysik.uni-muenchen.de/svn/obspy/obspy.db/trunk)
