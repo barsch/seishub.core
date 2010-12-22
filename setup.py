@@ -33,7 +33,7 @@ setup(
     version=VERSION,
     description="SeisHub - a seismological XML/SQL database hybrid",
     long_description="""
-    SeisHub - Web-based technology for storage and processing of
+    seishub - Web-based technology for storage and processing of
     multi-component data in seismology.
 
     For more information visit http://www.seishub.org.
@@ -60,6 +60,7 @@ setup(
     namespace_packages=['seishub'],
     zip_safe=False,
     install_requires=[
+        'setuptools',
         'Twisted',
         'Cheetah',
         'sqlalchemy',
@@ -69,18 +70,8 @@ setup(
         'pyasn1',
         'pyparsing',
         'obspy.core',
-        'obspy.mseed',
-        'obspy.gse2',
-        'obspy.seishub',
-        'obspy.imaging',
-        'obspy.xseed',
-        'obspy.arclink',
-        'obspy.db',
     ],
-     dependency_links=[
-        "https://svn.obspy.org/obspy.db/trunk#egg=obspy.db-dev"
-    ],
-    download_url="https://svn.geophysik.uni-muenchen.de/svn/seishub/trunk/seishub#egg=seishub-dev",
+    download_url="https://svn.geophysik.uni-muenchen.de/svn/seishub/trunk/seishub.core#egg=seishub.core-dev",
     test_suite="seishub.core.test.suite",
     include_package_data=True,
     entry_points={

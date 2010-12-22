@@ -1,4 +1,0 @@
-* Robert Barsch <barsch@lmu.de>
-* Paul Käufl <paul.kaeufl@geophysik.uni-muenchen.de>
-* Moritz Beyreuther <beyreuth@geophysik.uni-muenchen.de>
- 
