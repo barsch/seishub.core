@@ -1,0 +1,32 @@
+================================
+Accessing the configuration file
+================================
+
+Get handler for recent configuration file:
+
+    >>> import seishub.core.config
+    >>> import tempfile, os
+    >>> filename = os.path.join(tempfile.gettempdir(), 'test.ini')
+    >>> conf = seishub.core.config.Configuration(filename)
+
+Now we want to set a certain option:
+
+    >>> conf.set('mysection', 'myentry', 'somevalue')
+    >>> conf.save()
+
+We should check if this now exists in the configuration file:
+
+    >>> conf.has_site_option('mysection', 'myentry')
+    True
+    >>> conf.get('mysection', 'myentry')
+    u'somevalue'
+
+Now we want to remove option myentry:
+
+    >>> conf.remove('mysection', 'myentry')
+    >>> conf.save()
+    >>> conf.get('mysection', 'myentry')
+    ''
+ 
+
+
