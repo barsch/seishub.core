@@ -7,22 +7,8 @@ SeisHub installer
     Robert Barsch (barsch@lmu.de)
     Paul Käufl (paul.kaeufl@geophysik.uni-muenchen.de)
 :license:
-    GNU General Public License (GPL)
-    
-    This program is free software; you can redistribute it and/or
-    modify it under the terms of the GNU General Public License
-    as published by the Free Software Foundation; either version 2
-    of the License, or (at your option) any later version.
-    
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-    GNU General Public License for more details.
-    
-    You should have received a copy of the GNU General Public License
-    along with this program; if not, write to the Free Software
-    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-    02110-1301, USA.
+    GNU Lesser General Public License, Version 3
+    (http://www.gnu.org/copyleft/lesser.html)
 """
 
 from setuptools import find_packages, setup
@@ -39,11 +25,11 @@ if not sys.hexversion <= 0x3000000:
     exit()
 
 
-VERSION = open(os.path.join("seishub", "VERSION.txt")).read()
+VERSION = open(os.path.join("seishub", "core", "VERSION.txt")).read()
 
 
 setup(
-    name='seishub',
+    name='seishub.core',
     version=VERSION,
     description="SeisHub - a seismological XML/SQL database hybrid",
     long_description="""
@@ -55,14 +41,15 @@ setup(
     url='http://www.seishub.org',
     author='Robert Barsch',
     author_email='barsch@lmu.de',
-    license='GNU General Public License (GPL)',
+    license='GNU Lesser General Public License, Version 3 (LGPLv3)',
     platforms='OS Independent',
     classifiers=[
         'Development Status :: 4 - Beta',
         'Environment :: Console',
         'Intended Audience :: Science/Research',
         'Intended Audience :: Developers',
-        'License :: OSI Approved :: GNU General Public License (GPL)',
+        'License :: OSI Approved :: ' + \
+        'GNU Library or Lesser General Public License (LGPL)',
         'Operating System :: OS Independent',
         'Programming Language :: Python',
         'Topic :: Scientific/Engineering',
@@ -94,12 +81,12 @@ setup(
         "https://svn.obspy.org/obspy.db/trunk#egg=obspy.db-dev"
     ],
     download_url="https://svn.geophysik.uni-muenchen.de/svn/seishub/trunk/seishub#egg=seishub-dev",
+    test_suite="seishub.core.test.suite",
     include_package_data=True,
-    test_suite="seishub.tests.suite",
     entry_points={
         'console_scripts': [
-            'seishub-runtests = seishub.scripts.runtests:main',
-            'seishub-admin = seishub.scripts.admin:main',
+            'seishub-runtests = seishub.core.scripts.runtests:main',
+            'seishub-admin = seishub.core.scripts.admin:main',
         ],
     },
 )
