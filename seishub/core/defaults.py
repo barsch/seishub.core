@@ -35,7 +35,7 @@ SSH_PORT = 5001
 SSH_PRIVATE_KEY = 'conf' + os.sep + 'ssh.private.key'
 SSH_PUBLIC_KEY = 'conf' + os.sep + 'ssh.public.key'
 
-SFTP_AUTOSTART = True
+SFTP_AUTOSTART = False
 SFTP_PORT = 5021
 SFTP_PRIVATE_KEY = 'conf' + os.sep + 'sftp.private.key'
 SFTP_PUBLIC_KEY = 'conf' + os.sep + 'sftp.public.key'
