@@ -273,7 +273,6 @@ class SSHServiceFactory(factory.SSHFactory):
         self.publicKeys = {'ssh-rsa': keys.Key.fromFile(pub)}
         self.privateKeys = {'ssh-rsa': keys.Key.fromFile(priv)}
 
-
     def _getCertificates(self):
         """
         Fetch SSH certificate paths from configuration.
