@@ -8,26 +8,28 @@
 <h1>Plug-ins</h1>
 
 <form method="post" id="plugins" action="">
+  #for $package in $sorted_plugins
+  <h2>$package</h2>
   <dl class="accordion">
-    #for $plugin in $sorted_plugins
+    #for $plugin in $plugins.get($package)
     <dt>
       <input class="check" type="checkbox" 
-        #if len([$p for $p in $plugins.get($plugin).get('plugins') if not $p.enabled])==0
+        #if len([$p for $p in $plugins.get($package).get($plugin).get('plugins') if not $p.enabled])==0
              checked="checked"
-        #elif len([$p for $p in $plugins.get($plugin).get('plugins') if $p.enabled])>0
+        #elif len([$p for $p in $plugins.get($package).get($plugin).get('plugins') if $p.enabled])>0
              checked="checked"
              disabled="disabled"
         #end if 
              name="somename" value="somevalue" />
       <span>
         <strong>$plugin</strong><br />
-        #if $plugins.get($plugin).get('description')
-        <i>$plugins.get($plugin).get('description')</i><br />
+        #if $plugins.get($package).get($plugin).get('description')
+        <i>$plugins.get($package).get($plugin).get('description')</i><br />
         #end if
       </span>
     </dt>
     <dd class="close">
-      #for $p in $plugins.get($plugin).get('plugins')
+      #for $p in $plugins.get($package).get($plugin).get('plugins')
       <input type="hidden" name="plugin" value="$p.classname" />
       <input class="check" type="checkbox"
         #if $p.required
@@ -44,6 +46,7 @@
     </dd>
     #end for
   </dl>
+  #end for
 
   <div class="button">
     <input type="submit" name="update" value="Save" />

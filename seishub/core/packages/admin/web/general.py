@@ -407,9 +407,12 @@ class PluginsPanel(Component):
               'required': classname in DEFAULT_COMPONENTS or \
                           modulename in DEFAULT_COMPONENTS,
             }
-            plugins.setdefault(modulename, {})
-            plugins[modulename].setdefault('plugins', []).append(plugin)
-            plugins[modulename]['description'] = description
+            packagename = '.'.join(modulename.split('.')[0:3])
+            plugins.setdefault(packagename, {})
+            plugins[packagename].setdefault(modulename, {})
+            plugins[packagename][modulename].setdefault('plugins',
+                                                        []).append(plugin)
+            plugins[packagename][modulename]['description'] = description
         data = {
           'sorted_plugins': sorted(plugins),
           'plugins': plugins,

@@ -26,25 +26,25 @@ YAHOO.lutsr.accordion = {
         }
 
         var accordionObjects = Dom.getElementsByClassName("accordion");
-
         if(accordionObjects.length > 0) {
     
             for(var i=0; i<accordionObjects.length; i++) {
                 if(accordionObjects[i].nodeName == "DL") {
                     var headers = accordionObjects[i].getElementsByTagName("dt");
                     var bodies = accordionObjects[i].getElementsByTagName("dd");
+                    this.attachEvents(headers,accordionObjects[i]);
                 }
-                this.attachEvents(headers,i);
             }
         }
     },
 
-    attachEvents : function(headers,nr) {
+    attachEvents : function(headers,accordionObject) {
         for(var i=0; i<headers.length; i++) {
             var headerProperties = {
                 objRef : headers[i],
                 nr : i,
-                jsObj : this
+                jsObj : this,
+                accordionObject: accordionObject,
             }
             
             Event.addListener(headers[i].getElementsByTagName("span"),
@@ -57,7 +57,7 @@ YAHOO.lutsr.accordion = {
     },
     
     clickHeader : function(e,headerProperties) {
-        var parentObj = headerProperties.objRef.parentNode.parentNode;
+        var parentObj = headerProperties.accordionObject;
         var headers = parentObj.getElementsByTagName("dd"); 
         var header = headers[headerProperties.nr];
     
@@ -80,8 +80,8 @@ YAHOO.lutsr.accordion = {
     clickHeaderCheckbox : function(e,headerProperties) {
         var objRef = headerProperties.objRef
         var headerCheck = objRef.getElementsByTagName("input")[0];
-        var parentObj = objRef.parentNode.parentNode;
-        var headers = parentObj.parentNode.getElementsByTagName("dd");
+        var parentObj = headerProperties.accordionObject;
+        var headers = parentObj.getElementsByTagName("dd");
         var header = headers[headerProperties.nr];
         var checks = header.getElementsByTagName("input");
         
