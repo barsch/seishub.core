@@ -12,7 +12,6 @@ from seishub.core.processor.resources import RESTFolder
 from seishub.core.test import SeisHubEnvironmentTestCase
 from twisted.web import http
 import glob
-import inspect
 import os
 import unittest
 
@@ -172,7 +171,7 @@ class RestPOSTTests(SeisHubEnvironmentTestCase):
         @see: L{http://www.w3.org/2001/06/utf-8-test/}.
         """
         proc = Processor(self.env)
-        path = os.path.dirname(inspect.getsourcefile(self.__class__))
+        path = os.path.dirname(__file__)
         files = glob.glob(os.path.join(path, 'data', 'utf-8-tests', '*.xml'))
         for file in files:
             # create resource
@@ -194,7 +193,7 @@ class RestPOSTTests(SeisHubEnvironmentTestCase):
         @see: L{http://www.w3.org/XML/Test/}.
         """
         proc = Processor(self.env)
-        path = os.path.dirname(inspect.getsourcefile(self.__class__))
+        path = os.path.dirname(__file__)
         # read all weekly files
         files = glob.glob(os.path.join(path, 'data', 'japanese', '*.xml'))
         for file in files:

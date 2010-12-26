@@ -10,7 +10,6 @@ from seishub.core.processor import POST, PUT, DELETE, Processor
 from seishub.core.processor.resources import RESTFolder
 from seishub.core.test import SeisHubEnvironmentTestCase
 import glob
-import inspect
 import os
 import unittest
 
@@ -70,7 +69,7 @@ class RestPUTTests(SeisHubEnvironmentTestCase):
         @see: L{http://www.w3.org/XML/Test/}.
         """
         proc = Processor(self.env)
-        path = os.path.dirname(inspect.getsourcefile(self.__class__))
+        path = os.path.dirname(__file__)
         # read all files
         files = glob.glob(os.path.join(path, 'data', 'japanese', '*.xml'))
         for file in files:

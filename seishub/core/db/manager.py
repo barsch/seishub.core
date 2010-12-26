@@ -126,7 +126,7 @@ class DatabaseManager(object):
         """
         sql = 'DROP VIEW "%s"' % name
         if self.engine.name.startswith('postgres'):
-            sql += ' CASCADE';
+            sql += ' CASCADE'
         try:
             self.engine.execute(sql)
         except Exception:

@@ -19,7 +19,6 @@ from seishub.core.util.loader import ComponentLoader
 from seishub.core.xmldb.xmlcatalog import XmlCatalog
 from twisted.application import service
 from twisted.internet import defer
-import inspect
 import os
 import sys
 import time
@@ -122,7 +121,6 @@ class Environment(ComponentManager):
         os.mkdir(os.path.join(path, 'data'))
         os.mkdir(os.path.join(path, 'db'))
         os.mkdir(os.path.join(path, 'logs'))
-        os.mkdir(os.path.join(path, 'plugins'))
         # create maintenance scripts
         fh = open(os.path.join(path, 'bin', 'debug.bat'), 'wt')
         fh.write(WIN_DEBUG % (sys.executable, path))
@@ -141,9 +139,7 @@ class Environment(ComponentManager):
         """
         Returns the absolute root path to the SeisHub module directory.
         """
-        import seishub.core
-        src_path = inspect.getsourcefile(seishub.core)
-        return os.path.dirname(os.path.dirname(os.path.dirname(src_path)))
+        return os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 
     def getInstancePath(self):
         """

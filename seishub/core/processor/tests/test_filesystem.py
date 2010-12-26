@@ -10,7 +10,6 @@ from seishub.core.test import SeisHubEnvironmentTestCase
 from twisted.web import http
 import os
 import unittest
-import inspect
 
 
 SPECIAL = [
@@ -27,7 +26,7 @@ class FileSystemTests(SeisHubEnvironmentTestCase):
     A test suite for file system resources.
     """
     def setUp(self):
-        path = os.path.dirname(inspect.getsourcefile(self.__class__))
+        path = os.path.dirname(__file__)
         fs_path = os.path.join(path, 'data', 'filesystem')
         self.env.tree = FileSystemResource(fs_path)
 

@@ -5,7 +5,6 @@ from seishub.core.test import SeisHubEnvironmentTestCase
 from seishub.core.xmldb.index import XmlIndex, DATETIME_INDEX, FLOAT_INDEX
 from seishub.core.xmldb.resource import Resource, newXMLDocument
 from seishub.core.xmldb.xpath import XPathQuery
-import inspect
 import os
 import unittest
 
@@ -141,7 +140,7 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         self.env.catalog.reindexIndex(self.idx4)
         self.env.catalog.reindexIndex(self.idx5)
         # add sort order test resources
-        path = os.path.dirname(inspect.getsourcefile(self.__class__))
+        path = os.path.dirname(__file__)
         test_path = os.path.join(path, 'data')
         for f in so_tests:
             fh = open(test_path + os.sep + f, 'r')

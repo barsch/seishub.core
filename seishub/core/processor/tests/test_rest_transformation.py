@@ -10,7 +10,6 @@ from seishub.core.packages.installer import registerStylesheet
 from seishub.core.processor import POST, PUT, DELETE, GET, Processor
 from seishub.core.processor.resources import RESTFolder
 from seishub.core.test import SeisHubEnvironmentTestCase
-import inspect
 import os
 import unittest
 
@@ -146,7 +145,7 @@ class RestTransformationTests(SeisHubEnvironmentTestCase):
         self.env.enableComponent(APackage)
         self.env.enableComponent(AResourceType)
         self.env.tree = RESTFolder()
-        self.path = os.path.dirname(inspect.getsourcefile(self.__class__))
+        self.path = os.path.dirname(__file__)
 
     def tearDown(self):
         # delete all package style sheets

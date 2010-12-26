@@ -3,7 +3,6 @@
 import sys
 import os
 from seishub.core.daemon import createApplication
-from seishub.core.env import Environment
 
 
 def main():
@@ -19,5 +18,3 @@ def main():
                 print('Error: path %s already exists!' % path)
             else:
                 createApplication(path, create=True)
-
-
