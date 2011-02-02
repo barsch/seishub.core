@@ -127,17 +127,21 @@ class Environment(ComponentManager):
         fh.write(WIN_DEBUG % (sys.executable, path))
         fh.close()
         fh = open(os.path.join(path, 'bin', 'debug.sh'), 'wt')
-        os.fchmod(fh, 0644)
         fh.write(BASH_DEBUG % (sys.executable, path))
         fh.close()
         fh = open(os.path.join(path, 'bin', 'start.sh'), 'wt')
-        os.fchmod(fh, 0644)
         fh.write(BASH_START % (sys.executable, path))
         fh.close()
         fh = open(os.path.join(path, 'bin', 'stop.sh'), 'wt')
-        os.fchmod(fh, 0644)
         fh.write(BASH_STOP % (path))
         fh.close()
+        # set execution rights for linux
+        try:
+            os.chmod(os.path.join(path, 'bin', 'debug.sh'), 0744)
+            os.chmod(os.path.join(path, 'bin', 'start.sh'), 0744)
+            os.chmod(os.path.join(path, 'bin', 'stop.sh'), 0744)
+        except:
+            pass
 
     def getPackagePath(self):
         """
