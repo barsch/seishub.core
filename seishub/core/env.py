@@ -22,6 +22,7 @@ from twisted.internet import defer
 import os
 import sys
 import time
+import stat
 # this line must be the last import - don't move!
 from seishub.core.registry.registry import ComponentRegistry
 
@@ -126,12 +127,15 @@ class Environment(ComponentManager):
         fh.write(WIN_DEBUG % (sys.executable, path))
         fh.close()
         fh = open(os.path.join(path, 'bin', 'debug.sh'), 'wt')
+        os.fchmod(fh, stat.S_IXUSR)
         fh.write(BASH_DEBUG % (sys.executable, path))
         fh.close()
         fh = open(os.path.join(path, 'bin', 'start.sh'), 'wt')
+        os.fchmod(fh, stat.S_IXUSR)
         fh.write(BASH_START % (sys.executable, path))
         fh.close()
         fh = open(os.path.join(path, 'bin', 'stop.sh'), 'wt')
+        os.fchmod(fh, stat.S_IXUSR)
         fh.write(BASH_STOP % (path))
         fh.close()
 

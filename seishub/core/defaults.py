@@ -68,14 +68,14 @@ INSTANCE=%s
 BASH_START = """#!/bin/bash
 PYTHON=%s
 INSTANCE=%s
-PID="$INSTANCE\seishub.pid"
+PID="$INSTANCE/seishub.pid"
 
 "$PYTHON" -m seishub.core.daemon -d "$INSTANCE" --pidfile="$PID"
 """
 
 BASH_STOP = """#!/bin/bash
 INSTANCE=%s
-PID="$INSTANCE\seishub.pid"
+PID="$INSTANCE/seishub.pid"
 
 kill `cat $PID`
 """
