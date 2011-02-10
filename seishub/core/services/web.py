@@ -109,7 +109,6 @@ class WebRequest(Processor, http.Request):
         # should be replaced with a much finer mechanism
         # URL, role and group based
         if not IAdminResource.providedBy(result) and \
-           self.getUser() == 'anonymous' and \
            self.env.auth.getUser('anonymous').permissions == 755:
             # skip for non administrative resources and allow anonymous access
             # if permission are set
