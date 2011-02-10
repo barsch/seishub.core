@@ -125,7 +125,11 @@ class RESTResource(Resource):
         U{http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.4.1}
         for all possible error codes.
         """
-        self._checkPermissions(request, 755)
+        # global anonymous access allowed
+        if self.env.auth.getUser('anonymous').permissions == 755:
+            return
+        else:
+            self._checkPermissions(request, 755)
         data = self.res.document.data
         # ensure we return a UTF-8 encoded string not an Unicode object 
         if isinstance(data, unicode):
