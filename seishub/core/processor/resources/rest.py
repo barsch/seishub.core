@@ -126,9 +126,7 @@ class RESTResource(Resource):
         for all possible error codes.
         """
         # global anonymous access allowed
-        if request.env.auth.getUser('anonymous').permissions == 755:
-            return
-        else:
+        if request.env.auth.getUser('anonymous').permissions != 755:
             self._checkPermissions(request, 755)
         data = self.res.document.data
         # ensure we return a UTF-8 encoded string not an Unicode object 
