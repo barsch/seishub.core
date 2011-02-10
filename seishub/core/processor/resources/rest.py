@@ -126,7 +126,7 @@ class RESTResource(Resource):
         for all possible error codes.
         """
         # global anonymous access allowed
-        if self.env.auth.getUser('anonymous').permissions == 755:
+        if request.env.auth.getUser('anonymous').permissions == 755:
             return
         else:
             self._checkPermissions(request, 755)
