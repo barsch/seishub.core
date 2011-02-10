@@ -11,11 +11,11 @@ from seishub.core.exceptions import InternalServerError, ForbiddenError, \
     SeisHubError
 from seishub.core.processor import Processor, HEAD, getChildForRequest
 from seishub.core.processor.interfaces import IFileSystemResource, IResource, \
-    IStatical, IRESTResource
+    IStatical, IRESTResource, IAdminResource
 from seishub.core.util.path import addBase
 from seishub.core.util.text import isInteger
 from twisted.application import service
-from twisted.application.internet import SSLServer, TCPServer  #@UnresolvedImport
+from twisted.application.internet import SSLServer, TCPServer #@UnresolvedImport
 from twisted.internet import threads, defer, ssl
 from twisted.python.failure import Failure
 from twisted.web import http, server, static
@@ -56,6 +56,8 @@ class WebRequest(Processor, http.Request):
         """
         XXX: this will change soon!
         """
+        if self.getUser() == 'anonymous':
+            return False
         try:
             authenticated = self.env.auth.checkPassword(self.getUser(),
                                                         self.getPassword())
@@ -106,7 +108,13 @@ class WebRequest(Processor, http.Request):
         # XXX: all or nothing - only authenticated are allowed to access
         # should be replaced with a much finer mechanism
         # URL, role and group based
-        if not result.public and not self.isAuthenticatedUser():
+        if not IAdminResource.providedBy(result) and \
+           self.getUser() == 'anonymous' and \
+           self.env.auth.getUser('anonymous').permissions == 755:
+            # skip for non administrative resources and allow anonymous access
+            # if permission are set
+            pass
+        elif not result.public and not self.isAuthenticatedUser():
             self.authenticate()
             return
         # check result and either render direct or in thread

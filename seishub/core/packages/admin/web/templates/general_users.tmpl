@@ -69,6 +69,7 @@
     <label>User ID</label><br />
     <input type="text" size="80" name="id" value="$id" readonly="readonly" />
   </div>
+#if $id!='anonymous'
   <div class="field">
     <label>User UID</label><br />
     <input type="text" size="80" name="uid" value="$uid" />
@@ -93,14 +94,21 @@
     <label>Institution</label><br />
     <input type="text" size="80" name="institution" value="$institution" />
   </div>
+#end if
+#if $id=='anonymous'
+  <input type="hidden" name="uid" value="$uid" />
+  <input type="hidden" name="name" value="$name" />
+#end if
   <div class="field">
     <label>Permissions</label><br />
     <select name="permissions">
+#if $id!='anonymous'
       <option value="777" 
         #if $permissions==777
         selected="selected"
         #end if
         >RW</option>
+#end if        
       <option value="755" 
         #if $permissions==755
         selected="selected"
