@@ -420,6 +420,8 @@ class SFTPServiceProtocol:
         filename = self.webSafe(filename)
         # query the directory via SFTP processor
         proc = SFTPProcessor(self.env)
+        # set current user id
+        proc.user = self.avatar.username
         try:
             proc.run(DELETE, filename)
         except ForbiddenError, e:
