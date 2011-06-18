@@ -22,6 +22,11 @@
 <h2>Views</h2>
 <div id="views"></div>
 
+<br />
+
+<h2>Integrity Checks</h2>
+<pre id="dbcheck"></pre>
+
 
 <script type="text/javascript">
 /* <![CDATA[ */
@@ -69,6 +74,15 @@ YAHOO.util.Event.addListener(window, "load", function() {
             oDT2: viewsTable
         };
     }();
+
+    function successHandler(o){
+        var root = o.responseText;
+        var pre = document.getElementById('dbcheck');
+        pre.innerHTML = root;
+    }
+
+    var request = YAHOO.util.Connect.asyncRequest('GET',
+        "/manage/catalog/status/dbcheck", { success:successHandler });
 });
 
 /* ]]> */

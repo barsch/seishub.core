@@ -7,6 +7,11 @@ from seishub.core.core import Component, implements
 from seishub.core.db import DEFAULT_PREFIX
 from seishub.core.exceptions import SeisHubError, InvalidParameterError
 from seishub.core.packages.interfaces import IAdminPanel
+from seishub.core.registry.defaults import resourcetypes_tab, packages_tab
+from seishub.core.xmldb.defaults import index_def_tab, document_tab, \
+    resource_tab, document_meta_tab
+from seishub.core.xmldb.index import type_classes
+from sqlalchemy import sql, not_
 import os
 import pprint
 import time
@@ -205,6 +210,8 @@ class DatabaseStatusPanel(Component):
             return self._renderTables()
         elif 'views' in request.path:
             return self._renderViews()
+        elif 'dbcheck' in request.path:
+            return self._renderDBCheck()
         # default /manage/catalog/status
         return {}
 
@@ -224,7 +231,6 @@ class DatabaseStatusPanel(Component):
                 entries = 0
             # format output
             out += "%s|%s|%s\n" % (table, size, entries)
-        self.plain = True
         return out
 
     def _renderViews(self):
@@ -238,6 +244,88 @@ class DatabaseStatusPanel(Component):
             except:
                 entries = 0
             out += "%s|%s\n" % (view, entries)
-        self.plain = True
+        return out
+
+    def _renderDBCheck(self):
+        # /manage/catalog/status/dbcheck
+        out = ''
+        # check index tables
+        all_indexes = sql.select([index_def_tab.c['id']], distinct=True)
+        for index in type_classes.values():
+            clean = True
+            tab = index.db_table
+            out += 'Table %s' % tab
+            # index_id
+            query = sql.select([tab.c['index_id']],
+                               not_(tab.c['index_id'].in_(all_indexes)),
+                               distinct=True)
+            ids = self.env.db.query(query).fetchall()
+            for id in ids:
+                clean = False
+                out += '\n  * Unknown index_id %d' % (id[0])
+            # document_id
+            oncl = tab.c['document_id'] == document_tab.c['id']
+            query = sql.select([tab.c['document_id']],
+                               document_tab.c['id'] == None,
+                               [tab.outerjoin(document_tab, onclause=oncl)])
+            ids = self.env.db.query(query).fetchall()
+            for id in ids:
+                clean = False
+                out += '\n  * Unknown document_id %d' % (id[0])
+            if clean:
+                out += ' - CHECKED'
+            out += '\n'
+        # check document table
+        out += 'Table %s' % document_tab.name
+        oncl = document_tab.c['resource_id'] == resource_tab.c['id']
+        query = sql.select([document_tab.c['resource_id']],
+                           resource_tab.c['id'] == None,
+                           [document_tab.outerjoin(resource_tab,
+                                                   onclause=oncl)])
+        ids = self.env.db.query(query).fetchall()
+        for id in ids:
+            out += '\n  * Unknown resource_id %d' % (id[0])
+        else:
+            out += ' - CHECKED'
+        out += '\n'
+        # check document_meta table
+        out += 'Table %s' % document_meta_tab.name
+        oncl = document_meta_tab.c['id'] == document_tab.c['id']
+        query = sql.select([document_meta_tab.c['id']],
+                           document_tab.c['id'] == None,
+                           [document_meta_tab.outerjoin(document_tab,
+                                                        onclause=oncl)])
+        ids = self.env.db.query(query).fetchall()
+        for id in ids:
+            out += '\n  * Unknown document_id %d' % (id[0])
+        else:
+            out += ' - CHECKED'
+        out += '\n'
+        # check resource table
+        out += 'Table %s' % resource_tab.name
+        oncl = resource_tab.c['resourcetype_id'] == resourcetypes_tab.c['id']
+        query = sql.select([resource_tab.c['resourcetype_id']],
+                           resourcetypes_tab.c['id'] == None,
+                           [resource_tab.outerjoin(resourcetypes_tab,
+                                                   onclause=oncl)])
+        ids = self.env.db.query(query).fetchall()
+        for id in ids:
+            out += '\n  * Unknown resourcetype_id %d' % (id[0])
+        else:
+            out += ' - CHECKED'
+        out += '\n'
+        # check resourcetypes table
+        out += 'Table %s' % resource_tab.name
+        oncl = resourcetypes_tab.c['package_id'] == packages_tab.c['id']
+        query = sql.select([resourcetypes_tab.c['package_id']],
+                           packages_tab.c['id'] == None,
+                           [resourcetypes_tab.outerjoin(packages_tab,
+                                                        onclause=oncl)])
+        ids = self.env.db.query(query).fetchall()
+        for id in ids:
+            out += '\n  * Unknown package_id %d' % (id[0])
+        else:
+            out += ' - CHECKED'
+        out += '\n'
         return out
 
