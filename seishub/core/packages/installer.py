@@ -197,7 +197,7 @@ class PackageInstaller(object):
         env.log.info("Components have been updated.")
 
     @staticmethod
-    def cleanup(env):
+    def cleanup(env): #@UnusedVariable
         """
         Automatically remove unused packages.
         """
