@@ -81,7 +81,7 @@ class SeisHubEnvironmentTestCase(unittest.TestCase):
             for table in tables:
                 res = self.env.db.engine.execute(sql % str(table)).fetchall()
                 self.tables[table] = len(res)
-        # use transactions for SQLite
+        # enforcement foreign key constraints in SQLite
         if self.env.db.isSQLite():
             self.env.db.engine.execute('pragma foreign_keys=on')
 
@@ -111,9 +111,6 @@ class SeisHubEnvironmentTestCase(unittest.TestCase):
             tables = [t for t in tables if t.startswith(DEFAULT_PREFIX)]
             for table in tables:
                 self.env.db.engine.execute(sql % str(table))
-        # use transactions for SQLite
-        if self.env.db.isSQLite():
-            self.env.db.engine.execute('pragma foreign_keys=on')
         # manually dispose DB connection
         if DISPOSE_CONNECTION:
             self.env.db.engine.pool.dispose()
