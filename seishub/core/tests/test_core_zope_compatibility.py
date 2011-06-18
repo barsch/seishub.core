@@ -31,11 +31,11 @@ class mytest(Interface):
     pass
 
 class C(object):
-    def m1(self, a, b):
+    def m1(self, a, b): #@UnusedVariable
         "return 1"
         return 1
 
-    def m2(self, a, b):
+    def m2(self, a, b): #@UnusedVariable
         "return 2"
         return 2
 
@@ -99,19 +99,19 @@ class Foo(object):
 
     foobar = "yeah"
 
-    def aMethod(self, foo, bar, bingo):
+    def aMethod(self, foo, bar, bingo): #@UnusedVariable
         """ This is aMethod """
         return "barf!"
 
-    def anotherMethod(self, foo=6, bar="where you get sloshed", bingo=(1, 3,)):
+    def anotherMethod(self, foo=6, bar="where you get sloshed", bingo=(1, 3,)): #@UnusedVariable
         """ This is anotherMethod """
         return "barf!"
 
-    def wammy(self, zip, *argues):
+    def wammy(self, zip, *argues): #@UnusedVariable
         """ yadda yadda """
         return "barf!"
 
-    def useless(self, **keywords):
+    def useless(self, **keywords): #@UnusedVariable
         """ useless code is fun! """
         return "barf!"
 

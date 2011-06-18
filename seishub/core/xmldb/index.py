@@ -158,7 +158,7 @@ class XmlIndex(Serializable):
         self._processor_idx = cls
         return cls
 
-    def _eval(self, xml_doc, env):
+    def _eval(self, xml_doc):
         if not IXmlDocument.providedBy(xml_doc):
             raise TypeError("%s is not an IXmlDocument." % str(xml_doc))
         parsed_doc = xml_doc.getXml_doc()
@@ -182,7 +182,7 @@ class XmlIndex(Serializable):
             elements = [elements]
         else:
             type = self.type
-            elements = self._eval(xml_doc, env)
+            elements = self._eval(xml_doc)
         res = list()
         for pos, el_list in enumerate(elements):
             for el in el_list:

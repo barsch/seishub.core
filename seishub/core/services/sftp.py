@@ -77,7 +77,7 @@ class InMemoryFile:
         if flags & FXF_READ:
             self._readFile(filename, flags, attrs)
 
-    def _readFile(self, filename, flags, attrs):
+    def _readFile(self, filename, flags, attrs): #@UnusedVariable
         # read file via SFTP processor
         proc = SFTPProcessor(self.env)
         try:
@@ -201,7 +201,7 @@ class SFTPServiceProtocol:
         self.avatar = avatar
         self.env = avatar.env
 
-    def gotVersion(self, otherVersion, extData):
+    def gotVersion(self, otherVersion, extData): #@UnusedVariable
         """
         Called when the client sends their version info.
         
@@ -458,7 +458,7 @@ class SFTPServiceProtocol:
         except:
             raise
 
-    def makeDirectory(self, path, attrs):
+    def makeDirectory(self, path, attrs): #@UnusedVariable
         """
         Make a directory.
         
@@ -472,7 +472,7 @@ class SFTPServiceProtocol:
         msg = "Directories can't be added via SFTP."
         raise SFTPError(FX_OP_UNSUPPORTED, msg)
 
-    def removeDirectory(self, path):
+    def removeDirectory(self, path): #@UnusedVariable
         """
         Remove a directory (non-recursively)
         
@@ -487,11 +487,11 @@ class SFTPServiceProtocol:
         msg = "Directories can't be deleted via SFTP."
         raise SFTPError(FX_OP_UNSUPPORTED, msg)
 
-    def readLink(self, path):
+    def readLink(self, path): #@UnusedVariable
         msg = "Symbolic links are not supported yet."
         raise SFTPError(FX_OP_UNSUPPORTED, msg)
 
-    def makeLink(self, linkPath, targetPath):
+    def makeLink(self, linkPath, targetPath): #@UnusedVariable
         msg = "Symbolic can'T be created via SFTP."
         raise SFTPError(FX_OP_UNSUPPORTED, msg)
 
@@ -546,7 +546,7 @@ class SFTPServiceRealm:
     def __init__(self, env):
         self.env = env
 
-    def requestAvatar(self, avatarId, mind, *interfaces):
+    def requestAvatar(self, avatarId, mind, *interfaces): #@UnusedVariable
         if IConchUser in interfaces:
             logout = lambda: None
             return IConchUser, SFTPServiceAvatar(avatarId, self.env), logout

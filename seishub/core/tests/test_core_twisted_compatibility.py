@@ -243,7 +243,7 @@ class RegistrationTestCase(twisted_unittest.TestCase):
     Tests for adapter registration.
     """
     def _registerAdapterForClassOrInterface(self, original):
-        adapter = lambda o: None
+        adapter = lambda _o: None
         class TheInterface(Interface):
             pass
         components.registerAdapter(adapter, original, TheInterface)
@@ -273,8 +273,8 @@ class RegistrationTestCase(twisted_unittest.TestCase):
 
 
     def _duplicateAdapterForClassOrInterface(self, original):
-        firstAdapter = lambda o: False
-        secondAdapter = lambda o: True
+        firstAdapter = lambda _o: False
+        secondAdapter = lambda _o: True
         class TheInterface(Interface):
             pass
         components.registerAdapter(firstAdapter, original, TheInterface)
@@ -309,8 +309,8 @@ class RegistrationTestCase(twisted_unittest.TestCase):
 
 
     def _duplicateAdapterForClassOrInterfaceAllowed(self, original):
-        firstAdapter = lambda o: False
-        secondAdapter = lambda o: True
+        firstAdapter = lambda _o: False
+        secondAdapter = lambda _o: True
         class TheInterface(Interface):
             pass
         components.registerAdapter(firstAdapter, original, TheInterface)
@@ -356,7 +356,7 @@ class RegistrationTestCase(twisted_unittest.TestCase):
 
 
     def _multipleInterfacesForClassOrInterface(self, original):
-        adapter = lambda o: None
+        adapter = lambda _o: None
         class FirstInterface(Interface):
             pass
         class SecondInterface(Interface):
@@ -391,8 +391,8 @@ class RegistrationTestCase(twisted_unittest.TestCase):
 
 
     def _subclassAdapterRegistrationForClassOrInterface(self, original):
-        firstAdapter = lambda o: True
-        secondAdapter = lambda o: False
+        firstAdapter = lambda _o: True
+        secondAdapter = lambda _o: False
         class TheSubclass(original):
             pass
         class TheInterface(Interface):

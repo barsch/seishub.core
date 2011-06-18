@@ -98,7 +98,7 @@ class CustomJSONEncoder(json.JSONEncoder):
             return json.JSONEncoder.default(self, obj)
 
 
-def formatORMResults(request, query, count=None, build_url=False):
+def formatORMResults(request, query, build_url=False):
     """
     """
     base_url = request.env.getRestUrl()
@@ -200,7 +200,7 @@ def formatResults(request, results, count=None, limit=None, offset=0,
         # build up JSON string
         data = stats
         data['Result'] = [dict(r) for r in results]
-        data['totalResultsReturned'] = len(data['Result'])
+        data['totalResultsReturned'] = limit or len(data['Result'])
         data['totalResultsAvailable'] = count or len(data['Result'])
         # generate correct header
         request.setHeader('content-type', 'application/json; charset=UTF-8')
@@ -253,7 +253,7 @@ def formatResults(request, results, count=None, limit=None, offset=0,
                                                     result['resourcetype_id'],
                                                     result['resource_name']])
         # add attributes to root node
-        stats['totalResultsReturned'] = i
+        stats['totalResultsReturned'] = limit or i
         stats['totalResultsAvailable'] = count or i
         for key, value in stats.iteritems():
             xml.set(key, str(value))

@@ -22,7 +22,6 @@ from twisted.internet import defer
 import os
 import sys
 import time
-import stat
 # this line must be the last import - don't move!
 from seishub.core.registry.registry import ComponentRegistry
 

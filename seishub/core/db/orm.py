@@ -594,7 +594,7 @@ class Serializable(object):
 
     db_mapping = dict()
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs): #@UnusedVariable
         # TODO: remove?
         self._id = None
 

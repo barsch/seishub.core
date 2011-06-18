@@ -131,7 +131,7 @@ class ConfigPanel(Component):
     panel_ids = ('admin', 'General', 'ini', 'seishub.ini')
     has_roles = ['SEISHUB_ADMIN']
 
-    def render(self, request):
+    def render(self, request): #@UnusedVariable
         data = {}
         sections = self.config.sections()
         data['sections'] = sections
@@ -152,7 +152,7 @@ class LogsPanel(Component):
     panel_ids = ('admin', 'General', 'logs', 'Logs')
     has_roles = ['SEISHUB_ADMIN']
 
-    def render(self, request):
+    def render(self, request): #@UnusedVariable
         log_file = os.path.join(self.env.getInstancePath(), 'logs',
                                 'seishub.log')
         try:
@@ -386,7 +386,7 @@ class PluginsPanel(Component):
         self.env.update()
         return error
 
-    def _viewPlugins(self, request, error=None):
+    def _viewPlugins(self, request, error=None): #@UnusedVariable
         plugins = {}
         from seishub.core.core import ComponentMeta
         for component in ComponentMeta._components:

@@ -130,7 +130,7 @@ class BrowserPanel(Component):
     panel_ids = ('components', 'Components', 'browse-components',
                 'Component Browser')
 
-    def render(self, request):
+    def render(self, request): #@UnusedVariable
         data = {'resturl': self.env.getRestUrl()}
         return data
 

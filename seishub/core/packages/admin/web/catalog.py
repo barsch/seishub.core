@@ -200,7 +200,7 @@ class DatabaseStatusPanel(Component):
     panel_ids = ('catalog', 'Catalog', 'status', 'Status')
     has_roles = ['CATALOG_ADMIN']
 
-    def render(self, request):
+    def render(self, request): #@UnusedVariable
         db = self.env.db
         tables = []
         for table in sorted(db.engine.table_names()):

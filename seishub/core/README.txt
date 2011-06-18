@@ -25,11 +25,10 @@ Dependencies
 ------------
     * Twisted
     * Cheetah
-    * sqlalchemy
+    * sqlalchemy <= 0.6.8
     * PyOpenSSL
     * lxml
     * pycrypto
     * pyasn1
     * pyparsing
     * obspy.core
-    * pywin32 (required for running on a Windows platform)

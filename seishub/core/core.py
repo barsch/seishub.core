@@ -145,7 +145,7 @@ class Component(object):
     """
     __metaclass__ = ComponentMeta
 
-    def __new__(cls, *args, **kwargs):
+    def __new__(cls, *args, **kwargs): #@UnusedVariable
         """
         Return an existing instance of the component if it has already been
         activated, otherwise create a new instance.

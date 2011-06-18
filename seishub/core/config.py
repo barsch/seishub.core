@@ -321,7 +321,7 @@ class Option(object):
         self.registry[(self.section, self.name)] = self
         self.__doc__ = doc
 
-    def __get__(self, instance, owner):
+    def __get__(self, instance, owner): #@UnusedVariable
         if instance is None:
             return self
         config = getattr(instance, 'config', None)
