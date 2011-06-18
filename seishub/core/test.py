@@ -39,7 +39,7 @@ class SeisHubEnvironmentTestCase(unittest.TestCase):
     Don't ever overwrite the __init__ or run methods!
     """
 
-    def __init__(self, methodName='runTest', filename=None):
+    def __init__(self, methodName='runTest', filename=None): #@UnusedVariable
         """
         Initialize the test procedure.
         """
@@ -81,11 +81,15 @@ class SeisHubEnvironmentTestCase(unittest.TestCase):
             for table in tables:
                 res = self.env.db.engine.execute(sql % str(table)).fetchall()
                 self.tables[table] = len(res)
+        # use transactions for SQLite
+        if self.env.db.isSQLite():
+            self.env.db.engine.execute('pragma foreign_keys=on')
 
     def __tearDown(self):
         """
         Clean up database and remove environment objects after each test case.
         """
+        self.env.db.engine.execute('pragma foreign_keys=off')
         # check for left over data and warn
         if CHECK_DATABASE:
             sql = "SELECT * FROM %s;"
@@ -107,6 +111,9 @@ class SeisHubEnvironmentTestCase(unittest.TestCase):
             tables = [t for t in tables if t.startswith(DEFAULT_PREFIX)]
             for table in tables:
                 self.env.db.engine.execute(sql % str(table))
+        # use transactions for SQLite
+        if self.env.db.isSQLite():
+            self.env.db.engine.execute('pragma foreign_keys=on')
         # manually dispose DB connection
         if DISPOSE_CONNECTION:
             self.env.db.engine.pool.dispose()
@@ -116,43 +123,10 @@ class SeisHubEnvironmentTestCase(unittest.TestCase):
 
     def run(self, result=None):
         """
-        Shameless copy of unittest.TestCase.run() adopted for our uses.
+        Calls unittest.TestCase.run() adopted for our uses.
         """
-        if result is None: result = self.defaultTestResult()
-        result.startTest(self)
-        testMethod = getattr(self, self._testMethodName)
         self.__setUp()
-        try:
-            try:
-                self.setUp()
-            except KeyboardInterrupt:
-                raise
-            except:
-                result.addError(self, self._exc_info())
-                return
-
-            ok = False
-            try:
-                testMethod()
-                ok = True
-            except self.failureException:
-                result.addFailure(self, self._exc_info())
-            except KeyboardInterrupt:
-                raise
-            except:
-                result.addError(self, self._exc_info())
-
-            try:
-                self.tearDown()
-            except KeyboardInterrupt:
-                raise
-            except:
-                result.addError(self, self._exc_info())
-                ok = False
-            if ok:
-                result.addSuccess(self)
-        finally:
-            result.stopTest(self)
+        unittest.TestCase.run(self, result)
         self.__tearDown()
 
 
