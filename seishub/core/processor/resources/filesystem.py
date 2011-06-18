@@ -91,7 +91,7 @@ class FileSystemResource(Resource, filepath.FilePath):
                               processors=self.processors, hidden=self.hidden,
                               public=self.public)
 
-    def render_GET(self, request):
+    def render_GET(self, request): #@UnusedVariable
         """
         Returns either the content of the folder or the file object.
         """
