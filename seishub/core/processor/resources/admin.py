@@ -38,7 +38,8 @@ class AdminPanel(Resource):
         try:
             # use render() method
             data = self.panel.render(request)
-        except:
+        except Exception, e:
+            request.env.log.error('AdminPanel rendering error', e)
             # no render() method
             data = {}
         if request.finished:
