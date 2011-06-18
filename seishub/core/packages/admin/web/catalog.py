@@ -200,23 +200,44 @@ class DatabaseStatusPanel(Component):
     panel_ids = ('catalog', 'Catalog', 'status', 'Status')
     has_roles = ['CATALOG_ADMIN']
 
-    def render(self, request): #@UnusedVariable
-        db = self.env.db
-        tables = []
-        for table in sorted(db.engine.table_names()):
+    def render(self, request):
+        if 'tables' in request.path:
+            return self._renderTables()
+        elif 'views' in request.path:
+            return self._renderViews()
+        # default /manage/catalog/status
+        return {}
+
+    def _renderTables(self):
+        # /manage/catalog/status/tables
+        out = ''
+        for table in sorted(self.env.db.engine.table_names()):
             if not table.startswith(DEFAULT_PREFIX):
                 continue
-            temp = {}
-            temp['name'] = table
-            # get size
-            temp['size'] = db.getTableSize(table)
+            # get table disk space size
+            size = self.env.db.getTableSize(table)
             # count objects
             try:
                 query = "SELECT count(*) FROM %s;" % table
-                temp['entries'] = db.query(query).fetchall()[0][0]
+                entries = self.env.db.query(query).fetchall()[0][0]
             except:
-                temp['entries'] = 0
-            tables.append(temp)
-        return {
-            'tables': tables
-        }
+                entries = 0
+            # format output
+            out += "%s|%s|%s\n" % (table, size, entries)
+        self.plain = True
+        return out
+
+    def _renderViews(self):
+        # /manage/catalog/status/views
+        out = ''
+        for view in sorted(self.env.db.getViews()):
+            # count objects
+            try:
+                query = 'SELECT count(*) FROM "%s";' % view
+                entries = self.env.db.query(query).fetchall()[0][0]
+            except:
+                entries = 0
+            out += "%s|%s\n" % (view, entries)
+        self.plain = True
+        return out
+

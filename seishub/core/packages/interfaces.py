@@ -137,7 +137,8 @@ class IAdminPanel(Interface):
         Process a request for an administrative panel.
         
         This method should return a dictionary of data to be passed to the 
-        template defined above.
+        template defined above or a plain string which will be directly rendered
+        without using the template.
         """
 
 

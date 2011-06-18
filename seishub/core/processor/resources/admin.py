@@ -43,6 +43,10 @@ class AdminPanel(Resource):
             data = {}
         if request.finished:
             return ""
+        # stop further processing if render returns a plain string
+        if not isinstance(data, dict):
+            request.setHeader('content-type', 'text/plain; charset=UTF-8')
+            return str(data)
         # main page
         file = os.path.join(self.root.template_dir, 'index.tmpl')
         page = Template(file=file)

@@ -1,17 +1,75 @@
+#def CSS
+<link rel="stylesheet" type="text/css" href="/yui2/build/fonts/fonts-min.css" />
+<link rel="stylesheet" type="text/css" href="/yui2/build/datatable/assets/skins/sam/datatable.css" />
+#end def
+#def JAVASCRIPT
+<script type="text/javascript" src="/yui2/build/yahoo-dom-event/yahoo-dom-event.js"></script>
+<script type="text/javascript" src="/yui2/build/connection/connection-min.js"></script>
+<script type="text/javascript" src="/yui2/build/element/element-min.js"></script>
+<script type="text/javascript" src="/yui2/build/datasource/datasource-min.js"></script>
+<script type="text/javascript" src="/yui2/build/datatable/datatable-min.js"></script>
+<script type="text/javascript" src="/yui2/build/event-delegate/event-delegate-min.js"></script>
+#end def
+
+
 <h1>Status</h1>
 
 <h2>Tables</h2>
-<table class="list">
-  <tr>
-    <th>Name</th>
-    <th>Entries</th>
-    <th>Size</th>
-  </tr> 
-#for $item in $tables
-  <tr>
-    <td>$item.name</td>
-    <td>$item.entries</td>
-    <td>$item.size</td>
-  </tr>
-#end for
-</table>
+<div id="tables"></div>
+
+<br />
+
+<h2>Views</h2>
+<div id="views"></div>
+
+
+<script type="text/javascript">
+/* <![CDATA[ */
+
+YAHOO.util.Event.addListener(window, "load", function() {
+    YAHOO.example.XHR_Text = function() {
+
+        var tablesColumnDefs = [
+            {key:"Name", sortable:true},
+            {key:"Entries"},
+            {key:"Size"},
+        ];
+
+        var tablesSource = new YAHOO.util.DataSource("/manage/catalog/status/tables");
+        tablesSource.responseType = YAHOO.util.DataSource.TYPE_TEXT;
+        tablesSource.responseSchema = {
+            recordDelim: "\n",
+            fieldDelim: "|",
+            fields: ["Name","Entries","Size"]
+        };
+
+        var tablesTable = new YAHOO.widget.DataTable("tables",
+            tablesColumnDefs, tablesSource);
+
+        var viewsColumnDefs = [
+            {key:"Name", sortable:true},
+            {key:"Entries"},
+        ];
+
+        var viewsSource = new YAHOO.util.DataSource("/manage/catalog/status/views");
+        viewsSource.responseType = YAHOO.util.DataSource.TYPE_TEXT;
+        viewsSource.responseSchema = {
+            recordDelim: "\n",
+            fieldDelim: "|",
+            fields: ["Name","Entries"]
+        };
+
+        var viewsTable = new YAHOO.widget.DataTable("views",
+            viewsColumnDefs, viewsSource);
+                
+        return {
+            oDS: tablesSource,
+            oDT: tablesTable,
+            oDS2: viewsSource,
+            oDT2: viewsTable
+        };
+    }();
+});
+
+/* ]]> */
+</script>
