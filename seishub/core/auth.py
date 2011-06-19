@@ -102,12 +102,16 @@ class AuthenticationManager(object):
                               "soon as possible.")
             self.addUser(id='admin', name='Administrator', password='admin',
                          uid=100, permissions=777, checkPassword=False)
-            self.addUser(id='anonymous', name='Anonymous', password='',
-                         uid=101, permissions=755, checkPassword=False)
         elif self.checkPassword('admin', 'admin'):
             self.env.log.warn("The administrative account is accessible via "
                               "the standard password! Please change this as "
                               "soon as possible!")
+        # check for anonymous user and create it if it not exists
+        try:
+            self.getUser('anonymous')
+        except:
+            self.addUser(id='anonymous', name='Anonymous', password='',
+                         uid=101, permissions=755, checkPassword=False)
 
     def _validatePassword(self, password):
         """
