@@ -273,8 +273,8 @@ class DatabaseStatusPanel(Component):
             for id in ids:
                 clean = False
                 out += '\n  * Unknown index_id %d' % (id[0])
-                if len(ids) == 20:
-                    out += '\n    (more)'
+            if len(ids) == 20:
+                out += '\n    (more)'
             # document_id
             oncl = tab.c['document_id'] == document_tab.c['id']
             query = sql.select([tab.c['document_id']],
@@ -285,10 +285,10 @@ class DatabaseStatusPanel(Component):
             for id in ids:
                 clean = False
                 out += '\n  * Unknown document_id %d' % (id[0])
-                if len(ids) == 20:
-                    out += '\n    (more)'
             if clean:
                 out += ' - CHECKED'
+            if len(ids) == 20:
+                out += '\n    (more)'
             out += '\n'
         # check document table
         out += 'Table %s' % document_tab.name
@@ -301,10 +301,10 @@ class DatabaseStatusPanel(Component):
         ids = self.env.db.query(query).fetchall()
         for id in ids:
             out += '\n  * Unknown resource_id %d' % (id[0])
-            if len(ids) == 20:
-                out += '\n    (more)'
         else:
             out += ' - CHECKED'
+        if len(ids) == 20:
+            out += '\n    (more)'
         out += '\n'
         # check document_meta table
         out += 'Table %s' % document_meta_tab.name
@@ -317,10 +317,10 @@ class DatabaseStatusPanel(Component):
         ids = self.env.db.query(query).fetchall()
         for id in ids:
             out += '\n  * Unknown document_id %d' % (id[0])
-            if len(ids) == 20:
-                out += '\n    (more)'
         else:
             out += ' - CHECKED'
+        if len(ids) == 20:
+            out += '\n    (more)'
         out += '\n'
         # check resource table
         out += 'Table %s' % resource_tab.name
@@ -333,10 +333,10 @@ class DatabaseStatusPanel(Component):
         ids = self.env.db.query(query).fetchall()
         for id in ids:
             out += '\n  * Unknown resourcetype_id %d' % (id[0])
-            if len(ids) == 20:
-                out += '\n    (more)'
         else:
             out += ' - CHECKED'
+        if len(ids) == 20:
+            out += '\n    (more)'
         out += '\n'
         # check resourcetypes table
         out += 'Table %s' % resource_tab.name
@@ -349,10 +349,10 @@ class DatabaseStatusPanel(Component):
         ids = self.env.db.query(query).fetchall()
         for id in ids:
             out += '\n  * Unknown package_id %d' % (id[0])
-            if len(ids) == 20:
-                out += '\n    (more)'
         else:
             out += ' - CHECKED'
+        if len(ids) == 20:
+            out += '\n    (more)'
         out += '\n'
         return out
 
