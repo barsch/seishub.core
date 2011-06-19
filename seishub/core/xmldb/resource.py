@@ -92,7 +92,7 @@ class XmlDocument(Serializable):
                                   lazy=False)
                   }
 
-    def __init__(self, data=None, revision=None, uid=None):
+    def __init__(self, data=None, revision=None, uid=None): #@UnusedVariable
         self._xml_doc = None
         self.meta = DocumentMeta(uid=uid)
         self.data = data

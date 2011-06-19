@@ -575,7 +575,7 @@ class SQLViewRegistry(object):
         # unregister
         self._view_objs.pop(cls.view_id)
 
-    def get(self, url=None):
+    def get(self, url=None): #@UnusedVariable
         """
         Returns a dictionary of activated SQL view classes.
         """

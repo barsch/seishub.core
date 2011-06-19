@@ -19,8 +19,8 @@
 
 <br />
 
-<h2>Views</h2>
-<div id="views"></div>
+<h2>Resources</h2>
+<div id="resources"></div>
 
 <br />
 
@@ -37,7 +37,7 @@ YAHOO.util.Event.addListener(window, "load", function() {
         var tablesColumnDefs = [
             {key:"Name", sortable:true},
             {key:"Entries"},
-            {key:"Size"},
+            {key:"Disk Size"},
         ];
 
         var tablesSource = new YAHOO.util.DataSource("/manage/catalog/status/tables");
@@ -45,33 +45,35 @@ YAHOO.util.Event.addListener(window, "load", function() {
         tablesSource.responseSchema = {
             recordDelim: "\n",
             fieldDelim: "|",
-            fields: ["Name","Entries","Size"]
+            fields: ["Name","Entries","Disk Size"]
         };
 
         var tablesTable = new YAHOO.widget.DataTable("tables",
             tablesColumnDefs, tablesSource);
 
-        var viewsColumnDefs = [
-            {key:"Name", sortable:true},
-            {key:"Entries"},
+        var resourcesColumnDefs = [
+            {key:"Package", sortable:true},
+            {key:"Resourcetype", sortable:true},
+            {key:"XML Resources"},
+            {key:"XML Documents"},
         ];
 
-        var viewsSource = new YAHOO.util.DataSource("/manage/catalog/status/views");
-        viewsSource.responseType = YAHOO.util.DataSource.TYPE_TEXT;
-        viewsSource.responseSchema = {
+        var resourcesSource = new YAHOO.util.DataSource("/manage/catalog/status/resources");
+        resourcesSource.responseType = YAHOO.util.DataSource.TYPE_TEXT;
+        resourcesSource.responseSchema = {
             recordDelim: "\n",
             fieldDelim: "|",
-            fields: ["Name","Entries"]
+            fields: ["Package","Resourcetype","XML Resources","XML Documents"]
         };
 
-        var viewsTable = new YAHOO.widget.DataTable("views",
-            viewsColumnDefs, viewsSource);
+        var resourcesTable = new YAHOO.widget.DataTable("resources",
+            resourcesColumnDefs, resourcesSource);
                 
         return {
             oDS: tablesSource,
             oDT: tablesTable,
-            oDS2: viewsSource,
-            oDT2: viewsTable
+            oDS2: resourcesSource,
+            oDT2: resourcesTable
         };
     }();
 

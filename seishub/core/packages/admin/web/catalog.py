@@ -11,7 +11,7 @@ from seishub.core.registry.defaults import resourcetypes_tab, packages_tab
 from seishub.core.xmldb.defaults import index_def_tab, document_tab, \
     resource_tab, document_meta_tab
 from seishub.core.xmldb.index import type_classes
-from sqlalchemy import sql, not_
+from sqlalchemy import sql, not_, func, and_
 import os
 import pprint
 import time
@@ -208,8 +208,8 @@ class DatabaseStatusPanel(Component):
     def render(self, request):
         if 'tables' in request.path:
             return self._renderTables()
-        elif 'views' in request.path:
-            return self._renderViews()
+        elif 'resources' in request.path:
+            return self._renderResources()
         elif 'dbcheck' in request.path:
             return self._renderDBCheck()
         # default /manage/catalog/status
@@ -230,20 +230,30 @@ class DatabaseStatusPanel(Component):
             except:
                 entries = 0
             # format output
-            out += "%s|%s|%s\n" % (table, size, entries)
+            out += "%s|%s|%s\n" % (table, entries, size)
         return out
 
-    def _renderViews(self):
-        # /manage/catalog/status/views
+    def _renderResources(self):
+        # /manage/catalog/status/resources
         out = ''
-        for view in sorted(self.env.db.getViews()):
-            # count objects
-            try:
-                query = 'SELECT count(*) FROM "%s";' % view
-                entries = self.env.db.query(query).fetchall()[0][0]
-            except:
-                entries = 0
-            out += "%s|%s\n" % (view, entries)
+        resourcetypes = self.env.registry.db_getResourceTypes()
+        for resourcetype in resourcetypes:
+            # resources
+            query = sql.select([func.count(resource_tab.c['id'])])
+            query = query.where(
+                resource_tab.c['resourcetype_id'] == resourcetype._id
+            )
+            resources = self.env.db.query(query).fetchone()[0]
+            # documents
+            query = sql.select([func.count(document_tab.c['id'])])
+            query = query.where(
+                and_(document_tab.c['resource_id'] == resource_tab.c['id'],
+                     resource_tab.c['resourcetype_id'] == resourcetype._id)
+            )
+            documents = self.env.db.query(query).fetchone()[0]
+            out += "%s|%s|%d|%d\n" % (resourcetype.package.package_id,
+                                      resourcetype.resourcetype_id,
+                                      resources, documents)
         return out
 
     def _renderDBCheck(self):
@@ -258,20 +268,25 @@ class DatabaseStatusPanel(Component):
             # index_id
             query = sql.select([tab.c['index_id']],
                                not_(tab.c['index_id'].in_(all_indexes)),
-                               distinct=True)
+                               distinct=True, limit=20)
             ids = self.env.db.query(query).fetchall()
             for id in ids:
                 clean = False
                 out += '\n  * Unknown index_id %d' % (id[0])
+                if len(ids) == 20:
+                    out += '\n    (more)'
             # document_id
             oncl = tab.c['document_id'] == document_tab.c['id']
             query = sql.select([tab.c['document_id']],
                                document_tab.c['id'] == None,
-                               [tab.outerjoin(document_tab, onclause=oncl)])
+                               [tab.outerjoin(document_tab, onclause=oncl)],
+                               limit=20)
             ids = self.env.db.query(query).fetchall()
             for id in ids:
                 clean = False
                 out += '\n  * Unknown document_id %d' % (id[0])
+                if len(ids) == 20:
+                    out += '\n    (more)'
             if clean:
                 out += ' - CHECKED'
             out += '\n'
@@ -281,10 +296,13 @@ class DatabaseStatusPanel(Component):
         query = sql.select([document_tab.c['resource_id']],
                            resource_tab.c['id'] == None,
                            [document_tab.outerjoin(resource_tab,
-                                                   onclause=oncl)])
+                                                   onclause=oncl)],
+                           limit=20)
         ids = self.env.db.query(query).fetchall()
         for id in ids:
             out += '\n  * Unknown resource_id %d' % (id[0])
+            if len(ids) == 20:
+                out += '\n    (more)'
         else:
             out += ' - CHECKED'
         out += '\n'
@@ -294,10 +312,13 @@ class DatabaseStatusPanel(Component):
         query = sql.select([document_meta_tab.c['id']],
                            document_tab.c['id'] == None,
                            [document_meta_tab.outerjoin(document_tab,
-                                                        onclause=oncl)])
+                                                        onclause=oncl)],
+                           limit=20)
         ids = self.env.db.query(query).fetchall()
         for id in ids:
             out += '\n  * Unknown document_id %d' % (id[0])
+            if len(ids) == 20:
+                out += '\n    (more)'
         else:
             out += ' - CHECKED'
         out += '\n'
@@ -307,10 +328,13 @@ class DatabaseStatusPanel(Component):
         query = sql.select([resource_tab.c['resourcetype_id']],
                            resourcetypes_tab.c['id'] == None,
                            [resource_tab.outerjoin(resourcetypes_tab,
-                                                   onclause=oncl)])
+                                                   onclause=oncl)],
+                           limit=20)
         ids = self.env.db.query(query).fetchall()
         for id in ids:
             out += '\n  * Unknown resourcetype_id %d' % (id[0])
+            if len(ids) == 20:
+                out += '\n    (more)'
         else:
             out += ' - CHECKED'
         out += '\n'
@@ -320,10 +344,13 @@ class DatabaseStatusPanel(Component):
         query = sql.select([resourcetypes_tab.c['package_id']],
                            packages_tab.c['id'] == None,
                            [resourcetypes_tab.outerjoin(packages_tab,
-                                                        onclause=oncl)])
+                                                        onclause=oncl)],
+                           limit=20)
         ids = self.env.db.query(query).fetchall()
         for id in ids:
             out += '\n  * Unknown package_id %d' % (id[0])
+            if len(ids) == 20:
+                out += '\n    (more)'
         else:
             out += ' - CHECKED'
         out += '\n'
