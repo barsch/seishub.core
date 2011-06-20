@@ -6,7 +6,7 @@ Test suite for DB utilities.
 from seishub.core.db import DEFAULT_PREFIX, util
 from seishub.core.db.manager import meta
 from seishub.core.test import SeisHubEnvironmentTestCase
-from sqlalchemy import sql, Table, Column, Integer, String, ForeignKey, and_, \
+from sqlalchemy import sql, Table, Column, Integer, Text, ForeignKey, and_, \
     or_
 import unittest
 
@@ -15,14 +15,14 @@ test_meta = meta
 
 users = Table(DEFAULT_PREFIX + 'users', test_meta,
     Column('id', Integer, primary_key=True),
-    Column('name', String),
-    Column('fullname', String),
+    Column('name', Text),
+    Column('fullname', Text),
 )
 
 addresses = Table(DEFAULT_PREFIX + 'addresses', test_meta,
     Column('id', Integer, primary_key=True),
     Column('user_id', None, ForeignKey(DEFAULT_PREFIX + 'users.id')),
-    Column('email_address', String, nullable=False)
+    Column('email_address', Text, nullable=False)
 )
 
 
@@ -105,9 +105,9 @@ class DBUtilTest(SeisHubEnvironmentTestCase):
     def test_compileStatementWithStringBindParameter(self):
         sql_auto = sql.select([users, addresses],
             users.c.name.like(
-                sql.bindparam('name', type_=String) + sql.text("'%'")) |
+                sql.bindparam('name', type_=Text) + sql.text("'%'")) |
             addresses.c.email_address.like(
-                sql.bindparam('name', type_=String) + sql.text("'@%'")),
+                sql.bindparam('name', type_=Text) + sql.text("'@%'")),
             from_obj=[users.outerjoin(addresses)]
         )
         # check result

@@ -117,14 +117,16 @@ class DatabaseManager(object):
             self.dropView(name)
         except NotFoundError:
             pass
-        sql = 'CREATE VIEW "%s" AS %s' % (name, sql)
+        name = self.engine.dialect.identifier_preparer.quote_identifier(name)
+        sql = "CREATE VIEW %s AS %s" % (name, sql)
         self.engine.execute(sql)
 
     def dropView(self, name):
         """
         Drop a SQL view by its name.
         """
-        sql = 'DROP VIEW "%s"' % name
+        name = self.engine.dialect.identifier_preparer.quote_identifier(name)
+        sql = "DROP VIEW %s" % name
         if self.engine.name.startswith('postgres'):
             sql += ' CASCADE'
         try:

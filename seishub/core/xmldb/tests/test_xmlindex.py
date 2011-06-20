@@ -25,6 +25,7 @@ RAW_XML1 = u"""
     </XY>
     <creation_date>%s</creation_date>
     <bool>%s</bool>
+    <empty />
 </station>
 """
 
@@ -73,8 +74,10 @@ class XmlIndexTest(SeisHubEnvironmentTestCase):
         si = XmlIndex(self.rt1, xpath="/station/station_code")
         # index with multiple nodes key result:
         mi = XmlIndex(self.rt1, xpath="/station/XY/paramXY")
-        # index which does not fit on test resource
-        ni = XmlIndex(self.rt1, xpath="/station/network")
+        # index which is empty on test resource
+        ei = XmlIndex(self.rt1, xpath="/station/empty")
+#        # index which does not exists on test resource
+#        ni = XmlIndex(self.rt1, xpath="/station/XXX")
 
         test_doc = newXMLDocument(RAW_XML1)
 
@@ -104,10 +107,11 @@ class XmlIndexTest(SeisHubEnvironmentTestCase):
         self.assertEquals(res[2].document, test_doc)
         self.assertEquals(res[2].key, 'blah')
 
-        res = ni.eval(test_doc, self.env)
-        self.assertEquals(res[0].index, ni)
-        self.assertEquals(res[0].document, test_doc)
-        self.assertFalse(res[0].key, None)
+        res = ei.eval(test_doc, self.env)
+        self.assertEquals(len(res), 1)
+
+#        res = ni.eval(test_doc, self.env)
+#        self.assertEquals(len(res), 0)
 
     def testTextIndex(self):
         test_doc = newXMLDocument(RAW_XML1)
@@ -116,6 +120,14 @@ class XmlIndexTest(SeisHubEnvironmentTestCase):
         self.assertEquals(type(res), index.TextIndexElement)
         self.assertEquals(type(res.key), unicode)
         self.assertEquals(res.key, '12.51200')
+        # index which is empty on test resource
+        idx = XmlIndex(self.rt1, "/station/empty", index.TEXT_INDEX)
+        res = idx.eval(test_doc, self.env)
+        self.assertEquals(len(res), 1)
+        # index which does not exists
+#        idx = XmlIndex(self.rt1, "/station/XXX", index.TEXT_INDEX)
+#        res = idx.eval(test_doc, self.env)
+#        self.assertEquals(len(res), 0)
 
     def testNumericIndex(self):
         test_doc = newXMLDocument(RAW_XML1)

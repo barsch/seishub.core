@@ -47,7 +47,7 @@ class TestIndex(Component):
     type = index.FLOAT_INDEX
     label = 'testindex'
 
-    def eval(self, document):
+    def eval(self, document): #@UnusedVariable
         return [1, 2, 3]
 
 
@@ -57,8 +57,11 @@ class ProcessorIndexTest(SeisHubEnvironmentTestCase):
         self.env.enableComponent(ProcessorIndexTestResourcetype)
 
     def tearDown(self):
-        self.env.disableComponent(ProcessorIndexTestPackage)
         self.env.disableComponent(ProcessorIndexTestResourcetype)
+        self.env.disableComponent(ProcessorIndexTestPackage)
+        self.env.registry.db_deleteResourceType('processorindextest',
+                                                'testtype')
+        self.env.registry.db_deletePackage('processorindextest')
 
     def test_registerProcessorIndex(self):
         self.env.enableComponent(TestIndex)
@@ -82,6 +85,9 @@ class ProcessorIndexTest(SeisHubEnvironmentTestCase):
         self.assertEqual(res[0].key, 1)
         self.assertEqual(res[1].key, 2)
         self.assertEqual(res[2].key, 3)
+        self.env.disableComponent(TestIndex)
+        # cleanup
+        self.env.catalog.deleteIndex(idx)
 
 
 def suite():

@@ -80,7 +80,7 @@ class _IndexView(object):
         # joins over resource type
         oncl = sql.and_(
             resourcetypes_tab.c['id'] == resource_tab.c['resourcetype_id'],
-            resourcetypes_tab.c['id'] == xmlindex.resourcetype._id,
+            resourcetypes_tab.c['id'] == int(xmlindex.resourcetype._id),
         )
         joins = joins.join(resourcetypes_tab, onclause=oncl)
         return query, joins
@@ -369,6 +369,9 @@ class _QueryProcessor(object):
         # order by
         if order_by:
             query, joins = self._process_order_by(order_by, query, joins)
+        else:
+            # default order by document id
+            query = query.order_by(document_tab.c['id'])
         query = query.select_from(joins)
         # limit and offset
         if limit:
@@ -479,11 +482,10 @@ class XmlIndexCatalog(DbStorage, _QueryProcessor, _IndexView):
         """
         if not IResource.providedBy(resource):
             raise TypeError("%s is not an IResource." % str(resource))
-        package_id = resource.package.package_id
-        resourcetype_id = resource.resourcetype.resourcetype_id
         if not xmlindex_list:
-            xmlindex_list = self.getIndexes(package_id=package_id,
-                                            resourcetype_id=resourcetype_id)
+            xmlindex_list = self.getIndexes(
+                package_id=resource.package.package_id,
+                resourcetype_id=resource.resourcetype.resourcetype_id)
         elements = []
         for xmlindex in xmlindex_list:
             temp = xmlindex.eval(resource.document, self.env)

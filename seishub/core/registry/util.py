@@ -7,7 +7,7 @@ class RegistryListProxy(object):
     def __init__(self, registry):
         self.registry = registry
 
-    def __get__(self, obj, objtype):
+    def __get__(self, obj, objtype): #@UnusedVariable
         registry = obj.__getattribute__(self.registry)
         list.__init__(registry, registry.get())
         return registry

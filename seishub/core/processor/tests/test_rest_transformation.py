@@ -148,9 +148,10 @@ class RestTransformationTests(SeisHubEnvironmentTestCase):
         self.path = os.path.dirname(__file__)
 
     def tearDown(self):
-        # delete all package style sheets
-        for doc in self.env.registry.stylesheets.get('transformation-test'):
-            self.env.registry.stylesheets.delete(document_id=doc.document_id)
+        # delete style sheets
+        for key in ['xml2html', 'xml2svg', 'html2txt', 'html2xml']:
+            self.env.registry.stylesheets.delete('transformation-test', 'rt',
+                                                 key)
         # delete all resource types
         for rt in self.env.registry.getResourceTypeIds('transformation-test'):
             self.env.registry.db_deleteResourceType('transformation-test', rt)

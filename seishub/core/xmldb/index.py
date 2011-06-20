@@ -186,7 +186,7 @@ class XmlIndex(Serializable):
         res = list()
         for pos, el_list in enumerate(elements):
             for el in el_list:
-                # skip not existing nodes and ProcessorIndex
+                # skip not existing nodes or ProcessorIndex
                 if el and not self.type == PROCESSOR_INDEX:
                     el = el.getStrContent()
                 try:

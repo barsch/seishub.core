@@ -15,15 +15,15 @@ import sys
 import unittest
 
 
-USE_TEST_DB = 'sqlite://'
-#USE_TEST_DB = 'postgres://seishub:seishub@localhost:5432/seishub-test'
+#USE_TEST_DB = 'sqlite://'
+USE_TEST_DB = 'postgres://seishub:seishub@localhost:5432/seishub-test'
 #USE_TEST_DB = 'mysql://seishub:seishub@localhost:3306/seishub-test'
 
 
 # use this options below only for debugging test cases
-CHECK_DATABASE = False
+CHECK_DATABASE = True
 CLEAN_DATABASE = True
-DISPOSE_CONNECTION = False
+DISPOSE_CONNECTION = True
 VERBOSE_DATABASE = False
 
 
@@ -83,13 +83,12 @@ class SeisHubEnvironmentTestCase(unittest.TestCase):
                 self.tables[table] = len(res)
         # enforcement foreign key constraints in SQLite
         if self.env.db.isSQLite():
-            self.env.db.engine.execute('pragma foreign_keys=on')
+            self.env.db.engine.execute('PRAGMA FOREIGN_KEYS=ON')
 
     def __tearDown(self):
         """
         Clean up database and remove environment objects after each test case.
         """
-        self.env.db.engine.execute('pragma foreign_keys=off')
         # check for left over data and warn
         if CHECK_DATABASE:
             sql = "SELECT * FROM %s;"
@@ -103,14 +102,19 @@ class SeisHubEnvironmentTestCase(unittest.TestCase):
                                                       len(res), str(self))
         # clean up DB
         if CLEAN_DATABASE:
-            if USE_TEST_DB.startswith('postgres'):
-                sql = "DROP TABLE %s CASCADE;"
-            else:
+            # disable foreign key constraints in SQLite
+            if self.env.db.isSQLite():
+                self.env.db.engine.execute('PRAGMA FOREIGN_KEYS=OFF')
                 sql = "DROP TABLE %s;"
+            else:
+                sql = "DROP TABLE %s CASCADE;"
             tables = self.env.db.engine.table_names()
             tables = [t for t in tables if t.startswith(DEFAULT_PREFIX)]
             for table in tables:
-                self.env.db.engine.execute(sql % str(table))
+                try:
+                    self.env.db.engine.execute(sql % str(table))
+                except:
+                    pass
         # manually dispose DB connection
         if DISPOSE_CONNECTION:
             self.env.db.engine.pool.dispose()

@@ -43,10 +43,10 @@ class C(object):
 
 #  YAGNI IC=Interface.impliedInterface(C)
 class IC(Interface):
-    def m1(a, b):
+    def m1(a, b): #@NoSelf
         "return 1"
 
-    def m2(a, b):
+    def m2(a, b): #@NoSelf
         "return 2"
 
 
@@ -54,7 +54,7 @@ class IC(Interface):
 C.__implemented__ = IC
 
 class I1(Interface):
-    def ma():
+    def ma(): #@NoSelf
         "blah"
 
 class I2(I1): pass
@@ -80,16 +80,16 @@ class FooInterface(Interface):
 
     foobar = Attribute("fuzzed over beyond all recognition")
 
-    def aMethod(foo, bar, bingo):
+    def aMethod(foo, bar, bingo): #@NoSelf
         """ This is aMethod """
 
-    def anotherMethod(foo=6, bar="where you get sloshed", bingo=(1, 3,)):
+    def anotherMethod(foo=6, bar="where you get sloshed", bingo=(1, 3,)): #@NoSelf
         """ This is anotherMethod """
 
-    def wammy(zip, *argues):
+    def wammy(zip, *argues): #@NoSelf
         """ yadda yadda """
 
-    def useless(**keywords):
+    def useless(**keywords): #@NoSelf
         """ useless code is fun! """
 
 class Foo(object):
@@ -379,16 +379,16 @@ class _I1(Interface):
 
     a1 = Attribute("This is an attribute")
 
-    def f11(): pass
-    def f12(): pass
+    def f11(): pass #@NoSelf
+    def f12(): pass #@NoSelf
     f12.optional = 1
 
 class _I1_(_I1): pass
 class _I1__(_I1_): pass
 
 class _I2(_I1__):
-    def f21(): pass
-    def f22(): pass
+    def f21(): pass #@NoSelf
+    def f22(): pass #@NoSelf
     f23 = f22
 
 

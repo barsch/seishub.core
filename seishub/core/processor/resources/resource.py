@@ -63,7 +63,7 @@ class Resource(object):
                 temp = temp.children.get(part)
             temp.children[parts[-1]] = obj
 
-    def getChild(self, id, request):
+    def getChild(self, id, request): #@UnusedVariable
         """
         Retrieve a single child resource from me.
         
@@ -172,7 +172,7 @@ class Folder(Resource):
     def getMetadata(self):
         return {'permissions': 040755}
 
-    def render_GET(self, request):
+    def render_GET(self, request): #@UnusedVariable
         """
         Returns content of this folder node as dictionary.
         """

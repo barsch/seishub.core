@@ -27,92 +27,125 @@ class IXmlDocument(Interface):
     """
     Marker interface for xmldb XML documents.
     """
-    def getXml_doc():
-        """@return: xml document object"""
+    def getXml_doc(): #@NoSelf
+        """
+        @return: xml document object
+        """
 
-    def setXml_doc(xml_doc):
-        """@param xml_doc: xml document object as provided by a xml parser,
-        must implement seishub.util.xml.IXmlDoc"""
+    def setXml_doc(xml_doc): #@NoSelf
+        """
+        @param xml_doc: xml document object as provided by a XML parser,
+        must implement seishub.util.xml.IXmlDoc
+        """
 
-    def getResourceType(self):
-        """the resource type is determined by the root node of the underlying 
-        xml document
-        @return: resource type (string)"""
+    def getResourceType(): #@NoSelf
+        """
+        The resource type is determined by the root node of the underlying 
+        XML document
+        @return: resource type (string)
+        """
 
-    def setData(xml_data):
-        """@param xml_data: raw xml data
-        @type xml_data: string"""
+    def setData(xml_data): #@NoSelf
+        """
+        @param xml_data: raw xml data
+        @type xml_data: string
+        """
 
-    def getData(self):
-        """@return: xml data (string)"""
+    def getData(): #@NoSelf
+        """
+        @return: xml data (string)
+        """
 
 
 class IIndexBase(Interface):
     """
     Base class for index interfaces
     """
-    def init(value_path=None, key_path=None, type="text"):
+    def init(value_path=None, key_path=None, type="text"): #@NoSelf
         pass
 
-    def getKey_path():
-        """@return: key path"""
+    def getKey_path(): #@NoSelf
+        """
+        @return: key path
+        """
 
-    def getValue_path():
-        """@return: value path"""
+    def getValue_path(): #@NoSelf
+        """
+        @return: value path
+        """
 
-    def getType():
-        """@return: data type of the index key"""
+    def getType(): #@NoSelf
+        """
+        @return: data type of the index key
+        """
 
-    def getValues():
-        """@return: values of this index"""
+    def getValues(): #@NoSelf
+        """
+        @return: values of this index
+        """
 
 
 class IXmlIndex(IIndexBase):
     """
-    Marker interface for xmldb xml indexes.
+    Marker interface for xmldb XML indexes.
     
     An XmlIndex is used in order to index data stored inside a XmlResource's
     XML structure
     """
 
-    def eval(xml_resource):
-        """Evaluate this index on a given XmlResource
+    def eval(xml_resource): #@NoSelf
+        """
+        Evaluate this index on a given XmlResource
+
         @param xml_resource: xmldb.xmlresource.XmlResource object
-        @return: list with key, value pairs on success, None else"""
+        @return: list with key, value pairs on success, None else
+        """
 
 
 class IXPathQuery(Interface):
     """
     Marker interface for xmldb xpath query objects.
     """
-    def init(query, order_by=None, limit=None):
-        """@param param: XPath query
+    def init(query, order_by=None, limit=None): #@NoSelf
+        """
+        @param param: XPath query
         @type query: string
         @param order_by: list of order by clauses of the form: 
         [["/somenode/someelement/@someattribute" (, "ASC"|"DESC")], 
         ...]
         @type order_by: python list
         @param limit: maximum number of results
-        @type limit: int"""
+        @type limit: int
+        """
 
-    def getPredicates():
-        """Get parsed predicates
+    def getPredicates(): #@NoSelf
+        """
+        Get parsed predicates
         @return: parsed predicate expression
-        @rtype: L{seishub.xmldb.xpath.PredicateExpression}"""
+        @rtype: L{seishub.xmldb.xpath.PredicateExpression}
+        """
 
-    def getValue_path():
-        """Get value path
+    def getValue_path(): #@NoSelf
+        """
+        Get value path
         @return: value path this query corresponds to
-        @rtype: string"""
+        @rtype: string
+        """
 
-    def has_predicates():
-        """@return: True if query has predicates
-        @rtype: True | False"""
+    def has_predicates(): #@NoSelf
+        """
+        @return: True if query has predicates
+        @rtype: True | False
+        """
 
-    def getOrder_by():
-        """@return: List of parsed order by clauses
-        @rtype: python list"""
+    def getOrder_by(): #@NoSelf
+        """
+        @return: List of parsed order by clauses
+        @rtype: python list
+        """
 
-    def getLimit():
-        """@return: Result set limit (maximum number of results)
-        @rtype: integer"""
+    def getLimit(): #@NoSelf
+        """
+        @return: Result set limit (maximum number of results)
+        @rtype: integer
+        """

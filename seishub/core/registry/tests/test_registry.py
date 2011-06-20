@@ -315,11 +315,8 @@ class PackageRegistryTest(SeisHubEnvironmentTestCase):
         self.assertEqual(res.package.package_id, 'seishub')
         self.assertEqual(res.resourcetype.resourcetype_id, 'stylesheet')
         # remove
-        self.env.registry.stylesheets.delete(
-                                    stylesheet[0].package.package_id,
-                                    stylesheet[0].resourcetype.resourcetype_id,
-                                    stylesheet[0].type
-                                    )
+        self.env.registry.stylesheets.delete(stylesheet[0].package.package_id,
+            stylesheet[0].resourcetype.resourcetype_id, stylesheet[0].type)
         stylesheet = self.env.registry.stylesheets.get\
                                                     (package_id='testpackage0',
                                                     resourcetype_id='weapon')
@@ -360,13 +357,10 @@ class PackageRegistryTest(SeisHubEnvironmentTestCase):
         # create a resourcetype
         self.env.registry.db_registerPackage("test-catalog")
         self.env.registry.db_registerResourceType("test-catalog", "schema")
-        # register a schema
+        # register an invalid schema
         self.assertRaises(InvalidObjectError,
                           self.env.registry.schemas.register,
                           'test-catalog', 'schema', 'XMLSchema', "<invalid>")
-        # add a resource and try to validate
-        self.env.catalog.addResource("test-catalog", "schema", RAW_XML,
-                                     name="muh.xml")
         # remove everything
         self.env.registry.db_deleteResourceType("test-catalog", "schema")
         self.env.registry.db_deletePackage("test-catalog")

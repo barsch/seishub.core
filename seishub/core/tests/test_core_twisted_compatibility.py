@@ -27,11 +27,11 @@ class Compo(components.Componentized):
         return self.num
 
 class IAdept(Interface):
-    def adaptorFunc():
+    def adaptorFunc(): #@NoSelf
         raise NotImplementedError()
 
 class IElapsed(Interface):
-    def elapsedFunc():
+    def elapsedFunc(): #@NoSelf
         """
         1!
         """
@@ -197,11 +197,11 @@ components.registerAdapter(MetaAdder, MetaNumber, IMeta)
 components.registerAdapter(ComponentAdder, ComponentNumber, IMeta)
 
 class IAttrX(Interface):
-    def x():
+    def x(): #@NoSelf
         pass
 
 class IAttrXX(Interface):
-    def xx():
+    def xx(): #@NoSelf
         pass
 
 class Xcellent:
@@ -436,7 +436,7 @@ class IProxiedInterface(Interface):
     ifaceAttribute = Attribute("""
         An example declared attribute, which should be proxied.""")
 
-    def yay(*a, **kw):
+    def yay(*a, **kw): #@NoSelf
         """
         A sample method which should be proxied.
         """
@@ -502,12 +502,12 @@ class IMultipleMethods(Interface):
     An interface with multiple methods.
     """
 
-    def methodOne():
+    def methodOne(): #@NoSelf
         """
         The first method. Should return 1.
         """
 
-    def methodTwo():
+    def methodTwo(): #@NoSelf
         """
         The second method. Should return 2.
         """

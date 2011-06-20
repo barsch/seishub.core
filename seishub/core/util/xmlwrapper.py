@@ -11,7 +11,7 @@ class IXmlStylesheet(Interface):
     """
     Parsed XML Stylesheet document.
     """
-    def transform(xmltree_doc):
+    def transform(xmltree_doc): #@NoSelf
         """
         Transform given xmltree_doc with the stylesheet.
         
@@ -37,7 +37,7 @@ class IXmlSchema(Interface):
         @rtype: string
         """
 
-    def validate(xml_doc):
+    def validate(xml_doc): #@NoSelf
         """
         Validate xml_doc against the schema.
         
@@ -51,7 +51,7 @@ class IXmlDoc(Interface):
     """
     General XML document.
     """
-    def getXml_doc():
+    def getXml_doc(): #@NoSelf
         """
         Return an internal representation of the parsed xml_document.
         """
@@ -67,12 +67,12 @@ class IXmlTreeDoc(IXmlDoc):
                                   stops parser if set to True
     """)
 
-    def getErrors():
+    def getErrors(): #@NoSelf
         """
         Return error messages, that occurred during parsing.
         """
 
-    def evalXPath(expr):
+    def evalXPath(expr): #@NoSelf
         """
         Evaluate an XPath expression.
         

@@ -89,28 +89,28 @@ class PackageRegistryFilesystemTest(SeisHubEnvironmentTestCase):
                 FooBar._registry_stylesheets
 
     def test_autoInstaller(self):
-        from seishub.core.packages.installer import PackageInstaller
         self.env.enableComponent(APackage)
         self.env.enableComponent(AResourceType)
-        # stylesheets
+        # get resourcetype based stylesheet
         stylesheet = self.registry.stylesheets.get('atestpackage',
                                                    'aresourcetype', 'aformat')
         self.assertEqual(len(stylesheet), 1)
         p = os.path.join(self.env.getPackagePath(), 'seishub', 'core',
                          'registry', 'tests', 'data', 'resourcelist_json.xslt')
         self.assertEqual(stylesheet[0].resource.document.data, file(p).read())
+        # get package based stylesheet
         stylesheet = self.registry.stylesheets.get('atestpackage', None,
                                                    'resourcelist')
         self.assertEqual(len(stylesheet), 1)
         p = os.path.join(self.env.getPackagePath(), 'seishub', 'core',
                          'registry', 'tests', 'data', 'resourcelist_json.xslt')
         self.assertEqual(stylesheet[0].resource.document.data, file(p).read())
-        self.registry.stylesheets.delete(stylesheet[0].package.package_id,
-                                         stylesheet[0].resourcetype.\
-                                            resourcetype_id,
-                                         stylesheet[0].type)
-        self.env.disableComponent(AResourceType)
-        PackageInstaller.cleanup(self.env)
+        # clean up
+        self.registry.stylesheets.delete('atestpackage', 'aresourcetype',
+                                         'aformat')
+        self.registry.stylesheets.delete('atestpackage', None, 'resourcelist')
+        self.env.registry.db_deleteResourceType('atestpackage', 'aresourcetype')
+        self.env.registry.db_deletePackage('atestpackage')
 
 
 def suite():

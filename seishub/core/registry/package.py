@@ -10,7 +10,9 @@ import seishub.core.xmldb.resource
 
 
 class PackageWrapper(Serializable):
-    """Wrapped around packages for storage in database."""
+    """
+    Wrapped around packages for storage in database.
+    """
 
     db_table = packages_tab
     db_mapping = {'package_id':'name',
@@ -251,7 +253,9 @@ class Stylesheet(DocBase):
     content_type = property(getContentType, None, "content-type (readonly)")
 
     def transform(self, resource, xslt_params={}):
-        """Transform a given Resource with the stylesheet.
+        """
+        Transform a given Resource with the stylesheet.
+
         @type resource: IResource or basestring 
         @return: Transformed xml data as a string
         """

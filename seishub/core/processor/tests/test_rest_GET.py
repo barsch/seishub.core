@@ -175,11 +175,11 @@ class RestGETTests(SeisHubEnvironmentTestCase):
         """
         proc = Processor(self.env)
         # create resource
-        proc.run(POST, '/get-test/vc/test.xml', StringIO(XML_DOC2 % 11))
-        proc.run(PUT, '/get-test/vc/test.xml', StringIO(XML_DOC2 % 22))
-        proc.run(PUT, '/get-test/vc/test.xml', StringIO(XML_DOC2 % 33))
-        proc.run(POST, '/get-test/vc/test2.xml', StringIO(XML_DOC2 % 111))
-        proc.run(PUT, '/get-test/vc/test2.xml', StringIO(XML_DOC2 % 222))
+        proc.run(POST, '/get-test/vc/test.xml', StringIO(XML_DOC2 % 11111))
+        proc.run(PUT, '/get-test/vc/test.xml', StringIO(XML_DOC2 % 22222))
+        proc.run(PUT, '/get-test/vc/test.xml', StringIO(XML_DOC2 % 33333))
+        proc.run(POST, '/get-test/vc/test2.xml', StringIO(XML_DOC2 % 44444))
+        proc.run(PUT, '/get-test/vc/test2.xml', StringIO(XML_DOC2 % 55555))
         # without trailing slash
         data = proc.run(GET, '/get-test/vc')
         # with trailing slash
@@ -188,10 +188,19 @@ class RestGETTests(SeisHubEnvironmentTestCase):
         self.assertTrue(Set(data) == Set(data2))
         # data must be a dict
         self.assertTrue(isinstance(data, dict))
-        # check content
+        # check folder content
         self.assertTrue('test.xml' in data)
         self.assertTrue('test2.xml' in data)
+        # get revisions
+        res1 = proc.run(GET, '/get-test/vc/test.xml')
+        data1 = res1.render(proc)
+        res2 = proc.run(GET, '/get-test/vc/test2.xml')
+        data2 = res2.render(proc)
         # check revisions
+        self.assertEquals(res1.revision, 3)
+        self.assertEquals(res2.revision, 2)
+        self.assertTrue('33333' in data1)
+        self.assertTrue('55555' in data2)
         self.assertEquals(data['test.xml'].revision, 3)
         self.assertEquals(data['test2.xml'].revision, 2)
         # delete resource
@@ -359,7 +368,6 @@ class RestGETTests(SeisHubEnvironmentTestCase):
         proc.run(DELETE, '/get-test/notvc/2')
         self.env.registry.db_deleteResourceType('get-test2', 'notvc')
         self.env.registry.db_deletePackage('get-test2')
-
 
 
 def suite():

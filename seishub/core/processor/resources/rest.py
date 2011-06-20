@@ -517,7 +517,11 @@ class RESTResourceTypeFolder(Folder):
         xpath = "/%s/%s" % (self.package_id, self.resourcetype_id)
         res_dict = request.env.catalog.query(xpath)
         for id in res_dict['ordered']:
-            temp[res_dict[id]['resource_name']] = RESTResource(res_dict[id])
+            name = res_dict[id]['resource_name']
+            # skip lower revisions 
+            if name in temp and temp[name].revision > res_dict[id]['revision']:
+                continue
+            temp[name] = RESTResource(res_dict[id])
         # indexes
         xmlindex_list = request.env.catalog.getIndexes(
             package_id=self.package_id, resourcetype_id=self.resourcetype_id)

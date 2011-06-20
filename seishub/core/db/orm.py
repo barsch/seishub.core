@@ -21,12 +21,12 @@ class IDbEnabled(Interface):
     """
     Object provides access to DB manager.
     """
-    def setDb(db):
+    def setDb(db): #@NoSelf
         """
         @param db: database engine
         """
 
-    def getDb():
+    def getDb(): #@NoSelf
         """
         @return: database engine
         """
@@ -282,7 +282,6 @@ class DbStorage(DbEnabled):
             if not ILazyAttribute.providedBy(col) and not \
                 (IRelation.providedBy(col) and col.relation_type == 'to-many'):
                     q.append_column(table.c[colname])
-
         return q, joins
 
     def _generate_objs(self, cls, result, objs):
@@ -345,7 +344,6 @@ class DbStorage(DbEnabled):
             new_obj.__setattr__(key, val)
         objs[cls].append(new_obj)
         return objs
-
 
     def _get_children(self, obj):
         objs = list()
@@ -443,11 +441,11 @@ class DbStorage(DbEnabled):
     def update(self, *objs, **kwargs):
         """
         Update a (list of) Serializable object(s).
-        
+
         If objs is a list, all objects in list will be updated within the same 
         transaction. Objects to update have to provide an _id attribute to be 
         identified.
-        
+
         @keyword cascading: If True, also underlying related objects are 
                             updated, default is False.
         @type cascading:    bool
@@ -455,10 +453,10 @@ class DbStorage(DbEnabled):
         kwargs['update'] = True
         self.store(*objs, **kwargs)
 
-
     def pickup(self, cls, **keys):
         """
         Read Serializable objects with given keys from database.
+
         @param cls: Object type to be retrieved.
         @keyword _order_by: dictionary of the form:  
             {'attribute':'ASC'|'DESC', ...}
@@ -469,12 +467,12 @@ class DbStorage(DbEnabled):
         or for relational attributes:
             - attribute_name = Object
             - attribute_name = {'attribute_name' : 'value'}
-            
+
         In a to-many relation DB_LIMIT_MIN and DB_LIMIT_MAX may be used to 
         select only one single related object providing the maximum (or 
         minimum) for the given attribute:
             - relation_name = DB_LIMIT_MAX('attribute_name')
-        
+
         Use DB_NULL as a value to force a column to be None; 
         attribute_name = None will be ignored:
             - attribute_name = DB_NULL
@@ -506,12 +504,11 @@ class DbStorage(DbEnabled):
         # execute query
         # XXX: query only from read only user
         db = self.getDb()
-        r = db.execute(q)
-        try:
-            # XXX: we should avoid fetchall calls - use iterators
-            results = r.fetchall()
-        finally:
-            r.close()
+        results = db.execute(q)
+        if self._is_sqlite():
+            # SQLite does not support multiple open connections; In particular
+            # it is not possible to commit inserts while keeping an open cursor
+            results = results.fetchall()
         # create objects from results
         objs = {cls:list()}
         for res in results:
@@ -593,10 +590,6 @@ class Serializable(object):
     implements(ISerializable)
 
     db_mapping = dict()
-
-    def __init__(self, *args, **kwargs): #@UnusedVariable
-        # TODO: remove?
-        self._id = None
 
     def _getId(self):
         try:

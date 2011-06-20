@@ -50,7 +50,7 @@ class IResourceFormater(Interface):
         List of strings representing unique format ID's.
         """)
 
-    def format(request, data, name):
+    def format(request, data, name): #@NoSelf
         """
         Formats the resource.
         
@@ -69,7 +69,7 @@ class IMapper(IPackage):
         Single string representing a unique mapping URL.
         """)
 
-    def process_GET(request):
+    def process_GET(request): #@NoSelf
         """
         Process a GET request.
         
@@ -81,7 +81,7 @@ class IMapper(IPackage):
         If an error occurs it should raise a ProcessorError.
         """
 
-    def process_PUT(request):
+    def process_PUT(request): #@NoSelf
         """
         Process a PUT request.
         
@@ -90,7 +90,7 @@ class IMapper(IPackage):
         """
     process_PUT.optional = 1
 
-    def process_POST(request):
+    def process_POST(request): #@NoSelf
         """
         Process a POST request.
         
@@ -100,7 +100,7 @@ class IMapper(IPackage):
         """
     process_POST.optional = 1
 
-    def process_DELETE(request):
+    def process_DELETE(request): #@NoSelf
         """
         Process a DELETE request.
         
@@ -132,7 +132,7 @@ class IAdminPanel(Interface):
         Anonymous access will be allowed if this attribute is not defined.
         """)
 
-    def render(request):
+    def render(request): #@NoSelf
         """
         Process a request for an administrative panel.
         
@@ -166,7 +166,7 @@ class IAdminStaticContent(Interface):
     Extension point for adding static content to the administration interface.
     """
 
-    def getStaticContent():
+    def getStaticContent(): #@NoSelf
         """
         Return a dict of static resources (such as css files, images, etc.).
         
@@ -188,7 +188,7 @@ class ISSHCommand(Interface):
         The SSH command.
         """)
 
-    def executeCommand(request, args):
+    def executeCommand(request, args): #@NoSelf
         """
         Processes a command line.
         
@@ -209,7 +209,7 @@ class ISQLView(Interface):
         the SQL view name, e.g. v_baeume for the following example.
         """)
 
-    def createView():
+    def createView(): #@NoSelf
         """
         Return a SQL SELECT statement for creating a SQL view.
         
@@ -243,7 +243,7 @@ class IProcessorIndex(Interface):
         Single string representing an unique label.
         """)
 
-    def eval(document):
+    def eval(document): #@NoSelf
         """
         Evaluate the index on the given resource.
         

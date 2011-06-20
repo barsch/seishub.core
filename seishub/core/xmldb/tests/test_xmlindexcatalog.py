@@ -30,8 +30,8 @@ RAW_XML2 = """<station rel_uri="genf">
         <paramXY>0</paramXY>
         <paramXY>99</paramXY>
     </XY>
-    <test_date>20081212010102.123456789</test_date>
-    <test_date2>20081212010102.050300000</test_date2>
+    <test_date>2008.123456789</test_date>
+    <test_date2>2008.050300000</test_date2>
 </station>"""
 
 RAW_XML3 = """<?xml version="1.0"?>
@@ -305,7 +305,7 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         self.assertTrue(el[3].key in ["0", "2.5", "99"])
         self.assertEquals(el[3].document.data, res.document.data)
         self.assertEquals(el[3].index.xpath, "/station/XY/paramXY")
-        self.assertEquals(el[4].key, 20081212010102.125)
+        self.assertEquals(el[4].key, 2008.123456789)
         self.assertEquals(el[4].document.data, res.document.data)
         self.assertEquals(el[4].index.xpath, "/station/test_date")
         # clean up
@@ -615,7 +615,10 @@ class XmlIndexCatalogTest(SeisHubEnvironmentTestCase):
         self.catalog.updateIndexView(self.idx1)
         sql = 'SELECT * FROM "/testpackage/station"'
         res = self.env.db.engine.execute(sql).fetchall()
-        self.assertEquals([i[0] for i in res], [8, 9, 9, 9])
+        idxs = [i[0] for i in res]
+        self.assertEquals(len(idxs), 4)
+        self.assertEquals(idxs.count(8), 1)
+        self.assertEquals(idxs.count(9), 3)
         self.catalog.dropIndexView(self.idx1)
         sql = 'SELECT * FROM "/testpackage/station"'
         self.assertRaises(Exception, self.env.db.engine.execute, sql)

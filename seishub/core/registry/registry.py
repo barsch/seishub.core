@@ -294,7 +294,7 @@ class RegistryBase(DbStorage, list):
         keys = {'package': None,
                 'resourcetype': None,
                 'type': type
-                }
+        }
         if document_id:
             keys['document_id'] = document_id
         if package_id:

@@ -239,13 +239,15 @@ class DatabaseStatusPanel(Component):
         resourcetypes = self.env.registry.db_getResourceTypes()
         for resourcetype in resourcetypes:
             # resources
-            query = sql.select([func.count(resource_tab.c['id'])])
+            query = sql.select([func.count(resource_tab.c['id'])],
+                               distinct=True)
             query = query.where(
                 resource_tab.c['resourcetype_id'] == resourcetype._id
             )
             resources = self.env.db.query(query).fetchone()[0]
             # documents
-            query = sql.select([func.count(document_tab.c['id'])])
+            query = sql.select([func.count(document_tab.c['id'])],
+                               distinct=True)
             query = query.where(
                 and_(document_tab.c['resource_id'] == resource_tab.c['id'],
                      resource_tab.c['resourcetype_id'] == resourcetype._id)
