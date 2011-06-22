@@ -1,5 +1,4 @@
 #def CSS
-<link rel="stylesheet" type="text/css" href="/yui2/build/fonts/fonts-min.css" />
 <link rel="stylesheet" type="text/css" href="/yui2/build/datatable/assets/skins/sam/datatable.css" />
 #end def
 #def JAVASCRIPT
@@ -54,7 +53,7 @@ YAHOO.util.Event.addListener(window, "load", function() {
         var resourcesColumnDefs = [
             {key:"Package", sortable:true},
             {key:"Resourcetype", sortable:true},
-            {key:"XML Resources"},
+            {key:"Resources"},
             {key:"XML Documents"},
         ];
 
@@ -63,7 +62,7 @@ YAHOO.util.Event.addListener(window, "load", function() {
         resourcesSource.responseSchema = {
             recordDelim: "\n",
             fieldDelim: "|",
-            fields: ["Package","Resourcetype","XML Resources","XML Documents"]
+            fields: ["Package","Resourcetype","Resources","XML Documents"]
         };
 
         var resourcesTable = new YAHOO.widget.DataTable("resources",

@@ -341,7 +341,7 @@ class DatabaseStatusPanel(Component):
             out += '\n    (more)'
         out += '\n'
         # check resourcetypes table
-        out += 'Table %s' % resource_tab.name
+        out += 'Table %s' % resourcetypes_tab.name
         oncl = resourcetypes_tab.c['package_id'] == packages_tab.c['id']
         query = sql.select([resourcetypes_tab.c['package_id']],
                            packages_tab.c['id'] == None,
