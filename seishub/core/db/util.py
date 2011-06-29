@@ -10,6 +10,7 @@ from seishub.core.util.xmlwrapper import toString
 from sqlalchemy import sql, Table
 import datetime
 import json
+import numpy as np
 
 
 def compileStatement(stmt, bind=None, params={}, **kwargs):
@@ -93,6 +94,9 @@ class CustomJSONEncoder(json.JSONEncoder):
         elif isinstance (obj, datetime.timedelta):
             return str(obj)
         elif isinstance (obj, Decimal):
+            return float(obj)
+        elif isinstance (obj, np.number):
+            # numpy
             return float(obj)
         else:
             return json.JSONEncoder.default(self, obj)
