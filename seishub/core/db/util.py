@@ -141,7 +141,7 @@ def formatORMResults(request, query, build_url=False):
         table = SubElement(body, "table", border="1")
         sub = SubElement(table, "tr")
         for key in query._entities:
-            SubElement(sub, "th").text = str(key._result_label)
+            SubElement(sub, "th").text = str(key._label_name)
         # build URL
         if build_url:
             SubElement(sub, "th").text = "URL"
