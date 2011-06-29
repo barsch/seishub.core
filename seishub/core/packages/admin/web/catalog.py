@@ -115,6 +115,8 @@ class ResourcesPanel(Component):
             elif 'delete' in args and 'resource[]' in args:
                 data['resource[]'] = args['resource[]']
                 data = self._deleteResources(data)
+            elif 'delete-all' in args:
+                data = self._deleteAllResources(data)
             elif 'filter' in args:
                 data['limit'] = args.get('limit', LIMITS.keys())[0]
                 data = self._getResources(data)
@@ -154,6 +156,16 @@ class ResourcesPanel(Component):
                 data['error'] = ("Error deleting resource", e)
                 return data
         data['info'] = "Resources have been removed."
+        return data
+
+    def _deleteAllResources(self, data):
+        try:
+            self.catalog.deleteAllResources(
+                package_id=data['package_id'],
+                resourcetype_id=data['resourcetype_id'])
+        except SeisHubError, e:
+            data['error'] = ("Error deleting all resources", e)
+        data['info'] = "Resources have been deleted."
         return data
 
 

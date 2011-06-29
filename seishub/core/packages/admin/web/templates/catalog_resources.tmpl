@@ -77,10 +77,10 @@
   
   <div class="button">
     <input type="submit" name="filter" value="Filter" /><br />
-    
+    <input type="submit" name="delete-all" value="Delete All" 
+           onclick="return confirm('Are you sure you want to delete all resource of the selected package/resourcetype?')" />
     <br />
   </div>
-  
   
   <p>
     $rows rows<br />
