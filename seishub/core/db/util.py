@@ -129,7 +129,10 @@ def formatORMResults(request, query, build_url=False):
             data['Result'].append(temp)
         # add attributes to root node
         for key, value in stats.iteritems():
-            data[key] = str(value)
+            if not isinstance(value, list):
+                data[key] = str(value)
+            else:
+                data[key] = value
         # generate correct header
         request.setHeader('content-type', 'application/json; charset=UTF-8')
         # create output
