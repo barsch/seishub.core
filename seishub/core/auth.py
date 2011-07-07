@@ -168,12 +168,7 @@ class AuthenticationManager(object):
         if id not in self.passwords:
             raise SeisHubError("User does not exists!")
         session = self.Session()
-        user = session.query(User).filter_by(id=id).one()
-        try:
-            session.commit()
-        except:
-            session.rollback()
-        return user
+        return session.query(User).filter_by(id=id).one()
 
     def updateUser(self, id, name='', password='', uid=1000, institution='',
                    email='', permissions=755):
