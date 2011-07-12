@@ -504,15 +504,18 @@ class DbStorage(DbEnabled):
         # execute query
         # XXX: query only from read only user
         db = self.getDb()
-        results = db.execute(q)
+        query = db.execute(q)
         if self._is_sqlite():
             # SQLite does not support multiple open connections; In particular
             # it is not possible to commit inserts while keeping an open cursor
-            results = results.fetchall()
+            results = query.fetchall()
+        else:
+            results = query
         # create objects from results
         objs = {cls:list()}
         for res in results:
             objs = self._generate_objs(cls, res, objs)
+        query.close()
         if hasattr(self, 'debug') and self.debug:
             print "DBUTIL: Loaded %i object(-tree)s in %s seconds." % \
                   (len(objs[cls]), time.time() - start)

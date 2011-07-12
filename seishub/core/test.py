@@ -15,8 +15,8 @@ import sys
 import unittest
 
 
-#USE_TEST_DB = 'sqlite://'
-USE_TEST_DB = 'postgres://seishub:seishub@localhost:5432/seishub-test'
+USE_TEST_DB = 'sqlite://'
+#USE_TEST_DB = 'postgres://seishub:seishub@localhost:5432/seishub-test'
 #USE_TEST_DB = 'mysql://seishub:seishub@localhost:3306/seishub-test'
 
 
