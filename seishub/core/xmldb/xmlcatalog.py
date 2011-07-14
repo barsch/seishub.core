@@ -10,6 +10,7 @@ from seishub.core.xmldb.xmldbms import XmlDbManager
 from seishub.core.xmldb.xmlindexcatalog import XmlIndexCatalog
 from seishub.core.xmldb.xpath import XPathQuery
 import os
+import datetime
 
 
 class XmlCatalog(object):
@@ -89,7 +90,12 @@ class XmlCatalog(object):
                                 resource.resourcetype.resourcetype_id)
             if not os.path.exists(path):
                 os.makedirs(path)
-            file = os.path.join(path, resource.name)
+            # add current datetime to filename to prevent overwriting resources
+            # with the same filename (e.g. resource deleted/created several
+            # times)
+            filename = resource.name
+            filename += datetime.datetime.now().strftime('__%Y%m%d%H%M%S')
+            file = os.path.join(path, filename)
             try:
                 fp = open(file, 'wb')
                 fp.write(data)
