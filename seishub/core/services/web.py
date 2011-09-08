@@ -6,7 +6,8 @@ A HTTP/HTTPS server.
 from seishub.core import __version__ as SEISHUB_VERSION
 from seishub.core.config import IntOption, BoolOption, Option, ListOption
 from seishub.core.defaults import HTTP_PORT, HTTPS_PORT, HTTPS_CERT_FILE, \
-    HTTPS_PKEY_FILE, HTTP_LOG_FILE, HTTPS_LOG_FILE, ADMIN_THEME, DEFAULT_PAGES
+    HTTPS_PKEY_FILE, HTTP_LOG_FILE, ADMIN_THEME, DEFAULT_PAGES, ADMIN_TITLE, \
+    HTTPS_LOG_FILE
 from seishub.core.exceptions import InternalServerError, ForbiddenError, \
     SeisHubError
 from seishub.core.processor import Processor, HEAD, getChildForRequest
@@ -71,7 +72,8 @@ class WebRequest(Processor, http.Request):
     def authenticate(self):
         """
         """
-        self.setHeader('WWW-Authenticate', 'Basic realm="SeisHub"')
+        realm = str(self.env.config.get('web', 'admin_title'))
+        self.setHeader('WWW-Authenticate', 'Basic realm="%s"' % (realm))
         self.setResponseCode(http.UNAUTHORIZED)
         self.write('Authentication required.')
         self.finish()
@@ -488,6 +490,8 @@ class WebService(service.MultiService):
     ListOption('web', 'default_pages', ','.join(DEFAULT_PAGES),
         "Default pages.")
     Option('web', 'google_api_key', '', "Google API key.")
+    Option('web', 'admin_theme', ADMIN_THEME, "Default administration theme.")
+    Option('web', 'admin_title', ADMIN_TITLE, "Default title.")
 
     def __init__(self, env):
         self.env = env

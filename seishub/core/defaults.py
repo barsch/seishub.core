@@ -21,6 +21,7 @@ DEFAULT_COMPONENTS = (
 
 MIN_PASSWORD_LENGTH = 8
 ADMIN_THEME = 'magic'
+ADMIN_TITLE = 'SeisHub'
 DEFAULT_PAGES = ['index', 'index.html', 'index.htm']
 
 HTTP_LOG_FILE = 'logs' + os.sep + 'http.log'

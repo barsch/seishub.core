@@ -63,6 +63,7 @@ class AdminPanel(Resource):
         page.css = self.root.getActiveAdminThemeCSS()
         # additional stuff
         page.version = SEISHUB_VERSION
+        page.title = request.env.config.get('web', 'admin_title')
         page.instance = request.env.config.path
         page.CSS = content.getVar('CSS', '')
         page.JAVASCRIPT = content.getVar('JAVASCRIPT', '')

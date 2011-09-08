@@ -5,7 +5,7 @@ General configuration panels for the web-based administration service.
 
 from seishub.core.core import Component, implements
 from seishub.core.db import DEFAULT_POOL_SIZE, DEFAULT_MAX_OVERFLOW
-from seishub.core.defaults import DEFAULT_COMPONENTS
+from seishub.core.defaults import DEFAULT_COMPONENTS, ADMIN_THEME, ADMIN_TITLE
 from seishub.core.exceptions import SeisHubError
 from seishub.core.log import LOG_LEVELS, ERROR
 from seishub.core.packages.interfaces import IAdminPanel
@@ -39,12 +39,14 @@ class BasicPanel(Component):
             google_api_key = request.args0.get('google_api_key', 'localhost')
             log_level = request.args0.get('log_level', 'ERROR').upper()
             clearlogs = request.args0.get('clear_logs_on_startup', False)
-            theme = request.args0.get('theme', 'magic')
+            theme = request.args0.get('theme', ADMIN_THEME)
+            title = request.args0.get('title', ADMIN_TITLE)
             self.config.set('seishub', 'host', host)
             self.config.set('seishub', 'description', description)
             self.config.set('seishub', 'log_level', log_level)
             self.config.set('seishub', 'clear_logs_on_startup', clearlogs)
             self.config.set('web', 'admin_theme', theme)
+            self.config.set('web', 'admin_title', title)
             self.config.set('web', 'google_api_key', google_api_key)
             self.config.save()
             self.env.xslt_params['google_api_key'] = google_api_key
@@ -57,6 +59,7 @@ class BasicPanel(Component):
           'host': self.config.get('seishub', 'host'),
           'description': self.config.get('seishub', 'description'),
           'theme': self.config.get('web', 'admin_theme'),
+          'title': self.config.get('web', 'admin_title'),
           'google_api_key': self.config.get('web', 'google_api_key'),
           'log_level': self.config.get('seishub', 'log_level'),
           'clear_logs_on_startup':

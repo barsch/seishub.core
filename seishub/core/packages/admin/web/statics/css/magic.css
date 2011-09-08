@@ -55,15 +55,9 @@ table.list th {
 }
 /* logo */
 #logo {
-  position : absolute;
-  left : 5px;
-  top : -5px;
-  color : #999;
-  font-size : 0px;
-  background-image : url("../images/seishub.png");
-  background-repeat : no-repeat;
-  height : 80px;
-  width : 300px;
+  font-size : 48px;
+  font-weight : bold;
+  margin-left : 10px;
 }
 /* instance */
 #instance {
@@ -133,7 +127,6 @@ table.list th {
 }
 #menu a.selected,
 #login a.selected {
-  color : white;
   cursor : default;
   text-decoration : none;
 }
@@ -227,7 +220,7 @@ div.field-left {
   margin-bottom : 1em;
   float : left;
   margin-right : 1em;
-  min-width: 100px;
+  min-width : 100px;
 }
 /* Messagebox */
 dl.messagebox {
