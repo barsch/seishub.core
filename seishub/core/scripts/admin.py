@@ -5,6 +5,11 @@ import os
 from seishub.core.daemon import createApplication
 
 
+USAGE = """
+Usage: seishub-admin initenv /path/to/new/instance
+"""
+
+
 def main():
     """
     SeisHub administration script.
@@ -18,3 +23,5 @@ def main():
                 print('Error: path %s already exists!' % path)
             else:
                 createApplication(path, create=True)
+    else:
+        print USAGE
