@@ -101,10 +101,8 @@ class Environment(ComponentManager):
         self.tree = ResourceTree(self)
         self.update()
         # XSLT transformation parameters
-        self.xslt_params = {
-            'google_api_key': self.config.get('web', 'google_api_key', '')
-        }
-        # check if new environment has beene created
+        self.xslt_params = {}
+        # check if new environment has been created
         if create:
             exit()
 

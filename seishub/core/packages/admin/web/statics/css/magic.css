@@ -129,6 +129,7 @@ table.list th {
 #login a.selected {
   cursor : default;
   text-decoration : none;
+  color : #DDDDDD;
 }
 /* Content */
 #content {

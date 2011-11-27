@@ -36,7 +36,6 @@ class BasicPanel(Component):
         if request.method == 'POST':
             host = request.args0.get('host', 'localhost')
             description = request.args0.get('description', '')
-            google_api_key = request.args0.get('google_api_key', 'localhost')
             log_level = request.args0.get('log_level', 'ERROR').upper()
             clearlogs = request.args0.get('clear_logs_on_startup', False)
             theme = request.args0.get('theme', ADMIN_THEME)
@@ -47,9 +46,7 @@ class BasicPanel(Component):
             self.config.set('seishub', 'clear_logs_on_startup', clearlogs)
             self.config.set('web', 'admin_theme', theme)
             self.config.set('web', 'admin_title', title)
-            self.config.set('web', 'google_api_key', google_api_key)
             self.config.save()
-            self.env.xslt_params['google_api_key'] = google_api_key
             if self.env.log.log_level != LOG_LEVELS.get(log_level, ERROR):
                 self.env.log.log("Setting log level to %s" % log_level)
                 self.env.log.log_level = LOG_LEVELS.get(log_level, ERROR)
@@ -60,7 +57,6 @@ class BasicPanel(Component):
           'description': self.config.get('seishub', 'description'),
           'theme': self.config.get('web', 'admin_theme'),
           'title': self.config.get('web', 'admin_title'),
-          'google_api_key': self.config.get('web', 'google_api_key'),
           'log_level': self.config.get('seishub', 'log_level'),
           'clear_logs_on_startup':
                 self.config.getbool('seishub', 'clear_logs_on_startup')

@@ -489,7 +489,6 @@ class WebService(service.MultiService):
     Option('web', 'admin_theme', ADMIN_THEME, "Default administration theme.")
     ListOption('web', 'default_pages', ','.join(DEFAULT_PAGES),
         "Default pages.")
-    Option('web', 'google_api_key', '', "Google API key.")
     Option('web', 'admin_theme', ADMIN_THEME, "Default administration theme.")
     Option('web', 'admin_title', ADMIN_TITLE, "Default title.")
 
