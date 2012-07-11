@@ -17,7 +17,7 @@
 #         Christopher Lenz <cmlenz@gmx.de>
 
 from seishub.core.exceptions import SeisHubError
-from zope.interface import Interface, Attribute #@UnusedImport
+from zope.interface import Interface, Attribute  # @UnusedImport
 from zope.interface.declarations import _implements, classImplements
 import sys
 
@@ -35,7 +35,7 @@ DEBUG = 20
 class ComponentMeta(type):
     """
     Meta class for components.
-    
+
     Takes care of component and extension point registration.
     """
     _components = []
@@ -63,6 +63,7 @@ class ComponentMeta(type):
                              if issubclass(b, Component)
                              and '__init__' in b.__dict__]:
                     break
+
             def maybe_init(self, compmgr, init=init, cls=new_class):
                 if cls not in compmgr.components:
                     compmgr.components[cls] = self
@@ -124,13 +125,13 @@ class PackageManager(object):
         Get objects providing interface within specified package.
         """
         classes = PackageManager.getClasses(interface, package_id)
-        # get, activate and return objects 
+        # get, activate and return objects
         return filter(None, [component.compmgr[cls] for cls in classes])
 
     @staticmethod
     def getPackageIds():
         """
-        Get a list of ID's of all packages (enabled and disabled ones) 
+        Get a list of ID's of all packages (enabled and disabled ones)
         without activating any components.
         """
         return PackageManager._registry.keys()
@@ -139,13 +140,13 @@ class PackageManager(object):
 class Component(object):
     """
     Base class for components.
-    
+
     Every component can declare what extension points it provides, as well as
     what extension points of other components it extends.
     """
     __metaclass__ = ComponentMeta
 
-    def __new__(cls, *args, **kwargs): #@UnusedVariable
+    def __new__(cls, *args, **kwargs):  # @UnusedVariable
         """
         Return an existing instance of the component if it has already been
         activated, otherwise create a new instance.
@@ -237,7 +238,7 @@ class ComponentManager(object):
     def isComponentEnabled(self, cls):
         """
         Can be overridden by sub-classes to veto the activation of a component.
-        
+
         If this method returns False, the component with the given class will
         not be available.
         """

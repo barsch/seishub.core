@@ -130,7 +130,7 @@ class BrowserPanel(Component):
     panel_ids = ('components', 'Components', 'browse-components',
                 'Component Browser')
 
-    def render(self, request): #@UnusedVariable
+    def render(self, request):  # @UnusedVariable
         data = {'resturl': self.env.getRestUrl()}
         return data
 
@@ -262,7 +262,7 @@ class FileSystemPanel(Component):
     has_roles = ['COMPONENT_FILESYSTEM']
 
     def render(self, request):
-        data = {'path':'', 'url':''}
+        data = {'path': '', 'url': ''}
         if request.method == 'POST':
             path = request.args0.get('path')
             url = request.args0.get('url')
@@ -286,7 +286,8 @@ class FileSystemPanel(Component):
             self.config.save()
         except Exception, e:
             self.log.error("Error adding shared file system entry point", e)
-            return {'error': ("Error adding shared file system entry point", e)}
+            return {'error':
+                ("Error adding shared file system entry point", e)}
         self.env.tree.update()
         return {'info': "Shared file system entry point has been added."}
 
@@ -352,29 +353,3 @@ class AliasesPanel(Component):
             return {'error': ("Error generating an alias", e)}
         self.env.tree.update()
         return {'info': "Alias has been added."}
-
-
-#class QuickinstallerPanel(Component):
-#    """
-#    Manage components.
-#    """
-#    implements(IAdminPanel)
-#    
-#    template = 'templates' + os.sep + 'components_quickinstaller.tmpl'
-#    panel_ids = ('components', 'Components', 'quickinstaller', 
-#                 'Quickinstaller')
-#    has_roles = ['SEISHUB_ADMIN']
-#    
-#    def render(self, request):
-#        packages = self.env.registry.getPackageIds()
-#        resourcetypes = self.env.registry.getAllPackagesAndResourceTypes()
-#        
-#        if request.method=='POST':
-#            args = request.args
-#            if 'rebuild' in args.keys():
-#                self.env.update()
-#        
-#        data = {'packages': packages,
-#                'resourcetypes': resourcetypes,
-#                'tree': self.env.tree._registry }
-#        return data

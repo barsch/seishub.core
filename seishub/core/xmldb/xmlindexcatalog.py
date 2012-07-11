@@ -11,13 +11,14 @@ from seishub.core.xmldb.index import XmlIndex, type_classes
 from seishub.core.xmldb.interfaces import IXPathQuery, IResource, IXmlIndex
 from seishub.core.xmldb.resource import Resource, XmlDocument
 from seishub.core.xmldb.xpath import XPathQuery
-from sqlalchemy import select, sql, literal
+from sqlalchemy import select, sql
+from sqlalchemy.sql.expression import literal_column
 from zope.interface.exceptions import DoesNotImplement
 
 
 class _IndexView(object):
     """
-    Mixin for XMLIndexCatalog providing "horizontal" SQL views on the indexed 
+    Mixin for XMLIndexCatalog providing "horizontal" SQL views on the indexed
     data per resource type.
     """
 
@@ -38,7 +39,7 @@ class _IndexView(object):
         # create index view
         query, joins = self._createIndexView(xmlindex_list[::-1])
         query = query.select_from(joins)
-        self._db_manager.createView(name, util.compileStatement(query))
+        self._db_manager.createView(name, query)
         self._db_manager.env.log.debug("Updating IndexView %s ..." % name)
 
     def _createIndexView(self, xmlindex_list, compact=False):
@@ -53,8 +54,6 @@ class _IndexView(object):
             msg = "Parameter xmlindex_list may not be empty."
             raise InvalidParameterError(msg)
         id = xmlindex_list[0].resourcetype._id
-        package_id = xmlindex_list[0].resourcetype.package.package_id
-        resourcetype_id = xmlindex_list[0].resourcetype.resourcetype_id
         # check if resource types are the same for all indexes:
         for xmlindex in xmlindex_list:
             if xmlindex.resourcetype._id == id:
@@ -62,13 +61,13 @@ class _IndexView(object):
             msg = "XmlIndex objects must be from the same resource type."
             raise InvalidParameterError(msg)
         columns = [document_tab.c['id'].label("document_id"),
-                   document_meta_tab.c['datetime'].label("document_last_modified")]
+            document_meta_tab.c['datetime'].label("document_last_modified")]
         joins = document_tab.c['id'] == document_meta_tab.c['id']
         if not compact:
-            # add also columns package_id and resourcetype_id and resource_name 
+            # add also columns package_id and resourcetype_id and resource_name
             columns.extend([
-                literal(package_id).label("package_id"),
-                literal(resourcetype_id).label("resourcetype_id"),
+                resourcetypes_tab.c['package_id'].label("package_id"),
+                resource_tab.c['resourcetype_id'].label("resourcetype_id"),
                 resource_tab.c['name'].label("resource_name"),
             ])
         query = select(columns, joins, distinct=True)
@@ -80,7 +79,8 @@ class _IndexView(object):
         # joins over resource type
         oncl = sql.and_(
             resourcetypes_tab.c['id'] == resource_tab.c['resourcetype_id'],
-            resourcetypes_tab.c['id'] == int(xmlindex.resourcetype._id),
+            resourcetypes_tab.c['id'] == \
+                literal_column("%s" % int(xmlindex.resourcetype._id)),
         )
         joins = joins.join(resourcetypes_tab, onclause=oncl)
         return query, joins
@@ -180,7 +180,7 @@ class _QueryProcessor(object):
         idx_tab = idx._getElementCls().db_table.alias()
         if complement:
             # if complement is set, return all rows NOT corresponding to the
-            # selected rows via where clause! 
+            # selected rows via where clause!
             doc_clause = idx_tab.c['document_id'] != document_tab.c['id']
         else:
             # select all rows of a document, if one row fits the where clause
@@ -192,7 +192,7 @@ class _QueryProcessor(object):
     def _joinIndexes(self, xmlindex_list, q, joins=None):
         """
         Joins all given indexes by document_id and optional grouping elements.
-        
+
         The column name correspond to the label of the XMLIndex object.
         """
         if joins == None:
@@ -215,11 +215,11 @@ class _QueryProcessor(object):
             q.append_column(idx_tab.c['keyval'].label(keyval_label))
             join = getattr(joins, "outerjoin")
             if not grouping or (idx_gp not in gp_paths):
-                # either we don't group at all or this is the first time we 
+                # either we don't group at all or this is the first time we
                 # got a grouping element
                 oncl = sql.and_(
                     idx_tab.c['document_id'] == document_tab.c['id'],
-                    idx_tab.c['index_id'] == idx_id
+                    idx_tab.c['index_id'] == literal_column("%s" % idx_id)
                 )
                 if grouping:
                     gp_paths[idx_gp] = idx_tab
@@ -227,7 +227,7 @@ class _QueryProcessor(object):
                 # here we know the grouping element
                 oncl = sql.and_(
                     idx_tab.c['document_id'] == document_tab.c['id'],
-                    idx_tab.c['index_id'] == idx_id,
+                    idx_tab.c['index_id'] == literal_column("%s" % idx_id),
                     idx_tab.c['group_pos'] == gp_paths[idx_gp].c['group_pos']
                 )
             joins = join(idx_tab, onclause=oncl)
@@ -245,12 +245,12 @@ class _QueryProcessor(object):
                 lidx = self.findIndex(l[0], l[1], l[2])
                 joins, ltab = self._join_on_index(lidx, joins,
                                                   complement=complement)
-                if isinstance(r, list): # joined path query
+                if isinstance(r, list):  # joined path query
                     ridx = self.findIndex(r[0], r[1], r[2])
                     joins, rtab = self._join_on_index(ridx, joins,
                                                       complement=complement)
                     w = ltab.c['keyval'] == rtab.c['keyval']
-                else: # key / value query
+                else:  # key / value query
                     w = self._applyOp(op, ltab.c['keyval'], lidx.prepareKey(r))
             else:
                 # logical operator
@@ -276,7 +276,7 @@ class _QueryProcessor(object):
 
     def _process_order_by(self, order_by, query, joins=None):
         for ob in order_by:
-            # an order_by element is of the form: 
+            # an order_by element is of the form:
             # [[package, resourcetype, xpath], direction]
             idx = self.findIndex(ob[0][0], ob[0][1], ob[0][2])
             idx_name = str(idx)
@@ -321,7 +321,7 @@ class _QueryProcessor(object):
     def query(self, xpath):
         """
         Query the catalog.
-        
+
         @param xpath: xpath query to be performed
         @type xpath: L{seishub.xmldb.interfaces.IXPathQuery}
         @return: result set containing uris of resources this xpath applies to
@@ -388,7 +388,7 @@ class _QueryProcessor(object):
 class XmlIndexCatalog(DbStorage, _QueryProcessor, _IndexView):
     """
     A catalog of indexes.
-    
+
     Most methods use XMLIndex objects as input parameters. You may use the
     getIndexes methods to query for valid XMLIndex objects.
     """
@@ -533,14 +533,14 @@ class XmlIndexCatalog(DbStorage, _QueryProcessor, _IndexView):
         """
         for element_cls in type_classes.values():
             self.drop(element_cls,
-                      document={'_id':resource.document._id})
+                      document={'_id': resource.document._id})
         return
 
     def reindexIndexes(self, xmlindex_list):
         """
         Reindex all resources by a list of XMLIndex objects.
-        
-        This works only with indexes of a single resource type. We take the 
+
+        This works only with indexes of a single resource type. We take the
         resource type of the first index and skip any additional indexes with
         a different resource type.
         """
@@ -560,7 +560,7 @@ class XmlIndexCatalog(DbStorage, _QueryProcessor, _IndexView):
         query = sql.select()
         a = document_tab.alias('a')
         if resourcetype.version_control:
-            # on version controlled resourcetypes, select highest revision only 
+            # on version controlled resourcetypes, select highest revision only
             rmax_query = sql.select([document_tab.c['resource_id'],
                                      sql.func.max(document_tab.c['revision']).\
                                      label('max_revision')

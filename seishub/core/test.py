@@ -30,16 +30,16 @@ VERBOSE_DATABASE = False
 class SeisHubEnvironmentTestCase(unittest.TestCase):
     """
     Generates a temporary SeisHub environment without any service.
-    
-    We generate a temporary configuration file, an environment object and 
-    disable logging at all. Any class inheriting from this test case may 
-    overwrite the _config method to preset additional options to the test 
+
+    We generate a temporary configuration file, an environment object and
+    disable logging at all. Any class inheriting from this test case may
+    overwrite the _config method to preset additional options to the test
     environment.
-    
+
     Don't ever overwrite the __init__ or run methods!
     """
 
-    def __init__(self, methodName='runTest', filename=None): #@UnusedVariable
+    def __init__(self, methodName='runTest', filename=None):  # @UnusedVariable
         """
         Initialize the test procedure.
         """
@@ -54,8 +54,8 @@ class SeisHubEnvironmentTestCase(unittest.TestCase):
     def _config(self):
         """
         Method to write into the temporary configuration file.
-        
-        This method may be overwritten from any test case to set up 
+
+        This method may be overwritten from any test case to set up
         configuration parameters needed for the test case.
         """
         pass

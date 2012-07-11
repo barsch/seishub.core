@@ -6,10 +6,11 @@ The database manager.
 from seishub.core.config import Option, IntOption
 from seishub.core.db import DEFAULT_MAX_OVERFLOW, DEFAULT_POOL_SIZE, \
     DEFAULT_DB_URI
+from seishub.core.db.util import compileStatement
 from seishub.core.exceptions import NotFoundError
+from sqlalchemy.orm import sessionmaker
 import os
 import sqlalchemy as sa
-from sqlalchemy.orm import sessionmaker
 
 
 meta = sa.MetaData()
@@ -88,7 +89,8 @@ class DatabaseManager(object):
                                 encoding='utf-8',
                                 convert_unicode=True,
                                 max_overflow=self.max_overflow,
-                                pool_size=self.pool_size)
+                                pool_size=self.pool_size,
+                                )
 
     def _getSQLiteEngine(self):
         """
@@ -109,16 +111,20 @@ class DatabaseManager(object):
         """
         return self.engine.execute(*args, **kwargs)
 
-    def createView(self, name, sql):
+    def createView(self, name, query):
         """
-        Create a SQL view from a SQL string and a name.
+        Create a SQL view from a query and a view name.
         """
         try:
             self.dropView(name)
         except NotFoundError:
             pass
         name = self.engine.dialect.identifier_preparer.quote_identifier(name)
-        sql = "CREATE VIEW %s AS %s" % (name, sql)
+        if not isinstance(query, basestring):
+            # keep it backwards compatible for SQLViewRegistry
+            # (is this used at all ?)
+            query = compileStatement(query)
+        sql = "CREATE VIEW %s AS %s" % (name, query)
         self.engine.execute(sql)
 
     def dropView(self, name):
@@ -152,8 +158,8 @@ class DatabaseManager(object):
             temp = self.engine.execute(sql).fetchall()
             return [id[0] for id in temp]
         elif self.engine.name.startswith('postgres'):
-            sql = """SELECT viewname FROM pg_views 
-                     WHERE schemaname 
+            sql = """SELECT viewname FROM pg_views
+                     WHERE schemaname
                      NOT IN('information_schema', 'pg_catalog');"""
             temp = self.engine.execute(sql).fetchall()
             return [id[0] for id in temp]
@@ -174,7 +180,7 @@ class DatabaseManager(object):
         Returns the size of the whole database.
         """
         if self.engine.name.startswith('postgres'):
-            # XXX:
+            # XXX: Only works for pg yet
             sql = "SELECT pg_database_size('%s');" % self.engine.url.database
             result = self.engine.execute(sql).fetchall()[0]
             return result[0]

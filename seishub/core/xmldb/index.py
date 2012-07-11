@@ -41,17 +41,17 @@ INDEX_TYPES = {
 class XmlIndex(Serializable):
     """
     A XML index.
-    
+
     @param resourcetype: ResourcetypeWrapper instance
-    @param xpath: path to node in XML tree to be indexed, or any arbitrary 
+    @param xpath: path to node in XML tree to be indexed, or any arbitrary
     xpath expression, that returns a value of correct type
     @param type: TEXT_INDEX | NUMERIC_INDEX | DATETIME_INDEX | BOOLEAN_INDEX |
                  DATE_INDEX | FLOAT_INDEX | INTEGER_INDEX | TIMESTAMP_INDEX
     @param options: additional options for an index
-    
+
     Note:
-    DATETIME_INDEX: options may be a format string (see time.strftime() 
-    documentation), but note that strftime / strptime does not support 
+    DATETIME_INDEX: options may be a format string (see time.strftime()
+    documentation), but note that strftime / strptime does not support
     microseconds! Without a format string we assume a ISO 8601 string.
     """
 
@@ -59,14 +59,14 @@ class XmlIndex(Serializable):
 
     db_table = defaults.index_def_tab
     db_mapping = {
-        'resourcetype':Relation(ResourceTypeWrapper, 'resourcetype_id',
-                                lazy=True),
-        'xpath':'xpath',
-        'group_path':'group_path',
-        'type':'type',
-        'options':'options',
-        'label':'label',
-        '_id':'id'
+        'resourcetype': Relation(ResourceTypeWrapper, 'resourcetype_id',
+                                 lazy=True),
+        'xpath': 'xpath',
+        'group_path': 'group_path',
+        'type': 'type',
+        'options': 'options',
+        'label': 'label',
+        '_id': 'id'
     }
 
     def __init__(self, resourcetype=None, xpath=None, type=TEXT_INDEX,
@@ -208,11 +208,11 @@ class KeyIndexElement(Serializable):
     Base class for all indexes.
     """
     db_mapping = {
-        '_id':'id',
-        'index':Relation(XmlIndex, 'index_id'),
-        'key':'keyval',
-        'group_pos':'group_pos',
-        'document':Relation(XmlDocument, 'document_id')
+        '_id': 'id',
+        'index': Relation(XmlIndex, 'index_id'),
+        'key': 'keyval',
+        'group_pos': 'group_pos',
+        'document': Relation(XmlDocument, 'document_id')
     }
 
     def __init__(self, index=None, key=None, document=None,

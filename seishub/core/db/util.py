@@ -3,7 +3,6 @@
 Database related utilities.
 """
 
-
 from decimal import Decimal
 from lxml.etree import Element, SubElement, tostring
 from seishub.core.util.xmlwrapper import toString
@@ -17,8 +16,11 @@ def compileStatement(stmt, bind=None, params={}, **kwargs):
     Compiles a statement with inlines bindparams and additional arguments.
 
     WARNING: This doesn't do any escaping!
-    
+
     @see L{http://www.sqlalchemy.org/trac/wiki/DebugInlineParams}
+
+    XXX: Creating views currently relies on this - you should never use it
+    within mapped functions due to security reasons!
     """
     if not bind:
         bind = stmt.bind
@@ -81,7 +83,8 @@ def querySingleColumn(request, table, column, **kwargs):
 
 
 class CustomJSONEncoder(json.JSONEncoder):
-    """ 
+    """
+    Custom JSOn Encoder which also takes care of datetime and Decimal objects.
     """
     def default(self, obj):
         if isinstance(obj, datetime.date):
@@ -90,9 +93,9 @@ class CustomJSONEncoder(json.JSONEncoder):
             return obj.strftime('%H:%M:%S')
         elif isinstance(obj, datetime.datetime):
             return obj.strftime('%Y-%m-%dT%H:%M:%SZ')
-        elif isinstance (obj, datetime.timedelta):
+        elif isinstance(obj, datetime.timedelta):
             return str(obj)
-        elif isinstance (obj, Decimal):
+        elif isinstance(obj, Decimal):
             return float(obj)
         else:
             return json.JSONEncoder.default(self, obj)
@@ -190,7 +193,7 @@ def formatORMResults(request, query, build_url=False):
 def formatResults(request, results, count=None, limit=None, offset=0,
                   build_url=False):
     """
-    Fetches results from database and creates either a XML resource or a JSON 
+    Fetches results from database and creates either a XML resource or a JSON
     document. It also takes care of limit and offset requests.
     """
     base_url = request.env.getRestUrl()

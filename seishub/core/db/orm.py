@@ -4,7 +4,7 @@ The database object-relational mapping (ORM) class.
 """
 
 from sqlalchemy import select, Text, or_, and_
-from sqlalchemy.exceptions import IntegrityError, NoSuchColumnError
+from sqlalchemy.exc import NoSuchColumnError, IntegrityError
 from sqlalchemy.sql import operators
 from sqlalchemy.sql.expression import ClauseList
 from zope.interface import implements, Interface, directlyProvides, \
@@ -21,12 +21,12 @@ class IDbEnabled(Interface):
     """
     Object provides access to DB manager.
     """
-    def setDb(db): #@NoSelf
+    def setDb(db):  # @NoSelf
         """
         @param db: database engine
         """
 
-    def getDb(): #@NoSelf
+    def getDb():  # @NoSelf
         """
         @return: database engine
         """
@@ -37,7 +37,6 @@ class ISerializable(Interface):
     Object providing functionality for serialization.
     """
     _id = Attribute("Unique id of Serializable object.")
-
 
 
 class IRelation(Interface):
@@ -66,7 +65,7 @@ class IDbAttributeProxy(Interface):
 
 class DB_NULL(object):
     """
-    Pass this class to pickup(...) or drop(...) as a parameter value to 
+    Pass this class to pickup(...) or drop(...) as a parameter value to
     explicitly claim that parameter to be None.
     """
     pass
@@ -74,8 +73,8 @@ class DB_NULL(object):
 
 class DB_LIMIT(object):
     """
-    Pass this object to pickup(...) to select only the object being 
-    maximal, minimal or having a fixed value for the given attribute in a 
+    Pass this object to pickup(...) to select only the object being
+    maximal, minimal or having a fixed value for the given attribute in a
     x-to-many relation.
     """
     def __init__(self, attr, type='max', value=None):
@@ -110,13 +109,13 @@ class DbEnabled(object):
 class DbStorage(DbEnabled):
     """
     Mixin providing object serialization to a sqlalchemy SQL database.
-    
-    Internal integer ids are stored into the _id attribute of Serializable 
+
+    Internal integer ids are stored into the _id attribute of Serializable
     objects. Each object has an unique id for that object type.
-    
+
     Known bugs and limitations of the DbStorage mapping tool:
         * 'many-to-many' relations are not (yet) supported
-        * selecting / dropping with parameters depending on a 'to-many' 
+        * selecting / dropping with parameters depending on a 'to-many'
         relation are not (yet) supported
         * lazy 'to-many' relations not yet supported
         * DB_LIMIT on children of lazy 'to-one' relations not yet supported
@@ -175,14 +174,14 @@ class DbStorage(DbEnabled):
                     # read related object included in the query
                     try:
                         o = self.pickup(col.cls, **val)
-                        assert len(o) == 1 # sanity check
+                        assert len(o) == 1  # sanity check
                         val = o[0]._id
                     except IndexError:
                         raise DbError('A related object could not be ' + \
                                       'located in the database. %s: %s' % \
                                       (col.cls, str(val)))
                 elif isinstance(val, col.cls):
-                    # related object was included, use it's id 
+                    # related object was included, use it's id
                     val = val._id
                 elif val == DB_NULL:
                     val = None
@@ -206,30 +205,30 @@ class DbStorage(DbEnabled):
                     colname = col.name
                     relname = 'id'
                 else:
-                    # in a to-many relation the id of the parent is stored 
+                    # in a to-many relation the id of the parent is stored
                     # in the child's table
                     colname = 'id'
                     relname = col.name
             if IRelation.providedBy(col) and not value is DB_NULL:
-                #(value is DB_NULL or isinstance(value, DB_LIMIT)): 
+                #(value is DB_NULL or isinstance(value, DB_LIMIT)):
                 # Object relation
                 if col.lazy and not value and attr not in order_by.keys():
                     # skip lazy relations, if not needed for a where clause
                     continue
                 if isinstance(value, col.cls) and hasattr(value, '_id'):
-                    # if there is an object of correct type included with the 
+                    # if there is an object of correct type included with the
                     # query, providing an id, use that id instead
                     # TODO: instead of using the id it would be more common to
                     # use any parameters provided by the object
-                    value = {'_id':value._id}
+                    value = {'_id': value._id}
                 rel_tab = col.cls.db_table
-                # from here on value should be none or a dict, 
+                # from here on value should be none or a dict,
                 # or something went wrong
                 # assert not value or isinstance(value, dict)
                 if col.lazy and value and '_id' in value.keys() \
                     and attr not in order_by.keys():
                     # in this case we got the id for the related object somehow
-                    # but don't need the related object, as it's non-eagerly 
+                    # but don't need the related object, as it's non-eagerly
                     # loaded and not part of the ORDER_BY clause
                     q = q.where(table.c[colname] == value['_id'])
                 else:
@@ -253,17 +252,17 @@ class DbStorage(DbEnabled):
                     rel_order_by = order_by.get(attr, dict())
                     if isinstance(value, DB_LIMIT):
                         # column to maximize / minimize / fix
-                        limit_col = col.cls.db_mapping[value.attr]
+                        lim_col = col.cls.db_mapping[value.attr]
                         if value.type == 'fixed':
                             # select rows with given value only
-                            q = q.where(rel_tab.c[limit_col] == value.value)
+                            q = q.where(rel_tab.c[lim_col] == value.value)
                         else:
-                            # select rows where limit_col is maximal / minimal 
+                            # select rows where limit_col is maximal / minimal
                             rel_tabA = rel_tab.alias()
                             if value.type == 'max':
-                                cl = rel_tab.c[limit_col] < rel_tabA.c[limit_col]
+                                cl = rel_tab.c[lim_col] < rel_tabA.c[lim_col]
                             else:
-                                cl = rel_tab.c[limit_col] > rel_tabA.c[limit_col]
+                                cl = rel_tab.c[lim_col] > rel_tabA.c[lim_col]
                             joins.append([rel_tabA,
                                          [and_(rel_col == rel_tabA.c[relname],
                                                cl)
@@ -300,7 +299,7 @@ class DbStorage(DbEnabled):
             # skip empty objects
             return objs
         for attr, col in cls.db_mapping.iteritems():
-            if IRelation.providedBy(col): # object relation
+            if IRelation.providedBy(col):  # object relation
                 if col.relation_type == 'to-one':
                     rel_id = result[str(table) + '_' + col.name]
                     if not rel_id:
@@ -317,7 +316,7 @@ class DbStorage(DbEnabled):
                                                     result, objs)[col.cls]
                         if rel_o:
                             values[attr] = rel_o[-1]
-                else: # to-many relation
+                else:  # to-many relation
                     rel_id = result[str(col.cls.db_table) + '_' + col.name]
                     rel_o = self._generate_objs(col.cls, result, objs)[col.cls]
                     values[attr] = list()
@@ -325,7 +324,7 @@ class DbStorage(DbEnabled):
                         rel_attr = o.__getattribute__(col.name + '_id')
                         if rel_attr and rel_attr == cur_id:
                             values[attr].append(o)
-            elif ILazyAttribute.providedBy(col): # lazy attribute
+            elif ILazyAttribute.providedBy(col):  # lazy attribute
                 values[attr] = DbAttributeProxy(self, col, table, {'id':
                                                 result[str(table) + '_id']})
             else:
@@ -385,11 +384,11 @@ class DbStorage(DbEnabled):
 
     def store(self, *objs, **kwargs):
         """
-        Store a (list of) Serializable object(s) into specified DB table  
-        if objs is a list, all objects in list will be stored within the same 
+        Store a (list of) Serializable object(s) into specified DB table
+        if objs is a list, all objects in list will be stored within the same
         transaction.
-        
-        @keyword cascading: If True, also underlying related objects are 
+
+        @keyword cascading: If True, also underlying related objects are
                             stored, default is False.
         @type cascading:    bool
         """
@@ -442,11 +441,11 @@ class DbStorage(DbEnabled):
         """
         Update a (list of) Serializable object(s).
 
-        If objs is a list, all objects in list will be updated within the same 
-        transaction. Objects to update have to provide an _id attribute to be 
+        If objs is a list, all objects in list will be updated within the same
+        transaction. Objects to update have to provide an _id attribute to be
         identified.
 
-        @keyword cascading: If True, also underlying related objects are 
+        @keyword cascading: If True, also underlying related objects are
                             updated, default is False.
         @type cascading:    bool
         """
@@ -458,22 +457,22 @@ class DbStorage(DbEnabled):
         Read Serializable objects with given keys from database.
 
         @param cls: Object type to be retrieved.
-        @keyword _order_by: dictionary of the form:  
+        @keyword _order_by: dictionary of the form:
             {'attribute':'ASC'|'DESC', ...}
         @keyword _limit: result limit
         @keyword _offset: result offset (used in combination with limit)
-        @param **keys: kwarg list of the form: 
+        @param **keys: kwarg list of the form:
             - attribute_name = value
         or for relational attributes:
             - attribute_name = Object
             - attribute_name = {'attribute_name' : 'value'}
 
-        In a to-many relation DB_LIMIT_MIN and DB_LIMIT_MAX may be used to 
-        select only one single related object providing the maximum (or 
+        In a to-many relation DB_LIMIT_MIN and DB_LIMIT_MAX may be used to
+        select only one single related object providing the maximum (or
         minimum) for the given attribute:
             - relation_name = DB_LIMIT_MAX('attribute_name')
 
-        Use DB_NULL as a value to force a column to be None; 
+        Use DB_NULL as a value to force a column to be None;
         attribute_name = None will be ignored:
             - attribute_name = DB_NULL
         """
@@ -512,7 +511,7 @@ class DbStorage(DbEnabled):
         else:
             results = query
         # create objects from results
-        objs = {cls:list()}
+        objs = {cls: list()}
         for res in results:
             objs = self._generate_objs(cls, res, objs)
         query.close()
@@ -524,14 +523,14 @@ class DbStorage(DbEnabled):
     def drop(self, cls, **keys):
         """
         Delete object with given keys from database.
-        
+
         @param cls: Object type to be removed.
-        @param **keys: kwarg list of the form: 
+        @param **keys: kwarg list of the form:
             - attribute_name = value
         or for relational attributes:
             - attribute_name = Object
             - attribute_name = {'attribute_name' : 'value'}
-        Use DB_NULL as value to force a column to be None, 
+        Use DB_NULL as value to force a column to be None,
         attribute_name = None will be ignored.
         """
         if hasattr(self, 'debug') and self.debug:
@@ -557,7 +556,7 @@ class DbStorage(DbEnabled):
                         relkey = rel.name + '_id'
                     res = conn.execute(q).fetchall()
                     for r in res:
-                        ret *= self.drop(rel.cls, **{relkey:r[0]})
+                        ret *= self.drop(rel.cls, **{relkey: r[0]})
             # delete parent
             if w.clauses:
                 result = conn.execute(table.delete(w))
@@ -580,12 +579,12 @@ class DbStorage(DbEnabled):
 class Serializable(object):
     """
     Subclasses may be serialized into a DbStorage.
-    
+
     Serializable objects should implement serializable attributes via the
     db_property descriptor.
-    All arguments of the __init__ method of a Serializable object have to be 
+    All arguments of the __init__ method of a Serializable object have to be
     optional and should default to None!
-    
+
     The db_mapping attribute is a dict of the following structure:
     db_mapping = {'attribute name' : 'name of column in db_table', ... }
     """
@@ -659,7 +658,7 @@ class DbAttributeProxy(object):
         try:
             q = select([self.table.c[self.attr_name]], w)
             res = self.db_storage.db.execute(q).fetchall()
-            assert len(res) <= 1 # sanity check
+            assert len(res) <= 1  # sanity check
             return res[0][self.attr_name]
         except IndexError:
             raise DbError('An error occurred while getting related object ' + \
@@ -668,10 +667,10 @@ class DbAttributeProxy(object):
 
 class db_property(property):
     """
-    Use this property instead of the python 'property' descriptor to support 
+    Use this property instead of the python 'property' descriptor to support
     lazy object getting.
     Usage is like standard 'property' descriptor with an additional parameter:
-    @param attr: name of the attribute used by the property 
+    @param attr: name of the attribute used by the property
     """
     def __init__(self, *args, **kwargs):
         self.attr = kwargs.pop('attr', None)
@@ -698,7 +697,7 @@ class db_property(property):
 class Relation(object):
     """
     Defines a one-to-one/many-to-one relation between Serializable objects.
-    
+
     @param cls: class of target object type
     @param name: name of the referencing column in database table
     @param lazy: lazy getting of related objects (True by default), in order to
@@ -726,10 +725,10 @@ class Relation(object):
 class LazyAttribute(object):
     """
     Defines a lazy object attribute.
-    Loads a propertie's data not until attribute is accessed for the first 
+    Loads a propertie's data not until attribute is accessed for the first
     time.
-    
-    @param name: name of the database column holding attribute data 
+
+    @param name: name of the database column holding attribute data
     """
     implements(ILazyAttribute)
 

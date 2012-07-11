@@ -27,31 +27,31 @@ class IXmlDocument(Interface):
     """
     Marker interface for xmldb XML documents.
     """
-    def getXml_doc(): #@NoSelf
+    def getXml_doc():  # @NoSelf
         """
         @return: xml document object
         """
 
-    def setXml_doc(xml_doc): #@NoSelf
+    def setXml_doc(xml_doc):  # @NoSelf
         """
         @param xml_doc: xml document object as provided by a XML parser,
         must implement seishub.util.xml.IXmlDoc
         """
 
-    def getResourceType(): #@NoSelf
+    def getResourceType():  # @NoSelf
         """
         The resource type is determined by the root node of the underlying 
         XML document
         @return: resource type (string)
         """
 
-    def setData(xml_data): #@NoSelf
+    def setData(xml_data):  # @NoSelf
         """
         @param xml_data: raw xml data
         @type xml_data: string
         """
 
-    def getData(): #@NoSelf
+    def getData():  # @NoSelf
         """
         @return: xml data (string)
         """
@@ -61,25 +61,25 @@ class IIndexBase(Interface):
     """
     Base class for index interfaces
     """
-    def init(value_path=None, key_path=None, type="text"): #@NoSelf
+    def init(value_path=None, key_path=None, type="text"):  # @NoSelf
         pass
 
-    def getKey_path(): #@NoSelf
+    def getKey_path():  # @NoSelf
         """
         @return: key path
         """
 
-    def getValue_path(): #@NoSelf
+    def getValue_path():  # @NoSelf
         """
         @return: value path
         """
 
-    def getType(): #@NoSelf
+    def getType():  # @NoSelf
         """
         @return: data type of the index key
         """
 
-    def getValues(): #@NoSelf
+    def getValues():  # @NoSelf
         """
         @return: values of this index
         """
@@ -88,12 +88,12 @@ class IIndexBase(Interface):
 class IXmlIndex(IIndexBase):
     """
     Marker interface for xmldb XML indexes.
-    
+
     An XmlIndex is used in order to index data stored inside a XmlResource's
     XML structure
     """
 
-    def eval(xml_resource): #@NoSelf
+    def eval(xml_resource):  # @NoSelf
         """
         Evaluate this index on a given XmlResource
 
@@ -106,45 +106,45 @@ class IXPathQuery(Interface):
     """
     Marker interface for xmldb xpath query objects.
     """
-    def init(query, order_by=None, limit=None): #@NoSelf
+    def init(query, order_by=None, limit=None):  # @NoSelf
         """
         @param param: XPath query
         @type query: string
-        @param order_by: list of order by clauses of the form: 
-        [["/somenode/someelement/@someattribute" (, "ASC"|"DESC")], 
+        @param order_by: list of order by clauses of the form:
+        [["/somenode/someelement/@someattribute" (, "ASC"|"DESC")],
         ...]
         @type order_by: python list
         @param limit: maximum number of results
         @type limit: int
         """
 
-    def getPredicates(): #@NoSelf
+    def getPredicates():  # @NoSelf
         """
         Get parsed predicates
         @return: parsed predicate expression
         @rtype: L{seishub.xmldb.xpath.PredicateExpression}
         """
 
-    def getValue_path(): #@NoSelf
+    def getValue_path():  # @NoSelf
         """
         Get value path
         @return: value path this query corresponds to
         @rtype: string
         """
 
-    def has_predicates(): #@NoSelf
+    def has_predicates():  # @NoSelf
         """
         @return: True if query has predicates
         @rtype: True | False
         """
 
-    def getOrder_by(): #@NoSelf
+    def getOrder_by():  # @NoSelf
         """
         @return: List of parsed order by clauses
         @rtype: python list
         """
 
-    def getLimit(): #@NoSelf
+    def getLimit():  # @NoSelf
         """
         @return: Result set limit (maximum number of results)
         @rtype: integer

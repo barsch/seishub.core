@@ -300,7 +300,7 @@ class DatabaseStatusPanel(Component):
                 clean = False
                 out += '\n  * Unknown document_id %d' % (id[0])
             if clean:
-                out += ' - CHECKED'
+                out += ' - OK'
             if len(ids) == 20:
                 out += '\n    (more)'
             out += '\n'
@@ -316,7 +316,7 @@ class DatabaseStatusPanel(Component):
         for id in ids:
             out += '\n  * Unknown resource_id %d' % (id[0])
         else:
-            out += ' - CHECKED'
+            out += ' - OK'
         if len(ids) == 20:
             out += '\n    (more)'
         out += '\n'
@@ -332,7 +332,7 @@ class DatabaseStatusPanel(Component):
         for id in ids:
             out += '\n  * Unknown document_id %d' % (id[0])
         else:
-            out += ' - CHECKED'
+            out += ' - OK'
         if len(ids) == 20:
             out += '\n    (more)'
         out += '\n'
@@ -348,7 +348,7 @@ class DatabaseStatusPanel(Component):
         for id in ids:
             out += '\n  * Unknown resourcetype_id %d' % (id[0])
         else:
-            out += ' - CHECKED'
+            out += ' - OK'
         if len(ids) == 20:
             out += '\n    (more)'
         out += '\n'
@@ -364,9 +364,8 @@ class DatabaseStatusPanel(Component):
         for id in ids:
             out += '\n  * Unknown package_id %d' % (id[0])
         else:
-            out += ' - CHECKED'
+            out += ' - OK'
         if len(ids) == 20:
             out += '\n    (more)'
         out += '\n'
         return out
-

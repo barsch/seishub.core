@@ -1,23 +1,20 @@
-# Copyright (c) 2001-2007 Twisted Matrix Laboratories.
+# Copyright (c) Twisted Matrix Laboratories.
 # See LICENSE for details.
 
 
 """
-Test cases for Twisted component architecture, adopted from 
-twisted.python.test.test_components. But this time we use Interface and 
-implements declaration from seishub.core.
+Test cases for Twisted component architecture.
 """
 
-from seishub.core.core import Interface, implements
+from seishub.core.core import Interface, implements, Attribute
+from zope.interface.adapter import AdapterRegistry
 
-from zope.interface import Attribute
-
-from twisted.trial import unittest as twisted_unittest
+from twisted.trial import unittest
 from twisted.python import components
-from twisted.python.components import proxyForInterface
+from twisted.python.components import _addHook, _removeHook, proxyForInterface
 
 
-class InterfacesTestCase(twisted_unittest.TestCase):
+class InterfacesTestCase(unittest.TestCase):
     """Test interfaces."""
 
 class Compo(components.Componentized):
@@ -27,11 +24,11 @@ class Compo(components.Componentized):
         return self.num
 
 class IAdept(Interface):
-    def adaptorFunc(): #@NoSelf
+    def adaptorFunc():
         raise NotImplementedError()
 
 class IElapsed(Interface):
-    def elapsedFunc(): #@NoSelf
+    def elapsedFunc():
         """
         1!
         """
@@ -49,9 +46,6 @@ class Elapsed(components.Adapter):
     implements(IElapsed)
     def elapsedFunc(self):
         return 1
-
-components.registerAdapter(Adept, Compo, IAdept)
-components.registerAdapter(Elapsed, Compo, IElapsed)
 
 class AComp(components.Componentized):
     pass
@@ -78,17 +72,45 @@ class Test2:
     def __init__(self, orig):
         pass
 
-components.registerAdapter(Test, AComp, ITest)
-components.registerAdapter(Test, AComp, ITest3)
-components.registerAdapter(Test2, AComp, ITest2)
 
 
-
-
-class ComponentizedTestCase(twisted_unittest.TestCase):
-    """Simple test case for caching in Componentized.
+class RegistryUsingMixin(object):
     """
+    Mixin for test cases which modify the global registry somehow.
+    """
+    def setUp(self):
+        """
+        Configure L{twisted.python.components.registerAdapter} to mutate an
+        alternate registry to improve test isolation.
+        """
+        # Create a brand new, empty registry and put it onto the components
+        # module where registerAdapter will use it.  Also ensure that it goes
+        # away at the end of the test.
+        scratchRegistry = AdapterRegistry()
+        self.patch(components, 'globalRegistry', scratchRegistry)
+        # Hook the new registry up to the adapter lookup system and ensure that
+        # association is also discarded after the test.
+        hook = _addHook(scratchRegistry)
+        self.addCleanup(_removeHook, hook)
+
+
+
+class ComponentizedTestCase(unittest.TestCase, RegistryUsingMixin):
+    """
+    Simple test case for caching in Componentized.
+    """
+    def setUp(self):
+        RegistryUsingMixin.setUp(self)
+
+        components.registerAdapter(Test, AComp, ITest)
+        components.registerAdapter(Test, AComp, ITest3)
+        components.registerAdapter(Test2, AComp, ITest2)
+
+
     def testComponentized(self):
+        components.registerAdapter(Adept, Compo, IAdept)
+        components.registerAdapter(Elapsed, Compo, IElapsed)
+
         c = Compo()
         assert c.getComponent(IAdept).adaptorFunc() == (1, 1)
         assert c.getComponent(IAdept).adaptorFunc() == (2, 2)
@@ -111,11 +133,11 @@ class ComponentizedTestCase(twisted_unittest.TestCase):
     def testMultiAdapter(self):
         c = CComp()
         co1 = c.getComponent(ITest)
-        _co2 = c.getComponent(ITest2)
+        co2 = c.getComponent(ITest2)
         co3 = c.getComponent(ITest3)
         co4 = c.getComponent(ITest4)
-        assert co4 == None
-        assert co1 is co3
+        self.assertIdentical(None, co4)
+        self.assertIdentical(co1, co3)
 
 
     def test_getComponentDefaults(self):
@@ -137,14 +159,14 @@ class ComponentizedTestCase(twisted_unittest.TestCase):
 
 
 
-class AdapterTestCase(twisted_unittest.TestCase):
+class AdapterTestCase(unittest.TestCase):
     """Test adapters."""
 
     def testAdapterGetComponent(self):
         o = object()
         a = Adept(o)
         self.assertRaises(components.CannotAdapt, ITest, a)
-        self.assertEquals(ITest(a, None), None)
+        self.assertEqual(ITest(a, None), None)
 
 
 
@@ -193,15 +215,12 @@ class ComponentDoubler(ComponentMeta):
         self.num += (num * 2)
         return self.original.num
 
-components.registerAdapter(MetaAdder, MetaNumber, IMeta)
-components.registerAdapter(ComponentAdder, ComponentNumber, IMeta)
-
 class IAttrX(Interface):
-    def x(): #@NoSelf
+    def x():
         pass
 
 class IAttrXX(Interface):
-    def xx(): #@NoSelf
+    def xx():
         pass
 
 class Xcellent:
@@ -218,37 +237,41 @@ class DoubleXAdapter:
     def __cmp__(self, other):
         return cmp(self.num, other.num)
 
-components.registerAdapter(DoubleXAdapter, IAttrX, IAttrXX)
 
-class TestMetaInterface(twisted_unittest.TestCase):
-
+class TestMetaInterface(RegistryUsingMixin, unittest.TestCase):
     def testBasic(self):
+        components.registerAdapter(MetaAdder, MetaNumber, IMeta)
         n = MetaNumber(1)
-        self.assertEquals(IMeta(n).add(1), 2)
+        self.assertEqual(IMeta(n).add(1), 2)
 
     def testComponentizedInteraction(self):
+        components.registerAdapter(ComponentAdder, ComponentNumber, IMeta)
         c = ComponentNumber()
         IMeta(c).add(1)
         IMeta(c).add(1)
-        self.assertEquals(IMeta(c).add(1), 3)
+        self.assertEqual(IMeta(c).add(1), 3)
 
     def testAdapterWithCmp(self):
         # Make sure that a __cmp__ on an adapter doesn't break anything
+        components.registerAdapter(DoubleXAdapter, IAttrX, IAttrXX)
         xx = IAttrXX(Xcellent())
         self.assertEqual(('x!', 'x!'), xx.xx())
 
 
-class RegistrationTestCase(twisted_unittest.TestCase):
+class RegistrationTestCase(RegistryUsingMixin, unittest.TestCase):
     """
     Tests for adapter registration.
     """
     def _registerAdapterForClassOrInterface(self, original):
-        adapter = lambda _o: None
-        class TheInterface(Interface):
-            pass
-        components.registerAdapter(adapter, original, TheInterface)
+        """
+        Register an adapter with L{components.registerAdapter} for the given
+        class or interface and verify that the adapter can be looked up with
+        L{components.getAdapterFactory}.
+        """
+        adapter = lambda o: None
+        components.registerAdapter(adapter, original, ITest)
         self.assertIdentical(
-            components.getAdapterFactory(original, TheInterface, None),
+            components.getAdapterFactory(original, ITest, None),
             adapter)
 
 
@@ -267,24 +290,24 @@ class RegistrationTestCase(twisted_unittest.TestCase):
         Test that an adapter from an interface can be registered and then
         looked up.
         """
-        class TheOriginal(Interface):
-            pass
-        return self._registerAdapterForClassOrInterface(TheOriginal)
+        return self._registerAdapterForClassOrInterface(ITest2)
 
 
     def _duplicateAdapterForClassOrInterface(self, original):
-        firstAdapter = lambda _o: False
-        secondAdapter = lambda _o: True
-        class TheInterface(Interface):
-            pass
-        components.registerAdapter(firstAdapter, original, TheInterface)
+        """
+        Verify that L{components.registerAdapter} raises L{ValueError} if the
+        from-type/interface and to-interface pair is not unique.
+        """
+        firstAdapter = lambda o: False
+        secondAdapter = lambda o: True
+        components.registerAdapter(firstAdapter, original, ITest)
         self.assertRaises(
             ValueError,
             components.registerAdapter,
-            secondAdapter, original, TheInterface)
+            secondAdapter, original, ITest)
         # Make sure that the original adapter is still around as well
         self.assertIdentical(
-            components.getAdapterFactory(original, TheInterface, None),
+            components.getAdapterFactory(original, ITest, None),
             firstAdapter)
 
 
@@ -303,14 +326,17 @@ class RegistrationTestCase(twisted_unittest.TestCase):
         Test that attempting to register a second adapter from an interface
         raises the appropriate exception.
         """
-        class TheOriginal(Interface):
-            pass
-        return self._duplicateAdapterForClassOrInterface(TheOriginal)
+        return self._duplicateAdapterForClassOrInterface(ITest2)
 
 
     def _duplicateAdapterForClassOrInterfaceAllowed(self, original):
-        firstAdapter = lambda _o: False
-        secondAdapter = lambda _o: True
+        """
+        Verify that when C{components.ALLOW_DUPLICATES} is set to C{True}, new
+        adapter registrations for a particular from-type/interface and
+        to-interface pair replace older registrations.
+        """
+        firstAdapter = lambda o: False
+        secondAdapter = lambda o: True
         class TheInterface(Interface):
             pass
         components.registerAdapter(firstAdapter, original, TheInterface)
@@ -332,6 +358,7 @@ class RegistrationTestCase(twisted_unittest.TestCase):
         self.assertIdentical(
             components.getAdapterFactory(original, TheInterface, None),
             secondAdapter)
+
 
     def test_duplicateAdapterForClassAllowed(self):
         """
@@ -356,18 +383,16 @@ class RegistrationTestCase(twisted_unittest.TestCase):
 
 
     def _multipleInterfacesForClassOrInterface(self, original):
-        adapter = lambda _o: None
-        class FirstInterface(Interface):
-            pass
-        class SecondInterface(Interface):
-            pass
-        components.registerAdapter(adapter, original, FirstInterface, SecondInterface)
+        """
+        Verify that an adapter can be registered for multiple to-interfaces at a
+        time.
+        """
+        adapter = lambda o: None
+        components.registerAdapter(adapter, original, ITest, ITest2)
         self.assertIdentical(
-            components.getAdapterFactory(original, FirstInterface, None),
-            adapter)
+            components.getAdapterFactory(original, ITest, None), adapter)
         self.assertIdentical(
-            components.getAdapterFactory(original, SecondInterface, None),
-            adapter)
+            components.getAdapterFactory(original, ITest2, None), adapter)
 
 
     def test_multipleInterfacesForClass(self):
@@ -385,25 +410,27 @@ class RegistrationTestCase(twisted_unittest.TestCase):
         Test the registration of an adapter from an interface to several
         interfaces at once.
         """
-        class TheOriginal(Interface):
-            pass
-        return self._multipleInterfacesForClassOrInterface(TheOriginal)
+        return self._multipleInterfacesForClassOrInterface(ITest3)
 
 
     def _subclassAdapterRegistrationForClassOrInterface(self, original):
-        firstAdapter = lambda _o: True
-        secondAdapter = lambda _o: False
+        """
+        Verify that a new adapter can be registered for a particular
+        to-interface from a subclass of a type or interface which already has an
+        adapter registered to that interface and that the subclass adapter takes
+        precedence over the base class adapter.
+        """
+        firstAdapter = lambda o: True
+        secondAdapter = lambda o: False
         class TheSubclass(original):
             pass
-        class TheInterface(Interface):
-            pass
-        components.registerAdapter(firstAdapter, original, TheInterface)
-        components.registerAdapter(secondAdapter, TheSubclass, TheInterface)
+        components.registerAdapter(firstAdapter, original, ITest)
+        components.registerAdapter(secondAdapter, TheSubclass, ITest)
         self.assertIdentical(
-            components.getAdapterFactory(original, TheInterface, None),
+            components.getAdapterFactory(original, ITest, None),
             firstAdapter)
         self.assertIdentical(
-            components.getAdapterFactory(TheSubclass, TheInterface, None),
+            components.getAdapterFactory(TheSubclass, ITest, None),
             secondAdapter)
 
 
@@ -422,9 +449,7 @@ class RegistrationTestCase(twisted_unittest.TestCase):
         Test that an adapter to a particular interface can be registered
         from both an interface and its subclass.
         """
-        class TheOriginal(Interface):
-            pass
-        return self._subclassAdapterRegistrationForClassOrInterface(TheOriginal)
+        return self._subclassAdapterRegistrationForClassOrInterface(ITest2)
 
 
 
@@ -436,7 +461,7 @@ class IProxiedInterface(Interface):
     ifaceAttribute = Attribute("""
         An example declared attribute, which should be proxied.""")
 
-    def yay(*a, **kw): #@NoSelf
+    def yay(*a, **kw):
         """
         A sample method which should be proxied.
         """
@@ -502,12 +527,12 @@ class IMultipleMethods(Interface):
     An interface with multiple methods.
     """
 
-    def methodOne(): #@NoSelf
+    def methodOne():
         """
         The first method. Should return 1.
         """
 
-    def methodTwo(): #@NoSelf
+    def methodTwo():
         """
         The second method. Should return 2.
         """
@@ -534,7 +559,7 @@ class MultipleMethodImplementor(object):
 
 
 
-class ProxyForInterfaceTests(twisted_unittest.TestCase):
+class ProxyForInterfaceTests(unittest.TestCase):
     """
     Tests for L{proxyForInterface}.
     """
@@ -558,8 +583,8 @@ class ProxyForInterfaceTests(twisted_unittest.TestCase):
         yayable = Yayable()
         proxy = klass(yayable)
         proxy.yay()
-        self.assertEquals(proxy.yay(), 2)
-        self.assertEquals(yayable.yays, 2)
+        self.assertEqual(proxy.yay(), 2)
+        self.assertEqual(yayable.yays, 2)
 
 
     def test_proxyAttribute(self):
@@ -586,16 +611,16 @@ class ProxyForInterfaceTests(twisted_unittest.TestCase):
         self.assertIdentical(yayable.ifaceAttribute, thingy)
 
 
-#    def test_proxyDeleteAttribute(self):
-#        """
-#        The attributes that proxy objects proxy should be deletable and affect
-#        the original object.
-#        """
-#        yayable = Yayable()
-#        yayable.ifaceAttribute = None
-#        _proxy = proxyForInterface(IProxiedInterface)(yayable)
-#        del proxy.ifaceAttribute
-#        self.assertFalse(hasattr(yayable, 'ifaceAttribute'))
+    def test_proxyDeleteAttribute(self):
+        """
+        The attributes that proxy objects proxy should be deletable and affect
+        the original object.
+        """
+        yayable = Yayable()
+        yayable.ifaceAttribute = None
+        proxy = proxyForInterface(IProxiedInterface)(yayable)
+        del proxy.ifaceAttribute
+        self.assertFalse(hasattr(yayable, 'ifaceAttribute'))
 
 
     def test_multipleMethods(self):
@@ -605,8 +630,8 @@ class ProxyForInterfaceTests(twisted_unittest.TestCase):
         """
         multi = MultipleMethodImplementor()
         proxy = proxyForInterface(IMultipleMethods)(multi)
-        self.assertEquals(proxy.methodOne(), 1)
-        self.assertEquals(proxy.methodTwo(), 2)
+        self.assertEqual(proxy.methodOne(), 1)
+        self.assertEqual(proxy.methodTwo(), 2)
 
 
     def test_subclassing(self):
@@ -626,9 +651,9 @@ class ProxyForInterfaceTests(twisted_unittest.TestCase):
 
         yayable = Yayable()
         special = SpecializedProxy(yayable)
-        self.assertEquals(yayable.yays, 0)
+        self.assertEqual(yayable.yays, 0)
         special.boo()
-        self.assertEquals(yayable.yays, -1)
+        self.assertEqual(yayable.yays, -1)
 
 
     def test_proxyName(self):
@@ -636,9 +661,17 @@ class ProxyForInterfaceTests(twisted_unittest.TestCase):
         The name of a proxy class indicates which interface it proxies.
         """
         proxy = proxyForInterface(IProxiedInterface)
-        self.assertEquals(
-            proxy.__name__.split('.')[-1],
-            "IProxiedInterface)")
+        self.assertEqual(proxy.__name__,
+            "(Proxy for seishub.core.tests." + \
+            "test_core_twisted_compatibility.IProxiedInterface)")
+
+    def test_implements(self):
+        """
+        The resulting proxy implements the interface that it proxies.
+        """
+        proxy = proxyForInterface(IProxiedInterface)
+        self.assertTrue(IProxiedInterface.implementedBy(proxy))
+
 
     def test_proxyDescriptorGet(self):
         """
@@ -664,7 +697,7 @@ class ProxyForInterfaceTests(twisted_unittest.TestCase):
         testObject = Sample()
         fakeProxy.original = testObject
         pd = components._ProxyDescriptor("hello", "original")
-        self.assertEquals(pd.__get__(fakeProxy), testObject.hello)
+        self.assertEqual(pd.__get__(fakeProxy), testObject.hello)
         fakeClassMethod = pd.__get__(None)
         fakeClassMethod(fakeProxy)
         self.failUnless(testObject.called)
@@ -692,8 +725,8 @@ class ProxyForInterfaceTests(twisted_unittest.TestCase):
 
         yayable = Yayable()
         wrapper = EnhancedWrapper(yayable)
-        self.assertEquals(wrapper.yay(3, 4, x=5, y=6), 8)
-        self.assertEquals(yayable.yayArgs,
+        self.assertEqual(wrapper.yay(3, 4, x=5, y=6), 8)
+        self.assertEqual(yayable.yayArgs,
                           [((3, 4), dict(x=5, y=6))])
 
 
@@ -725,7 +758,7 @@ class ProxyForInterfaceTests(twisted_unittest.TestCase):
         self.assertIdentical(proxy.foo, yayable)
 
         # Check the behavior
-        self.assertEquals(proxy.yay(), 1)
+        self.assertEqual(proxy.yay(), 1)
         self.assertIdentical(proxy.ifaceAttribute, yayable.ifaceAttribute)
         thingy = object()
         proxy.ifaceAttribute = thingy
@@ -734,9 +767,9 @@ class ProxyForInterfaceTests(twisted_unittest.TestCase):
         self.assertFalse(hasattr(yayable, 'ifaceAttribute'))
 
 
-import unittest
-
 def suite():
+    # don't use twisted.trial unittest here
+    import unittest  # @Reimport
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(InterfacesTestCase, 'test'))
     suite.addTest(unittest.makeSuite(ComponentizedTestCase, 'test'))

@@ -323,7 +323,7 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
     def test_indexRevision(self):
         """
         Tests indexing of a version controlled resource.
-        
+
         Indexing of revisions is only rudimentary supported. Right now only
         the latest revision is indexed - old revisions are not represented in
         the index catalog.
@@ -345,13 +345,15 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         index_dict = self.env.catalog.getIndexData(res)
         self.assertEqual(index_dict, {u'lat': {0: [u'50.23200']}})
         # get index directly from catalog for revision 3 (==latest)
-        res = self.env.catalog.getResource("test-catalog", "index", "muh.xml", 3)
+        res = self.env.catalog.getResource("test-catalog", "index", "muh.xml",
+                                           3)
         index_dict = self.env.catalog.getIndexData(res)
         self.assertEqual(index_dict, {u'lat': {0: [u'50.23200']}})
         # get index directly from catalog for revision 2
         # older revison do not have any indexed values
         # this behaviour may change later
-        res = self.env.catalog.getResource("test-catalog", "index", "muh.xml", 2)
+        res = self.env.catalog.getResource("test-catalog", "index", "muh.xml",
+                                           2)
         index_dict = self.env.catalog.getIndexData(res)
         self.assertEqual(index_dict, {u'lat': {0: [u'50.23200']}})
         # reindex manually
@@ -461,7 +463,8 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         self.env.registry.db_registerPackage("package")
         self.env.registry.db_registerResourceType("package", "rt")
         # index with 30 chars should work
-        self.env.catalog.registerIndex("package", "rt", "B" * 30, "/station/XY")
+        self.env.catalog.registerIndex("package", "rt", "B" * 30,
+                                       "/station/XY")
         # labels with more than 30 chars are to long
         try:
             self.env.catalog.registerIndex("package", "rt", "A" * 31,
@@ -578,7 +581,7 @@ class XmlCatalogTest(SeisHubEnvironmentTestCase):
         query = '/package/rt[*/lat>51]'
         result = catalog.query(query, full=True)
         self.assertEqual(len(result), 1)
-        # lat > 49 and lat < 51 
+        # lat > 49 and lat < 51
         query = '/package/rt/station[lat>49 and lat<51]'
         result = catalog.query(query, full=True)
         self.assertEqual(len(result), 2)

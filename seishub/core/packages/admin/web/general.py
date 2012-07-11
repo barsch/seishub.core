@@ -92,7 +92,7 @@ class DatabasePanel(Component):
                             "wiki/DatabaseNotes</a>.")
         if request.method == 'POST':
             uri = request.args0.get('uri', '')
-            pool_size = request.args0.get('pool_size' , DEFAULT_POOL_SIZE)
+            pool_size = request.args0.get('pool_size', DEFAULT_POOL_SIZE)
             max_overflow = request.args0.get('max_overflow',
                                              DEFAULT_MAX_OVERFLOW)
             verbose = request.args0.get('verbose', False)
@@ -130,7 +130,7 @@ class ConfigPanel(Component):
     panel_ids = ('admin', 'General', 'ini', 'seishub.ini')
     has_roles = ['SEISHUB_ADMIN']
 
-    def render(self, request): #@UnusedVariable
+    def render(self, request):  # @UnusedVariable
         data = {}
         sections = self.config.sections()
         data['sections'] = sections
@@ -151,7 +151,7 @@ class LogsPanel(Component):
     panel_ids = ('admin', 'General', 'logs', 'Logs')
     has_roles = ['SEISHUB_ADMIN']
 
-    def render(self, request): #@UnusedVariable
+    def render(self, request):  # @UnusedVariable
         log_file = os.path.join(self.env.getInstancePath(), 'logs',
                                 'seishub.log')
         try:
@@ -258,7 +258,7 @@ class UsersPanel(Component):
                                   email=email, institution=institution,
                                   permissions=permissions)
             except SeisHubError, e:
-                # password checks are made in self.auth.addUser method 
+                # password checks are made in self.auth.addUser method
                 data['error'] = str(e)
             except Exception, e:
                 self.log.error("Error adding new user", e)
@@ -300,7 +300,7 @@ class UsersPanel(Component):
                                      institution=institution,
                                      permissions=permissions)
             except SeisHubError, e:
-                # password checks are made in self.auth.addUser method 
+                # password checks are made in self.auth.addUser method
                 data['error'] = str(e)
             except Exception, e:
                 self.log.error("Error updating user", e)
@@ -322,7 +322,7 @@ class UsersPanel(Component):
             try:
                 self.auth.deleteUser(id=id)
             except SeisHubError(), e:
-                # checks are made in self.auth.deleteUser method 
+                # checks are made in self.auth.deleteUser method
                 data['error'] = str(e)
             except Exception, e:
                 self.log.error("Error deleting user", e)
@@ -385,7 +385,7 @@ class PluginsPanel(Component):
         self.env.update()
         return error
 
-    def _viewPlugins(self, request, error=None): #@UnusedVariable
+    def _viewPlugins(self, request, error=None):  # @UnusedVariable
         plugins = {}
         from seishub.core.core import ComponentMeta
         for component in ComponentMeta._components:
@@ -444,7 +444,7 @@ class ServicesPanel(Component):
         return data
 
     def _shutdownSeisHub(self):
-        reactor.stop() #@UndefinedVariable
+        reactor.stop()  # @UndefinedVariable
 
     def _restartSeisHub(self):
         raise NotImplemented

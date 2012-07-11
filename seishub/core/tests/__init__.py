@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from seishub.core.tests import test_config, test_core, test_core_zope_compatibility, \
-    test_core_twisted_compatibility
+from seishub.core.tests import test_config, test_core_zope_compatibility, \
+    test_core_twisted_compatibility, test_core
 import doctest
 import unittest
 
