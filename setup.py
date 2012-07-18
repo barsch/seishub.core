@@ -71,8 +71,8 @@ setup(
         'pyparsing',
         'obspy.core>0.7.0',
     ],
-    download_url="https://svn.geophysik.uni-muenchen.de/svn/seishub/trunk" + \
-        "/seishub.core#egg=seishub.core-dev",
+    download_url="https://github.com/barsch/seishub.core/zipball/master" + \
+        "#egg=seishub.core-dev",
     test_suite="seishub.core.test.suite",
     include_package_data=True,
     entry_points={
