@@ -25,7 +25,7 @@ Dependencies
 ------------
     * Twisted
     * Cheetah
-    * sqlalchemy>0.6.x
+    * sqlalchemy
     * PyOpenSSL
     * lxml
     * pycrypto
