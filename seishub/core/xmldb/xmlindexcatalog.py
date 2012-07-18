@@ -53,11 +53,7 @@ class _IndexView(object):
             raise InvalidParameterError(msg)
         id = xmlindex_list[0].resourcetype._id
         package_id = xmlindex_list[0].resourcetype.package.package_id
-        package_id = self.db.dialect.identifier_preparer.\
-            quote_identifier(package_id)
         resourcetype_id = xmlindex_list[0].resourcetype.resourcetype_id
-        resourcetype_id = self.db.dialect.identifier_preparer.\
-            quote_identifier(resourcetype_id)
         # check if resource types are the same for all indexes:
         for xmlindex in xmlindex_list:
             if xmlindex.resourcetype._id == id:
@@ -69,12 +65,25 @@ class _IndexView(object):
         joins = document_tab.c['id'] == document_meta_tab.c['id']
         if not compact:
             # add also columns package_id and resourcetype_id and resource_name
-            columns.extend([
-                sql.literal_column(package_id).label("package_id"),
-                sql.literal_column(resourcetype_id).\
-                    label("resourcetype_id"),
-                resource_tab.c['name'].label("resource_name"),
-            ])
+            if not self.env.db.isSQLite():
+                columns.extend([
+                    sql.literal_column("(VARCHAR(255) '%s')" % \
+                        package_id).label("package_id"),
+                    sql.literal_column("(VARCHAR(255) '%s')" % \
+                        resourcetype_id).label("resourcetype_id"),
+                    resource_tab.c['name'].label("resource_name"),
+                ])
+            else:
+                package_id = self.db.dialect.identifier_preparer.\
+                    quote_identifier(package_id)
+                resourcetype_id = self.db.dialect.identifier_preparer.\
+                    quote_identifier(resourcetype_id)
+                columns.extend([
+                    sql.literal_column(package_id).label("package_id"),
+                    sql.literal_column(resourcetype_id).\
+                        label("resourcetype_id"),
+                    resource_tab.c['name'].label("resource_name"),
+                ])
         query = select(columns, joins, distinct=True)
         # add recursive all given indexes
         query, joins = self._joinIndexes(xmlindex_list, query)

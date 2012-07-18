@@ -8,7 +8,6 @@ from seishub.core.db import DEFAULT_MAX_OVERFLOW, DEFAULT_POOL_SIZE, \
     DEFAULT_DB_URI
 from seishub.core.db.util import compileStatement
 from seishub.core.exceptions import NotFoundError
-from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import sessionmaker
 import os
 import sqlalchemy as sa
@@ -95,7 +94,7 @@ class DatabaseManager(object):
                                 convert_unicode=True,
                                 max_overflow=self.max_overflow,
                                 pool_size=self.pool_size,
-                                pool_recycle=3600,
+                                pool_recycle=1800,
                                 )
 
     def _getSQLiteEngine(self):
