@@ -96,10 +96,9 @@ class SeisHubEnvironmentTestCase(unittest.TestCase):
             tables = [t for t in tables if t.startswith(DEFAULT_PREFIX)]
             for table in tables:
                 res = self.env.db.engine.execute(sql % str(table)).fetchall()
-                if len(res) != self.tables.get(table):
+                if len(res) != self.tables.get(table, 0):
                     print "table %s: %d!=%d in %s" % (table,
-                                                      self.tables.get(table),
-                                                      len(res), str(self))
+                        self.tables.get(table, 0), len(res), str(self))
         # clean up DB
         if CLEAN_DATABASE:
             # disable foreign key constraints in SQLite

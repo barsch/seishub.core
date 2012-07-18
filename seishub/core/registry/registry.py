@@ -323,6 +323,13 @@ class RegistryBase(DbStorage, list):
         self.drop(self.cls, document_id=o[0].document_id)
         return True
 
+    def deleteAll(self, package_id=None, resourcetype_id=None):
+        o = self.get(package_id, resourcetype_id)
+        for res in o:
+            self.catalog.deleteResource(resource_id=res.resource._id)
+            self.drop(self.cls, document_id=res.document_id)
+        return True
+
 
 class SchemaRegistry(RegistryBase):
     _registry = list()
