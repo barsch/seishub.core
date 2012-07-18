@@ -20,7 +20,6 @@ Documentation
 
 ###### Related Papers ######
 
-* Barsch, Robert (2009): [Web-based technology for storage and processing of multi-component data in seismology: First steps towards a new design](http://edoc.ub.uni-muenchen.de/11043/). Dissertation, LMU München: Fakultät für Geowissenschaften.
 * Bernsdorf, S., Barsch, R., Beyreuther, M., Zakšek, K., Hort, M., Wassermann, J. (2010), [Decision support system for the mobile volcano fast response system](http://www.tandfonline.com/toc/tjde20/3/3). International Journal of Digital Earth. 3 (3), 280-291.
 * Beyreuther, M., Barsch, R., Krischer, L., Megies, T., Behr, Y., and Wassermann, J. (2010), [ObsPy: A Python Toolbox for Seismology](http://www.seismosoc.org/publications/SRL/SRL_81/srl_81-3_es/), Seismological Research Letters, 81 (3), 530-533.
 * Megies, T., Beyreuther, M., Barsch, R., Krischer, L., and Wassermann, J. (2011), [ObsPy - What can it do for data centers and observatories?](http://www.annalsofgeophysics.eu/index.php/annals/article/view/4838), Annals of Geophysics, 54 (1).
