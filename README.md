@@ -13,7 +13,12 @@ Acknowledgements
 
 This project was funded by the German Science Foundation (DFG) via grant DFG IG 16/9-1.
 
-###### Related Publications ######
+Documentation
+-------------
+
+* Barsch, Robert (2009): [Web-based technology for storage and processing of multi-component data in seismology: First steps towards a new design](http://edoc.ub.uni-muenchen.de/11043/). Dissertation, LMU München: Fakultät für Geowissenschaften.
+
+###### Related Papers ######
 
 * Barsch, Robert (2009): [Web-based technology for storage and processing of multi-component data in seismology: First steps towards a new design](http://edoc.ub.uni-muenchen.de/11043/). Dissertation, LMU München: Fakultät für Geowissenschaften.
 * Bernsdorf, S., Barsch, R., Beyreuther, M., Zakšek, K., Hort, M., Wassermann, J. (2010), [Decision support system for the mobile volcano fast response system](http://www.tandfonline.com/toc/tjde20/3/3). International Journal of Digital Earth. 3 (3), 280-291.
