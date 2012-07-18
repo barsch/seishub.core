@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from seishub.core.xmldb.tests import test_xmlcatalog, test_xmldbms, test_xmlindex, \
-    test_xmlindexcatalog, test_xpath
+from seishub.core.xmldb.tests import test_xmlcatalog, test_xmldbms, \
+    test_xmlindex, test_xmlindexcatalog, test_xpath
 import doctest
 import unittest
 

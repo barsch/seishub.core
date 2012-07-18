@@ -18,7 +18,7 @@ packages_tab = Table(DEFAULT_PREFIX + PACKAGES_TABLE, metadata,
     Column('name', Text),
     Column('version', Text),
     UniqueConstraint('name'),
-    extend_existing=True,
+    keep_existing=True,
 )
 
 resourcetypes_tab = Table(DEFAULT_PREFIX + RESOURCETYPES_TABLE, metadata,
@@ -29,7 +29,7 @@ resourcetypes_tab = Table(DEFAULT_PREFIX + RESOURCETYPES_TABLE, metadata,
     Column('version', Text),
     Column('version_control', Boolean),
     UniqueConstraint('name', 'package_id'),
-    extend_existing=True,
+    keep_existing=True,
 )
 
 schema_tab = Table(DEFAULT_PREFIX + SCHEMA_TABLE, metadata,
@@ -42,7 +42,7 @@ schema_tab = Table(DEFAULT_PREFIX + SCHEMA_TABLE, metadata,
            ForeignKey(DEFAULT_PREFIX + RESOURCETYPES_TABLE + '.id')),
     Column('type', Text),
     UniqueConstraint('package_id', 'resourcetype_id', 'type'),
-    extend_existing=True,
+    keep_existing=True,
 )
 
 stylesheet_tab = Table(DEFAULT_PREFIX + STYLESHEET_TABLE, metadata,
@@ -55,7 +55,7 @@ stylesheet_tab = Table(DEFAULT_PREFIX + STYLESHEET_TABLE, metadata,
            ForeignKey(DEFAULT_PREFIX + RESOURCETYPES_TABLE + '.id')),
     Column('type', Text),
     UniqueConstraint('package_id', 'resourcetype_id', 'type'),
-    extend_existing=True,
+    keep_existing=True,
 )
 
 alias_tab = Table(DEFAULT_PREFIX + ALIAS_TABLE, metadata,
@@ -63,5 +63,5 @@ alias_tab = Table(DEFAULT_PREFIX + ALIAS_TABLE, metadata,
     Column('uri', Text, nullable=False),
     Column('expr', Text, nullable=False),
     UniqueConstraint('uri'),
-    extend_existing=True,
+    keep_existing=True,
 )

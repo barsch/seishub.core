@@ -29,7 +29,7 @@ document_tab = Table(DEFAULT_PREFIX + DOCUMENT_TABLE, metadata,
            default=revision_default),
     Column('data', Unicode),
     UniqueConstraint('resource_id', 'revision'),
-    useexisting=True,
+    keep_existing=True,
 )
 
 document_meta_tab = Table(DEFAULT_PREFIX + DOCUMENT_META_TABLE, metadata,
@@ -39,7 +39,7 @@ document_meta_tab = Table(DEFAULT_PREFIX + DOCUMENT_META_TABLE, metadata,
            onupdate=datetime.utcnow),
     Column('uid', String(80)),
     Column('hash', String(56)),
-    useexisting=True,
+    keep_existing=True,
 )
 
 # XXX: sqlite does not support autoincrement on combined primary keys
@@ -54,7 +54,7 @@ resource_tab = Table(DEFAULT_PREFIX + RESOURCE_TABLE, metadata,
                           DEFAULT_PREFIX + RESOURCE_TABLE + ')')
            ),
     UniqueConstraint('resourcetype_id', 'name'),
-    useexisting=True,
+    keep_existing=True,
 )
 
 # xmlindexcatalog tables:
@@ -68,7 +68,7 @@ index_def_tab = Table(DEFAULT_PREFIX + INDEX_DEF_TABLE, metadata,
     Column('options', Text),
     UniqueConstraint('resourcetype_id', 'xpath'),
     UniqueConstraint('resourcetype_id', 'label'),
-    useexisting=True,
+    keep_existing=True,
 )
 
 # the following tables correspond to the different possible index types
@@ -79,7 +79,7 @@ index_text_tab = Table(DEFAULT_PREFIX + 'text_' + INDEX_TABLE, metadata,
     Column('group_pos', Integer),
     Column('document_id', Integer),
     UniqueConstraint('index_id', 'keyval', 'group_pos', 'document_id'),
-    useexisting=True
+    keep_existing=True
 )
 Index('idx_' + DEFAULT_PREFIX + 'text_' + INDEX_TABLE + '_idx_doc',
       index_text_tab.c.index_id, index_text_tab.c.document_id)
@@ -96,7 +96,7 @@ index_numeric_tab = Table(DEFAULT_PREFIX + 'numeric_' + INDEX_TABLE, metadata,
     Column('group_pos', Integer),
     Column('document_id', Integer),
     UniqueConstraint('index_id', 'keyval', 'group_pos', 'document_id'),
-    useexisting=True
+    keep_existing=True
 )
 Index('idx_' + DEFAULT_PREFIX + 'numeric_' + INDEX_TABLE + '_idx_doc',
       index_numeric_tab.c.index_id, index_numeric_tab.c.document_id)
@@ -112,7 +112,7 @@ index_float_tab = Table(DEFAULT_PREFIX + 'float_' + INDEX_TABLE, metadata,
     Column('group_pos', Integer),
     Column('document_id', Integer),
     UniqueConstraint('index_id', 'keyval', 'group_pos', 'document_id'),
-    useexisting=True
+    keep_existing=True
 )
 Index('idx_' + DEFAULT_PREFIX + 'float_' + INDEX_TABLE + '_idx_doc',
       index_float_tab.c.index_id, index_float_tab.c.document_id)
@@ -129,7 +129,7 @@ index_datetime_tab = Table(DEFAULT_PREFIX + 'datetime_' + INDEX_TABLE,
     Column('group_pos', Integer),
     Column('document_id', Integer),
     UniqueConstraint('index_id', 'keyval', 'group_pos', 'document_id'),
-    useexisting=True
+    keep_existing=True
 )
 Index('idx_' + DEFAULT_PREFIX + 'datetime_' + INDEX_TABLE + '_idx_doc',
       index_datetime_tab.c.index_id, index_datetime_tab.c.document_id)
@@ -145,7 +145,7 @@ index_date_tab = Table(DEFAULT_PREFIX + 'date_' + INDEX_TABLE, metadata,
     Column('group_pos', Integer),
     Column('document_id', Integer),
     UniqueConstraint('index_id', 'keyval', 'group_pos', 'document_id'),
-    useexisting=True
+    keep_existing=True
 )
 Index('idx_' + DEFAULT_PREFIX + 'date_' + INDEX_TABLE + '_idx_doc',
       index_date_tab.c.index_id, index_date_tab.c.document_id)
@@ -161,7 +161,7 @@ index_boolean_tab = Table(DEFAULT_PREFIX + 'boolean_' + INDEX_TABLE, metadata,
     Column('group_pos', Integer),
     Column('document_id', Integer),
     UniqueConstraint('index_id', 'keyval', 'group_pos', 'document_id'),
-    useexisting=True
+    keep_existing=True
 )
 Index('idx_' + DEFAULT_PREFIX + 'boolean_' + INDEX_TABLE + '_idx_doc',
       index_boolean_tab.c.index_id, index_boolean_tab.c.document_id)
@@ -177,7 +177,7 @@ index_integer_tab = Table(DEFAULT_PREFIX + 'integer_' + INDEX_TABLE, metadata,
     Column('group_pos', Integer),
     Column('document_id', Integer),
     UniqueConstraint('index_id', 'keyval', 'group_pos', 'document_id'),
-    useexisting=True
+    keep_existing=True
 )
 Index('idx_' + DEFAULT_PREFIX + 'integer_' + INDEX_TABLE + '_idx_doc',
       index_integer_tab.c.index_id, index_integer_tab.c.document_id)

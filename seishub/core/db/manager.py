@@ -8,6 +8,7 @@ from seishub.core.db import DEFAULT_MAX_OVERFLOW, DEFAULT_POOL_SIZE, \
     DEFAULT_DB_URI
 from seishub.core.db.util import compileStatement
 from seishub.core.exceptions import NotFoundError
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import sessionmaker
 import os
 import sqlalchemy as sa
@@ -49,9 +50,13 @@ class DatabaseManager(object):
         """
         self.metadata = meta
         self.metadata.bind = self.engine
-        #this will check for the presence of a table first before creating
+        # we need to filter tables - otherwise vies are generated as tables too
+        tables = [t for t in self.metadata.tables.values()
+                  if not t.name.startswith('/')]
+        # this will check for the presence of a table first before creating
         try:
-            self.metadata.create_all(self.engine, checkfirst=True)
+            self.metadata.create_all(self.engine, tables=tables,
+                                     checkfirst=True)
         except sa.exceptions.DBAPIError, e:
             print("ERROR:  %s" % str(e.orig))
             quit()
@@ -90,6 +95,7 @@ class DatabaseManager(object):
                                 convert_unicode=True,
                                 max_overflow=self.max_overflow,
                                 pool_size=self.pool_size,
+                                pool_recycle=3600,
                                 )
 
     def _getSQLiteEngine(self):
@@ -123,6 +129,7 @@ class DatabaseManager(object):
         if not isinstance(query, basestring):
             # keep it backwards compatible for SQLViewRegistry
             # (is this used at all ?)
+            self.env.log.warn('compileStatement should not be used for views!')
             query = compileStatement(query)
         sql = "CREATE VIEW %s AS %s" % (name, query)
         self.engine.execute(sql)

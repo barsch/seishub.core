@@ -17,26 +17,26 @@ test_parent_tab = sa.Table(DEFAULT_PREFIX + 'test_parent', test_meta,
     sa.Column('data', sa.Text),
     sa.Column('child1_rel', sa.Integer),
     sa.Column('child2_rel', sa.Integer),
-    useexisting=True,
+    keep_existing=True,
     )
 
 test_child1_tab = sa.Table(DEFAULT_PREFIX + 'test_child1', test_meta,
     sa.Column('id', sa.Integer, primary_key=True, autoincrement=True),
     sa.Column('data', sa.Text),
-    useexisting=True,
+    keep_existing=True,
     )
 
 test_child2_tab = sa.Table(DEFAULT_PREFIX + 'test_child2', test_meta,
     sa.Column('id', sa.Integer, primary_key=True, autoincrement=True),
     sa.Column('data', sa.Text),
     sa.Column('grandchild_rel', sa.Integer),
-    useexisting=True,
+    keep_existing=True,
     )
 
 test_grandchild_tab = sa.Table(DEFAULT_PREFIX + 'test_grandchild', test_meta,
     sa.Column('id', sa.Integer, primary_key=True, autoincrement=True),
     sa.Column('data', sa.Text),
-    useexisting=True,
+    keep_existing=True,
     )
 
 test_lego_bricks = sa.Table(DEFAULT_PREFIX + 'test_lego_bricks', test_meta,
@@ -45,7 +45,7 @@ test_lego_bricks = sa.Table(DEFAULT_PREFIX + 'test_lego_bricks', test_meta,
     sa.Column('owner2_rel', sa.Integer),
     sa.Column('color', sa.Text),
     sa.Column('size', sa.Integer),
-    useexisting=True,
+    keep_existing=True,
 )
 
 

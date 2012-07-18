@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from seishub.core.db import util
 from seishub.core.db.orm import DbStorage, DbError
 from seishub.core.exceptions import InvalidParameterError, SeisHubError, \
     NotFoundError, InvalidObjectError, DuplicateObjectError
@@ -12,7 +11,6 @@ from seishub.core.xmldb.interfaces import IXPathQuery, IResource, IXmlIndex
 from seishub.core.xmldb.resource import Resource, XmlDocument
 from seishub.core.xmldb.xpath import XPathQuery
 from sqlalchemy import select, sql
-from sqlalchemy.sql.expression import literal_column
 from zope.interface.exceptions import DoesNotImplement
 
 
@@ -54,6 +52,12 @@ class _IndexView(object):
             msg = "Parameter xmlindex_list may not be empty."
             raise InvalidParameterError(msg)
         id = xmlindex_list[0].resourcetype._id
+        package_id = xmlindex_list[0].resourcetype.package.package_id
+        package_id = self.db.dialect.identifier_preparer.\
+            quote_identifier(package_id)
+        resourcetype_id = xmlindex_list[0].resourcetype.resourcetype_id
+        resourcetype_id = self.db.dialect.identifier_preparer.\
+            quote_identifier(resourcetype_id)
         # check if resource types are the same for all indexes:
         for xmlindex in xmlindex_list:
             if xmlindex.resourcetype._id == id:
@@ -66,8 +70,9 @@ class _IndexView(object):
         if not compact:
             # add also columns package_id and resourcetype_id and resource_name
             columns.extend([
-                resourcetypes_tab.c['package_id'].label("package_id"),
-                resource_tab.c['resourcetype_id'].label("resourcetype_id"),
+                sql.literal_column(package_id).label("package_id"),
+                sql.literal_column(resourcetype_id).\
+                    label("resourcetype_id"),
                 resource_tab.c['name'].label("resource_name"),
             ])
         query = select(columns, joins, distinct=True)
@@ -80,7 +85,7 @@ class _IndexView(object):
         oncl = sql.and_(
             resourcetypes_tab.c['id'] == resource_tab.c['resourcetype_id'],
             resourcetypes_tab.c['id'] == \
-                literal_column("%s" % int(xmlindex.resourcetype._id)),
+                sql.literal_column("%s" % int(xmlindex.resourcetype._id)),
         )
         joins = joins.join(resourcetypes_tab, onclause=oncl)
         return query, joins
@@ -219,7 +224,7 @@ class _QueryProcessor(object):
                 # got a grouping element
                 oncl = sql.and_(
                     idx_tab.c['document_id'] == document_tab.c['id'],
-                    idx_tab.c['index_id'] == literal_column("%s" % idx_id)
+                    idx_tab.c['index_id'] == sql.literal_column("%s" % idx_id)
                 )
                 if grouping:
                     gp_paths[idx_gp] = idx_tab
@@ -227,7 +232,7 @@ class _QueryProcessor(object):
                 # here we know the grouping element
                 oncl = sql.and_(
                     idx_tab.c['document_id'] == document_tab.c['id'],
-                    idx_tab.c['index_id'] == literal_column("%s" % idx_id),
+                    idx_tab.c['index_id'] == sql.literal_column("%s" % idx_id),
                     idx_tab.c['group_pos'] == gp_paths[idx_gp].c['group_pos']
                 )
             joins = join(idx_tab, onclause=oncl)
