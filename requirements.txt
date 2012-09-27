@@ -7,3 +7,4 @@ pyasn1
 lxml
 pyOpenSSL
 obspy.core
+psycopg2
