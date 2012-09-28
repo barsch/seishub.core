@@ -4,8 +4,8 @@ A SFTP server.
 """
 
 from seishub.core.config import IntOption, Option, BoolOption
-from seishub.core.defaults import SFTP_AUTOSTART, SFTP_PORT, SFTP_PRIVATE_KEY, \
-    SFTP_PUBLIC_KEY
+from seishub.core.defaults import SFTP_AUTOSTART, SFTP_PORT, \
+    SFTP_PRIVATE_KEY, SFTP_PUBLIC_KEY
 from seishub.core.exceptions import InternalServerError, ForbiddenError, \
     NotFoundError, SeisHubError
 from seishub.core.processor import Processor, PUT, DELETE, GET, MOVE, HEAD, \
@@ -13,11 +13,11 @@ from seishub.core.processor import Processor, PUT, DELETE, GET, MOVE, HEAD, \
 from seishub.core.processor.interfaces import IFileSystemResource, IStatical, \
     IResource, IScriptResource, IRESTResource, IXMLIndex, IAdminResource
 from seishub.core.util.path import absPath
-from twisted.application.internet import TCPServer #@UnresolvedImport
+from twisted.application.internet import TCPServer  # @UnresolvedImport
 from twisted.conch import avatar, ssh
 from twisted.conch.interfaces import ISFTPFile, ISFTPServer, IConchUser
 from twisted.conch.ls import lsLine
-from twisted.conch.ssh.factory import SSHFactory #@UnresolvedImport
+from twisted.conch.ssh.factory import SSHFactory  # @UnresolvedImport
 from twisted.conch.ssh.filetransfer import SFTPError, FX_FILE_ALREADY_EXISTS, \
     FX_FAILURE, FX_OP_UNSUPPORTED, FXF_READ, FXF_WRITE, FX_NO_SUCH_FILE
 from twisted.cred import portal
@@ -46,7 +46,7 @@ class SFTPProcessor(Processor):
         child = getChildForRequest(self.env.tree, self)
         # check result and either render direct or in thread
         if IFileSystemResource.providedBy(child):
-            # render direct 
+            # render direct
             return child.render(self)
         elif IStatical.providedBy(child):
             # render direct
@@ -77,7 +77,7 @@ class InMemoryFile:
         if flags & FXF_READ:
             self._readFile(filename, flags, attrs)
 
-    def _readFile(self, filename, flags, attrs): #@UnusedVariable
+    def _readFile(self, filename, flags, attrs):  # @UnusedVariable
         # read file via SFTP processor
         proc = SFTPProcessor(self.env)
         try:
@@ -110,12 +110,12 @@ class InMemoryFile:
     def readChunk(self, offset, length):
         """
         Read from the file.
-        
+
         If EOF is reached before any data is read, raise EOFError.
-        
+
         This method returns the data as a string, or a Deferred that is
         called back with same.
-        
+
         @param offset: an integer that is the index to start from in the file.
         @param length: the maximum length of data to return.  The actual amount
         returned may less than this.  For normal disk files, however,
@@ -129,10 +129,10 @@ class InMemoryFile:
     def writeChunk(self, offset, data):
         """
         Write to the file.
-        
+
         This method returns when the write completes, or a Deferred that is
         called when it completes.
-        
+
         @param offset: an integer that is the index to start from in the file.
         @param data: a string that is the data to write.
         """
@@ -173,7 +173,7 @@ class InMemoryFile:
     def getAttrs(self):
         """
         Return the attributes for the file.
-        
+
         This method returns a dictionary in the same format as the attrs
         argument to L{openFile} or a L{Deferred} that is called back with same.
         """
@@ -183,10 +183,10 @@ class InMemoryFile:
     def setAttrs(self, attrs):
         """
         Set the attributes for the file.
-        
+
         This method returns when the attributes are set or a Deferred that is
         called back when they are.
-        
+
         @param attrs: a dictionary in the same format as the attrs argument to
         L{openFile}.
         """
@@ -201,15 +201,15 @@ class SFTPServiceProtocol:
         self.avatar = avatar
         self.env = avatar.env
 
-    def gotVersion(self, otherVersion, extData): #@UnusedVariable
+    def gotVersion(self, otherVersion, extData):  # @UnusedVariable
         """
         Called when the client sends their version info.
-        
+
         otherVersion is an integer representing the version of the SFTP
         protocol they are claiming.
         extData is a dictionary of extended_name : extended_data items.
         These items are sent by the client to indicate additional features.
-        
+
         This method should return a dictionary of extended_name : extended_data
         items.  These items are the additional features (if any) supported
         by the server.
@@ -235,16 +235,16 @@ class SFTPServiceProtocol:
     def openFile(self, filename, flags, attrs):
         """
         Called when the clients asks to open a file.
-        
+
         @param filename: a string representing the file to open.
-        
-        @param flags: an integer of the flags to open the file with, ORed 
-        together. The flags and their values are listed at the bottom of this 
+
+        @param flags: an integer of the flags to open the file with, ORed
+        together. The flags and their values are listed at the bottom of this
         file.
-        
+
         @param attrs: a list of attributes to open the file with.  It is a
         dictionary, consisting of 0 or more keys.  The possible keys are::
-        
+
           size: the size of the file in bytes
           uid: the user ID of the file as an integer
           gid: the group ID of the file as an integer
@@ -254,10 +254,10 @@ class SFTPServiceProtocol:
           mtime: the modification time of the file as seconds since the epoch.
           ext_*: extended attributes.  The server is not required to
           understand this, but it may.
-        
+
         NOTE: there is no way to indicate text or binary files.  it is up
         to the SFTP client to deal with this.
-        
+
         This method returns an object that meets the ISFTPFile interface.
         Alternatively, it can return a L{Deferred} that will be called back
         with the object.
@@ -293,31 +293,31 @@ class SFTPServiceProtocol:
     def openDirectory(self, path):
         """
         Open a directory for scanning.
-        
+
         This method returns an iterable object that has a close() method,
         or a Deferred that is called back with same.
-        
+
         The close() method is called when the client is finished reading
         from the directory.  At this point, the iterable will no longer
         be used.
-        
+
         The iterable should return triples of the form (filename,
         longname, attrs) or Deferreds that return the same.  The
         sequence must support __getitem__, but otherwise may be any
         'sequence-like' object.
-        
+
         filename is the name of the file relative to the directory.
         logname is an expanded format of the filename.  The recommended format
         is:
         -rwxr-xr-x   1 mjos     staff      348911 Mar 25 14:29 t-filexfer
         1234567890 123 12345678 12345678 12345678 123456789012
-        
+
         The first line is sample output, the second is the length of the field.
         The fields are: permissions, link count, user owner, group owner,
         size in bytes, modification time.
-        
+
         attrs is a dictionary in the format of the attrs argument to openFile.
-        
+
         @param path: the directory to open.
         """
         self.env.log.debug("openDirectory(%s)" % (repr(path)))
@@ -365,10 +365,10 @@ class SFTPServiceProtocol:
     def getAttrs(self, path, followLinks):
         """
         Return the attributes for the given path.
-        
+
         This method returns a dictionary in the same format as the attrs
         argument to openFile or a Deferred that is called back with same.
-        
+
         @param path: the path to return attributes for as a string.
         @param followLinks: a boolean.  If it is True, follow symbolic links
         and return attributes for the real path at the base.  If it is False,
@@ -395,10 +395,10 @@ class SFTPServiceProtocol:
     def setAttrs(self, path, attrs):
         """
         Set the attributes for the path.
-        
+
         This method returns when the attributes are set or a Deferred that is
         called back when they are.
-        
+
         @param path: the path to set attributes for as a string.
         @param attrs: a dictionary in the same format as the attrs argument to
         L{openFile}.
@@ -409,10 +409,10 @@ class SFTPServiceProtocol:
     def removeFile(self, filename):
         """
         Remove the given file.
-        
+
         This method returns when the remove succeeds, or a Deferred that is
         called back when it succeeds.
-        
+
         @param filename: the name of the file as a string.
         """
         self.env.log.debug("removeFile(%s)" % (filename))
@@ -434,11 +434,11 @@ class SFTPServiceProtocol:
     def renameFile(self, oldpath, newpath):
         """
         Rename the given file.
-        
+
         This method returns when the rename succeeds, or a L{Deferred} that is
         called back when it succeeds. If the rename fails, C{renameFile} will
         raise an implementation-dependent exception.
-        
+
         @param oldpath: the current location of the file.
         @param newpath: the new file name.
         """
@@ -458,13 +458,13 @@ class SFTPServiceProtocol:
         except:
             raise
 
-    def makeDirectory(self, path, attrs): #@UnusedVariable
+    def makeDirectory(self, path, attrs):  # @UnusedVariable
         """
         Make a directory.
-        
+
         This method returns when the directory is created, or a Deferred that
         is called back when it is created.
-        
+
         @param path: the name of the directory to create as a string.
         @param attrs: a dictionary of attributes to create the directory with.
         Its meaning is the same as the attrs in the L{openFile} method.
@@ -472,26 +472,26 @@ class SFTPServiceProtocol:
         msg = "Directories can't be added via SFTP."
         raise SFTPError(FX_OP_UNSUPPORTED, msg)
 
-    def removeDirectory(self, path): #@UnusedVariable
+    def removeDirectory(self, path):  # @UnusedVariable
         """
         Remove a directory (non-recursively)
-        
+
         It is an error to remove a directory that has files or directories in
         it.
-        
+
         This method returns when the directory is removed, or a Deferred that
         is called back when it is removed.
-        
+
         @param path: the directory to remove.
         """
         msg = "Directories can't be deleted via SFTP."
         raise SFTPError(FX_OP_UNSUPPORTED, msg)
 
-    def readLink(self, path): #@UnusedVariable
+    def readLink(self, path):  # @UnusedVariable
         msg = "Symbolic links are not supported yet."
         raise SFTPError(FX_OP_UNSUPPORTED, msg)
 
-    def makeLink(self, linkPath, targetPath): #@UnusedVariable
+    def makeLink(self, linkPath, targetPath):  # @UnusedVariable
         msg = "Symbolic can'T be created via SFTP."
         raise SFTPError(FX_OP_UNSUPPORTED, msg)
 
@@ -546,12 +546,12 @@ class SFTPServiceRealm:
     def __init__(self, env):
         self.env = env
 
-    def requestAvatar(self, avatarId, mind, *interfaces): #@UnusedVariable
+    def requestAvatar(self, avatarId, mind, *interfaces):  # @UnusedVariable
         if IConchUser in interfaces:
             logout = lambda: None
             return IConchUser, SFTPServiceAvatar(avatarId, self.env), logout
         else:
-            raise Exception, "No supported interfaces found."
+            raise Exception("No supported interfaces found.")
 
 
 class SFTPServiceFactory(SSHFactory):
@@ -570,7 +570,7 @@ class SFTPServiceFactory(SSHFactory):
     def _getCertificates(self):
         """
         Fetch SFTP certificate paths from configuration.
-        
+
         return: Paths to public and private key files.
         """
         pub_file = self.env.config.get('sftp', 'public_key_file')
@@ -592,7 +592,7 @@ class SFTPServiceFactory(SSHFactory):
     def _generateCertificates(self):
         """
         Generates new private RSA keys for the SFTP service.
-        
+
         return: Paths to public and private key files.
         """
         from Crypto.PublicKey import RSA
