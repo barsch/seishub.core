@@ -8,26 +8,44 @@ from zope.interface import implements, Interface, Attribute
 from zope.interface.exceptions import DoesNotImplement
 
 
-def xpathNamespaceFix(expr):
+def xpathNamespaceFix(expr, default_namespace=None):
     """
     Takes an xpath expression and replaces explicit namespaces (which lxml
     xpath con not handle) given by "{namespace}tagname" to tagnames with
     namespace abbreviations like "nsabbrev:tagname" and returns the
     corresponding namespace mapping dictionary.
+    If a default namespace is specified, it is mapped with an abbreviation
+    and applied to tags without a specified namespace.
 
     >>> expr = "/{http://quakeml.org/xmlns/quakeml/1.2}quakeml"
     >>> xpathNamespaceFix(expr)
     ('/ns0:quakeml', {'ns0': 'http://quakeml.org/xmlns/quakeml/1.2'})
 
-    If no change of expression takes place `nsmap` will be an empty dictionary.
     >>> expr = "/quakeml"
-    >>> xpathNamespaceFix(expr)
-    ('/quakeml', {})
+    >>> xpathNamespaceFix(expr, 'http://quakeml.org/xmlns/bed/1.2')
+    ('/default:quakeml', {'default': 'http://quakeml.org/xmlns/bed/1.2'})
+
+    >>> expr = "/{http://quakeml.org/xmlns/quakeml/1.2}quakeml/eventParameters"
+    >>> xpathNamespaceFix(expr, 'http://quakeml.org/xmlns/bed/1.2')
+    ('/ns0:quakeml/default:eventParameters',
+     {'default': 'http://quakeml.org/xmlns/bed/1.2',
+      'ns0': 'http://quakeml.org/xmlns/quakeml/1.2'})
     """
+    # first part: refactor explicit namespaces
     namespaces = list(set(re.findall("{.*?}", expr)))
     nsmap = dict([("ns%i" % _i, ns[1:-1]) for _i, ns in enumerate(namespaces)])
     for ns_abbrev, ns in nsmap.iteritems():
         expr = expr.replace("{%s}" % ns, "%s:" % ns_abbrev)
+    # second part: refactor default namespace
+    if default_namespace is not None:
+        default_abbreviation = "default"
+        parts = []
+        for x in expr.split("/"):
+            if x is not "" and ":" not in x:
+                x = "%s:%s" % (default_abbreviation, x)
+            parts.append(x)
+        expr = "/".join(parts)
+        nsmap[default_abbreviation] = default_namespace
     return expr, nsmap
 
 
@@ -147,9 +165,10 @@ class XmlNode(object):
         if not isinstance(expr, basestring):
             raise TypeError('String expected: %s' % expr)
         node_obj = self.getNode_obj()
-        expr, nsmap = xpathNamespaceFix(expr)
+        root = node_obj.getroottree().getroot()
+        default_namespace = root.nsmap.get(None)
+        expr, nsmap = xpathNamespaceFix(expr, default_namespace)
         if not nsmap:
-            root = node_obj.getroottree().getroot()
             nsmap = root.nsmap
         try:
             res = node_obj.xpath(expr, namespaces=nsmap)
@@ -284,9 +303,10 @@ class XmlTreeDoc(XmlDoc):
     def evalXPath(self, expr):
         if not isinstance(expr, basestring):
             raise TypeError('String expected: %s' % expr)
-        expr, nsmap = xpathNamespaceFix(expr)
+        root = self.getRoot()
+        default_namespace = root.nsmap.get(None)
+        expr, nsmap = xpathNamespaceFix(expr, default_namespace)
         if not nsmap:
-            root = self.getRoot()
             nsmap = root.nsmap
         try:
             res = self._xml_doc.xpath(expr, namespaces=nsmap)
