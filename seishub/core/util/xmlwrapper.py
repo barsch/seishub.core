@@ -1,10 +1,34 @@
 # -*- coding: utf-8 -*-
 
+import re
 from StringIO import StringIO
 from lxml import etree
 from seishub.core.exceptions import SeisHubError, InvalidObjectError
 from zope.interface import implements, Interface, Attribute
 from zope.interface.exceptions import DoesNotImplement
+
+
+def xpathNamespaceFix(expr):
+    """
+    Takes an xpath expression and replaces explicit namespaces (which lxml
+    xpath con not handle) given by "{namespace}tagname" to tagnames with
+    namespace abbreviations like "nsabbrev:tagname" and returns the
+    corresponding namespace mapping dictionary.
+
+    >>> expr = "/{http://quakeml.org/xmlns/quakeml/1.2}quakeml"
+    >>> xpathNamespaceFix(expr)
+    ('/ns0:quakeml', {'ns0': 'http://quakeml.org/xmlns/quakeml/1.2'})
+
+    If no change of expression takes place `nsmap` will be an empty dictionary.
+    >>> expr = "/quakeml"
+    >>> xpathNamespaceFix(expr)
+    ('/quakeml', {})
+    """
+    namespaces = list(set(re.findall("{.*?}", expr)))
+    nsmap = dict([("ns%i" % _i, ns[1:-1]) for _i, ns in enumerate(namespaces)])
+    for ns_abbrev, ns in nsmap.iteritems():
+        expr = expr.replace("{%s}" % ns, "%s:" % ns_abbrev)
+    return expr, nsmap
 
 
 class IXmlStylesheet(Interface):
@@ -123,9 +147,12 @@ class XmlNode(object):
         if not isinstance(expr, basestring):
             raise TypeError('String expected: %s' % expr)
         node_obj = self.getNode_obj()
-        root = node_obj.getroottree().getroot()
+        expr, nsmap = xpathNamespaceFix(expr)
+        if not nsmap:
+            root = node_obj.getroottree().getroot()
+            nsmap = root.nsmap
         try:
-            res = node_obj.xpath(expr, namespaces=root.nsmap)
+            res = node_obj.xpath(expr, namespaces=nsmap)
         except Exception, e:
             raise InvalidXPathExpression(("Error evaluating a XPath " + \
                                          "expression: %s") % str(expr), e)
@@ -257,9 +284,12 @@ class XmlTreeDoc(XmlDoc):
     def evalXPath(self, expr):
         if not isinstance(expr, basestring):
             raise TypeError('String expected: %s' % expr)
-        root = self.getRoot()
+        expr, nsmap = xpathNamespaceFix(expr)
+        if not nsmap:
+            root = self.getRoot()
+            nsmap = root.nsmap
         try:
-            res = self._xml_doc.xpath(expr, namespaces=root.nsmap)
+            res = self._xml_doc.xpath(expr, namespaces=nsmap)
         except Exception, e:
             raise InvalidXPathExpression(("Error evaluating a XPath " + \
                                          "expression: %s") % str(expr), e)
