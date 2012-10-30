@@ -41,7 +41,11 @@ def xpathNamespaceFix(expr, default_namespace=None):
         default_abbreviation = "default"
         parts = []
         for x in expr.split("/"):
-            if x is not "" and ":" not in x:
+            if x == "":
+                pass
+            elif ":" in x:
+                pass
+            else:
                 x = "%s:%s" % (default_abbreviation, x)
             parts.append(x)
         expr = "/".join(parts)
