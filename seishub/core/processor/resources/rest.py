@@ -5,13 +5,14 @@ REST based resources.
 
 from lxml import etree
 from obspy.core import UTCDateTime
-from seishub.core.exceptions import ForbiddenError, NotFoundError, SeisHubError, \
-    NotAllowedError, UnauthorizedError
+from seishub.core.exceptions import ForbiddenError, NotFoundError, \
+    SeisHubError, NotAllowedError, UnauthorizedError
 from seishub.core.processor.interfaces import IRESTResource, IRESTProperty, \
     IXMLIndex
-from seishub.core.processor.processor import MAXIMAL_URL_LENGTH, PUT, GET, HEAD, \
-    POST
-from seishub.core.processor.resources.resource import Resource, Folder, StaticFolder
+from seishub.core.processor.processor import MAXIMAL_URL_LENGTH, PUT, GET, \
+    HEAD, POST
+from seishub.core.processor.resources.resource import Resource, Folder, \
+    StaticFolder
 from seishub.core.util.path import splitPath
 from seishub.core.util.text import isInteger
 from seishub.core.util.xml import addXMLDeclaration
@@ -46,9 +47,9 @@ class RESTResource(Resource):
             self.res = res
             meta = self.res.document.meta
             self.meta = {
-                'meta_size':meta.size,
-                'meta_uid':meta.uid,
-                'meta_datetime':meta.datetime
+                'meta_size': meta.size,
+                'meta_uid': meta.uid,
+                'meta_datetime': meta.datetime
             }
         # set url
         self.url = "/xml/%s/%s/%s" % (self.package_id, self.resourcetype_id,
@@ -114,14 +115,14 @@ class RESTResource(Resource):
     def render_GET(self, request):
         """
         Process a resource query request.
-        
+
         A query at the root of a resource type folder returns a list of all
         available XML resource objects of this resource type. Direct request on
-        a XML resource results in the content of a XML document. Before 
-        returning a XML document, we add a valid XML declaration header and 
+        a XML resource results in the content of a XML document. Before
+        returning a XML document, we add a valid XML declaration header and
         encode it as UTF-8 string.
-        
-        @see: 
+
+        @see:
         U{http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.4.1}
         for all possible error codes.
         """
@@ -129,10 +130,10 @@ class RESTResource(Resource):
         if request.env.auth.getUser('anonymous').permissions != 755:
             self._checkPermissions(request, 755)
         data = self.res.document.data
-        # ensure we return a UTF-8 encoded string not an Unicode object 
+        # ensure we return a UTF-8 encoded string not an Unicode object
         if isinstance(data, unicode):
             data = data.encode('utf-8')
-        # set XML declaration inclusive UTF-8 encoding string 
+        # set XML declaration inclusive UTF-8 encoding string
         if not data.startswith('<xml'):
             data = addXMLDeclaration(data, 'utf-8')
         # handle output/format conversion
@@ -144,9 +145,9 @@ class RESTResource(Resource):
         except:
             pass
 #        # cache control - 10 seconds
-#        now = UTCDateTime()
-#        request.setHeader("Cache-Control", "max-age = 10")
-#        request.setHeader("Expires", http.datetimeToString(now.timestamp + 10))
+#       now = UTCDateTime()
+#       request.setHeader("Cache-Control", "max-age = 10")
+#       request.setHeader("Expires", http.datetimeToString(now.timestamp + 10))
         # return data
         return data
 
@@ -154,20 +155,20 @@ class RESTResource(Resource):
         """
         Processes a resource modification request.
 
-        "The PUT method requests that the enclosed entity be stored under the 
-        supplied Request-URI. If the Request-URI does not point to an existing 
+        "The PUT method requests that the enclosed entity be stored under the
+        supplied Request-URI. If the Request-URI does not point to an existing
         resource, and that URI is capable of being defined as a new resource by
         the requesting user agent, the server can create the resource with that
-        URI. If a new resource is created, the origin server MUST inform the 
-        user agent via the 201 (Created) response. 
-        
-        If the resource could not be created or modified with the Request-URI, 
-        an appropriate error response SHOULD be given that reflects the nature 
-        of the problem." 
-        
+        URI. If a new resource is created, the origin server MUST inform the
+        user agent via the 201 (Created) response.
+
+        If the resource could not be created or modified with the Request-URI,
+        an appropriate error response SHOULD be given that reflects the nature
+        of the problem."
+
         @see: U{http://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html#sec9.6}
         @see: U{http://thoughtpad.net/alan-dean/http-headers-status.gif}
-        
+
         Modifying a document always needs a valid path to a resource or uses a
         user defined mapping.
         """
@@ -191,8 +192,8 @@ class RESTResource(Resource):
     def render_MOVE(self, request):
         """
         Processes a resource move/rename request.
-        
-        @see: 
+
+        @see:
         U{http://msdn.microsoft.com/en-us/library/aa142926(EXCHG.65).aspx}
         """
         self._checkPermissions(request, 777)
@@ -239,18 +240,18 @@ class RESTResource(Resource):
     def render_DELETE(self, request):
         """
         Processes a resource deletion request.
-        
+
         @see: U{http://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html#sec9.7}
-        
-        "The DELETE method requests that the server deletes the resource 
-        identified by the given request URI. 
-        
-        A successful response SHOULD be 200 (OK) if the response includes an 
-        entity describing the status, 202 (Accepted) if the action has not yet 
-        been enacted, or 204 (No Content) if the action has been enacted but 
+
+        "The DELETE method requests that the server deletes the resource
+        identified by the given request URI.
+
+        A successful response SHOULD be 200 (OK) if the response includes an
+        entity describing the status, 202 (Accepted) if the action has not yet
+        been enacted, or 204 (No Content) if the action has been enacted but
         the response does not include an entity."
-        
-        Deleting a document always needs a valid path to a resource or may use 
+
+        Deleting a document always needs a valid path to a resource or may use
         a user defined mapping.
         """
         self._checkPermissions(request, 777)
@@ -448,19 +449,19 @@ class RESTResourceTypeFolder(Folder):
     def render_POST(self, request):
         """
         Create a new XML resource for this resource type.
-        
-        "The POST method is used to request that the origin server accept the 
-        entity enclosed in the request as a new subordinate of the resource 
+
+        "The POST method is used to request that the origin server accept the
+        entity enclosed in the request as a new subordinate of the resource
         identified by the Request-URI in the Request-Line.
-        
+
         The action performed by the POST method might not result in a resource
-        that can be identified by a URI. In this case, either 200 (OK) or 204 
-        (No Content) is the appropriate response status, depending on whether 
+        that can be identified by a URI. In this case, either 200 (OK) or 204
+        (No Content) is the appropriate response status, depending on whether
         or not the response includes an entity that describes the result. If a
         resource has been created on the origin server, the response SHOULD be
-        201 (Created) and contain an entity which describes the status of the 
-        request and refers to the new resource, and a Location header." 
-        
+        201 (Created) and contain an entity which describes the status of the
+        request and refers to the new resource, and a Location header."
+
         @see: U{http://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html#sec9.5}
         """
         # SeisHub directory is not directly changeable
@@ -518,7 +519,7 @@ class RESTResourceTypeFolder(Folder):
         res_dict = request.env.catalog.query(xpath)
         for id in res_dict['ordered']:
             name = res_dict[id]['resource_name']
-            # skip lower revisions 
+            # skip lower revisions
             if name in temp and temp[name].revision > res_dict[id]['revision']:
                 continue
             temp[name] = RESTResource(res_dict[id])
