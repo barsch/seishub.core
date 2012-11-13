@@ -75,11 +75,7 @@ The [seismology plug-in](https://github.com/barsch/seishub.plugins.seismology) r
 
     easy_install numpy              # see link in Notes
     easy_install matplotlib
-    easy_install obspy.imaging
-    easy_install obspy.mseed
-    easy_install obspy.xseed
-    easy_install obspy.arclink
-    easy_install obspy.db
+    easy_install obspy
 
 ###### Notes ######
 
@@ -98,6 +94,7 @@ For [PostgreSQL](http://www.postgresql.org/) additional database bindings are re
     easy_install psycopg2           # Linux requires libpq-dev
 
 ###### Notes ######
+* On Debian/Ubuntu install *python-psycopg2* via package management
 * Windows binary packages for *psycopg2* can be found at http://www.stickpeople.com/projects/python/win-psycopg/
 
 ### SeisHub ###
