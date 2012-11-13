@@ -140,4 +140,4 @@ Using PostgreSQL as default database backend requires a few more additional step
 
 4. Logout
 
-After creating the user and database you may use the connection string `postgres://username:password@host:port/databasename`.
+After creating the user and database you may use the connection string `postgresql://username:password@host:port/databasename` (postgres default port is `5432`).
