@@ -4,13 +4,13 @@ language: erlang
 before_install:
   - lsb_release -a
   - sudo apt-get install -qq gfortran python python-dev python-setuptools python-numpy python-lxml
-  - easy_install SQLAlchemy
-  - easy_install Cheetah
-  - easy_install pycrypto
-  - easy_install Twisted
-  - easy_install pyparsing
-  - easy_install pyasn1
-  - easy_install obspy.core
+  - sudo easy_install SQLAlchemy
+  - sudo easy_install Cheetah
+  - sudo easy_install pycrypto
+  - sudo easy_install Twisted
+  - sudo easy_install pyparsing
+  - sudo easy_install pyasn1
+  - sudo easy_install obspy.core
 install:
   - sudo python setup.py -q install
 script:
