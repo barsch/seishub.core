@@ -7,6 +7,6 @@ before_install:
 install:
   - sudo python setup.py -q install
 script:
-  - sudo python seishub/core/test.py
+  - sudo seishub-runtests
 notifications:
     email: false
