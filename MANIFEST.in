@@ -3,7 +3,7 @@ recursive-include seishub/core/packages/admin/web/statics *
 recursive-include seishub/core/packages/admin/web/statics/images *
 include seishub/core/packages/admin/web/templates/*
 include seishub/core/packages/xslt/*
-include seishub/core/processor/tests/data/*
+recursive-include seishub/core/processor/tests/data *
 include seishub/core/registry/tests/data/*
 include seishub/core/xmldb/tests/data/*
 include seishub/core/tests/*.txt
