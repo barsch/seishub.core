@@ -1,3 +1,5 @@
+[![Build Status](https://secure.travis-ci.org/barsch/seishub.core.png?branch=master)](https://travis-ci.org/barsch/seishub.core)
+
 Welcome to SeisHub
 ==================
 
