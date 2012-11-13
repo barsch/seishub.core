@@ -5,7 +5,7 @@ before_install:
   - lsb_release -a
   - sudo apt-get install -qq gfortran python python-dev python-setuptools python-numpy python-lxml
 install:
-  - sudo python setup.py install
+  - sudo python setup.py -q install
 script:
   - sudo python seishub/core/test.py
 notifications:
