@@ -1,5 +1,6 @@
 recursive-include seishub/core *.txt
-recursive-include seishub/core/packages/admin/web/statics/ *
+recursive-include seishub/core/packages/admin/web/statics *
+recursive-include seishub/core/packages/admin/web/statics/images *
 include seishub/core/packages/admin/web/templates/*
 include seishub/core/packages/xslt/*
 include seishub/core/processor/tests/data/*
