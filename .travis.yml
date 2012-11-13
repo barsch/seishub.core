@@ -4,16 +4,9 @@ language: erlang
 before_install:
   - lsb_release -a
   - sudo apt-get install -qq gfortran python python-dev python-setuptools python-numpy python-lxml
-  - sudo easy_install SQLAlchemy
-  - sudo easy_install Cheetah
-  - sudo easy_install pycrypto
-  - sudo easy_install Twisted
-  - sudo easy_install pyparsing
-  - sudo easy_install pyasn1
-  - sudo easy_install obspy.core
 install:
   - sudo python setup.py install
 script:
-  - sudo runtests
+  - sudo python seishub/core/test.py
 notifications:
     email: false
