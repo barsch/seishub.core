@@ -21,8 +21,8 @@ USE_TEST_DB = 'sqlite://'
 
 
 # use this options below only for debugging test cases
-CHECK_DATABASE = True
-CLEAN_DATABASE = True
+CHECK_DATABASE = False
+CLEAN_DATABASE = False
 DISPOSE_CONNECTION = True
 VERBOSE_DATABASE = False
 
