@@ -1,4 +1,4 @@
-include *.txt
+include seishub/core/*.txt
 include *.xslt
 include seishub/core/packages/admin/web/statics/*
 include seishub/core/packages/admin/web/templates/*
