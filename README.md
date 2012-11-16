@@ -72,7 +72,7 @@ Easy Install is a powerful command-line based package management tool for Python
     easy_install lxml               # Linux requires libxml2-dev and libxslt-dev
     easy_install pyOpenSSL          # Linux requires libssl-dev
     easy_install numpy              # see link in Notes
-    easy_install obspy.core
+    easy_install obspy
 
 The [seismology plug-in](https://github.com/barsch/seishub.plugins.seismology) requires the following additional modules:
 
