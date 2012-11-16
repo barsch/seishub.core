@@ -3,7 +3,8 @@
 language: erlang
 before_install:
   - lsb_release -a
-  - sudo apt-get install -qq gfortran python python-dev python-setuptools python-numpy python-lxml 1> /dev/null
+  - sudo apt-get install -qq gfortran python python-dev python-setuptools python-numpy python-scipy python-matplotlib python-suds python-lxml python-sqlalchemy 1> /dev/null # install dependencies
+  - sudo easy_install https://github.com/obspy/obspy/archive/master.zip
 install:
   - sudo python setup.py -q install
 script:
