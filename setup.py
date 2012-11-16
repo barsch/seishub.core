@@ -69,7 +69,7 @@ setup(
         'pycrypto',
         'pyasn1',
         'pyparsing',
-        'obspy.core>0.7.0',
+        'obspy',
     ],
     download_url="https://github.com/barsch/seishub.core/zipball/master" + \
         "#egg=seishub.core-dev",
