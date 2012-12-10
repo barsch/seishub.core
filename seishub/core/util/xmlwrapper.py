@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import re
 from StringIO import StringIO
 from lxml import etree
 from seishub.core.exceptions import SeisHubError, InvalidObjectError
@@ -7,16 +8,47 @@ from zope.interface import implements, Interface, Attribute
 from zope.interface.exceptions import DoesNotImplement
 
 
+def xpathNamespaceFix(expr, default_namespace=None):
+    """
+    Takes an xpath expression and replaces explicit namespaces (which lxml
+    xpath can not handle) given by "{namespace}tagname" to tagnames with
+    namespace abbreviations like "nsabbrev:tagname" and returns the
+    corresponding namespace mapping dictionary.
+    If a default namespace is specified, it is mapped with an abbreviation
+    and applied to tags without a specified namespace.
+    """
+    # first part: refactor explicit namespaces
+    namespaces = list(set(re.findall("{.*?}", expr)))
+    nsmap = dict([("ns%i" % _i, ns[1:-1]) for _i, ns in enumerate(namespaces)])
+    for ns_abbrev, ns in nsmap.iteritems():
+        expr = expr.replace("{%s}" % ns, "%s:" % ns_abbrev)
+    # second part: refactor default namespace
+    if default_namespace is not None:
+        default_abbreviation = "default"
+        parts = []
+        for x in expr.split("/"):
+            if x == "":
+                pass
+            elif ":" in x:
+                pass
+            else:
+                x = "%s:%s" % (default_abbreviation, x)
+            parts.append(x)
+        expr = "/".join(parts)
+        nsmap[default_abbreviation] = default_namespace
+    return expr, nsmap
+
+
 class IXmlStylesheet(Interface):
     """
     Parsed XML Stylesheet document.
     """
-    def transform(xmltree_doc): #@NoSelf
+    def transform(xmltree_doc):  # @NoSelf
         """
         Transform given xmltree_doc with the stylesheet.
-        
+
         @param xml_doc: XML Tree Document
-        @type xml_doc: IXmlDoc 
+        @type xml_doc: IXmlDoc
         @return: XML Document
         """
 
@@ -37,12 +69,12 @@ class IXmlSchema(Interface):
         @rtype: string
         """
 
-    def validate(xml_doc): #@NoSelf
+    def validate(xml_doc):  # @NoSelf
         """
         Validate xml_doc against the schema.
-        
+
         @param xml_doc: XML Document
-        @type xml_doc: IXmlDoc 
+        @type xml_doc: IXmlDoc
         @return: boolean
         """
 
@@ -51,7 +83,7 @@ class IXmlDoc(Interface):
     """
     General XML document.
     """
-    def getXml_doc(): #@NoSelf
+    def getXml_doc():  # @NoSelf
         """
         Return an internal representation of the parsed xml_document.
         """
@@ -63,19 +95,19 @@ class IXmlTreeDoc(IXmlDoc):
     """
     options = Attribute("""
         Dictionary specifying some options:
-        'blocking' : True|False : raises an Exception on parser error and 
+        'blocking' : True|False : raises an Exception on parser error and
                                   stops parser if set to True
     """)
 
-    def getErrors(): #@NoSelf
+    def getErrors():  # @NoSelf
         """
         Return error messages, that occurred during parsing.
         """
 
-    def evalXPath(expr): #@NoSelf
+    def evalXPath(expr):  # @NoSelf
         """
         Evaluate an XPath expression.
-        
+
         @param expr: string
         @return: array of resulting nodes
         """
@@ -124,10 +156,14 @@ class XmlNode(object):
             raise TypeError('String expected: %s' % expr)
         node_obj = self.getNode_obj()
         root = node_obj.getroottree().getroot()
+        default_namespace = root.nsmap.get(None)
+        expr, nsmap = xpathNamespaceFix(expr, default_namespace)
+        if not nsmap:
+            nsmap = root.nsmap
         try:
-            res = node_obj.xpath(expr, namespaces=root.nsmap)
+            res = node_obj.xpath(expr, namespaces=nsmap)
         except Exception, e:
-            raise InvalidXPathExpression(("Error evaluating a XPath " + \
+            raise InvalidXPathExpression(("Error evaluating a XPath " +
                                          "expression: %s") % str(expr), e)
         if res:
             nodes = [XmlNode(node) for node in res]
@@ -167,7 +203,7 @@ class XmlStylesheet(object):
 class XmlSchema(object):
     """
     Schema representation.
-    
+
     Internally we use one class of the supported schemas classes of L{lxml}, so
     far either XMLSchema, RelaxNG or Schematron.
     """
@@ -232,11 +268,12 @@ class XmlTreeDoc(XmlDoc):
     def __init__(self, xml_data=None, blocking=False):
         XmlDoc.__init__(self)
         self.errors = list()
-        self.options = {'blocking':blocking, }
+        self.options = {'blocking': blocking, }
         if isinstance(xml_data, basestring):
             self._xml_data = xml_data
         else:
-            raise InvalidObjectError("No xml data str was given: %s" % xml_data)
+            raise InvalidObjectError("No xml data str was given: %s" %
+                    xml_data)
         self._parse()
 
     def _parse(self):
@@ -258,10 +295,14 @@ class XmlTreeDoc(XmlDoc):
         if not isinstance(expr, basestring):
             raise TypeError('String expected: %s' % expr)
         root = self.getRoot()
+        default_namespace = root.nsmap.get(None)
+        expr, nsmap = xpathNamespaceFix(expr, default_namespace)
+        if not nsmap:
+            nsmap = root.nsmap
         try:
-            res = self._xml_doc.xpath(expr, namespaces=root.nsmap)
+            res = self._xml_doc.xpath(expr, namespaces=nsmap)
         except Exception, e:
-            raise InvalidXPathExpression(("Error evaluating a XPath " + \
+            raise InvalidXPathExpression(("Error evaluating a XPath " +
                                          "expression: %s") % str(expr), e)
         if res:
             nodes = [XmlNode(node) for node in res]
