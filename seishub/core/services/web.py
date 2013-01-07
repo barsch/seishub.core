@@ -82,6 +82,32 @@ class WebRequest(Processor, http.Request):
         """
         Renders the requested resource returned from the self.process() method.
         """
+        # Set the access control header to allow cross origin XMLHttpRequests
+        # for all resources.
+        self.setHeader("Access-Control-Allow-Origin", "*")
+
+        # Modern browsers adhere to the same origin policy. This can be
+        # circumvented to a certain degree by correctly responding to
+        # XMLHttpRequest OPTIONS requests. All AJAX requests from other domains
+        # will be allowed. The goal is to be as permissive as possible
+        if self.method == "OPTIONS":
+            # Shortcut name
+            h_name = "access-control-request-headers"
+            if self.requestHeaders.hasHeader(h_name) and \
+                "origin" in \
+                self.requestHeaders.getRawHeaders(h_name)[0]:
+                # Set correct headers, response code, and return.
+                self.setResponseCode(200, "Cross site access granted.")
+                self.setHeader("Access-Control-Allow-Headers",
+                    "X-Requested-With, X-File-Size, X-File-Name, X-File-Type, "
+                    "authorization, content-type")
+                self.setHeader("Access-Control-Allow-Methods", "POST, PUT, "
+                    "GET, DELETE")
+                self.setHeader("Access-Control-Max-Age", "60")
+                self.write('')
+                self.finish()
+                return
+
         # check for logout
         if self.path == '/manage/logout':
             self.authenticate()
@@ -120,7 +146,7 @@ class WebRequest(Processor, http.Request):
             return
         # check result and either render direct or in thread
         if IFileSystemResource.providedBy(result):
-            # file system resources render direct 
+            # file system resources render direct
             data = result.render(self)
             if result.folderish:
                 # check for default page
@@ -252,7 +278,7 @@ class WebRequest(Processor, http.Request):
     def _renderResource(self, data=''):
         """
         Renders a resource.
-        
+
         @param data: content of the document to be rendered
         @return:     None
         """
@@ -280,7 +306,7 @@ class WebRequest(Processor, http.Request):
     def _renderFolder(self, children={}):
         """
         Renders a folderish resource.
-        
+
         @param children: dict of child objects implementing L{IResource}
         @return:         None
         """
@@ -352,10 +378,10 @@ class WebRequest(Processor, http.Request):
     def notifyFinish(self):
         """
         Notify when finishing the request
-        
-        @return: A deferred. The deferred will be triggered when the request 
-            is finished -- with a C{None} value if the request finishes 
-            successfully or with an error if the request is stopped by the 
+
+        @return: A deferred. The deferred will be triggered when the request
+            is finished -- with a C{None} value if the request finishes
+            successfully or with an error if the request is stopped by the
             client.
         """
         self.notifications.append(defer.Deferred())
@@ -416,7 +442,7 @@ class HTTPSService(SSLServer):
     def _getCertificates(self):
         """
         Fetch HTTPS certificate paths from configuration.
-        
+
         return: Paths to pkey and cert files.
         """
         pkey_file = self.env.config.get('web', 'https_pkey_file')
@@ -438,7 +464,7 @@ class HTTPSService(SSLServer):
     def _generateCertificates(self):
         """
         Generates new self-signed certificates.
-        
+
         return: Paths to pkey and cert files.
         """
         from seishub.core.util import certgen
