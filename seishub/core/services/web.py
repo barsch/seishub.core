@@ -108,6 +108,26 @@ class WebRequest(Processor, http.Request):
                 self.finish()
                 return
 
+        # Handle 'multipart/form-data' content types.
+        # See http://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.2
+        if self.requestHeaders.hasHeader("content-type") and \
+            self.requestHeaders.getRawHeaders("content-type")[0].startswith(
+                "multipart/form-data; boundary="):
+            boundary = self.requestHeaders.getRawHeaders("content-type")[0]\
+                .split("boundary=")[1]
+            # The actual boundary is prepended with "--"
+            boundary = "--" + boundary
+            _, _, content, _ = self.data.split(boundary)
+            #  The content can be prepended by Content-Disposition,
+            #  Content-Type, or Content-Transfer-Encoding headers. Remove
+            #  these.
+            content = content.strip().split("\n")
+            for _i, line in enumerate(content):
+                if line and line.startswith("Content-"):
+                    continue
+                self.data = "\n".join(content[_i:]).strip()
+                break
+
         # check for logout
         if self.path == '/manage/logout':
             self.authenticate()
