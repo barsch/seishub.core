@@ -193,8 +193,10 @@ def formatORMResults(request, query, build_url=False):
 def formatResults(request, results, count=None, limit=None, offset=0,
                   build_url=False):
     """
-    Fetches results from database and creates either a XML resource or a JSON
-    document. It also takes care of limit and offset requests.
+    Takes a list of (potentially nested) dictionaries and produces output in
+    XML, JSON or XHTML. The limit and offset kwargs have to be provided by the
+    user.
+    Also sets the correct HTML headers.
     """
     base_url = request.env.getRestUrl()
     # create stats
@@ -293,4 +295,5 @@ def formatResults(request, results, count=None, limit=None, offset=0,
         stats['totalResultsAvailable'] = count or i
         for key, value in stats.iteritems():
             xml.set(key, str(value))
+        request.setHeader('content-type', 'text/xml; charset=UTF-8')
         return toString(xml)
