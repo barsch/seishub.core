@@ -249,6 +249,57 @@ class DBUtilTestCase(unittest.TestCase):
                     </body>
                 </html>"""))
 
+    def test_formatResults_lists_XHTML(self):
+        """
+        Tests nested XHTML formatting.
+
+        I cannot think of pretty way to output a list inside a table.
+        """
+        result = [{"attrib_1": "a", "list_of_a": [{"a": "2"}, {"a": "3"}]}]
+        formatted_result = util.formatResults(dummy_request("xhtml"), result)
+        self.assertEqual(normalize_xml_whitespace(formatted_result),
+            normalize_xml_whitespace("""
+                <html>
+                    <body>
+                        <table border="1">
+                            <tr>
+                                <th>attrib_1</th>
+                                <th>list_of_a</th>
+                            </tr>
+                            <tr>
+                                <td>a</td>
+                                <td>[{'a': '2'}, {'a': '3'}]</td>
+                            </tr>
+                        </table>
+                    </body>
+                </html>"""))
+
+    def test_formatResults_nested_XHTML(self):
+        """
+        Tests nested XHTML formatting.
+
+        I cannot think of pretty way to output nested data in a table.
+        """
+        result = [{"attrib_1": "a",
+            "nested_attribs": {"a": 1, "b": 2}}]
+        formatted_result = util.formatResults(dummy_request("xhtml"), result)
+        self.assertEqual(normalize_xml_whitespace(formatted_result),
+            normalize_xml_whitespace("""
+                <html>
+                    <body>
+                        <table border="1">
+                            <tr>
+                                <th>attrib_1</th>
+                                <th>nested_attribs</th>
+                            </tr>
+                            <tr>
+                                <td>a</td>
+                                <td>{'a': 1, 'b': 2}</td>
+                            </tr>
+                        </table>
+                    </body>
+                </html>"""))
+
 
 def suite():
     return unittest.makeSuite(DBUtilTestCase, 'test')
