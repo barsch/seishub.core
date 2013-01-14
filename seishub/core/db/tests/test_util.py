@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import json
 import re
 import unittest
 
@@ -33,7 +34,7 @@ class DBUtilTestCase(unittest.TestCase):
     """
     Tests suite for the database utils.
     """
-    def test_formatResults_simpleXML(self):
+    def test_formatResults_simple_XML(self):
         """
         Tests simple XML formatting.
         """
@@ -56,7 +57,7 @@ class DBUtilTestCase(unittest.TestCase):
                   </Item>
                 </ResultSet>"""))
 
-    def test_formatResults_nestedXML(self):
+    def test_formatResults_nested_XML(self):
         """
         Tests nested XML formatting.
         """
@@ -77,7 +78,7 @@ class DBUtilTestCase(unittest.TestCase):
                   </Item>
                 </ResultSet>"""))
 
-    def test_formatResults_XML(self):
+    def test_formatResults_lists_XML(self):
         """
         Tests nested XML formatting.
         """
@@ -96,6 +97,54 @@ class DBUtilTestCase(unittest.TestCase):
                     </list_of_a>
                   </Item>
                 </ResultSet>"""))
+
+    def test_formatResults_simple_JSON(self):
+        """
+        Tests simple JSON formatting.
+        """
+        result = [{"attrib_1": "1", "attrib_2": 2},
+                {"attrib_1": "1", "attrib_2": 2}]
+        formatted_result = util.formatResults(dummy_request("json"), result)
+        # Read again.
+        output = json.loads(formatted_result)["ResultSet"]
+        # Test the headers.
+        self.assertEqual(output["totalResultsReturned"], 2)
+        self.assertEqual(output["totalResultsAvailable"], 2)
+        self.assertEqual(output["firstResultPosition"], 0)
+        # Assert the actual contents.
+        self.assertEqual(result, output["Result"])
+
+    def test_formatResults_nested_JSON(self):
+        """
+        Tests nested JSON formatting.
+        """
+        result = [{"attrib_1": "a",
+            "nested_attribs": {"a": 1, "b": 2}}]
+        formatted_result = util.formatResults(dummy_request("json"), result)
+        # Read again.
+        output = json.loads(formatted_result)["ResultSet"]
+        # Test the headers.
+        self.assertEqual(output["totalResultsReturned"], 1)
+        self.assertEqual(output["totalResultsAvailable"], 1)
+        self.assertEqual(output["firstResultPosition"], 0)
+        # Assert the actual contents.
+        self.assertEqual(result, output["Result"])
+
+    def test_formatResults_lists_JSON(self):
+        """
+        Tests nested JSON formatting.
+        """
+        result = [{"attrib_1": "a", "list_of_a": [{"a": "2"}, {"a": "3"}]}]
+        formatted_result = util.formatResults(dummy_request("json"), result)
+        # Read again.
+        output = json.loads(formatted_result)["ResultSet"]
+        # Test the headers.
+        self.assertEqual(output["totalResultsReturned"], 1)
+        self.assertEqual(output["totalResultsAvailable"], 1)
+        self.assertEqual(output["firstResultPosition"], 0)
+        # Assert the actual contents.
+        self.assertEqual(result, output["Result"])
+
 
 
 def suite():
