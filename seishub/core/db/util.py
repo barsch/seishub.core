@@ -237,9 +237,12 @@ def formatResults(request, results, count=None, limit=None, offset=0,
         for result in results:
             sub = SubElement(table, "tr")
             for key in keys:
-                value = result[key]
+                try:
+                    value = result[key]
+                except:
+                    value = ""
                 if value is None:
-                    value = ''
+                    value = ""
                 SubElement(sub, "td").text = str(value)
             # build URL
             if not build_url:
