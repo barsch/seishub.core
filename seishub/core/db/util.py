@@ -6,6 +6,7 @@ Database related utilities.
 from decimal import Decimal
 from lxml.etree import Element, SubElement, tostring
 from seishub.core.util.xmlwrapper import toString
+import sqlalchemy
 from sqlalchemy import sql, Table
 import datetime
 import json
@@ -220,14 +221,23 @@ def formatResults(request, results, count=None, limit=None, offset=0,
         body = SubElement(html, "body")
         table = SubElement(body, "table", border="1")
         sub = SubElement(table, "tr")
-        for key in results.keys():
-            SubElement(sub, "th").text = str(key)
+        # In xhtml the order of keys matters as we want to build a table.
+        # If the result object is a sqlalchemy.engine.base.ResultProxy object,
+        # use the key order stored there, otherwise just sort the keys
+        # alphabetically.
+        if hasattr(results, "keys"):
+            keys = [str(_i) for _i in results.keys()]
+        else:
+            keys = sorted([str(_i) for _i in results[0].keys()])
+        for key in keys:
+            SubElement(sub, "th").text = key
         # build URL
         if build_url:
             SubElement(sub, "th").text = "URL"
         for result in results:
             sub = SubElement(table, "tr")
-            for value in result:
+            for key in keys:
+                value = result[key]
                 if value is None:
                     value = ''
                 SubElement(sub, "td").text = str(value)
@@ -241,7 +251,8 @@ def formatResults(request, results, count=None, limit=None, offset=0,
             SubElement(td, 'a', href=url).text = url
         # generate correct header
         request.setHeader('content-type', 'text/html; charset=UTF-8')
-        return tostring(html, method='html', encoding='utf-8')
+        return tostring(html, method='html', encoding='utf-8',
+            pretty_print=True)
     else:
         def toXML(root, item):
             """
