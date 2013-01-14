@@ -226,7 +226,7 @@ def formatResults(request, results, count=None, limit=None, offset=0,
         for result in results:
             sub = SubElement(table, "tr")
             for value in result:
-                if value == None:
+                if value is None:
                     value = ''
                 SubElement(sub, "td").text = str(value)
             # build URL
@@ -241,16 +241,46 @@ def formatResults(request, results, count=None, limit=None, offset=0,
         request.setHeader('content-type', 'text/html; charset=UTF-8')
         return tostring(html, method='html', encoding='utf-8')
     else:
+        def toXML(root, item):
+            """
+            Recursively translate a dict of dicts/lists to a SubElement
+            structure.
+
+            Can deal with nested dicts and lists of dictionaries, e.g.
+
+            item = {"root":
+                {"item1": "a", "list_of_a": [{"a": "2"}, {"a": "3"}]}}
+
+            would results in
+
+            <root>
+                <item1>a</item1>
+                <list_of_a>
+                    <a>2</a>
+                    <a>3</a>
+                </list_of_a>
+            </root>
+            """
+            try:
+                item = dict(item)
+            except:
+                pass
+            if isinstance(item, dict):
+                for (key, value) in item.iteritems():
+                    new_root = SubElement(root, key)
+                    toXML(new_root, value)
+            elif hasattr(item, "__iter__"):
+                for sub_item in item:
+                    toXML(root, sub_item)
+            else:
+                root.text = str(item)
+
         # build up XML document
         xml = Element("ResultSet")
-        i = 0
-        for result in results:
+        for i, result in enumerate(results):
             i = i + 1
             sub = SubElement(xml, "Item")
-            for (key, value) in dict(result).iteritems():
-                if value == None:
-                    value = ''
-                SubElement(sub, key).text = str(value)
+            toXML(sub, result)
             # build URL
             if not build_url:
                 continue
