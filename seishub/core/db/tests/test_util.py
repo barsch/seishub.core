@@ -220,6 +220,35 @@ class DBUtilTestCase(unittest.TestCase):
                     </body>
                 </html>"""))
 
+    def test_formatResults_simple_XHTML_missing_field(self):
+        """
+        One of the later entries is missing a field. The function should be
+        able to deal with it.
+        """
+        result = [{"attrib_1": "1", "attrib_2": 2},
+                {"attrib_1": "1"}]
+        formatted_result = util.formatResults(dummy_request("xhtml"), result)
+        self.assertEqual(normalize_xml_whitespace(formatted_result),
+            normalize_xml_whitespace("""
+                <html>
+                    <body>
+                        <table border="1">
+                            <tr>
+                                <th>attrib_1</th>
+                                <th>attrib_2</th>
+                            </tr>
+                            <tr>
+                                <td>1</td>
+                                <td>2</td>
+                            </tr>
+                            <tr>
+                                <td>1</td>
+                                <td></td>
+                            </tr>
+                        </table>
+                    </body>
+                </html>"""))
+
 
 def suite():
     return unittest.makeSuite(DBUtilTestCase, 'test')
