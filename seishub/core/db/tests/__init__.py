@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from seishub.core.db.tests import test_orm
+from seishub.core.db.tests import test_util
 import doctest
 import unittest
 
@@ -8,6 +9,7 @@ import unittest
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(test_orm.suite())
+    suite.addTest(test_util.suite())
     return suite
 
 
