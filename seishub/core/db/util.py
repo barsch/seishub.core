@@ -293,8 +293,9 @@ def formatResults(request, results, count=None, limit=None, offset=0,
 
         # build up XML document
         xml = Element("ResultSet")
-        for i, result in enumerate(results):
-            i = i + 1
+        i = 0
+        for result in results:
+            i += 1
             sub = SubElement(xml, "Item")
             toXML(sub, result)
             # build URL
