@@ -94,15 +94,16 @@ class WebRequest(Processor, http.Request):
             # Shortcut name
             h_name = "access-control-request-headers"
             if self.requestHeaders.hasHeader(h_name) and \
-                "origin" in \
-                self.requestHeaders.getRawHeaders(h_name)[0]:
+                "x-requested-with" in \
+                self.requestHeaders.getRawHeaders(h_name)[0].lower():
                 # Set correct headers, response code, and return.
                 self.setResponseCode(200, "Cross site access granted.")
                 self.setHeader("Access-Control-Allow-Headers",
                     "X-Requested-With, X-File-Size, X-File-Name, X-File-Type, "
+                    "X-Requested-With, Authorization, "
                     "authorization, content-type")
                 self.setHeader("Access-Control-Allow-Methods", "POST, PUT, "
-                    "GET, DELETE")
+                    "GET, DELETE, OPTIONS")
                 self.setHeader("Access-Control-Max-Age", "60")
                 self.write('')
                 self.finish()
