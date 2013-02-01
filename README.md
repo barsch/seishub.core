@@ -19,6 +19,7 @@ Documentation
 -------------
 
 * Barsch, Robert (2009): [Web-based technology for storage and processing of multi-component data in seismology: First steps towards a new design](http://edoc.ub.uni-muenchen.de/11043/). Dissertation, LMU München: Fakultät für Geowissenschaften.
+* A tutorial for writing SeisHub Plugins: [seishub.plugins.how_to_extend_seishub](https://github.com/krischer/seishub.plugins.how_to_extend_seishub)
 
 ###### Related Papers ######
 
