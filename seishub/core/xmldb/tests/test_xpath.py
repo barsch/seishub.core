@@ -37,6 +37,28 @@ class XPathQueryParserTest(SeisHubEnvironmentTestCase):
         self.assertEqual(self.parser.package_id, '*')
         self.assertEqual(self.parser.resourcetype_id, '*')
 
+    def testUnderscoreInLocationNames(self):
+        """
+        Package and resource names can contain underscores.
+        """
+        queries = ['/package_name/resource_type',
+                   '/package/resource_type',
+                   '/package_name/resourcetype',
+                   '/package_name/*']
+        # location path is stored into the parser object
+        self.parser.parse(queries[0])
+        self.assertEqual(self.parser.package_id, 'package_name')
+        self.assertEqual(self.parser.resourcetype_id, 'resource_type')
+        self.parser.parse(queries[1])
+        self.assertEqual(self.parser.package_id, 'package')
+        self.assertEqual(self.parser.resourcetype_id, 'resource_type')
+        self.parser.parse(queries[2])
+        self.assertEqual(self.parser.package_id, 'package_name')
+        self.assertEqual(self.parser.resourcetype_id, 'resourcetype')
+        self.parser.parse(queries[3])
+        self.assertEqual(self.parser.package_id, 'package_name')
+        self.assertEqual(self.parser.resourcetype_id, '*')
+
     def testKeyLessQuery(self):
         queries = ['/pid/rid[rn/attr]',
                    '/pid/rid[rn/node/./attr]',

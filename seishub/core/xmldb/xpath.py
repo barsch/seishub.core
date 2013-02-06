@@ -9,15 +9,15 @@ import pyparsing as pp
 class RestrictedXPathQueryParser(object):
     """
     This class provides a parser for the restricted XPath query grammar.
-    
-    NameStartChar ::= ":" | [A-Z] | "_" | [a-z] | [#xC0-#xD6] | [#xD8-#xF6] | 
-                      [#xF8-#x2FF] | [#x370-#x37D] | [#x37F-#x1FFF] | 
-                      [#x200C-#x200D] | [#x2070-#x218F] | [#x2C00-#x2FEF] | 
-                      [#x3001-#xD7FF] | [#xF900-#xFDCF] | [#xFDF0-#xFFFD] | 
+
+    NameStartChar ::= ":" | [A-Z] | "_" | [a-z] | [#xC0-#xD6] | [#xD8-#xF6] |
+                      [#xF8-#x2FF] | [#x370-#x37D] | [#x37F-#x1FFF] |
+                      [#x200C-#x200D] | [#x2070-#x218F] | [#x2C00-#x2FEF] |
+                      [#x3001-#xD7FF] | [#xF900-#xFDCF] | [#xFDF0-#xFFFD] |
                       [#x10000-#xEFFFF]
-    NameChar ::= NameStartChar | "-" | "." | [0-9] | #xB7 | [#x0300-#x036F] | 
+    NameChar ::= NameStartChar | "-" | "." | [0-9] | #xB7 | [#x0300-#x036F] |
                 [#x203F-#x2040]
-    this is taken from the XML 1.0 specification, 
+    this is taken from the XML 1.0 specification,
     see: L{http://www.w3.org/TR/REC-xml/#NT-Name}
 
     wildcard     ::= '*'
@@ -33,8 +33,8 @@ class RestrictedXPathQueryParser(object):
     node         ::= wildcard | parentNd | selfNd | nodename
     literalValue ::= '"'[^"]*'"' | '''[^']*'''
     numericValue ::= [-][0-9]*[.][0-9]*
-    
-    eqOp         ::= '==' | '=' 
+
+    eqOp         ::= '==' | '='
     ltOp         ::= '<'
     gtOp         ::= '>'
     leOp         ::= '<='
@@ -44,20 +44,20 @@ class RestrictedXPathQueryParser(object):
     andOp        ::= 'and'
     relOp        ::= eqOp | ineqOp | leOp | geOp | ltOp | gtOp
     logOp        ::= orOp | andOp
-    
+
     package_id       ::= [A-Za-z0-9]* | wildcard
     resourcetype_id  ::= [A-Za-z0-9]* | wildcard
     # rootnode         ::= [A-Za-z0-9]* | wildcard
-    locationStep     ::= sep (nodename | wildcard) 
+    locationStep     ::= sep (nodename | wildcard)
     location         ::= sep package_id sep resourcetype_id [loactionStep]*
     pathExpr         ::= [sep] node [sep node]*
     valueExpr        ::= literalValue | numericValue
     relExpr          ::= pathExpr [relOp valueExpr | pathExpr]
     parExpr          ::= lpar pexpr rpar
-    
+
     notFunc          ::= not(pexpr)
     func             ::= notFunc
-    
+
     pexpr            ::= (func | relExpr | parExpr) [logOp (pexpr | parExpr)]*
     predicates       ::= pstart pexpr pend
     query = location [predicates]
@@ -107,7 +107,7 @@ class RestrictedXPathQueryParser(object):
         if tokens[0] == self.SEP:
             # path is relative to root (package level)
             return [[tokens[1], tokens[2], self.SEP.join(tokens[3:])]]
-        # count the number of '..' nodes at the beginning of the path and move 
+        # count the number of '..' nodes at the beginning of the path and move
         # the appropriate number of steps in path to the left
         steps = 0
         for t in tokens:
@@ -148,10 +148,10 @@ class RestrictedXPathQueryParser(object):
         parentNd = pp.Literal(self.PARENT)          # parent of current node
         lpar = pp.Literal('(').suppress()           # left parenthesis literal
         rpar = pp.Literal(')').suppress()           # right parenthesis literal
-        pstart = pp.Literal('[').suppress()         # beginning of predicates 
+        pstart = pp.Literal('[').suppress()         # beginning of predicates
         pend = pp.Literal(']').suppress()           # end of predicates
         ncPrefix = pp.Word(xmlNameStartChar, xmlNameChar) + ':' # namespace prefix
-        # node name, may contain a namespace prefix and may start with '@' for 
+        # node name, may contain a namespace prefix and may start with '@' for
         # attribute nodes
         ndName = pp.Combine(pp.Optional('@') + pp.Optional(ncPrefix) + \
                  pp.Word(xmlNameStartChar, xmlNameChar))
@@ -192,10 +192,10 @@ class RestrictedXPathQueryParser(object):
         notFunc = pp.CaselessKeyword('not')
 
         # location step
-        package_id = (pp.Word(pp.alphanums + "-") | wildcard).\
+        package_id = (pp.Word(pp.alphanums + "-_") | wildcard).\
                      setResultsName('package_id').\
                      setParseAction(self.evalPackage_id).suppress()
-        resourcetype_id = (pp.Word(pp.alphanums + "-") | wildcard).\
+        resourcetype_id = (pp.Word(pp.alphanums + "-_") | wildcard).\
                           setResultsName('resourcetype_id').\
                           setParseAction(self.evalResourcetype_id).suppress()
 
