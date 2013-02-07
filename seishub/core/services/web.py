@@ -217,7 +217,7 @@ class WebRequest(Processor, http.Request):
     def _cbFailed(self, failure):
         if not isinstance(failure, Failure):
             raise
-        if 'seishub.exceptions.SeisHubError' not in failure.parents:
+        if 'seishub.core.exceptions.SeisHubError' not in failure.parents:
             # we got something unhandled
             self.env.log.error(failure.getTraceback())
             self.setResponseCode(http.INTERNAL_SERVER_ERROR)
