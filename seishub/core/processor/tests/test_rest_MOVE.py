@@ -212,7 +212,7 @@ class RestMOVETests(SeisHubEnvironmentTestCase):
                  received_headers={'Destination': uri})
         # get original resource
         proc.run(GET, '/move-test/notvc/test.xml').render_GET(proc)
-        # get new resource 
+        # get new resource
         try:
             proc.run(GET, '/move-test/notvc/new.xml').render_GET(proc)
             self.fail("Expected SeisHubError")
@@ -231,7 +231,7 @@ class RestMOVETests(SeisHubEnvironmentTestCase):
         proc.run(PUT, '/move-test/vc/test.xml', StringIO(XML_DOC))
         proc.run(PUT, '/move-test/vc/test.xml', StringIO(XML_DOC))
         proc.run(PUT, '/move-test/vc/test.xml', StringIO(XML_DOC))
-        # try to move revision 2 to revision 1 
+        # try to move revision 2 to revision 1
         uri = self.env.getRestUrl() + '/move-test/vc/test.xml/1'
         try:
             proc.run(MOVE, '/move-test/vc/test.xml/2',
@@ -250,7 +250,7 @@ class RestMOVETests(SeisHubEnvironmentTestCase):
         # create resource
         proc.run(POST, '/move-test/vc/test.xml', StringIO(XML_DOC))
         proc.run(PUT, '/move-test/vc/test.xml', StringIO(XML_DOC))
-        # try to move revision 1 to another uri 
+        # try to move revision 1 to another uri
         uri = self.env.getRestUrl() + '/move-test/vc/muh.xml'
         try:
             proc.run(MOVE, '/move-test/vc/test.xml/1',
@@ -315,7 +315,7 @@ class RestMOVETests(SeisHubEnvironmentTestCase):
         # create resources
         proc.run(POST, '/move-test/notvc/test1.xml', StringIO(XML_DOC))
         proc.run(POST, '/move-test/notvc/test2.xml', StringIO(XML_DOC))
-        # try to overwrite test2.xml 
+        # try to overwrite test2.xml
         uri = self.env.getRestUrl() + '/move-test/notvc/test2.xml'
         try:
             proc.run(MOVE, '/move-test/notvc/test1.xml',
@@ -333,7 +333,7 @@ class RestMOVETests(SeisHubEnvironmentTestCase):
         """
         proc = Processor(self.env)
         # fetch a seishub stylesheet
-        data = proc.run(GET, '/seishub/stylesheet')
+        data = proc.run(GET, '/seishub/stylesheet/.meta')
         uri = '/seishub/stylesheet/' + data.keys()[0]
         to_uri = self.env.getRestUrl() + '/seishub/stylesheet/test.xml'
         try:
@@ -360,8 +360,8 @@ class RestMOVETests(SeisHubEnvironmentTestCase):
     def test_moveToInvalidResourcename(self):
         """
         Destination file name may not start with '@', '.', '_' or '-'.
-        
-        SeisHub restricts the destination filename to distinct between 
+
+        SeisHub restricts the destination filename to distinct between
         mappers, @aliases and .properties.
         """
         proc = Processor(self.env)

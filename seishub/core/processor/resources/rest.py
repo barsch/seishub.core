@@ -13,9 +13,11 @@ from seishub.core.processor.processor import MAXIMAL_URL_LENGTH, PUT, GET, \
     HEAD, POST
 from seishub.core.processor.resources.resource import Resource, Folder, \
     StaticFolder
+from seishub.core.db.util import formatResults
 from seishub.core.util.path import splitPath
 from seishub.core.util.text import isInteger
 from seishub.core.util.xml import addXMLDeclaration
+from sqlalchemy import sql, Table
 from twisted.web import http
 from zope.interface import implements
 
@@ -375,6 +377,44 @@ class RESTProperty(Resource):
 class RESTResourceTypeFolder(Folder):
     """
     A REST resource type folder.
+
+    Handles the following HTTP methods: GET, POST, PUT, MOVE, DELETE
+
+
+    GET returns different things, depending on the exact path:
+
+    * GET package/resource_type
+        Returns a list with the indexed values for each resource of the given
+        type
+    * GET package/resource_type/.meta
+        Returns all indexes and resources associated with the resource type
+    * GET package/resource_type/resource_name
+        Returns the actual resource
+    * GET package/resource_type/resource_name/revision_number
+        Returns the requested revision of the resource
+    * GET package/resource_type/resource_name/.property
+        Returns the property information for the specified resource. Currently
+        implemented properties:
+            .meta: Returns metainformation for the specified resource
+            .index: Returns the indexed values for the specified resources
+    * GET package/resource_type/resource_name/revision_number/.property
+        Returns the property information for a specified revision.
+
+    POST can create new named and unnamed resources. It cannot update an
+    already existing resource:
+
+    POST and PUT are almost identical with the difference that POST can also
+    create unnamed resources.
+
+    * POST/PUT package/resource_type/resource_name
+        Create a new, named resource or update an existing one.
+    * POST package/resource_type
+        Creates a new, unnamed resource. Will automatically create a numeric
+        resource name.
+
+    MOVE and DELETE work with already existing resources:
+    * MOVE/DELETE package/resource_type/resource_name
+        Moves/deletes the specified resource.
     """
 
     def __init__(self, package_id, resourcetype_id, **kwargs):
@@ -385,66 +425,88 @@ class RESTResourceTypeFolder(Folder):
         self.resourcetype_id = resourcetype_id
 
     def render(self, request):
+        """
+        All requests to any resource of this type will end up here.
+
+        They will be routed according to the logic specified in the docstring
+        of this class.
+        """
         rlen = len(request.postpath)
-        if request.method in [GET, HEAD] and rlen == 0:
+        if request.method == "GET":
             return self.render_GET(request)
-        elif request.method == POST and rlen in [0, 1]:
+        elif request.method in ["POST"] and rlen <= 1:
             return self.render_POST(request)
-        elif len(request.postpath) == 1:
+        elif request.method in ["MOVE", "DELETE", "PUT"] and rlen == 1:
             return self._processResource(request)
-        elif request.method == GET and rlen >= 2:
-            if isInteger(request.postpath[1]):
-                if rlen == 2:
-                    return self._processRevision(request)
-                elif rlen == 3 and request.postpath[2].startswith('.'):
-                    name = request.postpath.pop(0)
-                    request.prepath.append(name)
-                    revision = request.postpath.pop(0)
-                    request.prepath.append(revision)
-                    return RESTProperty(self.package_id, self.resourcetype_id,
-                                        name, revision)
-            elif request.postpath[1].startswith('.'):
-                name = request.postpath.pop(0)
-                request.prepath.append(name)
-                return RESTProperty(self.package_id, self.resourcetype_id,
-                                    name)
-        allowed_methods = getattr(self, 'allowedMethods', ())
-        msg = "This operation is not allowed on this resource."
-        raise NotAllowedError(allowed_methods=allowed_methods, message=msg)
+        else:
+            allowed_methods = ["GET", "POST"]
+            msg = "This operation is not allowed on this resource."
+            raise NotAllowedError(allowed_methods=allowed_methods, message=msg)
+
+    def render_GET(self, request):
+        """
+        Handles all GET requests.
+        """
+        rlen = len(request.postpath)
+
+        # If nothing else is given, just render a list of every resource of
+        # this type.
+        if rlen == 0:
+            return self.renderResourceList(request)
+        # Special .meta resource renders information about the resource type.
+        elif rlen == 1 and request.postpath[0] == ".meta":
+            return self.renderMetaInformation(request)
+        # Otherwise attempt to render the most recent version of the specified
+        # resource.
+        elif rlen == 1:
+            name = request.postpath.pop(0)
+            request.prepath.append(name)
+            res = request.env.catalog.getResource(self.package_id,
+                self.resourcetype_id, name, revision=None)
+            return RESTResource(res)
+
+        # Longer paths can either request certain revisions of a resource or
+        # metainformation of the resource.
+        revision = None
+        name = request.postpath.pop(0)
+        request.prepath.append(name)
+        if request.postpath and isInteger(request.postpath[0]):
+            revision = request.postpath.pop(0)
+            request.prepath.append(revision)
+        # Property requests
+        if request.postpath and request.postpath[0].startswith("."):
+            return RESTProperty(self.package_id, self.resourcetype_id, name,
+                revision=revision)
+
+        # Finally return the resource.
+        res = request.env.catalog.getResource(self.package_id,
+            self.resourcetype_id, name, revision=revision)
+        return RESTResource(res)
 
     def _processResource(self, request):
+        """
+        Delegates PUT, MOVE, and DELETE requests to the resource.
+        """
+        if request.prepath[0] == "seishub":
+            msg = "Built-in resources cannot be modified"
+            raise ForbiddenError(msg)
         # resource request
         try:
             res = request.env.catalog.getResource(self.package_id,
                                                   self.resourcetype_id,
                                                   request.postpath[0],
                                                   revision=None)
-        except NotFoundError:
+        except NotFoundError as e:
+            # PUT can also create a named resource.
             if request.method == PUT:
                 return self.render_POST(request)
-            raise
-        except:
-            raise
+            raise e
+        except Exception as e:
+            raise e
+        # Update pre- and postpaths.
         name = request.postpath.pop(0)
         request.prepath.append(name)
-        result = RESTResource(res)
-        # don't render GET request directly
-        if request.method == GET:
-            return result
-        else:
-            return result.render(request)
-
-    def _processRevision(self, request):
-        # revision request
-        name = request.postpath.pop(0)
-        request.prepath.append(name)
-        revision = request.postpath.pop(0)
-        request.prepath.append(revision)
-        res = request.env.catalog.getResource(self.package_id,
-                                              self.resourcetype_id,
-                                              name,
-                                              revision=revision)
-        return RESTResource(res)
+        return RESTResource(res).render(request)
 
     def render_POST(self, request):
         """
@@ -509,7 +571,27 @@ class RESTResourceTypeFolder(Folder):
         request.headers['Location'] = str(url)
         return ''
 
-    def render_GET(self, request):
+    def renderResourceList(self, request):
+        """
+        Returns the indexed values of every resource of the given type.
+
+        This directly accesses the database and does not use the catalog. This
+        should be faster as the heavy lifting is done by the database.
+        """
+        table = "/%s/%s" % (self.package_id, self.resourcetype_id)
+        # Directly access the database via an SQLView which is automatically
+        # created for every resource type and filled with all indexed values.
+        tab = Table(table,
+            request.env.db.metadata, autoload=True)
+        # Build up the query.
+        query = sql.select([tab])
+        # Execute the query.
+        result = request.env.db.query(query)
+
+        result = formatResults(request, result)
+        return result
+
+    def renderMetaInformation(self, request):
         """
         Returns all resources and indexes of this resource type.
         """
