@@ -578,17 +578,22 @@ class RESTResourceTypeFolder(Folder):
         This directly accesses the database and does not use the catalog. This
         should be faster as the heavy lifting is done by the database.
         """
+        limit = int(request.args0.get("limit", 20))
+        offset = int(request.args0.get("offset", 0))
         table = "/%s/%s" % (self.package_id, self.resourcetype_id)
         # Directly access the database via an SQLView which is automatically
         # created for every resource type and filled with all indexed values.
         tab = Table(table,
             request.env.db.metadata, autoload=True)
-        # Build up the query.
-        query = sql.select([tab])
+
+        count = sql.select([tab]).count()
+        count = request.env.db.query(count).first()[0]
+        query = sql.select([tab]).limit(limit).offset(offset)
         # Execute the query.
         result = request.env.db.query(query)
 
-        result = formatResults(request, result)
+        result = formatResults(request, result, limit=limit, offset=offset,
+            count=count)
         return result
 
     def renderMetaInformation(self, request):
