@@ -576,19 +576,49 @@ class RESTResourceTypeFolder(Folder):
         Returns the indexed values of every resource of the given type.
 
         This directly accesses the database and does not use the catalog. This
-        should be faster as the heavy lifting is done by the database.
+        should be faster as the heavy lifting is done by the database. The
+        downside is that it is not easily testable.
+
+        It supports the limit and offset parameters in the standard fashion.
+
+        It furthermore allows filtering by any indexed values. Assume the
+        resource has an index called indexed_value. Filtering is then possible
+        by:
+
+            * min_indexed_value=12
+            * max_indexed_value=23
+            * indexed_value=23
+
+        Only rows satisfying these requirements will be returned.
         """
         limit = int(request.args0.get("limit", 20))
         offset = int(request.args0.get("offset", 0))
         table = "/%s/%s" % (self.package_id, self.resourcetype_id)
+
         # Directly access the database via an SQLView which is automatically
         # created for every resource type and filled with all indexed values.
         tab = Table(table,
             request.env.db.metadata, autoload=True)
 
-        count = sql.select([tab]).count()
+        columns = tab.c.keys()
+        query = sql.select([tab])
+        # Now loop over all parameters and apply the filters.
+        for param, value in request.args0.iteritems():
+            if param in columns:
+                query = query.where(
+                    tab.c[param] == tab.c[param].type.python_type(value))
+            elif param.startswith("min_") and param[4:] in columns:
+                name = param[4:]
+                query = query.where(
+                    tab.c[name] >= tab.c[name].type.python_type(value))
+            elif param.startswith("max_") and param[4:] in columns:
+                name = param[4:]
+                query = query.where(
+                    tab.c[name] <= tab.c[name].type.python_type(value))
+
+        count = query.count()
         count = request.env.db.query(count).first()[0]
-        query = sql.select([tab]).limit(limit).offset(offset)
+        query = query.limit(limit).offset(offset)
         # Execute the query.
         result = request.env.db.query(query)
 
