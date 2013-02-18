@@ -81,7 +81,7 @@ The [seismology plug-in](https://github.com/barsch/seishub.plugins.seismology) r
 
 ###### Notes ######
 
-* More details (especially for *matplotlib* and *numpy* installation on linux) can be found at https://www.obspy.org/wiki/InstallationLinuxMac#InstallationfromSourceLinuxUnixMac
+* More details (especially for *matplotlib* and *numpy* installation on linux) can be found at https://github.com/obspy/obspy/wiki/Installation-on-Linux:-Dependencies
 * Windows users need to install *pywin32* (Python for Windows extension). Download and install from http://sourceforge.net/projects/pywin32/.
 * Package *lxml* requires the *libxml2-dev* and *libxslt-dev* packages. Compiling takes a while. This does not apply to an installation on Windows - here are binaries delivered.
 * Binary packages for *pyOpenSSL* can be found at http://www.egenix.com/products/python/pyOpenSSL/ or http://sourceforge.net/projects/pyopenssl/
