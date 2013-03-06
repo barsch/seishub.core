@@ -118,7 +118,9 @@ class WebRequest(Processor, http.Request):
                 .split("boundary=")[1]
             # The actual boundary is prepended with "--"
             boundary = "--" + boundary
-            _, _, content, _ = self.data.split(boundary)
+            split_data = self.data.split(boundary)
+            split_data = [_i for _i in split_data if _i]
+            _, _, content, _ = split_data[:4]
             #  The content can be prepended by Content-Disposition,
             #  Content-Type, or Content-Transfer-Encoding headers. Remove
             #  these.
