@@ -349,7 +349,6 @@ class PluginsPanel(Component):
                 error = self._updatePlugins(request)
                 if not error:
                     request.redirect(request.uri)
-                    request.finish()
                     return ""
             if 'reload' in request.args:
                 self._refreshPlugins()
