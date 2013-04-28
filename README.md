@@ -1,3 +1,5 @@
+[![Build Status](https://secure.travis-ci.org/barsch/seishub.core.png?branch=master)](https://travis-ci.org/barsch/seishub.core)
+
 Welcome to SeisHub
 ==================
 
@@ -17,6 +19,7 @@ Documentation
 -------------
 
 * Barsch, Robert (2009): [Web-based technology for storage and processing of multi-component data in seismology: First steps towards a new design](http://edoc.ub.uni-muenchen.de/11043/). Dissertation, LMU München: Fakultät für Geowissenschaften.
+* A tutorial for writing SeisHub Plugins: [seishub.plugins.how_to_extend_seishub](https://github.com/krischer/seishub.plugins.how_to_extend_seishub)
 
 ###### Related Papers ######
 
@@ -69,21 +72,16 @@ Easy Install is a powerful command-line based package management tool for Python
     easy_install pyasn1
     easy_install lxml               # Linux requires libxml2-dev and libxslt-dev
     easy_install pyOpenSSL          # Linux requires libssl-dev
-    easy_install obspy.core
+    easy_install numpy              # see link in Notes
+    easy_install obspy
 
 The [seismology plug-in](https://github.com/barsch/seishub.plugins.seismology) requires the following additional modules:
 
-    easy_install numpy              # see link in Notes
     easy_install matplotlib
-    easy_install obspy.imaging
-    easy_install obspy.mseed
-    easy_install obspy.xseed
-    easy_install obspy.arclink
-    easy_install obspy.db
 
 ###### Notes ######
 
-* More details (especially for *matplotlib* and *numpy* installation on linux) can be found at https://www.obspy.org/wiki/InstallationLinuxMac#InstallationfromSourceLinuxUnixMac
+* More details (especially for *matplotlib* and *numpy* installation on linux) can be found at https://github.com/obspy/obspy/wiki/Installation-on-Linux:-Dependencies
 * Windows users need to install *pywin32* (Python for Windows extension). Download and install from http://sourceforge.net/projects/pywin32/.
 * Package *lxml* requires the *libxml2-dev* and *libxslt-dev* packages. Compiling takes a while. This does not apply to an installation on Windows - here are binaries delivered.
 * Binary packages for *pyOpenSSL* can be found at http://www.egenix.com/products/python/pyOpenSSL/ or http://sourceforge.net/projects/pyopenssl/
@@ -98,6 +96,7 @@ For [PostgreSQL](http://www.postgresql.org/) additional database bindings are re
     easy_install psycopg2           # Linux requires libpq-dev
 
 ###### Notes ######
+* On Debian/Ubuntu install *python-psycopg2* via package management
 * Windows binary packages for *psycopg2* can be found at http://www.stickpeople.com/projects/python/win-psycopg/
 
 ### SeisHub ###
@@ -143,4 +142,4 @@ Using PostgreSQL as default database backend requires a few more additional step
 
 4. Logout
 
-After creating the user and database you may use the connection string `postgres://username:password@host:port/databasename`.
+After creating the user and database you may use the connection string `postgresql://username:password@host:port/databasename` (postgres default port is `5432`).

@@ -82,6 +82,55 @@ class WebRequest(Processor, http.Request):
         """
         Renders the requested resource returned from the self.process() method.
         """
+        # Set the access control header to allow cross origin XMLHttpRequests
+        # for all resources.
+        self.setHeader("Access-Control-Allow-Origin", "*")
+
+        # Modern browsers adhere to the same origin policy. This can be
+        # circumvented to a certain degree by correctly responding to
+        # XMLHttpRequest OPTIONS requests. All AJAX requests from other domains
+        # will be allowed. The goal is to be as permissive as possible
+        if self.method == "OPTIONS":
+            # Shortcut name
+            h_name = "access-control-request-headers"
+            if self.requestHeaders.hasHeader(h_name) and \
+                "x-requested-with" in \
+                self.requestHeaders.getRawHeaders(h_name)[0].lower():
+                # Set correct headers, response code, and return.
+                self.setResponseCode(200, "Cross site access granted.")
+                self.setHeader("Access-Control-Allow-Headers",
+                    "X-Requested-With, X-File-Size, X-File-Name, X-File-Type, "
+                    "X-Requested-With, Authorization, "
+                    "authorization, content-type")
+                self.setHeader("Access-Control-Allow-Methods", "POST, PUT, "
+                    "GET, DELETE, OPTIONS")
+                self.setHeader("Access-Control-Max-Age", "60")
+                self.write('')
+                self.finish()
+                return
+
+        # Handle 'multipart/form-data' content types.
+        # See http://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.2
+        if self.requestHeaders.hasHeader("content-type") and \
+            self.requestHeaders.getRawHeaders("content-type")[0].startswith(
+                "multipart/form-data; boundary="):
+            boundary = self.requestHeaders.getRawHeaders("content-type")[0]\
+                .split("boundary=")[1]
+            # The actual boundary is prepended with "--"
+            boundary = "--" + boundary
+            split_data = self.data.split(boundary)
+            split_data = [_i for _i in split_data if _i]
+            _, _, content, _ = split_data[:4]
+            #  The content can be prepended by Content-Disposition,
+            #  Content-Type, or Content-Transfer-Encoding headers. Remove
+            #  these.
+            content = content.strip().split("\n")
+            for _i, line in enumerate(content):
+                if line and line.startswith("Content-"):
+                    continue
+                self.data = "\n".join(content[_i:]).strip()
+                break
+
         # check for logout
         if self.path == '/manage/logout':
             self.authenticate()
@@ -120,7 +169,7 @@ class WebRequest(Processor, http.Request):
             return
         # check result and either render direct or in thread
         if IFileSystemResource.providedBy(result):
-            # file system resources render direct 
+            # file system resources render direct
             data = result.render(self)
             if result.folderish:
                 # check for default page
@@ -170,7 +219,7 @@ class WebRequest(Processor, http.Request):
     def _cbFailed(self, failure):
         if not isinstance(failure, Failure):
             raise
-        if 'seishub.exceptions.SeisHubError' not in failure.parents:
+        if 'seishub.core.exceptions.SeisHubError' not in failure.parents:
             # we got something unhandled
             self.env.log.error(failure.getTraceback())
             self.setResponseCode(http.INTERNAL_SERVER_ERROR)
@@ -252,7 +301,7 @@ class WebRequest(Processor, http.Request):
     def _renderResource(self, data=''):
         """
         Renders a resource.
-        
+
         @param data: content of the document to be rendered
         @return:     None
         """
@@ -280,7 +329,7 @@ class WebRequest(Processor, http.Request):
     def _renderFolder(self, children={}):
         """
         Renders a folderish resource.
-        
+
         @param children: dict of child objects implementing L{IResource}
         @return:         None
         """
@@ -352,10 +401,10 @@ class WebRequest(Processor, http.Request):
     def notifyFinish(self):
         """
         Notify when finishing the request
-        
-        @return: A deferred. The deferred will be triggered when the request 
-            is finished -- with a C{None} value if the request finishes 
-            successfully or with an error if the request is stopped by the 
+
+        @return: A deferred. The deferred will be triggered when the request
+            is finished -- with a C{None} value if the request finishes
+            successfully or with an error if the request is stopped by the
             client.
         """
         self.notifications.append(defer.Deferred())
@@ -416,7 +465,7 @@ class HTTPSService(SSLServer):
     def _getCertificates(self):
         """
         Fetch HTTPS certificate paths from configuration.
-        
+
         return: Paths to pkey and cert files.
         """
         pkey_file = self.env.config.get('web', 'https_pkey_file')
@@ -438,7 +487,7 @@ class HTTPSService(SSLServer):
     def _generateCertificates(self):
         """
         Generates new self-signed certificates.
-        
+
         return: Paths to pkey and cert files.
         """
         from seishub.core.util import certgen

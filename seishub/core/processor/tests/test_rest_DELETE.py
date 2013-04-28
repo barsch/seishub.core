@@ -176,7 +176,7 @@ class RestDELETETests(SeisHubEnvironmentTestCase):
         """
         proc = Processor(self.env)
         # fetch a seishub stylesheet
-        data = proc.run(GET, '/seishub/stylesheet')
+        data = proc.run(GET, '/seishub/stylesheet/.meta')
         for id in data:
             # skip indexes
             if id.startswith('/'):

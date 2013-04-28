@@ -156,12 +156,7 @@ class RestGETTests(SeisHubEnvironmentTestCase):
         proc = Processor(self.env)
         # create resource
         proc.run(POST, '/get-test/notvc/test.xml', StringIO(XML_DOC))
-        # without trailing slash
-        data = proc.run(GET, '/get-test/notvc')
-        # with trailing slash
-        data2 = proc.run(GET, '/get-test/notvc/')
-        # both results should equal
-        self.assertTrue(Set(data) == Set(data2))
+        data = proc.run(GET, '/get-test/notvc/.meta')
         # data must be a dictionary
         self.assertTrue(isinstance(data, dict))
         # check content
@@ -181,11 +176,7 @@ class RestGETTests(SeisHubEnvironmentTestCase):
         proc.run(POST, '/get-test/vc/test2.xml', StringIO(XML_DOC2 % 44444))
         proc.run(PUT, '/get-test/vc/test2.xml', StringIO(XML_DOC2 % 55555))
         # without trailing slash
-        data = proc.run(GET, '/get-test/vc')
-        # with trailing slash
-        data2 = proc.run(GET, '/get-test/vc/')
-        # both results should equal
-        self.assertTrue(Set(data) == Set(data2))
+        data = proc.run(GET, '/get-test/vc/.meta')
         # data must be a dict
         self.assertTrue(isinstance(data, dict))
         # check folder content

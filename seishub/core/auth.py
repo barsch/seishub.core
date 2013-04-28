@@ -28,7 +28,7 @@ class PasswordDictChecker:
         """
         @param credentials: something which implements one of the interfaces in
         self.credentialInterfaces.
-        
+
         @return: a Deferred which will fire a string which identifies an
         avatar, an empty tuple to specify an authenticated anonymous user
         (provided as checkers.ANONYMOUS) or fire a Failure(UnauthorizedLogin).
@@ -43,6 +43,7 @@ class PasswordDictChecker:
 
 
 Base = declarative_base()
+
 
 class User(Base):
     """
@@ -119,7 +120,7 @@ class AuthenticationManager(object):
         """
         min_length = self.env.config.getint('seishub', 'min_password_length')
         if len(password) < min_length:
-            raise SeisHubError("Password is way to short!")
+            raise SeisHubError("Password is way too short!")
 
     def addUser(self, id, name, password, uid=1000, institution='', email='',
                 permissions=755, checkPassword=True):

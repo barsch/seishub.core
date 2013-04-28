@@ -20,7 +20,7 @@ def isInteger(data):
 
 def getFirstSentence(text, maxlen=255):
     """
-    Returns the text left of the first occurring dot and reduces the final 
+    Returns the text left of the first occurring dot and reduces the final
     text to maxlen chars.
     """
     if not text:
@@ -79,7 +79,7 @@ def hash(text):
 def validate_id(str):
     """
     Validates a given ID.
-    
+
     IDs have to be alphanumeric and start with a character.
     """
     id_pt = """^[A-Za-z0-9]       # leading character
@@ -107,7 +107,7 @@ def to_uri(package_id, resourcetype_id):
 def from_uri(uri):
     elements = uri.split('/')
     pid = elements[1]
-    if len(elements) == 3: #no resourcetype
+    if len(elements) == 3:  # no resourcetype
         rid = None
         args = elements[2]
     else:

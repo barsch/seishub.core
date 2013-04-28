@@ -91,7 +91,7 @@ class ProcessorTests(SeisHubEnvironmentTestCase):
         proc = Processor(self.env)
         proc.path = '/xml/processor-test/notvc'
         # test valid GET method
-        data = proc.run(GET, '/xml/processor-test/notvc')
+        data = proc.run(GET, '/xml/processor-test/notvc/.meta')
         # data must be a dict
         self.assertTrue(isinstance(data, dict))
         # test valid POST method

@@ -1,7 +1,8 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
-import sys
 import os
+import sys
+
 from seishub.core.daemon import createApplication
 
 
@@ -18,7 +19,7 @@ def main():
     if len(args) == 3:
         if args[1] == 'initenv':
             print('Initializing new SeisHub environment')
-            path = args[2]
+            path = os.path.abspath(args[2])
             if os.path.isdir(path):
                 print('Error: path %s already exists!' % path)
             else:
