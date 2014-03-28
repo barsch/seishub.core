@@ -1,4 +1,4 @@
-SQLAlchemy
+SQLAlchemy >0.7.7, <0.8
 Cheetah
 pycrypto
 Twisted

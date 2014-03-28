@@ -63,7 +63,7 @@ setup(
         'setuptools',
         'Twisted',
         'Cheetah',
-        'sqlalchemy>0.7.7',
+        'sqlalchemy>0.7.7,<0.8',
         'PyOpenSSL',
         'lxml',
         'pycrypto',
