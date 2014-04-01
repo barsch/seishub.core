@@ -289,6 +289,8 @@ def formatResults(request, results, count=None, limit=None, offset=0,
                 for sub_item in item:
                     toXML(root, sub_item)
             else:
+                if item is None:
+                    item = ""
                 root.text = str(item)
 
         # build up XML document
