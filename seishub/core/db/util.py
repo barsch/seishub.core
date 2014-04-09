@@ -291,6 +291,10 @@ def formatResults(request, results, count=None, limit=None, offset=0,
             else:
                 if item is None:
                     item = ""
+                elif item is True:
+                    item = "true"
+                elif item is False:
+                    item = "false"
                 root.text = str(item)
 
         # build up XML document
