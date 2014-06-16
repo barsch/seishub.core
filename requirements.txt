@@ -6,5 +6,5 @@ pyparsing
 pyasn1
 lxml
 pyOpenSSL
-obspy
+obspy <0.10.0
 psycopg2
