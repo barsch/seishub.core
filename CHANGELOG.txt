@@ -1,0 +1,11 @@
+dev:
+ * support for xml schema files that import from another schema file
+   - schema files are written to local data subdirectory
+   - schemaLocation paths in registered schema files get changed accordingly
+   - additional schema files that are not validated against directly but
+     imported from another schema file should get additional characters in
+     their type name field (e.g. "XMLSchema_nested" for an XMLSchema file)
+ * support for default namespace in xpath lookups
+
+1.4.0:
+ * changes for quakeml support in seishub.plugins.seismology
