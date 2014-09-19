@@ -16,6 +16,28 @@ def xpathNamespaceFix(expr, default_namespace=None):
     corresponding namespace mapping dictionary.
     If a default namespace is specified, it is mapped with an abbreviation
     and applied to tags without a specified namespace.
+
+    >>> expr = "/{http://quakeml.org/xmlns/quakeml/1.2}quakeml"
+    >>> xpathNamespaceFix(expr)
+    ('/ns0:quakeml', {'ns0': 'http://quakeml.org/xmlns/quakeml/1.2'})
+    >>> expr = "/quakeml"
+    >>> xpathNamespaceFix(expr, 'http://quakeml.org/xmlns/bed/1.2')
+    ('/default:quakeml', {'default': 'http://quakeml.org/xmlns/bed/1.2'})
+    >>> expr = "/{http://quakeml.org/xmlns/quakeml/1.2}quakeml/eventParameters"
+    >>> xpathNamespaceFix(expr, 'http://quakeml.org/xmlns/bed/1.2')  # doctest: +NORMALIZE_WHITESPACE
+    ('/ns0:quakeml/default:eventParameters',
+     {'ns0': 'http://quakeml.org/xmlns/quakeml/1.2',
+      'default': 'http://quakeml.org/xmlns/bed/1.2'})
+    >>> expr = "/{http://quakeml.org/xmlns/quakeml/1.2}quakeml/eventParameters/event/origin[@publicID=string(../preferredOriginID/text())]"
+    >>> xpathNamespaceFix(expr, 'http://quakeml.org/xmlns/bed/1.2')  # doctest: +NORMALIZE_WHITESPACE
+    ('/ns0:quakeml/default:eventParameters/default:event/default:origin[@publicID=string(../default:preferredOriginID/text())]',
+     {'ns0': 'http://quakeml.org/xmlns/quakeml/1.2',
+      'default': 'http://quakeml.org/xmlns/bed/1.2'})
+    >>> expr = "/{http://quakeml.org/xmlns/quakeml/1.2}quakeml/eventParameters/event[position()=1]/origin[@publicID=string(../preferredOriginID/text())]/time/value"
+    >>> xpathNamespaceFix(expr, 'http://quakeml.org/xmlns/bed/1.2')  # doctest: +NORMALIZE_WHITESPACE
+    ('/ns0:quakeml/default:eventParameters/default:event[position()=1]/default:origin[@publicID=string(../default:preferredOriginID/text())]/default:time/default:value',
+     {'ns0': 'http://quakeml.org/xmlns/quakeml/1.2',
+      'default': 'http://quakeml.org/xmlns/bed/1.2'})
     """
     # first part: refactor explicit namespaces
     namespaces = list(set(re.findall("{.*?}", expr)))
@@ -30,6 +52,8 @@ def xpathNamespaceFix(expr, default_namespace=None):
             if x == "":
                 pass
             elif ":" in x:
+                pass
+            elif "(" in x and not (0 < x.find("[") < x.find("(")):
                 pass
             else:
                 x = "%s:%s" % (default_abbreviation, x)
