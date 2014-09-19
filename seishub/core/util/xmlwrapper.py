@@ -209,7 +209,7 @@ class XmlStylesheet(object):
         # fetch any included media type
         root = xslt_doc.getroot()
         self.content_type = root.xpath('.//xsl:output/@media-type',
-                                       namespaces={"xsl": root.nsmap["xsl"]})
+                                       namespaces=root.nsmap)
 
     def transform(self, xmltree_doc, xslt_params={}):
         if not IXmlDoc.providedBy(xmltree_doc):
