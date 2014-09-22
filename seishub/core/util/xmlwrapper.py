@@ -208,8 +208,12 @@ class XmlStylesheet(object):
         self.transform_func = etree.XSLT(xslt_doc)
         # fetch any included media type
         root = xslt_doc.getroot()
+        nsmap = root.nsmap.copy()
+        # xpath errors on default namespace in namespace map, just remove it
+        # for this xpath search, we are only interested in "xsl:" namespace
+        nsmap.pop(None, None)
         self.content_type = root.xpath('.//xsl:output/@media-type',
-                                       namespaces=root.nsmap)
+                                       namespaces=nsmap)
 
     def transform(self, xmltree_doc, xslt_params={}):
         if not IXmlDoc.providedBy(xmltree_doc):
