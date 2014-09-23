@@ -218,7 +218,7 @@ class KeyIndexElement(Serializable):
     def __init__(self, index=None, key=None, document=None,
                  group_pos=None):
         self.index = index
-        if key:
+        if key is not None:
             self.key = self._filter_key(key)
         else:
             self.key = None
