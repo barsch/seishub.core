@@ -61,7 +61,7 @@ setup(
     zip_safe=False,
     install_requires=[
         'setuptools',
-        'Twisted',
+        'Twisted<16', 'zope.interface<4.1',
         'Cheetah',
         'sqlalchemy>0.7.7,<0.8',
         'PyOpenSSL',
