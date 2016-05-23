@@ -5,7 +5,6 @@ A test suite for B{GET} request on REST resources.
 
 from StringIO import StringIO
 from obspy.core.utcdatetime import UTCDateTime
-from obspy.core.util.decorator import skipIf
 from seishub.core.core import Component, implements
 from seishub.core.packages.builtins import IResourceType, IPackage
 from seishub.core.packages.installer import registerIndex
@@ -422,7 +421,8 @@ class RestPropertyTests(SeisHubEnvironmentTestCase):
         self.assertTrue("<value>1970-12-20 12:13:00</value>" in data)
         proc.run(DELETE, '/property-test/notvc2/1')
 
-    @skipIf(NO_NEGATIVE_TIMESTAMPS, 'times before 1970 are not supported')
+    @unittest.skipIf(NO_NEGATIVE_TIMESTAMPS,
+                     'times before 1970 are not supported')
     def test_validDateTimeIndexesBefore1970(self):
         """
         Test indexing of XML documents with valid datetime fields.

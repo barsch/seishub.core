@@ -1,13 +1,21 @@
-# We pretend to be erlang because we can't use the python support in travis-ci
-# see also: https://groups.google.com/forum/#!msg/travis-ci/uJgu35XKdmI/CctnUkYnEJEJ
-language: erlang
+language: python
+python:
+  - "2.7"
+sudo: false
 before_install:
-  - lsb_release -a
-  - sudo apt-get install -qq gfortran python python-dev python-setuptools python-numpy python-scipy python-matplotlib python-suds python-lxml python-sqlalchemy 1> /dev/null # install dependencies
-  - sudo easy_install https://github.com/obspy/obspy/archive/master.zip
+  - wget https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
+  - bash miniconda.sh -b -p $HOME/miniconda
+  - export PATH="$HOME/miniconda/bin:$PATH"  
+  - hash -r
+  - conda config --set always_yes yes
+  - conda update -q conda
+  - conda info -a
+  - conda config --add channels obspy
+  - conda install "obspy<1.1" "twisted<16" "zope.interface<4.1" cheetah "sqlalchemy<0.8" pyopenssl lxml pycrypto pyasn1 pyparsing
 install:
-  - sudo python setup.py -q install
+  - pip install --no-deps .
 script:
-  - sudo seishub-runtests
+  - mkdir empty; cd empty
+  - seishub-runtests
 notifications:
     email: false

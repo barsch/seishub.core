@@ -1,10 +1,11 @@
 SQLAlchemy >0.7.7, <0.8
 Cheetah
 pycrypto
-Twisted
+Twisted<16
+zope.interface<4.1
 pyparsing
 pyasn1
 lxml
 pyOpenSSL
-obspy <0.10.0
+obspy
 psycopg2

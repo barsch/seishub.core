@@ -61,7 +61,7 @@ setup(
     zip_safe=False,
     install_requires=[
         'setuptools',
-        'Twisted',
+        'Twisted<16', 'zope.interface<4.1',
         'Cheetah',
         'sqlalchemy>0.7.7,<0.8',
         'PyOpenSSL',
@@ -69,7 +69,7 @@ setup(
         'pycrypto',
         'pyasn1',
         'pyparsing',
-        'obspy<0.10.0',
+        'obspy<1.1',
     ],
     download_url="https://github.com/barsch/seishub.core/zipball/master" + \
         "#egg=seishub.core-dev",
